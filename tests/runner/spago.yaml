@@ -1,0 +1,61 @@
+package:
+  name: runner
+  dependencies:
+    - assert
+    - prelude
+    - effect
+    - console
+    - arrays
+    - partial
+    - foldable-traversable
+    - st
+    - exceptions
+    - integers
+    - strings
+    - enums
+    - foreign-object
+    - numbers
+    - refs
+    - unsafe-coerce
+    - functions
+    - record
+workspace:
+  packageSet:
+    registry: 77.10.1
+  extraPackages:
+    assert:
+      path: "../../../gopurs-assert"
+    prelude:
+      path: "../../../gopurs-prelude"
+    effect:
+      path: "../../../gopurs-effect"
+    console:
+      path: "../../../gopurs-console"
+    arrays:
+      path: "../../../gopurs-arrays"
+    partial:
+      path: "../../../gopurs-partial"
+    foldable-traversable:
+      path: "../../../gopurs-foldable-traversable"
+    st:
+      path: "../../../gopurs-st"
+    exceptions:
+      path: "../../../gopurs-exceptions"
+    integers:
+      path: "../../../gopurs-integers"
+    strings:
+      path: "../../../gopurs-strings"
+    enums:
+      path: "../../../gopurs-enums"
+    foreign-object:
+      path: "../../../gopurs-foreign-object"
+    numbers:
+      path: "../../../gopurs-numbers"
+    refs:
+      path: "../../../gopurs-refs"
+    unsafe-coerce:
+      path: "../../../gopurs-unsafe-coerce"
+    functions:
+      path: "../../../gopurs-functions"
+    record:
+      path: "../../../gopurs-record"

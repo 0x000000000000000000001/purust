@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+# Test runner for purust
+# Compiles and runs PureScript passing tests.
+
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+TEST_DIR="$ROOT_DIR/tests"
+PASSING_DIR="$ROOT_DIR/../purescript/tests/purs/passing"
+RUNNER_DIR="$TEST_DIR/runner"
+
+source "$(dirname "$0")/pkg"
+
+mkdir -p "$RUNNER_DIR/src"
+
+passed=0
+failed=0
+
+TEST_FILES=()
+CLEAN_CACHE=0
+
+if [ $# -gt 0 ]; then
+  for arg in "$@"; do
+    if [[ "$arg" == "-c" || "$arg" == "--clean" ]]; then
+      CLEAN_CACHE=1
+    else
+      if [ -f "$ROOT_DIR/$arg" ]; then
+        TEST_FILES+=("$ROOT_DIR/$arg")
+      elif [ -f "$arg" ]; then
+        TEST_FILES+=("$arg")
+      elif [ -f "$PASSING_DIR/$arg" ]; then
+        TEST_FILES+=("$PASSING_DIR/$arg")
+      elif [ -f "$PASSING_DIR/$arg.purs" ]; then
+        TEST_FILES+=("$PASSING_DIR/$arg.purs")
+      else
+        echo "Test file $arg not found."
+      fi
+    fi
+  done
+fi
+
+if [ $CLEAN_CACHE -eq 1 ]; then
+  echo "Building purust compiler..."
+  cd "$ROOT_DIR"
+  npm install --silent
+  npm run build --silent || { echo -e "\n\033[0;31m[FAILED]\033[0m purust build failed!"; exit 1; }
+fi
+
+cd "$RUNNER_DIR"
+
+if [ ! -f spago.yaml ]; then
+  echo "package:" > spago.yaml
+  echo "  name: runner" >> spago.yaml
+  echo "  dependencies:" >> spago.yaml
+  for pkg in "${CORE_PACKAGES[@]}"; do
+    echo "    - $pkg" >> spago.yaml
+  done
+  echo "workspace:" >> spago.yaml
+  echo "  packageSet:" >> spago.yaml
+  echo "    registry: 77.10.1" >> spago.yaml
+  echo "  extraPackages:" >> spago.yaml
+  for pkg in "${CORE_PACKAGES[@]}"; do
+    echo "    $pkg:" >> spago.yaml
+    echo "      path: \"../../../gopurs-$pkg\"" >> spago.yaml
+  done
+fi
+
+echo "Running tests from $PASSING_DIR..."
+
+if [ $CLEAN_CACHE -eq 1 ]; then
+  echo "=> Cleaning Spago and output cache..."
+  rm -rf .spago/* output-es/* output/*
+fi
+
+if [ ${#TEST_FILES[@]} -eq 0 ]; then
+  TEST_FILES=("$PASSING_DIR"/*.purs)
+fi
+
+for test_file in "${TEST_FILES[@]}"; do
+  test_name=$(basename "$test_file")
+  
+  echo "=> Testing $test_name"
+  
+  rm -rf output/Main src/* output/app
+  
+  cp "$test_file" "src/Main.purs"
+  
+  # Try to build with spago (just generating corefn)
+  retry=0
+  max_retries=2
+  build_success=0
+  while [ $retry -le $max_retries ]; do
+    if out=$(spago build -q 2>&1); then
+      build_success=1
+      break
+    fi
+    retry=$((retry+1))
+  done
+
+  if [ $build_success -eq 1 ]; then
+    # Generate Rust code
+    node ../../bin/purust.js --main Main
+    
+    if [ -d "output/Main" ] && [ -f "output/Main/src/main.rs" ]; then
+      # Compile and Run Rust code
+      cd output/Main
+      
+      if cargo run -q; then
+          echo -e "   \033[0;32m[OK]\033[0m"
+          passed=$((passed+1))
+      else
+          echo -e "   \033[0;31m[FAILED]\033[0m Rust Execution error"
+          failed=$((failed+1))
+          break
+      fi
+      cd ../..
+    else
+      echo -e "   \033[0;31m[FAILED]\033[0m purust did not generate main.rs"
+      failed=$((failed+1))
+      break
+    fi
+  else
+    echo -e "   \033[0;31m[FAILED]\033[0m PureScript Compilation error"
+    echo "$out"
+    failed=$((failed+1))
+    break
+  fi
+done
+
+echo ""
+if [ $failed -eq 0 ]; then
+  echo -e "Summary: \033[0;32m$passed passed\033[0m, 0 failed."
+else
+  echo -e "Summary: \033[0;32m$passed passed\033[0m, \033[0;31m$failed failed\033[0m."
+  exit 1
+fi

@@ -1,0 +1,20 @@
+{
+  "name": "purust",
+  "version": "0.1.0",
+  "description": "PureScript-to-Rust backend",
+  "type": "module",
+  "bin": {
+    "purust": "bin/purust.js"
+  },
+  "scripts": {
+    "build": "spago build && NODE_OPTIONS=\"--no-deprecation\" purs-backend-es bundle-app -p node -m Main --to bin/purust.js",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.1",
+    "purs-backend-es": "^1.4.3"
+  },
+  "devDependencies": {
+    "purescript": "github:0x000000000000000000001/purescript-npm"
+  }
+}
