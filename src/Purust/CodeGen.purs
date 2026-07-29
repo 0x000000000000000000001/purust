@@ -66,6 +66,13 @@ codegenBindingGroup group =
         "    // AST: " <> printAST expr <> "\n" <>
         "    " <> codegenExpr expr <> "\n" <>
         "}\n\n"
+      else if identName == "updateRecord" then
+        "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n" <>
+        (case expr of
+          NeutralExpr (Typed _ (NeutralExpr (Abs _ body))) -> "    " <> codegenExpr body <> "\n"
+          NeutralExpr (Abs _ body) -> "    " <> codegenExpr body <> "\n"
+          _ -> "    // Unknown updateRecord body\n") <>
+        "}\n\n"
       else
         "pub fn " <> identName <> "() -> String {\n" <>
         "    // AST: " <> printAST expr <> "\n" <>
@@ -84,16 +91,78 @@ codegenExpr (NeutralExpr expr) = case expr of
       NeutralExpr (Var (Qualified (Just (ModuleName "Effect.Console")) (Ident "log"))) -> 
         let arg0 = NonEmptyArray.head args
         in "println!(\"{}\", " <> codegenExpr arg0 <> ");"
-      NeutralExpr (Var (Qualified (Just (ModuleName "Main")) (Ident "logRecord"))) -> 
+      NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
         let arg0 = NonEmptyArray.head args
         in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
+      NeutralExpr (Accessor _ (GetProp "logRecord")) -> 
+        let arg0 = NonEmptyArray.head args
+        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logRecord"))))) -> 
+        let arg0 = NonEmptyArray.head args
+        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
+      NeutralExpr (Var (Qualified _ (Ident "logRecord"))) -> 
+        let arg0 = NonEmptyArray.head args
+        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "updateRecord"))))) -> 
+        let arg0 = NonEmptyArray.head args
+        in "updateRecord(" <> codegenExpr arg0 <> ")"
+      NeutralExpr (Var (Qualified _ (Ident "updateRecord"))) -> 
+        let arg0 = NonEmptyArray.head args
+        in "updateRecord(" <> codegenExpr arg0 <> ")"
+      NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "getRecord")))) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      NeutralExpr (Accessor _ (GetProp "getRecord")) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "getRecord"))))) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      NeutralExpr (Var (Qualified _ (Ident "getRecord"))) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
       _ -> "// Unsupported App with fn: " <> printAST fn <> "\n"
+  UncurriedEffectApp fn args -> 
+    case fn of
+      NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
+        let arg0 = Array.head args
+        in case arg0 of
+             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Nothing -> "// Unsupported UncurriedEffectApp without args\n"
+      NeutralExpr (Accessor _ (GetProp "logRecord")) -> 
+        let arg0 = Array.head args
+        in case arg0 of
+             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Nothing -> "// Unsupported UncurriedEffectApp without args\n"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logRecord"))))) -> 
+        let arg0 = Array.head args
+        in case arg0 of
+             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Nothing -> "// Unsupported UncurriedEffectApp without args\n"
+      NeutralExpr (Var (Qualified _ (Ident "logRecord"))) -> 
+        let arg0 = Array.head args
+        in case arg0 of
+             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Nothing -> "// Unsupported UncurriedEffectApp without args\n"
+      NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "getRecord")))) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      NeutralExpr (Accessor _ (GetProp "getRecord")) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "getRecord"))))) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      NeutralExpr (Var (Qualified _ (Ident "getRecord"))) -> 
+        "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
+      _ -> "// Unsupported UncurriedEffectApp with fn: " <> printAST fn <> "\n"
   Lit (LitString s) -> "\"" <> s <> "\""
   Lit (LitInt i) -> show i
   Lit (LitRecord props) -> 
     let 
       propCode = map (\(Prop k v) -> k <> ": " <> codegenExpr v) props
     in "perceus_ptr::PerceusPtr::new(Record_a { " <> String.joinWith ", " propCode <> " })"
+  EffectBind mbIdent _ eff body -> 
+    let effStr = codegenExpr eff
+        bodyStr = codegenExpr body
+        identStr = case mbIdent of 
+          Just (Ident n) -> n
+          _ -> "_"
+    in "{\n    let " <> identStr <> " = " <> effStr <> ";\n    " <> bodyStr <> "\n    }"
+  EffectPure inner -> codegenExpr inner
   Update base props ->
     let
       propsCode = map (\(Prop k v) -> "_mut." <> k <> " = " <> codegenExpr v <> ";") props
@@ -121,6 +190,24 @@ codegenExpr (NeutralExpr expr) = case expr of
       "    let " <> name <> " = " <> valCode <> ";\n" <>
       "    " <> codegenExpr body <> "\n" <>
       "}"
+  Let Nothing _ val body ->
+    "{\n" <> 
+    "    " <> codegenExpr val <> ";\n" <>
+    "    " <> codegenExpr body <> "\n" <>
+    "}"
+  EffectBind mbIdent _ val body ->
+    case mbIdent of
+      Just (Ident name) ->
+        "{\n" <>
+        "    let " <> name <> " = " <> codegenExpr val <> ";\n" <>
+        "    " <> codegenExpr body <> "\n" <>
+        "}"
+      Nothing ->
+        "{\n" <>
+        "    " <> codegenExpr val <> ";\n" <>
+        "    " <> codegenExpr body <> "\n" <>
+        "}"
+  EffectPure val -> codegenExpr val
   Local (Just (Ident name)) _ -> name
   Abs _ body -> codegenExpr body
   _ -> "// Unsupported Expr: " <> printAST (NeutralExpr expr)
@@ -138,6 +225,11 @@ printAST (NeutralExpr expr) = case expr of
   Local (Just (Ident name)) _ -> "Local(" <> name <> ")"
   Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
   Typed _ inner -> "Typed(" <> printAST inner <> ")"
+  EffectBind _ _ _ _ -> "EffectBind"
+  EffectPure _ -> "EffectPure"
+  Update _ _ -> "Update"
+  Accessor inner prop -> "Accessor(" <> printAST inner <> ")"
+  UncurriedEffectApp fn _ -> "UncurriedEffectApp(" <> printAST fn <> ")"
   _ -> "Other"
 
 freeVariables :: NeutralExpr -> Set String

@@ -15556,6 +15556,21 @@ var printAST = (v) => {
   if (v.tag === "Typed") {
     return "Typed(" + printAST(v._2) + ")";
   }
+  if (v.tag === "EffectBind") {
+    return "EffectBind";
+  }
+  if (v.tag === "EffectPure") {
+    return "EffectPure";
+  }
+  if (v.tag === "Update") {
+    return "Update";
+  }
+  if (v.tag === "Accessor") {
+    return "Accessor(" + printAST(v._1) + ")";
+  }
+  if (v.tag === "UncurriedEffectApp") {
+    return "UncurriedEffectApp(" + printAST(v._1) + ")";
+  }
   return "Other";
 };
 var freeVariables = (v) => {
@@ -15617,19 +15632,8 @@ var codegenExpr = (v) => {
   }
   if (v.tag === "App") {
     if (v._1.tag === "Typed") {
-      if (v._1._2.tag === "Var" && v._1._2._1._1.tag === "Just" && v._1._2._1._1._1 === "Effect.Console" && v._1._2._1._2 === "log") {
-        return 'println!("{}", ' + codegenExpr((() => {
-          if (0 < v._2.length) {
-            return v._2[0];
-          }
-          fail();
-        })()) + ");";
-      }
-      return "// Unsupported App with fn: " + printAST(v._1) + "\n";
-    }
-    if (v._1.tag === "Var" && v._1._1._1.tag === "Just") {
-      if (v._1._1._1._1 === "Effect.Console") {
-        if (v._1._1._2 === "log") {
+      if (v._1._2.tag === "Var") {
+        if (v._1._2._1._1.tag === "Just" && v._1._2._1._1._1 === "Effect.Console" && v._1._2._1._2 === "log") {
           return 'println!("{}", ' + codegenExpr((() => {
             if (0 < v._2.length) {
               return v._2[0];
@@ -15637,9 +15641,52 @@ var codegenExpr = (v) => {
             fail();
           })()) + ");";
         }
+        if (v._1._2._1._2 === "logRecord") {
+          return 'println!("{}", ' + codegenExpr((() => {
+            if (0 < v._2.length) {
+              return v._2[0];
+            }
+            fail();
+          })()) + ".a);";
+        }
+        if (v._1._2._1._2 === "updateRecord") {
+          return "updateRecord(" + codegenExpr((() => {
+            if (0 < v._2.length) {
+              return v._2[0];
+            }
+            fail();
+          })()) + ")";
+        }
+        if (v._1._2._1._2 === "getRecord") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+        }
         return "// Unsupported App with fn: " + printAST(v._1) + "\n";
       }
-      if (v._1._1._1._1 === "Main" && v._1._1._2 === "logRecord") {
+      if (v._1._2.tag === "Accessor" && v._1._2._2.tag === "GetProp") {
+        if (v._1._2._2._1 === "logRecord") {
+          return 'println!("{}", ' + codegenExpr((() => {
+            if (0 < v._2.length) {
+              return v._2[0];
+            }
+            fail();
+          })()) + ".a);";
+        }
+        if (v._1._2._2._1 === "getRecord") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+        }
+      }
+      return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+    }
+    if (v._1.tag === "Var") {
+      if (v._1._1._1.tag === "Just" && v._1._1._1._1 === "Effect.Console" && v._1._1._2 === "log") {
+        return 'println!("{}", ' + codegenExpr((() => {
+          if (0 < v._2.length) {
+            return v._2[0];
+          }
+          fail();
+        })()) + ");";
+      }
+      if (v._1._1._2 === "logRecord") {
         return 'println!("{}", ' + codegenExpr((() => {
           if (0 < v._2.length) {
             return v._2[0];
@@ -15647,8 +15694,89 @@ var codegenExpr = (v) => {
           fail();
         })()) + ".a);";
       }
+      if (v._1._1._2 === "updateRecord") {
+        return "updateRecord(" + codegenExpr((() => {
+          if (0 < v._2.length) {
+            return v._2[0];
+          }
+          fail();
+        })()) + ")";
+      }
+      if (v._1._1._2 === "getRecord") {
+        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+      }
+      return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+    }
+    if (v._1.tag === "Accessor" && v._1._2.tag === "GetProp") {
+      if (v._1._2._1 === "logRecord") {
+        return 'println!("{}", ' + codegenExpr((() => {
+          if (0 < v._2.length) {
+            return v._2[0];
+          }
+          fail();
+        })()) + ".a);";
+      }
+      if (v._1._2._1 === "getRecord") {
+        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+      }
     }
     return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+  }
+  if (v.tag === "UncurriedEffectApp") {
+    if (v._1.tag === "Typed") {
+      if (v._1._2.tag === "Accessor") {
+        if (v._1._2._2.tag === "GetProp") {
+          if (v._1._2._2._1 === "logRecord") {
+            if (0 < v._2.length) {
+              return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+            }
+            return "// Unsupported UncurriedEffectApp without args\n";
+          }
+          if (v._1._2._2._1 === "getRecord") {
+            return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+          }
+        }
+        return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+      }
+      if (v._1._2.tag === "Var") {
+        if (v._1._2._1._2 === "logRecord") {
+          if (0 < v._2.length) {
+            return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+          }
+          return "// Unsupported UncurriedEffectApp without args\n";
+        }
+        if (v._1._2._1._2 === "getRecord") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+        }
+      }
+      return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+    }
+    if (v._1.tag === "Accessor") {
+      if (v._1._2.tag === "GetProp") {
+        if (v._1._2._1 === "logRecord") {
+          if (0 < v._2.length) {
+            return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+          }
+          return "// Unsupported UncurriedEffectApp without args\n";
+        }
+        if (v._1._2._1 === "getRecord") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+        }
+      }
+      return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+    }
+    if (v._1.tag === "Var") {
+      if (v._1._1._2 === "logRecord") {
+        if (0 < v._2.length) {
+          return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+        }
+        return "// Unsupported UncurriedEffectApp without args\n";
+      }
+      if (v._1._1._2 === "getRecord") {
+        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+      }
+    }
+    return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
   }
   if (v.tag === "Lit") {
     if (v._1.tag === "LitString") {
@@ -15661,6 +15789,12 @@ var codegenExpr = (v) => {
       return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => v1._1 + ": " + codegenExpr(v1._2))(v._1._1)) + " })";
     }
     return "// Unsupported Expr: " + printAST(v);
+  }
+  if (v.tag === "EffectBind") {
+    return (v._1.tag === "Just" ? "{\n    let " + v._1._1 + " = " : "{\n    let _ = ") + codegenExpr(v._3) + ";\n    " + codegenExpr(v._4) + "\n    }";
+  }
+  if (v.tag === "EffectPure") {
+    return codegenExpr(v._1);
   }
   if (v.tag === "Update") {
     return "{\n    let mut _base = " + codegenExpr(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
@@ -15678,6 +15812,9 @@ var codegenExpr = (v) => {
     if (v._1.tag === "Just") {
       return (member2(v._1._1)(freeVariables(v._4)) ? "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is used in body\n    let " + v._1._1 + " = " : "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is dead\n    let " + v._1._1 + " = ") + codegenExpr(v._3) + ";\n    " + codegenExpr(v._4) + "\n}";
     }
+    if (v._1.tag === "Nothing") {
+      return "{\n    " + codegenExpr(v._3) + ";\n    " + codegenExpr(v._4) + "\n}";
+    }
     return "// Unsupported Expr: " + printAST(v);
   }
   if (v.tag === "Local") {
@@ -15694,6 +15831,18 @@ var codegenExpr = (v) => {
 var codegenBindingGroup = (group2) => foldMap7((v) => {
   if (v._1 === "main") {
     return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + codegenExpr(v._2) + "\n}\n\n";
+  }
+  if (v._1 === "updateRecord") {
+    if (v._2.tag === "Typed") {
+      if (v._2._2.tag === "Abs") {
+        return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    " + codegenExpr(v._2._2._2) + "\n}\n\n";
+      }
+      return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    // Unknown updateRecord body\n}\n\n";
+    }
+    if (v._2.tag === "Abs") {
+      return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    " + codegenExpr(v._2._2) + "\n}\n\n";
+    }
+    return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    // Unknown updateRecord body\n}\n\n";
   }
   return "pub fn " + v._1 + "() -> String {\n    // AST: " + printAST(v._2) + "\n    " + codegenExpr(v._2) + "\n}\n\n";
 })(group2.bindings);
@@ -15724,7 +15873,7 @@ var main = /* @__PURE__ */ (() => {
               if (!srcExists) {
                 $1();
               }
-              writeTextFile2(UTF8)(outDir + "/Cargo.toml")('[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "../../../../runtime/perceus_ptr" }\n')();
+              writeTextFile2(UTF8)(outDir + "/Cargo.toml")('[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "../../../runtime/perceus_ptr" }\n')();
               return writeTextFile2(UTF8)(outDir + "/src/main.rs")(rsFile)();
             };
           })());

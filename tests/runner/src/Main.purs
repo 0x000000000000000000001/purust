@@ -1,13 +1,14 @@
 module Main where
 
-import Prelude (Unit, bind)
+import Prelude (Unit, unit)
 import Effect (Effect)
 
 foreign import logRecord :: { a :: Int } -> Effect Unit
 
+foreign import getRecord :: Unit -> { a :: Int }
+
+updateRecord :: { a :: Int } -> { a :: Int }
+updateRecord r = r { a = 2 }
+
 main :: Effect Unit
-main = do
-  let r1 = { a: 1 }
-  logRecord r1
-  let r2 = r1 { a = 2 }
-  logRecord r2
+main = logRecord (updateRecord (getRecord unit))
