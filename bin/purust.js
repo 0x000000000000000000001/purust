@@ -15627,13 +15627,26 @@ var codegenExpr = (v) => {
       }
       return "// Unsupported App with fn: " + printAST(v._1) + "\n";
     }
-    if (v._1.tag === "Var" && v._1._1._1.tag === "Just" && v._1._1._1._1 === "Effect.Console" && v._1._1._2 === "log") {
-      return 'println!("{}", ' + codegenExpr((() => {
-        if (0 < v._2.length) {
-          return v._2[0];
+    if (v._1.tag === "Var" && v._1._1._1.tag === "Just") {
+      if (v._1._1._1._1 === "Effect.Console") {
+        if (v._1._1._2 === "log") {
+          return 'println!("{}", ' + codegenExpr((() => {
+            if (0 < v._2.length) {
+              return v._2[0];
+            }
+            fail();
+          })()) + ");";
         }
-        fail();
-      })()) + ");";
+        return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+      }
+      if (v._1._1._1._1 === "Main" && v._1._1._2 === "logInt") {
+        return 'println!("{}", ' + codegenExpr((() => {
+          if (0 < v._2.length) {
+            return v._2[0];
+          }
+          fail();
+        })()) + ");";
+      }
     }
     return "// Unsupported App with fn: " + printAST(v._1) + "\n";
   }
@@ -15651,6 +15664,12 @@ var codegenExpr = (v) => {
   }
   if (v.tag === "Update") {
     return "{\n    let mut _base = " + codegenExpr(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
+  }
+  if (v.tag === "Accessor") {
+    if (v._2.tag === "GetProp") {
+      return codegenExpr(v._1) + "." + v._2._1;
+    }
+    return "// Unsupported Expr: " + printAST(v);
   }
   if (v.tag === "Var") {
     return v._1._2;

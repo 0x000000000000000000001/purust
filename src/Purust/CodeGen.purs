@@ -1,7 +1,7 @@
 module Purust.CodeGen where
 
 import Prelude
-import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..))
+import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..), BackendAccessor(..))
 import PureScript.Backend.Optimizer.Convert (BackendModule, BackendBindingGroup)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..))
 import PureScript.Backend.Optimizer.CoreFn (Ann(..), Module(..), Ident(..), ExprType(..), DataDecl, Literal(..), Qualified(..), ModuleName(..), Prop(..))
@@ -83,6 +83,9 @@ codegenExpr (NeutralExpr expr) = case expr of
       NeutralExpr (Var (Qualified (Just (ModuleName "Effect.Console")) (Ident "log"))) -> 
         let arg0 = NonEmptyArray.head args
         in "println!(\"{}\", " <> codegenExpr arg0 <> ");"
+      NeutralExpr (Var (Qualified (Just (ModuleName "Main")) (Ident "logInt"))) -> 
+        let arg0 = NonEmptyArray.head args
+        in "println!(\"{}\", " <> codegenExpr arg0 <> ");"
       _ -> "// Unsupported App with fn: " <> printAST fn <> "\n"
   Lit (LitString s) -> "\"" <> s <> "\""
   Lit (LitInt i) -> show i
@@ -102,6 +105,7 @@ codegenExpr (NeutralExpr expr) = case expr of
       "    }\n" <>
       "    _base\n" <>
       "}"
+  Accessor base (GetProp k) -> codegenExpr base <> "." <> k
   Var (Qualified _ (Ident name)) -> name
   Let (Just (Ident name)) _ val body ->
     let
