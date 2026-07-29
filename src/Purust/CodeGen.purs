@@ -4,7 +4,7 @@ import Prelude
 import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..))
 import PureScript.Backend.Optimizer.Convert (BackendModule, BackendBindingGroup)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..))
-import PureScript.Backend.Optimizer.CoreFn (Ann(..), Module(..), Ident(..), ExprType(..), DataDecl, Literal(..), Qualified(..), ModuleName(..))
+import PureScript.Backend.Optimizer.CoreFn (Ann(..), Module(..), Ident(..), ExprType(..), DataDecl, Literal(..), Qualified(..), ModuleName(..), Prop(..))
 import Data.String as String
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
@@ -30,7 +30,8 @@ codegenModule (Module coreFnMod) backendMod =
           in "    " <> ctor.constructorName <> fields <> ",\n"
         ) decl.constructors <>
         "}\n\n"
-      ) backendMod.dataDecls
+      ) backendMod.dataDecls <>
+      "#[derive(Clone)]\npub struct Record_a { pub a: i64 }\n\n"
       
     -- Traduction des Bindings
     bindingsCode = foldMap codegenBindingGroup backendMod.bindings
@@ -84,6 +85,23 @@ codegenExpr (NeutralExpr expr) = case expr of
         in "println!(\"{}\", " <> codegenExpr arg0 <> ");"
       _ -> "// Unsupported App with fn: " <> printAST fn <> "\n"
   Lit (LitString s) -> "\"" <> s <> "\""
+  Lit (LitInt i) -> show i
+  Lit (LitRecord props) -> 
+    let 
+      propCode = map (\(Prop k v) -> k <> ": " <> codegenExpr v) props
+    in "perceus_ptr::PerceusPtr::new(Record_a { " <> String.joinWith ", " propCode <> " })"
+  Update base props ->
+    let
+      propsCode = map (\(Prop k v) -> "_mut." <> k <> " = " <> codegenExpr v <> ";") props
+    in
+      "{\n" <>
+      "    let mut _base = " <> codegenExpr base <> ";\n" <>
+      "    {\n" <>
+      "        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n" <>
+      "        " <> String.joinWith "\n        " propsCode <> "\n" <>
+      "    }\n" <>
+      "    _base\n" <>
+      "}"
   Var (Qualified _ (Ident name)) -> name
   Let (Just (Ident name)) _ val body ->
     let

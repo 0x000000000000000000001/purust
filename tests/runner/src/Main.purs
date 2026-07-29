@@ -1,12 +1,8 @@
 module Main where
 
-import Prelude
 import Effect.Console (log)
 
-foo :: String -> String -> String
-foo a b = 
-  let x = a <> b
-      y = x <> x
-  in y
-
-main = log "Done"
+main = do
+  let r1 = { a: 1 }
+  let r2 = r1 { a = 2 }
+  log "ok"
