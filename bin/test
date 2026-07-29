@@ -83,6 +83,9 @@ for test_file in "${TEST_FILES[@]}"; do
   rm -rf output/Main src/* output/app
   
   cp "$test_file" "src/Main.purs"
+  if [ -f "${test_file%.purs}.js" ]; then
+    cp "${test_file%.purs}.js" "src/Main.js"
+  fi
   
   # Try to build with spago (just generating corefn)
   retry=0

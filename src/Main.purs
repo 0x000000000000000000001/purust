@@ -54,7 +54,7 @@ main = launchAff_ do
           when (not srcExists) do
             FS.mkdir (outDir <> "/src")
           
-          let cargoToml = "[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n"
+          let cargoToml = "[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"../../../../runtime/perceus_ptr\" }\n"
           FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") cargoToml
           
           FS.writeTextFile UTF8 (outDir <> "/src/main.rs") rsFile
