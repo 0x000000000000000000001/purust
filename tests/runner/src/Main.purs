@@ -3,6 +3,10 @@ module Main where
 import Prelude
 import Effect.Console (log)
 
-data Shape = Circle Int | Rect Int Int | Label String
+foo :: String -> String -> String
+foo a b = 
+  let x = a <> b
+      y = x <> x
+  in y
 
-main = log "Shape test"
+main = log "Done"

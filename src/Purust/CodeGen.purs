@@ -12,6 +12,8 @@ import Data.Foldable (foldMap)
 import Data.Newtype (unwrap)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
+import Data.Set (Set)
+import Data.Set as Set
 
 codegenModule :: Module Ann -> BackendModule -> String
 codegenModule (Module coreFnMod) backendMod =
@@ -59,10 +61,14 @@ codegenBindingGroup group =
     in
       if identName == "main" then
         "pub fn main() {\n" <>
+        "    // AST: " <> printAST expr <> "\n" <>
         "    " <> codegenExpr expr <> "\n" <>
         "}\n\n"
       else
-        ""
+        "pub fn " <> identName <> "() -> String {\n" <>
+        "    // AST: " <> printAST expr <> "\n" <>
+        "    " <> codegenExpr expr <> "\n" <>
+        "}\n\n"
   ) group.bindings
 
 codegenExpr :: NeutralExpr -> String
@@ -79,6 +85,21 @@ codegenExpr (NeutralExpr expr) = case expr of
       _ -> "// Unsupported App with fn: " <> printAST fn <> "\n"
   Lit (LitString s) -> "\"" <> s <> "\""
   Var (Qualified _ (Ident name)) -> name
+  Let (Just (Ident name)) _ val body ->
+    let
+      valCode = codegenExpr val
+      bodyVars = freeVariables body
+      comment = if Set.member name bodyVars 
+                then "// Perceus Liveness: variable '" <> name <> "' is used in body"
+                else "// Perceus Liveness: variable '" <> name <> "' is dead"
+    in
+      "{\n" <> 
+      "    " <> comment <> "\n" <>
+      "    let " <> name <> " = " <> valCode <> ";\n" <>
+      "    " <> codegenExpr body <> "\n" <>
+      "}"
+  Local (Just (Ident name)) _ -> name
+  Abs _ body -> codegenExpr body
   _ -> "// Unsupported Expr: " <> printAST (NeutralExpr expr)
 
 printAST :: NeutralExpr -> String
@@ -90,5 +111,23 @@ printAST (NeutralExpr expr) = case expr of
           Just m -> unwrap m <> "."
           Nothing -> ""
     in "Var(" <> modStr <> name <> ")"
+  Let (Just (Ident name)) _ _ _ -> "Let(" <> name <> ")"
+  Local (Just (Ident name)) _ -> "Local(" <> name <> ")"
+  Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
   Typed _ inner -> "Typed(" <> printAST inner <> ")"
   _ -> "Other"
+
+freeVariables :: NeutralExpr -> Set String
+freeVariables (NeutralExpr expr) = case expr of
+  Var _ -> Set.empty
+  Local (Just (Ident i)) _ -> Set.singleton i
+  Local _ _ -> Set.empty
+  Lit _ -> Set.empty
+  App fn args -> 
+    Array.foldl (\acc a -> Set.union acc (freeVariables a)) (freeVariables fn) (NonEmptyArray.toArray args)
+  Let (Just (Ident i)) _ val body ->
+    Set.union (freeVariables val) (Set.delete i (freeVariables body))
+  Let Nothing _ val body ->
+    Set.union (freeVariables val) (freeVariables body)
+  Typed _ inner -> freeVariables inner
+  _ -> Set.empty
