@@ -15524,31 +15524,19 @@ var member2 = (k) => {
 var foldMap7 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
 var printAST = (v) => {
   if (v.tag === "App") {
-    return "App (" + printAST(v._1) + ") [...]";
+    return "App(" + printAST(v._1) + ")";
   }
   if (v.tag === "Lit") {
     return "Lit";
   }
   if (v.tag === "Var") {
-    if (v._1._1.tag === "Just") {
-      return "Var(" + v._1._1._1 + "." + v._1._2 + ")";
-    }
-    if (v._1._1.tag === "Nothing") {
-      return "Var(" + v._1._2 + ")";
-    }
-    fail();
+    return "Var(...)";
   }
   if (v.tag === "Let") {
-    if (v._1.tag === "Just") {
-      return "Let(" + v._1._1 + ")";
-    }
-    return "Other";
+    return "Let(...)";
   }
   if (v.tag === "Local") {
-    if (v._1.tag === "Just") {
-      return "Local(" + v._1._1 + ")";
-    }
-    return "Other";
+    return "Local(...)";
   }
   if (v.tag === "Abs") {
     return "Abs(..., " + printAST(v._2) + ")";
@@ -15571,7 +15559,43 @@ var printAST = (v) => {
   if (v.tag === "UncurriedEffectApp") {
     return "UncurriedEffectApp(" + printAST(v._1) + ")";
   }
-  return "Other";
+  if (v.tag === "LetRec") {
+    return "LetRec(..., " + printAST(v._3) + ")";
+  }
+  if (v.tag === "Branch") {
+    return "Branch(...)";
+  }
+  if (v.tag === "PrimOp") {
+    return "PrimOp(...)";
+  }
+  if (v.tag === "UncurriedApp") {
+    return "UncurriedApp(" + printAST(v._1) + ")";
+  }
+  if (v.tag === "CtorSaturated") {
+    return "CtorSaturated(...)";
+  }
+  if (v.tag === "UncurriedAbs") {
+    return "UncurriedAbs(..., " + printAST(v._2) + ")";
+  }
+  if (v.tag === "UncurriedEffectAbs") {
+    return "UncurriedEffectAbs(..., " + printAST(v._2) + ")";
+  }
+  if (v.tag === "CtorDef") {
+    return "CtorDef";
+  }
+  if (v.tag === "EffectDefer") {
+    return "EffectDefer(" + printAST(v._1) + ")";
+  }
+  if (v.tag === "PrimEffect") {
+    return "PrimEffect(...)";
+  }
+  if (v.tag === "PrimUndefined") {
+    return "PrimUndefined";
+  }
+  if (v.tag === "Fail") {
+    return "Fail(" + v._1 + ")";
+  }
+  fail();
 };
 var freeVariables = (v) => {
   if (v.tag === "Var") {
@@ -15624,103 +15648,124 @@ var codegenExprType = (v) => {
   if (v.tag === "TypeVar") {
     return toUpper(v._1);
   }
+  if (v.tag === "Func") {
+    return "fn(" + joinWith(", ")(arrayMap(codegenExprType)(v._1)) + ") -> " + codegenExprType(v._2);
+  }
   return "UnknownType";
 };
-var codegenExpr = (v) => {
+var codegenExpr = (mbLoop) => (v) => {
   if (v.tag === "Typed") {
-    return codegenExpr(v._2);
+    return codegenExpr(mbLoop)(v._2);
   }
   if (v.tag === "App") {
-    if (v._1.tag === "Typed") {
-      if (v._1._2.tag === "Var") {
-        if (v._1._2._1._1.tag === "Just" && v._1._2._1._1._1 === "Effect.Console" && v._1._2._1._2 === "log") {
-          return 'println!("{}", ' + codegenExpr((() => {
-            if (0 < v._2.length) {
-              return v._2[0];
-            }
-            fail();
-          })()) + ");";
+    const $0 = v._2;
+    const $1 = v._1;
+    const $2 = () => 'println!("{}", ' + codegenExpr(mbLoop)((() => {
+      if (0 < $0.length) {
+        return $0[0];
+      }
+      fail();
+    })()) + ");";
+    const $3 = () => 'println!("{}", ' + codegenExpr(mbLoop)((() => {
+      if (0 < $0.length) {
+        return $0[0];
+      }
+      fail();
+    })()) + ");";
+    const $4 = () => {
+      if ($1.tag === "Typed" && $1._2.tag === "Var" && mbLoop.tag === "Just" && $1._2._1._2 === mbLoop._1.name) {
+        return "{\n            " + joinWith("\n            ")(zipWithImpl((p) => (a) => p + " = " + codegenExpr(mbLoop)(a) + ";", mbLoop._1.params, $0)) + "\n            continue;\n        }";
+      }
+      if ($1.tag === "Var" && mbLoop.tag === "Just" && $1._1._2 === mbLoop._1.name) {
+        return "{\n            " + joinWith("\n            ")(zipWithImpl((p) => (a) => p + " = " + codegenExpr(mbLoop)(a) + ";", mbLoop._1.params, $0)) + "\n            continue;\n        }";
+      }
+      if ($1.tag === "Typed") {
+        if ($1._2.tag === "Var") {
+          if ($1._2._1._2 === "updateRecord") {
+            return "updateRecord(" + codegenExpr(mbLoop)((() => {
+              if (0 < $0.length) {
+                return $0[0];
+              }
+              fail();
+            })()) + ")";
+          }
+          if ($1._2._1._2 === "getRecord") {
+            return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+          }
+          return $1._2._1._2 + "(" + joinWith(", ")(arrayMap(codegenExpr(mbLoop))($0)) + ")";
         }
-        if (v._1._2._1._2 === "logRecord") {
-          return 'println!("{}", ' + codegenExpr((() => {
-            if (0 < v._2.length) {
-              return v._2[0];
-            }
-            fail();
-          })()) + ".a);";
+        if ($1._2.tag === "Accessor" && $1._2._2.tag === "GetProp" && $1._2._2._1 === "getRecord") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
         }
-        if (v._1._2._1._2 === "updateRecord") {
-          return "updateRecord(" + codegenExpr((() => {
-            if (0 < v._2.length) {
-              return v._2[0];
+        return "    // Unsupported App with fn: " + printAST($1) + "\n";
+      }
+      if ($1.tag === "Var") {
+        if ($1._1._2 === "updateRecord") {
+          return "updateRecord(" + codegenExpr(mbLoop)((() => {
+            if (0 < $0.length) {
+              return $0[0];
             }
             fail();
           })()) + ")";
         }
-        if (v._1._2._1._2 === "getRecord") {
+        if ($1._1._2 === "getRecord") {
           return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
         }
-        return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+        return $1._1._2 + "(" + joinWith(", ")(arrayMap(codegenExpr(mbLoop))($0)) + ")";
       }
-      if (v._1._2.tag === "Accessor" && v._1._2._2.tag === "GetProp") {
-        if (v._1._2._2._1 === "logRecord") {
-          return 'println!("{}", ' + codegenExpr((() => {
-            if (0 < v._2.length) {
-              return v._2[0];
+      if ($1.tag === "Accessor" && $1._2.tag === "GetProp" && $1._2._1 === "getRecord") {
+        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+      }
+      return "    // Unsupported App with fn: " + printAST($1) + "\n";
+    };
+    if ($1.tag === "Typed") {
+      if ($1._2.tag === "Var") {
+        if ($1._2._1._1.tag === "Just" && $1._2._1._1._1 === "Effect.Console" && $1._2._1._2 === "log") {
+          return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
+            if (0 < $0.length) {
+              return $0[0];
             }
             fail();
-          })()) + ".a);";
+          })()) + ");";
         }
-        if (v._1._2._2._1 === "getRecord") {
-          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+        if ($1._2._1._2 === "logInt") {
+          return $2();
         }
+        return $4();
       }
-      return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+      if ($1._2.tag === "Accessor" && $1._2._2.tag === "GetProp" && $1._2._2._1 === "logRecord") {
+        return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
+          if (0 < $0.length) {
+            return $0[0];
+          }
+          fail();
+        })()) + ".a);";
+      }
+      return $4();
     }
-    if (v._1.tag === "Var") {
-      if (v._1._1._1.tag === "Just" && v._1._1._1._1 === "Effect.Console" && v._1._1._2 === "log") {
-        return 'println!("{}", ' + codegenExpr((() => {
-          if (0 < v._2.length) {
-            return v._2[0];
+    if ($1.tag === "Var") {
+      if ($1._1._1.tag === "Just" && $1._1._1._1 === "Effect.Console" && $1._1._2 === "log") {
+        return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
+          if (0 < $0.length) {
+            return $0[0];
           }
           fail();
         })()) + ");";
       }
-      if (v._1._1._2 === "logRecord") {
-        return 'println!("{}", ' + codegenExpr((() => {
-          if (0 < v._2.length) {
-            return v._2[0];
-          }
-          fail();
-        })()) + ".a);";
+      if ($1._1._2 === "logInt") {
+        return $3();
       }
-      if (v._1._1._2 === "updateRecord") {
-        return "updateRecord(" + codegenExpr((() => {
-          if (0 < v._2.length) {
-            return v._2[0];
-          }
-          fail();
-        })()) + ")";
-      }
-      if (v._1._1._2 === "getRecord") {
-        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-      }
-      return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+      return $4();
     }
-    if (v._1.tag === "Accessor" && v._1._2.tag === "GetProp") {
-      if (v._1._2._1 === "logRecord") {
-        return 'println!("{}", ' + codegenExpr((() => {
-          if (0 < v._2.length) {
-            return v._2[0];
-          }
-          fail();
-        })()) + ".a);";
-      }
-      if (v._1._2._1 === "getRecord") {
-        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-      }
+    if ($1.tag === "Accessor" && $1._2.tag === "GetProp" && $1._2._1 === "logRecord") {
+      return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
+        if (0 < $0.length) {
+          return $0[0];
+        }
+        fail();
+      })()) + ".a);";
     }
-    return "// Unsupported App with fn: " + printAST(v._1) + "\n";
+    return $4();
   }
   if (v.tag === "UncurriedEffectApp") {
     if (v._1.tag === "Typed") {
@@ -15728,7 +15773,7 @@ var codegenExpr = (v) => {
         if (v._1._2._2.tag === "GetProp") {
           if (v._1._2._2._1 === "logRecord") {
             if (0 < v._2.length) {
-              return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+              return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
             }
             return "// Unsupported UncurriedEffectApp without args\n";
           }
@@ -15741,7 +15786,7 @@ var codegenExpr = (v) => {
       if (v._1._2.tag === "Var") {
         if (v._1._2._1._2 === "logRecord") {
           if (0 < v._2.length) {
-            return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+            return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
           }
           return "// Unsupported UncurriedEffectApp without args\n";
         }
@@ -15755,7 +15800,7 @@ var codegenExpr = (v) => {
       if (v._1._2.tag === "GetProp") {
         if (v._1._2._1 === "logRecord") {
           if (0 < v._2.length) {
-            return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+            return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
           }
           return "// Unsupported UncurriedEffectApp without args\n";
         }
@@ -15768,7 +15813,7 @@ var codegenExpr = (v) => {
     if (v._1.tag === "Var") {
       if (v._1._1._2 === "logRecord") {
         if (0 < v._2.length) {
-          return 'println!("{}", ' + codegenExpr(v._2[0]) + ".a);";
+          return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
@@ -15786,22 +15831,82 @@ var codegenExpr = (v) => {
       return showIntImpl(v._1._1);
     }
     if (v._1.tag === "LitRecord") {
-      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => v1._1 + ": " + codegenExpr(v1._2))(v._1._1)) + " })";
+      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => v1._1 + ": " + codegenExpr(mbLoop)(v1._2))(v._1._1)) + " })";
     }
     return "// Unsupported Expr: " + printAST(v);
   }
-  if (v.tag === "EffectBind") {
-    return (v._1.tag === "Just" ? "{\n    let " + v._1._1 + " = " : "{\n    let _ = ") + codegenExpr(v._3) + ";\n    " + codegenExpr(v._4) + "\n    }";
-  }
-  if (v.tag === "EffectPure") {
-    return codegenExpr(v._1);
-  }
   if (v.tag === "Update") {
-    return "{\n    let mut _base = " + codegenExpr(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
+    return "{\n    let mut _base = " + codegenExpr(mbLoop)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(mbLoop)(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
+  }
+  if (v.tag === "Branch") {
+    return joinWith(" else ")(arrayMap((v1) => "if " + codegenExpr(mbLoop)(v1._1) + " {\n        " + codegenExpr(mbLoop)(v1._2) + "\n    }")(v._1)) + " else {\n        " + codegenExpr(mbLoop)(v._2) + "\n    }";
+  }
+  if (v.tag === "PrimOp") {
+    if (v._1.tag === "Op1") {
+      const aStr = codegenExpr(mbLoop)(v._1._2);
+      if (v._1._1.tag === "OpBooleanNot") {
+        return "!" + aStr;
+      }
+      if (v._1._1.tag === "OpIntNegate") {
+        return "-" + aStr;
+      }
+      if (v._1._1.tag === "OpNumberNegate") {
+        return "-" + aStr;
+      }
+      return "// Unsupported Op1";
+    }
+    if (v._1.tag === "Op2") {
+      const bStr = codegenExpr(mbLoop)(v._1._3);
+      const aStr = codegenExpr(mbLoop)(v._1._2);
+      if (v._1._1.tag === "OpIntNum") {
+        if (v._1._1._1 === "OpAdd") {
+          return "(" + aStr + " + " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpSubtract") {
+          return "(" + aStr + " - " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpMultiply") {
+          return "(" + aStr + " * " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpDivide") {
+          return "(" + aStr + " / " + bStr + ")";
+        }
+        return "// Unsupported Op2";
+      }
+      if (v._1._1.tag === "OpIntOrd") {
+        if (v._1._1._1 === "OpEq") {
+          return "(" + aStr + " == " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpNotEq") {
+          return "(" + aStr + " != " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpGt") {
+          return "(" + aStr + " > " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpGte") {
+          return "(" + aStr + " >= " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpLt") {
+          return "(" + aStr + " < " + bStr + ")";
+        }
+        if (v._1._1._1 === "OpLte") {
+          return "(" + aStr + " <= " + bStr + ")";
+        }
+        return "// Unsupported Op2";
+      }
+      if (v._1._1.tag === "OpBooleanAnd") {
+        return "(" + aStr + " && " + bStr + ")";
+      }
+      if (v._1._1.tag === "OpBooleanOr") {
+        return "(" + aStr + " || " + bStr + ")";
+      }
+      return "// Unsupported Op2";
+    }
+    return "// Unsupported Expr: " + printAST(v);
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return codegenExpr(v._1) + "." + v._2._1;
+      return codegenExpr(mbLoop)(v._1) + "." + v._2._1;
     }
     return "// Unsupported Expr: " + printAST(v);
   }
@@ -15810,12 +15915,24 @@ var codegenExpr = (v) => {
   }
   if (v.tag === "Let") {
     if (v._1.tag === "Just") {
-      return (member2(v._1._1)(freeVariables(v._4)) ? "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is used in body\n    let " + v._1._1 + " = " : "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is dead\n    let " + v._1._1 + " = ") + codegenExpr(v._3) + ";\n    " + codegenExpr(v._4) + "\n}";
+      return (member2(v._1._1)(freeVariables(v._4)) ? "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is used in body\n    let " + v._1._1 + " = " : "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is dead\n    let " + v._1._1 + " = ") + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
     }
     if (v._1.tag === "Nothing") {
-      return "{\n    " + codegenExpr(v._3) + ";\n    " + codegenExpr(v._4) + "\n}";
+      return "{\n    " + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
     }
     return "// Unsupported Expr: " + printAST(v);
+  }
+  if (v.tag === "EffectBind") {
+    if (v._1.tag === "Just") {
+      return "{\n    let " + v._1._1 + " = " + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
+    }
+    if (v._1.tag === "Nothing") {
+      return "{\n    " + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
+    }
+    fail();
+  }
+  if (v.tag === "EffectPure") {
+    return codegenExpr(mbLoop)(v._1);
   }
   if (v.tag === "Local") {
     if (v._1.tag === "Just") {
@@ -15824,28 +15941,50 @@ var codegenExpr = (v) => {
     return "// Unsupported Expr: " + printAST(v);
   }
   if (v.tag === "Abs") {
-    return codegenExpr(v._2);
+    return codegenExpr(mbLoop)(v._2);
   }
   return "// Unsupported Expr: " + printAST(v);
 };
-var codegenBindingGroup = (group2) => foldMap7((v) => {
-  if (v._1 === "main") {
-    return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + codegenExpr(v._2) + "\n}\n\n";
-  }
-  if (v._1 === "updateRecord") {
-    if (v._2.tag === "Typed") {
-      if (v._2._2.tag === "Abs") {
-        return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    " + codegenExpr(v._2._2._2) + "\n}\n\n";
+var codegenBindingGroup = (group2) => {
+  const isSelfRecursive = group2.recursive && group2.bindings.length === 1;
+  return foldMap7((v) => {
+    if (v._2.tag === "Typed" && v._2._2.tag === "Abs") {
+      if (v._2._1.tag === "Func") {
+        const paramsArr2 = arrayMap((v2) => {
+          if (v2._1.tag === "Just") {
+            return v2._1._1;
+          }
+          return "_";
+        })(v._2._2._1);
+        const bodyCodeWithLoop3 = isSelfRecursive ? "loop {\n        let _loop_result = {\n            " + codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr2 }) : Nothing)(v._2._2._2) + "\n        };\n        break _loop_result;\n    }" : codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr2 }) : Nothing)(v._2._2._2);
+        if (v._1 === "main") {
+          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop3 + "\n}\n\n";
+        }
+        return "pub fn " + v._1 + "(" + joinWith(", ")(arrayMap((v2) => "mut " + v2._1 + ": " + codegenExprType(v2._2))(zipWithImpl(
+          Tuple,
+          paramsArr2,
+          v._2._1._1
+        ))) + ") -> " + codegenExprType(v._2._1._2) + " {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop3 + "\n}\n\n";
       }
-      return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    // Unknown updateRecord body\n}\n\n";
+      const paramsArr = arrayMap((v2) => {
+        if (v2._1.tag === "Just") {
+          return v2._1._1;
+        }
+        return "_";
+      })(v._2._2._1);
+      const bodyCodeWithLoop2 = isSelfRecursive ? "loop {\n        let _loop_result = {\n            " + codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr }) : Nothing)(v._2._2._2) + "\n        };\n        break _loop_result;\n    }" : codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr }) : Nothing)(v._2._2._2);
+      if (v._1 === "main") {
+        return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + "\n}\n\n";
+      }
+      return "pub fn " + v._1 + "(" + joinWith(", ")(arrayMap((pName) => "mut " + pName + ": UnknownType")(paramsArr)) + ") -> " + codegenExprType(v._2._1) + " {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + "\n}\n\n";
     }
-    if (v._2.tag === "Abs") {
-      return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    " + codegenExpr(v._2._2) + "\n}\n\n";
+    const bodyCodeWithLoop = codegenExpr(Nothing)(v._2);
+    if (v._1 === "main") {
+      return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop + "\n}\n\n";
     }
-    return "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n    // Unknown updateRecord body\n}\n\n";
-  }
-  return "pub fn " + v._1 + "() -> String {\n    // AST: " + printAST(v._2) + "\n    " + codegenExpr(v._2) + "\n}\n\n";
-})(group2.bindings);
+    return "pub fn " + v._1 + "() -> String {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop + "\n}\n\n";
+  })(group2.bindings);
+};
 var codegenModule = (v) => (backendMod) => "// Code generated by purust for module " + backendMod.name + "\n\nuse perceus_ptr::PerceusPtr;\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\npub enum " + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType)(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a { pub a: i64 }\n\n// Bindings:\n" + foldMap7(codegenBindingGroup)(backendMod.bindings);
 
 // output-es/Main/index.js

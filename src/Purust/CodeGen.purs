@@ -1,7 +1,7 @@
 module Purust.CodeGen where
 
 import Prelude
-import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..), BackendAccessor(..))
+import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..), BackendAccessor(..), BackendOperator(..), BackendOperator1(..), BackendOperator2(..), BackendOperatorNum(..), BackendOperatorOrd(..), Pair(..))
 import PureScript.Backend.Optimizer.Convert (BackendModule, BackendBindingGroup)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..))
 import PureScript.Backend.Optimizer.CoreFn (Ann(..), Module(..), Ident(..), ExprType(..), DataDecl, Literal(..), Qualified(..), ModuleName(..), Prop(..))
@@ -51,64 +51,100 @@ codegenExprType = case _ of
   String -> "String"
   Boolean -> "bool"
   TypeVar v -> String.toUpper v
+  Func args ret -> "fn(" <> String.joinWith ", " (map codegenExprType args) <> ") -> " <> codegenExprType ret
   _ -> "UnknownType"
 
 codegenBindingGroup :: BackendBindingGroup Ident NeutralExpr -> String
 codegenBindingGroup group =
-  foldMap (\(Tuple ident expr) ->
+  let
+    isSelfRecursive = group.recursive && Array.length group.bindings == 1
+  in foldMap (\(Tuple ident expr) ->
     let
       identName = case ident of
         Ident i -> i
         _ -> "unknown"
+      { paramsCode, retCode, bodyCode, isFunc } = case expr of
+        NeutralExpr (Typed (Func argTypes retType) (NeutralExpr (Abs params body))) ->
+          let
+            getMbId mbId = case mbId of
+              Just (Ident n) -> n
+              _ -> "_"
+            paramsArr = map (\(Tuple mbId _) -> getMbId mbId) (NonEmptyArray.toArray params)
+            mbLoop = if isSelfRecursive then Just { name: identName, params: paramsArr } else Nothing
+            paramPairs = Array.zip paramsArr argTypes
+            pCode = String.joinWith ", " $ map (\(Tuple pName ty) ->
+              "mut " <> pName <> ": " <> codegenExprType ty) paramPairs
+          in { paramsCode: pCode, retCode: codegenExprType retType, bodyCode: codegenExpr mbLoop body, isFunc: true }
+        NeutralExpr (Typed retType (NeutralExpr (Abs params body))) ->
+          let
+            getMbId mbId = case mbId of
+              Just (Ident n) -> n
+              _ -> "_"
+            paramsArr = map (\(Tuple mbId _) -> getMbId mbId) (NonEmptyArray.toArray params)
+            mbLoop = if isSelfRecursive then Just { name: identName, params: paramsArr } else Nothing
+            pCode = String.joinWith ", " $ map (\pName ->
+              "mut " <> pName <> ": UnknownType") paramsArr
+          in { paramsCode: pCode, retCode: codegenExprType retType, bodyCode: codegenExpr mbLoop body, isFunc: true }
+        _ -> { paramsCode: "", retCode: "String", bodyCode: codegenExpr Nothing expr, isFunc: false }
+        
+      bodyCodeWithLoop = if isSelfRecursive && isFunc then
+          "loop {\n" <>
+          "        let _loop_result = {\n            " <> bodyCode <> "\n        };\n" <>
+          "        break _loop_result;\n" <>
+          "    }"
+        else bodyCode
     in
       if identName == "main" then
         "pub fn main() {\n" <>
         "    // AST: " <> printAST expr <> "\n" <>
-        "    " <> codegenExpr expr <> "\n" <>
-        "}\n\n"
-      else if identName == "updateRecord" then
-        "pub fn updateRecord(mut r: perceus_ptr::PerceusPtr<Record_a>) -> perceus_ptr::PerceusPtr<Record_a> {\n" <>
-        (case expr of
-          NeutralExpr (Typed _ (NeutralExpr (Abs _ body))) -> "    " <> codegenExpr body <> "\n"
-          NeutralExpr (Abs _ body) -> "    " <> codegenExpr body <> "\n"
-          _ -> "    // Unknown updateRecord body\n") <>
+        "    " <> bodyCodeWithLoop <> "\n" <>
         "}\n\n"
       else
-        "pub fn " <> identName <> "() -> String {\n" <>
+        "pub fn " <> identName <> "(" <> paramsCode <> ") -> " <> retCode <> " {\n" <>
         "    // AST: " <> printAST expr <> "\n" <>
-        "    " <> codegenExpr expr <> "\n" <>
+        "    " <> bodyCodeWithLoop <> "\n" <>
         "}\n\n"
   ) group.bindings
 
-codegenExpr :: NeutralExpr -> String
-codegenExpr (NeutralExpr expr) = case expr of
-  Typed _ inner -> codegenExpr inner
+codegenExpr :: Maybe { name :: String, params :: Array String } -> NeutralExpr -> String
+codegenExpr mbLoop (NeutralExpr expr) = case expr of
+  Typed _ inner -> codegenExpr mbLoop inner
   App fn args -> 
     case fn of
       NeutralExpr (Typed _ (NeutralExpr (Var (Qualified (Just (ModuleName "Effect.Console")) (Ident "log"))))) -> 
         let arg0 = NonEmptyArray.head args
-        in "println!(\"{}\", " <> codegenExpr arg0 <> ");"
+        in "println!(\"{}\", " <> codegenExpr mbLoop arg0 <> ");"
       NeutralExpr (Var (Qualified (Just (ModuleName "Effect.Console")) (Ident "log"))) -> 
         let arg0 = NonEmptyArray.head args
-        in "println!(\"{}\", " <> codegenExpr arg0 <> ");"
+        in "println!(\"{}\", " <> codegenExpr mbLoop arg0 <> ");"
       NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
         let arg0 = NonEmptyArray.head args
-        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
+        in "println!(\"{}\", " <> codegenExpr mbLoop arg0 <> ".a);"
       NeutralExpr (Accessor _ (GetProp "logRecord")) -> 
         let arg0 = NonEmptyArray.head args
-        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
-      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logRecord"))))) -> 
+        in "println!(\"{}\", " <> codegenExpr mbLoop arg0 <> ".a);"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logInt"))))) -> 
         let arg0 = NonEmptyArray.head args
-        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
-      NeutralExpr (Var (Qualified _ (Ident "logRecord"))) -> 
+        in "println!(\"{}\", " <> codegenExpr mbLoop arg0 <> ");"
+      NeutralExpr (Var (Qualified _ (Ident "logInt"))) -> 
         let arg0 = NonEmptyArray.head args
-        in "println!(\"{}\", " <> codegenExpr arg0 <> ".a);"
+        in "println!(\"{}\", " <> codegenExpr mbLoop arg0 <> ");"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident fnName)))))
+        | Just l <- mbLoop, fnName == l.name ->
+          let argsArr = NonEmptyArray.toArray args
+              assigns = Array.zipWith (\p a -> p <> " = " <> codegenExpr mbLoop a <> ";") l.params argsArr
+          in "{\n            " <> String.joinWith "\n            " assigns <> "\n            continue;\n        }"
+      NeutralExpr (Var (Qualified _ (Ident fnName)))
+        | Just l <- mbLoop, fnName == l.name ->
+          let argsArr = NonEmptyArray.toArray args
+              assigns = Array.zipWith (\p a -> p <> " = " <> codegenExpr mbLoop a <> ";") l.params argsArr
+          in "{\n            " <> String.joinWith "\n            " assigns <> "\n            continue;\n        }"
       NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "updateRecord"))))) -> 
         let arg0 = NonEmptyArray.head args
-        in "updateRecord(" <> codegenExpr arg0 <> ")"
+        in "updateRecord(" <> codegenExpr mbLoop arg0 <> ")"
       NeutralExpr (Var (Qualified _ (Ident "updateRecord"))) -> 
         let arg0 = NonEmptyArray.head args
-        in "updateRecord(" <> codegenExpr arg0 <> ")"
+        in "updateRecord(" <> codegenExpr mbLoop arg0 <> ")"
       NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "getRecord")))) -> 
         "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
       NeutralExpr (Accessor _ (GetProp "getRecord")) -> 
@@ -117,28 +153,34 @@ codegenExpr (NeutralExpr expr) = case expr of
         "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
       NeutralExpr (Var (Qualified _ (Ident "getRecord"))) -> 
         "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
-      _ -> "// Unsupported App with fn: " <> printAST fn <> "\n"
+      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident fnName))))) ->
+        let argsCode = String.joinWith ", " (map (codegenExpr mbLoop) (NonEmptyArray.toArray args))
+        in fnName <> "(" <> argsCode <> ")"
+      NeutralExpr (Var (Qualified _ (Ident fnName))) ->
+        let argsCode = String.joinWith ", " (map (codegenExpr mbLoop) (NonEmptyArray.toArray args))
+        in fnName <> "(" <> argsCode <> ")"
+      _ -> "    // Unsupported App with fn: " <> printAST fn <> "\n"
   UncurriedEffectApp fn args -> 
     case fn of
       NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr mbLoop a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Accessor _ (GetProp "logRecord")) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr mbLoop a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logRecord"))))) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr mbLoop a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Var (Qualified _ (Ident "logRecord"))) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr mbLoop a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "getRecord")))) -> 
         "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })"
@@ -153,33 +195,57 @@ codegenExpr (NeutralExpr expr) = case expr of
   Lit (LitInt i) -> show i
   Lit (LitRecord props) -> 
     let 
-      propCode = map (\(Prop k v) -> k <> ": " <> codegenExpr v) props
+      propCode = map (\(Prop k v) -> k <> ": " <> codegenExpr mbLoop v) props
     in "perceus_ptr::PerceusPtr::new(Record_a { " <> String.joinWith ", " propCode <> " })"
-  EffectBind mbIdent _ eff body -> 
-    let effStr = codegenExpr eff
-        bodyStr = codegenExpr body
-        identStr = case mbIdent of 
-          Just (Ident n) -> n
-          _ -> "_"
-    in "{\n    let " <> identStr <> " = " <> effStr <> ";\n    " <> bodyStr <> "\n    }"
-  EffectPure inner -> codegenExpr inner
+
   Update base props ->
     let
-      propsCode = map (\(Prop k v) -> "_mut." <> k <> " = " <> codegenExpr v <> ";") props
+      propsCode = map (\(Prop k v) -> "_mut." <> k <> " = " <> codegenExpr mbLoop v <> ";") props
     in
       "{\n" <>
-      "    let mut _base = " <> codegenExpr base <> ";\n" <>
+      "    let mut _base = " <> codegenExpr mbLoop base <> ";\n" <>
       "    {\n" <>
       "        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n" <>
       "        " <> String.joinWith "\n        " propsCode <> "\n" <>
       "    }\n" <>
       "    _base\n" <>
       "}"
-  Accessor base (GetProp k) -> codegenExpr base <> "." <> k
+  Branch branches def ->
+    let
+      branchCode = map (\(Pair cond body) -> 
+        "if " <> codegenExpr mbLoop cond <> " {\n        " <> codegenExpr mbLoop body <> "\n    }") (NonEmptyArray.toArray branches)
+      defCode = "{\n        " <> codegenExpr mbLoop def <> "\n    }"
+    in
+      String.joinWith " else " branchCode <> " else " <> defCode
+  PrimOp (Op1 op a) ->
+    let aStr = codegenExpr mbLoop a
+    in case op of
+      OpBooleanNot -> "!" <> aStr
+      OpIntNegate -> "-" <> aStr
+      OpNumberNegate -> "-" <> aStr
+      _ -> "// Unsupported Op1"
+  PrimOp (Op2 op a b) ->
+    let aStr = codegenExpr mbLoop a
+        bStr = codegenExpr mbLoop b
+    in case op of
+      OpIntNum OpAdd -> "(" <> aStr <> " + " <> bStr <> ")"
+      OpIntNum OpSubtract -> "(" <> aStr <> " - " <> bStr <> ")"
+      OpIntNum OpMultiply -> "(" <> aStr <> " * " <> bStr <> ")"
+      OpIntNum OpDivide -> "(" <> aStr <> " / " <> bStr <> ")"
+      OpIntOrd OpEq -> "(" <> aStr <> " == " <> bStr <> ")"
+      OpIntOrd OpNotEq -> "(" <> aStr <> " != " <> bStr <> ")"
+      OpIntOrd OpGt -> "(" <> aStr <> " > " <> bStr <> ")"
+      OpIntOrd OpGte -> "(" <> aStr <> " >= " <> bStr <> ")"
+      OpIntOrd OpLt -> "(" <> aStr <> " < " <> bStr <> ")"
+      OpIntOrd OpLte -> "(" <> aStr <> " <= " <> bStr <> ")"
+      OpBooleanAnd -> "(" <> aStr <> " && " <> bStr <> ")"
+      OpBooleanOr -> "(" <> aStr <> " || " <> bStr <> ")"
+      _ -> "// Unsupported Op2"
+  Accessor base (GetProp k) -> codegenExpr mbLoop base <> "." <> k
   Var (Qualified _ (Ident name)) -> name
   Let (Just (Ident name)) _ val body ->
     let
-      valCode = codegenExpr val
+      valCode = codegenExpr mbLoop val
       bodyVars = freeVariables body
       comment = if Set.member name bodyVars 
                 then "// Perceus Liveness: variable '" <> name <> "' is used in body"
@@ -188,41 +254,37 @@ codegenExpr (NeutralExpr expr) = case expr of
       "{\n" <> 
       "    " <> comment <> "\n" <>
       "    let " <> name <> " = " <> valCode <> ";\n" <>
-      "    " <> codegenExpr body <> "\n" <>
+      "    " <> codegenExpr mbLoop body <> "\n" <>
       "}"
   Let Nothing _ val body ->
     "{\n" <> 
-    "    " <> codegenExpr val <> ";\n" <>
-    "    " <> codegenExpr body <> "\n" <>
+    "    " <> codegenExpr mbLoop val <> ";\n" <>
+    "    " <> codegenExpr mbLoop body <> "\n" <>
     "}"
   EffectBind mbIdent _ val body ->
     case mbIdent of
       Just (Ident name) ->
         "{\n" <>
-        "    let " <> name <> " = " <> codegenExpr val <> ";\n" <>
-        "    " <> codegenExpr body <> "\n" <>
+        "    let " <> name <> " = " <> codegenExpr mbLoop val <> ";\n" <>
+        "    " <> codegenExpr mbLoop body <> "\n" <>
         "}"
       Nothing ->
         "{\n" <>
-        "    " <> codegenExpr val <> ";\n" <>
-        "    " <> codegenExpr body <> "\n" <>
+        "    " <> codegenExpr mbLoop val <> ";\n" <>
+        "    " <> codegenExpr mbLoop body <> "\n" <>
         "}"
-  EffectPure val -> codegenExpr val
+  EffectPure val -> codegenExpr mbLoop val
   Local (Just (Ident name)) _ -> name
-  Abs _ body -> codegenExpr body
+  Abs _ body -> codegenExpr mbLoop body
   _ -> "// Unsupported Expr: " <> printAST (NeutralExpr expr)
 
 printAST :: NeutralExpr -> String
 printAST (NeutralExpr expr) = case expr of
-  App fn _ -> "App (" <> printAST fn <> ") [...]"
+  App fn _ -> "App(" <> printAST fn <> ")"
   Lit _ -> "Lit"
-  Var (Qualified mbMod (Ident name)) -> 
-    let modStr = case mbMod of
-          Just m -> unwrap m <> "."
-          Nothing -> ""
-    in "Var(" <> modStr <> name <> ")"
-  Let (Just (Ident name)) _ _ _ -> "Let(" <> name <> ")"
-  Local (Just (Ident name)) _ -> "Local(" <> name <> ")"
+  Var _ -> "Var(...)"
+  Let _ _ _ _ -> "Let(...)"
+  Local _ _ -> "Local(...)"
   Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
   Typed _ inner -> "Typed(" <> printAST inner <> ")"
   EffectBind _ _ _ _ -> "EffectBind"
@@ -230,7 +292,18 @@ printAST (NeutralExpr expr) = case expr of
   Update _ _ -> "Update"
   Accessor inner prop -> "Accessor(" <> printAST inner <> ")"
   UncurriedEffectApp fn _ -> "UncurriedEffectApp(" <> printAST fn <> ")"
-  _ -> "Other"
+  LetRec _ _ inner -> "LetRec(..., " <> printAST inner <> ")"
+  Branch _ _ -> "Branch(...)"
+  PrimOp _ -> "PrimOp(...)"
+  UncurriedApp fn _ -> "UncurriedApp(" <> printAST fn <> ")"
+  CtorSaturated _ _ _ _ _ -> "CtorSaturated(...)"
+  UncurriedAbs _ inner -> "UncurriedAbs(..., " <> printAST inner <> ")"
+  UncurriedEffectAbs _ inner -> "UncurriedEffectAbs(..., " <> printAST inner <> ")"
+  CtorDef _ _ _ _ -> "CtorDef"
+  EffectDefer inner -> "EffectDefer(" <> printAST inner <> ")"
+  PrimEffect _ -> "PrimEffect(...)"
+  PrimUndefined -> "PrimUndefined"
+  Fail msg -> "Fail(" <> msg <> ")"
 
 freeVariables :: NeutralExpr -> Set String
 freeVariables (NeutralExpr expr) = case expr of

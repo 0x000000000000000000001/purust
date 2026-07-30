@@ -1,14 +1,18 @@
 module Main where
 
-import Prelude (Unit, unit)
-import Effect (Effect)
+import Prelude
 
-foreign import logRecord :: { a :: Int } -> Effect Unit
+class Loggable a where
+  log :: a -> String
 
-foreign import getRecord :: Unit -> { a :: Int }
+instance Loggable Int where
+  log _ = "Int"
 
-updateRecord :: { a :: Int } -> { a :: Int }
-updateRecord r = r { a = 2 }
+instance Loggable String where
+  log _ = "String"
 
-main :: Effect Unit
-main = logRecord (updateRecord (getRecord unit))
+printLog :: forall a. Loggable a => a -> String
+printLog a = log a
+
+main :: String
+main = printLog 42 <> printLog "Hello"
