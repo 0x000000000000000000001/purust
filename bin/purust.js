@@ -15820,33 +15820,21 @@ var codegenExprType = (isRet) => (v) => {
     return "UnknownType";
   }
   if (v.tag === "String") {
-    return "String";
+    return "UnknownType";
   }
   if (v.tag === "Int") {
-    return "i64";
+    return "UnknownType";
   }
   if (v.tag === "Number") {
-    return "f64";
+    return "UnknownType";
   }
   if (v.tag === "Boolean") {
     return "bool";
   }
   if (v.tag === "Char") {
-    return "char";
+    return "UnknownType";
   }
   if (v.tag === "ADT") {
-    if ((() => {
-      const $02 = v._1.length - 1 | 0;
-      return $02 >= 0 && $02 < v._1.length && v._1[$02] === "String";
-    })()) {
-      return "String";
-    }
-    if ((() => {
-      const $02 = v._1.length - 1 | 0;
-      return $02 >= 0 && $02 < v._1.length && v._1[$02] === "Int";
-    })()) {
-      return "i64";
-    }
     if ((() => {
       const $02 = v._1.length - 1 | 0;
       return $02 >= 0 && $02 < v._1.length && v._1[$02] === "Boolean";
@@ -15942,22 +15930,22 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1._2);
       if (v._1._1.tag === "OpIntNum") {
         if (v._1._1._1 === "OpAdd") {
-          return "(" + aStr + " + " + bStr + ")";
+          return "mk_int((" + aStr + ").a + (" + bStr + ").a)";
         }
         if (v._1._1._1 === "OpSubtract") {
-          return "(" + aStr + " - " + bStr + ")";
+          return "mk_int((" + aStr + ").a - (" + bStr + ").a)";
         }
         if (v._1._1._1 === "OpMultiply") {
-          return "(" + aStr + " * " + bStr + ")";
+          return "mk_int((" + aStr + ").a * (" + bStr + ").a)";
         }
         if (v._1._1._1 === "OpDivide") {
-          return "(" + aStr + " / " + bStr + ")";
+          return "mk_int((" + aStr + ").a / (" + bStr + ").a)";
         }
         return "// Unsupported Op2";
       }
       if (v._1._1.tag === "OpIntOrd") {
         if (v._1._1._1 === "OpEq") {
-          return "(" + aStr + " == " + bStr + ")";
+          return "((" + aStr + ").a == (" + bStr + ").a)";
         }
         if (v._1._1._1 === "OpNotEq") {
           return "(" + aStr + " != " + bStr + ")";
@@ -15989,6 +15977,10 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
       return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
+    }
+    if (v._2.tag === "GetCtorField") {
+      const placeholders = joinWith(", ")(replicateImpl(v._2._6, "_"));
+      return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1) + ".clone() { " + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
     }
     return "// Unsupported Expr: " + printAST(v);
   }
@@ -16045,7 +16037,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "Lit") {
     if (v._1.tag === "LitInt") {
-      return showIntImpl(v._1._1) + " /* i64 */";
+      return "mk_int(" + showIntImpl(v._1._1) + ")";
     }
     if (v._1.tag === "LitNumber") {
       return showNumberImpl(v._1._1) + " /* f64 */";
@@ -16066,7 +16058,18 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return "vec![" + joinWith(", ")(arrayMap(codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound))(v._1._1)) + "]";
     }
     if (v._1.tag === "LitRecord") {
-      return "unsafe_coerce(0)";
+      const fieldsMap = fromFoldable7(arrayMap((v1) => $Tuple(
+        sanitizeIdent(v1._1),
+        codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._2)
+      ))(v._1._1));
+      const getF = (k) => {
+        const $0 = lookup5(k)(fieldsMap);
+        if ($0.tag === "Just") {
+          return "Some(unsafe_coerce(" + $0._1 + "))";
+        }
+        return "None";
+      };
+      return "perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: " + getF("b") + ", c: " + getF("c") + ", ccc: " + getF("ccc") + ", d: " + getF("d") + ", x: " + getF("x") + ", Applicative0: " + getF("Applicative0") + ", pure: " + getF("pure") + ", show: " + getF("show") + ", discard: " + getF("discard") + " })";
     }
     fail();
   }
@@ -16088,6 +16091,9 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "CtorSaturated") {
     return v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(arrayMap((v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._2))(v._5)) + ")");
+  }
+  if (v.tag === "CtorDef") {
+    return "unsafe_coerce(0)";
   }
   return "// Unsupported Expr: " + printAST(v);
 };
@@ -16154,14 +16160,13 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
             aritiesMap
           ))(innerExpr) + ")(" + joinWith(", ")(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ")";
         })();
-        const bodyCodeFinal2 = identName === "main" ? bodyCodeWithLoop2 : "    unimplemented!()";
         if (identName === "main") {
-          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeFinal2 + ";\n}\n\n";
+          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + ";\n}\n\n";
         }
         return "pub fn " + identName + "(" + joinWith(", ")(arrayMap((v2) => {
           const p = sanitizeIdent(v2._1);
           return (p === "_" ? "" + p + ": " : "mut " + p + ": ") + codegenExprType(true)(v2._2);
-        })(paramPairs)) + ")" + (codegenExprType(true)(inferredType._2) === "" ? "" : " -> " + codegenExprType(true)(inferredType._2)) + " {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal2 + "\n}\n\n";
+        })(paramPairs)) + ")" + (codegenExprType(true)(inferredType._2) === "" ? "" : " -> " + codegenExprType(true)(inferredType._2)) + " {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeWithLoop2 + "\n}\n\n";
       }
       if (innerExpr.tag === "Abs") {
         const deduped = dedupArgs(arrayMap((v2) => {
@@ -16176,9 +16181,8 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
           Leaf,
           aritiesMap
         ))(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible"));
-        const bodyCodeFinal2 = identName === "main" ? bodyCodeWithLoop2 : "    unimplemented!()";
         if (identName === "main") {
-          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeFinal2 + ";\n}\n\n";
+          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + ";\n}\n\n";
         }
         return "pub fn " + identName + "(" + joinWith(", ")(arrayMap((pName) => {
           const p = sanitizeIdent(pName);
@@ -16186,21 +16190,20 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
             return "" + p + ": UnknownType";
           }
           return "mut " + p + ": UnknownType";
-        })(deduped)) + ") -> UnknownType {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal2 + "\n}\n\n";
+        })(deduped)) + ") -> UnknownType {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeWithLoop2 + "\n}\n\n";
       }
       const bodyCodeWithLoop = codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(v._2);
-      const bodyCodeFinal = identName === "main" ? bodyCodeWithLoop : "    unimplemented!()";
       if (identName === "main") {
-        return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeFinal + ";\n}\n\n";
+        return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop + ";\n}\n\n";
       }
-      return "pub fn " + identName + "()" + (codegenExprType(true)(inferredType) === "" ? "" : " -> " + codegenExprType(true)(inferredType)) + " {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal + "\n}\n\n";
+      return "pub fn " + identName + "()" + (codegenExprType(true)(inferredType) === "" ? "" : " -> " + codegenExprType(true)(inferredType)) + " {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeWithLoop + "\n}\n\n";
     })(group2.bindings),
     arities: unsafeUnionWith(ordString.compare, $$const, groupArities, aritiesMap)
   };
 };
 var codegenModule = (v) => (backendMod) => {
   const modNameStr = backendMod.name;
-  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, x: None, c: None, ccc: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn Effect_Console_log<T>(_: T) -> UnknownType { unsafe_coerce(0) }\n\npub fn Control_Bind_discardUnit() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, x: None, c: None, ccc: None, Applicative0: None, pure: None, show: None, discard: Some(std::rc::Rc::new(move |_, _, cont| { cont })) }) }\npub fn Effect_bindEffect() -> UnknownType { unsafe_coerce(0) }\npub fn Data_Show_showString() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, x: None, c: None, ccc: None, Applicative0: None, pure: None, discard: None, show: Some(std::rc::Rc::new(move |_| { unsafe_coerce(0) })) }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\npub enum " + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a {\n    pub a: i64,\n    pub x: Option<UnknownType>,\n    pub c: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> UnknownType>>,\n    pub ccc: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
+  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn Effect_Console_log<T>(_: T) -> UnknownType { unsafe_coerce(0) }\n\npub fn Control_Bind_discardUnit() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: Some(std::rc::Rc::new(move |_, _, cont| { cont })) }) }\npub fn Effect_bindEffect() -> UnknownType { unsafe_coerce(0) }\npub fn Data_Show_showString() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, discard: None, show: Some(std::rc::Rc::new(move |_| { unsafe_coerce(0) })) }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\n#[derive(Clone)]\npub enum " + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
     const res = codegenBindingGroup(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
     return { code: acc.code + res.code, arities: res.arities };
   })({ code: "", arities: Leaf })(backendMod.bindings).code;
