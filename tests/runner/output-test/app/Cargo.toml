@@ -1,0 +1,11 @@
+[package]
+name = "purust_output"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+perceus_ptr = { path = "../../../runtime/perceus_ptr" }
+
+[profile.release]
+lto = true
+codegen-units = 1

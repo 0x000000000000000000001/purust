@@ -1,18 +1,14 @@
 module Main where
 
 import Prelude
+import Effect.Console (log)
 
-class Loggable a where
-  log :: a -> String
+x :: forall a. a -> String
+x a = y "Test"
+  where
+  y :: forall a. Show a => a -> String
+  y a = show (a :: a)
 
-instance Loggable Int where
-  log _ = "Int"
-
-instance Loggable String where
-  log _ = "String"
-
-printLog :: forall a. Loggable a => a -> String
-printLog a = log a
-
-main :: String
-main = printLog 42 <> printLog "Hello"
+main = do
+  log (x 0)
+  log "Done"

@@ -57,6 +57,64 @@ var $$Proxy = /* @__PURE__ */ $$$Proxy();
 var showIntImpl = function(n) {
   return n.toString();
 };
+var showNumberImpl = function(n) {
+  var str = n.toString();
+  return isNaN(str + ".0") ? str : str + ".0";
+};
+var showCharImpl = function(c) {
+  var code = c.charCodeAt(0);
+  if (code < 32 || code === 127) {
+    switch (c) {
+      case "\x07":
+        return "'\\a'";
+      case "\b":
+        return "'\\b'";
+      case "\f":
+        return "'\\f'";
+      case "\n":
+        return "'\\n'";
+      case "\r":
+        return "'\\r'";
+      case "	":
+        return "'\\t'";
+      case "\v":
+        return "'\\v'";
+    }
+    return "'\\" + code.toString(10) + "'";
+  }
+  return c === "'" || c === "\\" ? "'\\" + c + "'" : "'" + c + "'";
+};
+var showStringImpl = function(s) {
+  var l = s.length;
+  return '"' + s.replace(
+    /[\0-\x1F\x7F"\\]/g,
+    // eslint-disable-line no-control-regex
+    function(c, i) {
+      switch (c) {
+        case '"':
+        case "\\":
+          return "\\" + c;
+        case "\x07":
+          return "\\a";
+        case "\b":
+          return "\\b";
+        case "\f":
+          return "\\f";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "	":
+          return "\\t";
+        case "\v":
+          return "\\v";
+      }
+      var k = i + 1;
+      var empty2 = k < l && s[k] >= "0" && s[k] <= "9" ? "\\&" : "";
+      return "\\" + c.charCodeAt(0).toString(10) + empty2;
+    }
+  ) + '"';
+};
 
 // output-es/Data.Ordering/index.js
 var $Ordering = (tag) => tag;
@@ -571,6 +629,11 @@ var applyEither = {
   Functor0: () => functorEither
 };
 var applicativeEither = { pure: Right, Apply0: () => applyEither };
+
+// output-es/Effect.Exception/foreign.js
+function showErrorImpl(err) {
+  return err.stack || err.toString();
+}
 
 // output-es/Control.Monad.Error.Class/index.js
 var $$try = (dictMonadError) => {
@@ -1873,6 +1936,16 @@ var _charAt = function(just) {
 var length = function(s) {
   return s.length;
 };
+var _indexOf = function(just) {
+  return function(nothing) {
+    return function(x) {
+      return function(s) {
+        var i = s.indexOf(x);
+        return i === -1 ? nothing : just(i);
+      };
+    };
+  };
+};
 var _indexOfStartingAt = function(just) {
   return function(nothing) {
     return function(x) {
@@ -1911,6 +1984,20 @@ var stripPrefix = (v) => (str) => {
   return Nothing;
 };
 var indexOf$p = /* @__PURE__ */ _indexOfStartingAt(Just)(Nothing);
+var indexOf = /* @__PURE__ */ _indexOf(Just)(Nothing);
+var contains = (pat) => {
+  const $0 = indexOf(pat);
+  return (x) => {
+    const $1 = $0(x);
+    if ($1.tag === "Nothing") {
+      return false;
+    }
+    if ($1.tag === "Just") {
+      return true;
+    }
+    fail();
+  };
+};
 var charAt2 = /* @__PURE__ */ _charAt(Just)(Nothing);
 
 // output-es/Data.String.Common/foreign.js
@@ -1925,9 +2012,6 @@ var split = function(sep) {
   return function(s) {
     return s.split(sep);
   };
-};
-var toUpper = function(s) {
-  return s.toUpperCase();
 };
 var trim = function(s) {
   return s.trim();
@@ -2861,6 +2945,7 @@ function _jsonParser(fail2, succ, s) {
 
 // output-es/Node.FS.Stats/foreign.js
 var isDirectoryImpl = (s) => s.isDirectory();
+var isFileImpl = (s) => s.isFile();
 var modifiedTimeMsImpl = (s) => s.mtimeMs;
 
 // output-es/Data.TraversableWithIndex/index.js
@@ -12593,47 +12678,46 @@ var filterA2 = /* @__PURE__ */ filterA(applicativeAff);
 var traverse2 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeAff))();
 var fromFoldable4 = /* @__PURE__ */ foldrArray(Cons)(Nil);
 var readCoreFnModule = (filePath) => _bind($$try2(toAff1(stat2)(filePath)))((statRes) => {
-  if ((() => {
-    if (statRes.tag === "Left") {
-      return false;
-    }
-    if (statRes.tag === "Right") {
-      return true;
-    }
-    fail();
-  })()) {
-    return _bind(toAff2(readTextFile)(UTF8)(filePath))((contents) => {
-      const $0 = _jsonParser(Left, Right, contents);
-      const v = (() => {
-        if ($0.tag === "Left") {
-          const $1 = $0._1;
-          return (v2) => $Either("Left", $1);
+  if (statRes.tag === "Right") {
+    if (isFileImpl(statRes._1)) {
+      return _bind(toAff2(readTextFile)(UTF8)(filePath))((contents) => {
+        const $0 = _jsonParser(Left, Right, contents);
+        const v = (() => {
+          if ($0.tag === "Left") {
+            const $1 = $0._1;
+            return (v2) => $Either("Left", $1);
+          }
+          if ($0.tag === "Right") {
+            const $1 = $0._1;
+            return (f) => f($1);
+          }
+          fail();
+        })()((x) => {
+          const $1 = decodeModule$p(decodeAnn)(x);
+          if ($1.tag === "Left") {
+            return $Either("Left", printJsonDecodeError($1._1));
+          }
+          if ($1.tag === "Right") {
+            return $Either("Right", $1._1);
+          }
+          fail();
+        });
+        if (v.tag === "Left") {
+          return _bind(_liftEffect(error2("Failed to decode " + filePath + ": " + v._1)))(() => _pure(Nothing));
         }
-        if ($0.tag === "Right") {
-          const $1 = $0._1;
-          return (f) => f($1);
-        }
-        fail();
-      })()((x) => {
-        const $1 = decodeModule$p(decodeAnn)(x);
-        if ($1.tag === "Left") {
-          return $Either("Left", printJsonDecodeError($1._1));
-        }
-        if ($1.tag === "Right") {
-          return $Either("Right", $1._1);
+        if (v.tag === "Right") {
+          return _pure($Maybe("Just", v._1));
         }
         fail();
       });
-      if (v.tag === "Left") {
-        return _bind(_liftEffect(error2("Failed to decode " + filePath + ": " + v._1)))(() => _pure(Nothing));
-      }
-      if (v.tag === "Right") {
-        return _pure($Maybe("Just", v._1));
-      }
-      fail();
-    });
+    }
+    return _pure(Nothing);
   }
-  return _pure(Nothing);
+  if (statRes.tag === "Left") {
+    const errStr = showErrorImpl(statRes._1);
+    return _bind(contains("ENOENT")(errStr) ? _pure() : _liftEffect(error2("Failed to stat " + filePath + ": " + errStr)))(() => _pure(Nothing));
+  }
+  fail();
 });
 var loadDirectives = /* @__PURE__ */ (() => {
   const parsedDirectives = parseDirectiveFile(defaultDirectives);
@@ -15489,6 +15573,38 @@ var coreForeignSemantics = /* @__PURE__ */ (() => {
 })();
 
 // output-es/Purust.CodeGen/index.js
+var lookup5 = (k) => {
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = Nothing;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordString.compare(k)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = $Maybe("Just", v._4);
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  return go;
+};
 var member2 = (k) => {
   const go = (go$a0$copy) => {
     let go$a0 = go$a0$copy, go$c = true, go$r;
@@ -15521,7 +15637,18 @@ var member2 = (k) => {
   };
   return go;
 };
+var fromFoldable7 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var foldMap7 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
+var sanitizeIdent = (s) => {
+  const s2 = replaceAll("$")("_dollar_")(replaceAll("'")("_prime")(s));
+  if (s2 === "type") {
+    return "type_kw";
+  }
+  if (s2 === "fn") {
+    return "fn_kw";
+  }
+  return s2;
+};
 var printAST = (v) => {
   if (v.tag === "App") {
     return "App(" + printAST(v._1) + ")";
@@ -15597,18 +15724,83 @@ var printAST = (v) => {
   }
   fail();
 };
+var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
+  if (v.tag === "App") {
+    const v1 = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1);
+    if (v1.tag === "Func") {
+      const providedCount = v._2.length;
+      if (v1._1.length > providedCount) {
+        return $ExprType("Func", providedCount < 1 ? v1._1 : sliceImpl2(providedCount, v1._1.length, v1._1), v1._2);
+      }
+      return v1._2;
+    }
+    return Any;
+  }
+  if (v.tag === "UncurriedApp") {
+    const v1 = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1);
+    if (v1.tag === "Func") {
+      return v1._2;
+    }
+    return Any;
+  }
+  if (v.tag === "UncurriedEffectApp") {
+    const v1 = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1);
+    if (v1.tag === "Func") {
+      return v1._2;
+    }
+    return Any;
+  }
+  if (v.tag === "LetRec") {
+    return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3);
+  }
+  if (v.tag === "Branch") {
+    return Any;
+  }
+  if (v.tag === "Typed") {
+    if (v._1.tag === "Any") {
+      return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
+    }
+    if (v._1.tag === "TypeVar") {
+      return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
+    }
+    return v._1;
+  }
+  if (v.tag === "CtorSaturated") {
+    return $ExprType("ADT", ["Main", v._3], []);
+  }
+  if (v.tag === "Var") {
+    const fullName = (() => {
+      if (v._1._1.tag === "Just") {
+        return replaceAll(".")("_")(v._1._1._1) + "_";
+      }
+      if (v._1._1.tag === "Nothing") {
+        return "";
+      }
+      fail();
+    })() + sanitizeIdent(v._1._2);
+    const v1 = lookup5(v._1._2)(bound);
+    if (v1.tag === "Just") {
+      return v1._1;
+    }
+    if (v1.tag === "Nothing") {
+      const v2 = lookup5(fullName)(aritiesMap);
+      if (v2.tag === "Just") {
+        return v2._1;
+      }
+      if (v2.tag === "Nothing") {
+        return Any;
+      }
+    }
+    fail();
+  }
+  if (v.tag === "Let" && v._1.tag === "Just") {
+    return inferTypeExpr(currentMod)(aritiesMap)(insert(ordString)(v._1._1)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(v._4);
+  }
+  return Any;
+};
 var freeVariables = (v) => {
   if (v.tag === "Var") {
-    return Leaf;
-  }
-  if (v.tag === "Local") {
-    if (v._1.tag === "Just") {
-      return $$$Map("Node", 1, 1, v._1._1, void 0, Leaf, Leaf);
-    }
-    return Leaf;
-  }
-  if (v.tag === "Lit") {
-    return Leaf;
+    return $$$Map("Node", 1, 1, v._1._2, void 0, Leaf, Leaf);
   }
   if (v.tag === "App") {
     return foldlArray((acc) => (a) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(a)))(freeVariables(v._1))(v._2);
@@ -15632,218 +15824,139 @@ var freeVariables = (v) => {
   }
   return Leaf;
 };
-var codegenExprType = (v) => {
+var dedupArgs = (arr) => foldlArray((acc) => (item) => {
+  const count = lookup5(item)(acc.counts);
+  if (count.tag === "Nothing") {
+    return { result: snoc(acc.result)(item), counts: insert(ordString)(item)(1)(acc.counts) };
+  }
+  if (count.tag === "Just") {
+    return {
+      result: snoc(acc.result)(item + "_" + showIntImpl(count._1)),
+      counts: insert(ordString)(item)(count._1 + 1 | 0)(acc.counts)
+    };
+  }
+  fail();
+})({ result: [], counts: Leaf })(arr).result;
+var codegenExprType = (isRet) => (v) => {
+  if (v.tag === "Func") {
+    return "std::rc::Rc<dyn Fn(" + joinWith(", ")(arrayMap(codegenExprType(false))(v._1)) + ") -> " + codegenExprType(true)(v._2) + ">";
+  }
+  if (v.tag === "Any") {
+    return "UnknownType";
+  }
+  if (v.tag === "Record") {
+    return "UnknownType";
+  }
+  if (v.tag === "Array") {
+    return "UnknownType";
+  }
+  if (v.tag === "String") {
+    return "String";
+  }
   if (v.tag === "Int") {
     return "i64";
   }
   if (v.tag === "Number") {
     return "f64";
   }
-  if (v.tag === "String") {
-    return "String";
-  }
   if (v.tag === "Boolean") {
     return "bool";
   }
-  if (v.tag === "TypeVar") {
-    return toUpper(v._1);
+  if (v.tag === "Char") {
+    return "char";
   }
-  if (v.tag === "Func") {
-    return "fn(" + joinWith(", ")(arrayMap(codegenExprType)(v._1)) + ") -> " + codegenExprType(v._2);
+  if (v.tag === "ADT") {
+    if ((() => {
+      const $02 = v._1.length - 1 | 0;
+      return $02 >= 0 && $02 < v._1.length && v._1[$02] === "String";
+    })()) {
+      return "String";
+    }
+    if ((() => {
+      const $02 = v._1.length - 1 | 0;
+      return $02 >= 0 && $02 < v._1.length && v._1[$02] === "Int";
+    })()) {
+      return "i64";
+    }
+    if ((() => {
+      const $02 = v._1.length - 1 | 0;
+      return $02 >= 0 && $02 < v._1.length && v._1[$02] === "Boolean";
+    })()) {
+      return "bool";
+    }
+    const $0 = v._1.length - 1 | 0;
+    if ($0 >= 0 && $0 < v._1.length) {
+      return v._1[$0];
+    }
+    return "UnknownType";
   }
   return "UnknownType";
 };
-var codegenExpr = (mbLoop) => (v) => {
+var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (bound) => (v) => {
   if (v.tag === "Typed") {
-    return codegenExpr(mbLoop)(v._2);
+    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2);
   }
   if (v.tag === "App") {
-    const $0 = v._2;
-    const $1 = v._1;
-    const $2 = () => 'println!("{}", ' + codegenExpr(mbLoop)((() => {
-      if (0 < $0.length) {
-        return $0[0];
-      }
-      fail();
-    })()) + ");";
-    const $3 = () => 'println!("{}", ' + codegenExpr(mbLoop)((() => {
-      if (0 < $0.length) {
-        return $0[0];
-      }
-      fail();
-    })()) + ");";
-    const $4 = () => {
-      if ($1.tag === "Typed" && $1._2.tag === "Var" && mbLoop.tag === "Just" && $1._2._1._2 === mbLoop._1.name) {
-        return "{\n            " + joinWith("\n            ")(zipWithImpl((p) => (a) => p + " = " + codegenExpr(mbLoop)(a) + ";", mbLoop._1.params, $0)) + "\n            continue;\n        }";
-      }
-      if ($1.tag === "Var" && mbLoop.tag === "Just" && $1._1._2 === mbLoop._1.name) {
-        return "{\n            " + joinWith("\n            ")(zipWithImpl((p) => (a) => p + " = " + codegenExpr(mbLoop)(a) + ";", mbLoop._1.params, $0)) + "\n            continue;\n        }";
-      }
-      if ($1.tag === "Typed") {
-        if ($1._2.tag === "Var") {
-          if ($1._2._1._2 === "updateRecord") {
-            return "updateRecord(" + codegenExpr(mbLoop)((() => {
-              if (0 < $0.length) {
-                return $0[0];
-              }
-              fail();
-            })()) + ")";
-          }
-          if ($1._2._1._2 === "getRecord") {
-            return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-          }
-          return $1._2._1._2 + "(" + joinWith(", ")(arrayMap(codegenExpr(mbLoop))($0)) + ")";
-        }
-        if ($1._2.tag === "Accessor" && $1._2._2.tag === "GetProp" && $1._2._2._1 === "getRecord") {
-          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-        }
-        return "    // Unsupported App with fn: " + printAST($1) + "\n";
-      }
-      if ($1.tag === "Var") {
-        if ($1._1._2 === "updateRecord") {
-          return "updateRecord(" + codegenExpr(mbLoop)((() => {
-            if (0 < $0.length) {
-              return $0[0];
-            }
-            fail();
-          })()) + ")";
-        }
-        if ($1._1._2 === "getRecord") {
-          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-        }
-        return $1._1._2 + "(" + joinWith(", ")(arrayMap(codegenExpr(mbLoop))($0)) + ")";
-      }
-      if ($1.tag === "Accessor" && $1._2.tag === "GetProp" && $1._2._1 === "getRecord") {
-        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-      }
-      return "    // Unsupported App with fn: " + printAST($1) + "\n";
-    };
-    if ($1.tag === "Typed") {
-      if ($1._2.tag === "Var") {
-        if ($1._2._1._1.tag === "Just" && $1._2._1._1._1 === "Effect.Console" && $1._2._1._2 === "log") {
-          return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
-            if (0 < $0.length) {
-              return $0[0];
-            }
-            fail();
-          })()) + ");";
-        }
-        if ($1._2._1._2 === "logInt") {
-          return $2();
-        }
-        return $4();
-      }
-      if ($1._2.tag === "Accessor" && $1._2._2.tag === "GetProp" && $1._2._2._1 === "logRecord") {
-        return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
-          if (0 < $0.length) {
-            return $0[0];
-          }
-          fail();
-        })()) + ".a);";
-      }
-      return $4();
+    const numProvided = v._2.length;
+    const fnTy = inferTypeExpr(currentMod)(bound)(bound)(v._1);
+    const fnCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1);
+    const fnArity = fnTy.tag === "Func" ? fnTy._1.length : 0;
+    const argsCodeArray = arrayMap(codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound))(v._2);
+    const argsCode = joinWith(", ")(argsCodeArray);
+    if (fnArity > numProvided) {
+      const missingVars = mapWithIndexArray((i) => (v1) => "c_" + showIntImpl(i))(replicateImpl(fnArity - numProvided | 0, void 0));
+      return "std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v1) => "mut " + v1 + ": UnknownType")(missingVars)) + "| (" + fnCode + ")(" + joinWith(", ")([
+        ...argsCodeArray,
+        ...arrayMap((v1) => v1 + ".clone()")(missingVars)
+      ]) + "))";
     }
-    if ($1.tag === "Var") {
-      if ($1._1._1.tag === "Just" && $1._1._1._1 === "Effect.Console" && $1._1._2 === "log") {
-        return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
-          if (0 < $0.length) {
-            return $0[0];
-          }
-          fail();
-        })()) + ");";
-      }
-      if ($1._1._2 === "logInt") {
-        return $3();
-      }
-      return $4();
-    }
-    if ($1.tag === "Accessor" && $1._2.tag === "GetProp" && $1._2._1 === "logRecord") {
-      return 'println!("{}", ' + codegenExpr(mbLoop)((() => {
-        if (0 < $0.length) {
-          return $0[0];
-        }
-        fail();
-      })()) + ".a);";
-    }
-    return $4();
+    return "(" + fnCode + ")(" + argsCode + ")";
   }
   if (v.tag === "UncurriedEffectApp") {
     if (v._1.tag === "Typed") {
       if (v._1._2.tag === "Accessor") {
-        if (v._1._2._2.tag === "GetProp") {
-          if (v._1._2._2._1 === "logRecord") {
-            if (0 < v._2.length) {
-              return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
-            }
-            return "// Unsupported UncurriedEffectApp without args\n";
-          }
-          if (v._1._2._2._1 === "getRecord") {
-            return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-          }
-        }
-        return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
-      }
-      if (v._1._2.tag === "Var") {
-        if (v._1._2._1._2 === "logRecord") {
+        if (v._1._2._2.tag === "GetProp" && v._1._2._2._1 === "logRecord") {
           if (0 < v._2.length) {
-            return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
+            return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2[0]) + ".a);";
           }
           return "// Unsupported UncurriedEffectApp without args\n";
         }
-        if (v._1._2._1._2 === "getRecord") {
-          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+        return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+      }
+      if (v._1._2.tag === "Var" && v._1._2._1._2 === "logRecord") {
+        if (0 < v._2.length) {
+          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2[0]) + ".a);";
         }
+        return "// Unsupported UncurriedEffectApp without args\n";
       }
       return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
     }
     if (v._1.tag === "Accessor") {
-      if (v._1._2.tag === "GetProp") {
-        if (v._1._2._1 === "logRecord") {
-          if (0 < v._2.length) {
-            return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
-          }
-          return "// Unsupported UncurriedEffectApp without args\n";
-        }
-        if (v._1._2._1 === "getRecord") {
-          return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
-        }
-      }
-      return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
-    }
-    if (v._1.tag === "Var") {
-      if (v._1._1._2 === "logRecord") {
+      if (v._1._2.tag === "GetProp" && v._1._2._1 === "logRecord") {
         if (0 < v._2.length) {
-          return 'println!("{}", ' + codegenExpr(mbLoop)(v._2[0]) + ".a);";
+          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2[0]) + ".a);";
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
-      if (v._1._1._2 === "getRecord") {
-        return "perceus_ptr::PerceusPtr::new(Record_a { a: 1 })";
+      return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+    }
+    if (v._1.tag === "Var" && v._1._1._2 === "logRecord") {
+      if (0 < v._2.length) {
+        return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2[0]) + ".a);";
       }
+      return "// Unsupported UncurriedEffectApp without args\n";
     }
     return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
   }
-  if (v.tag === "Lit") {
-    if (v._1.tag === "LitString") {
-      return '"' + v._1._1 + '"';
-    }
-    if (v._1.tag === "LitInt") {
-      return showIntImpl(v._1._1);
-    }
-    if (v._1.tag === "LitRecord") {
-      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => v1._1 + ": " + codegenExpr(mbLoop)(v1._2))(v._1._1)) + " })";
-    }
-    return "// Unsupported Expr: " + printAST(v);
-  }
   if (v.tag === "Update") {
-    return "{\n    let mut _base = " + codegenExpr(mbLoop)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(mbLoop)(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
+    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
   }
   if (v.tag === "Branch") {
-    return joinWith(" else ")(arrayMap((v1) => "if " + codegenExpr(mbLoop)(v1._1) + " {\n        " + codegenExpr(mbLoop)(v1._2) + "\n    }")(v._1)) + " else {\n        " + codegenExpr(mbLoop)(v._2) + "\n    }";
+    return joinWith(" else ")(arrayMap((v1) => "if " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._1) + " {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._2) + "\n    }")(v._1)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2) + "\n    }";
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
-      const aStr = codegenExpr(mbLoop)(v._1._2);
+      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1._2);
       if (v._1._1.tag === "OpBooleanNot") {
         return "!" + aStr;
       }
@@ -15856,8 +15969,8 @@ var codegenExpr = (mbLoop) => (v) => {
       return "// Unsupported Op1";
     }
     if (v._1.tag === "Op2") {
-      const bStr = codegenExpr(mbLoop)(v._1._3);
-      const aStr = codegenExpr(mbLoop)(v._1._2);
+      const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1._3);
+      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1._2);
       if (v._1._1.tag === "OpIntNum") {
         if (v._1._1._1 === "OpAdd") {
           return "(" + aStr + " + " + bStr + ")";
@@ -15906,33 +16019,54 @@ var codegenExpr = (mbLoop) => (v) => {
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return codegenExpr(mbLoop)(v._1) + "." + v._2._1;
+      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1) + "." + v._2._1;
     }
     return "// Unsupported Expr: " + printAST(v);
   }
   if (v.tag === "Var") {
-    return v._1._2;
+    const fullName = sanitizeIdent((() => {
+      if (v._1._1.tag === "Just") {
+        return replaceAll(".")("_")(v._1._1._1) + "_" + v._1._2;
+      }
+      if (v._1._1.tag === "Nothing") {
+        return "" + v._1._2;
+      }
+      fail();
+    })());
+    if ((() => {
+      const v1 = lookup5(fullName)(bound);
+      if (v1.tag === "Just") {
+        return v1._1.tag !== "Func";
+      }
+      if (v1.tag === "Nothing") {
+        return fullName !== "Effect_Console_log";
+      }
+      fail();
+    })()) {
+      return fullName + "()";
+    }
+    return fullName;
   }
   if (v.tag === "Let") {
     if (v._1.tag === "Just") {
-      return (member2(v._1._1)(freeVariables(v._4)) ? "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is used in body\n    let " + v._1._1 + " = " : "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is dead\n    let " + v._1._1 + " = ") + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
+      return (member2(v._1._1)(freeVariables(v._4)) ? "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is used in body\n    let " + v._1._1 + " = " : "{\n    // Perceus Liveness: variable '" + v._1._1 + "' is dead\n    let " + v._1._1 + " = ") + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._3) + ";\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._4) + "\n}";
     }
     if (v._1.tag === "Nothing") {
-      return "{\n    " + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
+      return "{\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._3) + ";\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._4) + "\n}";
     }
     return "// Unsupported Expr: " + printAST(v);
   }
   if (v.tag === "EffectBind") {
     if (v._1.tag === "Just") {
-      return "{\n    let " + v._1._1 + " = " + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
+      return "{\n    let " + v._1._1 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._3) + ";\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._4) + "\n}";
     }
     if (v._1.tag === "Nothing") {
-      return "{\n    " + codegenExpr(mbLoop)(v._3) + ";\n    " + codegenExpr(mbLoop)(v._4) + "\n}";
+      return "{\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._3) + ";\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._4) + "\n}";
     }
     fail();
   }
   if (v.tag === "EffectPure") {
-    return codegenExpr(mbLoop)(v._1);
+    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._1);
   }
   if (v.tag === "Local") {
     if (v._1.tag === "Just") {
@@ -15940,52 +16074,226 @@ var codegenExpr = (mbLoop) => (v) => {
     }
     return "// Unsupported Expr: " + printAST(v);
   }
+  if (v.tag === "Lit") {
+    if (v._1.tag === "LitInt") {
+      return showIntImpl(v._1._1) + " /* i64 */";
+    }
+    if (v._1.tag === "LitNumber") {
+      return showNumberImpl(v._1._1) + " /* f64 */";
+    }
+    if (v._1.tag === "LitString") {
+      return showStringImpl(v._1._1);
+    }
+    if (v._1.tag === "LitChar") {
+      return showCharImpl(v._1._1);
+    }
+    if (v._1.tag === "LitBoolean") {
+      if (v._1._1) {
+        return "true";
+      }
+      return "false";
+    }
+    if (v._1.tag === "LitArray") {
+      return "vec![" + joinWith(", ")(arrayMap(codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound))(v._1._1)) + "]";
+    }
+    if (v._1.tag === "LitRecord") {
+      const fieldsMap = fromFoldable7(arrayMap((v1) => $Tuple(
+        sanitizeIdent(v1._1),
+        codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._2)
+      ))(v._1._1));
+      const $0 = lookup5("a")(fieldsMap);
+      const $1 = lookup5("x")(fieldsMap);
+      const $2 = lookup5("c")(fieldsMap);
+      const $3 = lookup5("ccc")(fieldsMap);
+      const $4 = lookup5("Applicative0")(fieldsMap);
+      const $5 = lookup5("pure")(fieldsMap);
+      return (() => {
+        if ($0.tag === "Nothing") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: 0, x: ";
+        }
+        if ($0.tag === "Just") {
+          return "perceus_ptr::PerceusPtr::new(Record_a { a: " + $0._1 + ", x: ";
+        }
+        fail();
+      })() + (() => {
+        if ($1.tag === "Nothing") {
+          return "unimplemented!(), c: ";
+        }
+        if ($1.tag === "Just") {
+          return $1._1 + ", c: ";
+        }
+        fail();
+      })() + (() => {
+        if ($2.tag === "Nothing") {
+          return "unimplemented!(), ccc: ";
+        }
+        if ($2.tag === "Just") {
+          return $2._1 + ", ccc: ";
+        }
+        fail();
+      })() + (() => {
+        if ($3.tag === "Nothing") {
+          return "unimplemented!(), Applicative0: ";
+        }
+        if ($3.tag === "Just") {
+          return $3._1 + ", Applicative0: ";
+        }
+        fail();
+      })() + (() => {
+        if ($4.tag === "Nothing") {
+          return "unimplemented!()";
+        }
+        if ($4.tag === "Just") {
+          return $4._1;
+        }
+        fail();
+      })() + ", pure: " + (() => {
+        if ($5.tag === "Nothing") {
+          return "unimplemented!()";
+        }
+        if ($5.tag === "Just") {
+          return $5._1;
+        }
+        fail();
+      })() + " })";
+    }
+    fail();
+  }
   if (v.tag === "Abs") {
-    return codegenExpr(mbLoop)(v._2);
+    return "std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((p) => {
+      if (p === "_") {
+        return "" + p + ": UnknownType";
+      }
+      return "mut " + p + ": UnknownType";
+    })(arrayMap((v1) => {
+      if (v1._1.tag === "Just") {
+        return sanitizeIdent(v1._1._1);
+      }
+      return "_";
+    })(v._1))) + "| -> UnknownType {\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v._2) + "\n})";
+  }
+  if (v.tag === "PrimUndefined") {
+    return "unimplemented!()";
+  }
+  if (v.tag === "CtorSaturated") {
+    return v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(arrayMap((v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(v1._2))(v._5)) + ")");
   }
   return "// Unsupported Expr: " + printAST(v);
 };
-var codegenBindingGroup = (group2) => {
+var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) => (aritiesMap) => (group2) => {
   const isSelfRecursive = group2.recursive && group2.bindings.length === 1;
-  return foldMap7((v) => {
-    if (v._2.tag === "Typed" && v._2._2.tag === "Abs") {
-      if (v._2._1.tag === "Func") {
-        const paramsArr2 = arrayMap((v2) => {
+  const groupArities = fromFoldable7(arrayMap((v) => {
+    const rawIdentName = sanitizeIdent(v._1);
+    return $Tuple(rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName, inferTypeExpr(modNameStr)(aritiesMap)(Leaf)(v._2));
+  })(group2.bindings));
+  return {
+    code: foldMap7((v) => {
+      const rawIdentName = sanitizeIdent(v._1);
+      const innerExpr = v._2.tag === "Typed" ? v._2._2 : v._2;
+      const identName = rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName;
+      const $0 = lookup5(identName)(groupArities);
+      const inferredType = (() => {
+        if ($0.tag === "Nothing") {
+          return Any;
+        }
+        if ($0.tag === "Just") {
+          return $0._1;
+        }
+        fail();
+      })();
+      if (inferredType.tag === "Func") {
+        const deduped = dedupArgs(innerExpr.tag === "Abs" ? arrayMap((v2) => {
           if (v2._1.tag === "Just") {
             return v2._1._1;
           }
           return "_";
-        })(v._2._2._1);
-        const bodyCodeWithLoop3 = isSelfRecursive ? "loop {\n        let _loop_result = {\n            " + codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr2 }) : Nothing)(v._2._2._2) + "\n        };\n        break _loop_result;\n    }" : codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr2 }) : Nothing)(v._2._2._2);
-        if (v._1 === "main") {
-          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop3 + "\n}\n\n";
+        })(innerExpr._1) : mapWithIndexArray((i) => (v2) => "a" + showIntImpl(i))(inferredType._1));
+        const mbLoop = isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing;
+        const paramPairs = zipWithImpl(Tuple, deduped, inferredType._1);
+        const bound = fromFoldable7(arrayMap((v2) => $Tuple(v2._1 === "_" ? "_" : v2._1, v2._2))(paramPairs));
+        const bodyCodeWithLoop2 = (() => {
+          if (isSelfRecursive) {
+            if (innerExpr.tag === "Abs") {
+              return "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+                ordString.compare,
+                $$const,
+                bound,
+                aritiesMap
+              ))(innerExpr._2) + "\n    }";
+            }
+            return "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        (" + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+              ordString.compare,
+              $$const,
+              bound,
+              aritiesMap
+            ))(innerExpr) + ")(" + joinWith(", ")(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ")\n    }";
+          }
+          if (innerExpr.tag === "Abs") {
+            return codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+              ordString.compare,
+              $$const,
+              bound,
+              aritiesMap
+            ))(innerExpr._2);
+          }
+          return "(" + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+            ordString.compare,
+            $$const,
+            bound,
+            aritiesMap
+          ))(innerExpr) + ")(" + joinWith(", ")(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ")";
+        })();
+        const bodyCodeFinal2 = identName === "main" ? bodyCodeWithLoop2 : "    unimplemented!()";
+        if (identName === "main") {
+          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal2 + "\n}\n\n";
         }
-        return "pub fn " + v._1 + "(" + joinWith(", ")(arrayMap((v2) => "mut " + v2._1 + ": " + codegenExprType(v2._2))(zipWithImpl(
-          Tuple,
-          paramsArr2,
-          v._2._1._1
-        ))) + ") -> " + codegenExprType(v._2._1._2) + " {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop3 + "\n}\n\n";
+        return "pub fn " + identName + "(" + joinWith(", ")(arrayMap((v2) => {
+          const p = sanitizeIdent(v2._1);
+          return (p === "_" ? "" + p + ": " : "mut " + p + ": ") + codegenExprType(true)(v2._2);
+        })(paramPairs)) + ")" + (codegenExprType(true)(inferredType._2) === "" ? "" : " -> " + codegenExprType(true)(inferredType._2)) + " {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal2 + "\n}\n\n";
       }
-      const paramsArr = arrayMap((v2) => {
-        if (v2._1.tag === "Just") {
-          return v2._1._1;
+      if (innerExpr.tag === "Abs") {
+        const deduped = dedupArgs(arrayMap((v2) => {
+          if (v2._1.tag === "Just") {
+            return v2._1._1;
+          }
+          return "_";
+        })(innerExpr.tag === "Abs" ? innerExpr._1 : _crashWith("impossible")));
+        const bodyCodeWithLoop2 = isSelfRecursive ? "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(unsafeUnionWith(ordString.compare, $$const, Leaf, aritiesMap))(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + "\n    }" : codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(unsafeUnionWith(
+          ordString.compare,
+          $$const,
+          Leaf,
+          aritiesMap
+        ))(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible"));
+        const bodyCodeFinal2 = identName === "main" ? bodyCodeWithLoop2 : "    unimplemented!()";
+        if (identName === "main") {
+          return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal2 + "\n}\n\n";
         }
-        return "_";
-      })(v._2._2._1);
-      const bodyCodeWithLoop2 = isSelfRecursive ? "loop {\n        let _loop_result = {\n            " + codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr }) : Nothing)(v._2._2._2) + "\n        };\n        break _loop_result;\n    }" : codegenExpr(isSelfRecursive ? $Maybe("Just", { name: v._1, params: paramsArr }) : Nothing)(v._2._2._2);
-      if (v._1 === "main") {
-        return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + "\n}\n\n";
+        return "pub fn " + identName + "(" + joinWith(", ")(arrayMap((pName) => {
+          const p = sanitizeIdent(pName);
+          if (p === "_") {
+            return "" + p + ": UnknownType";
+          }
+          return "mut " + p + ": UnknownType";
+        })(deduped)) + ") -> UnknownType {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal2 + "\n}\n\n";
       }
-      return "pub fn " + v._1 + "(" + joinWith(", ")(arrayMap((pName) => "mut " + pName + ": UnknownType")(paramsArr)) + ") -> " + codegenExprType(v._2._1) + " {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + "\n}\n\n";
-    }
-    const bodyCodeWithLoop = codegenExpr(Nothing)(v._2);
-    if (v._1 === "main") {
-      return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop + "\n}\n\n";
-    }
-    return "pub fn " + v._1 + "() -> String {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop + "\n}\n\n";
-  })(group2.bindings);
+      const bodyCodeWithLoop = codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(v._2);
+      const bodyCodeFinal = identName === "main" ? bodyCodeWithLoop : "    unimplemented!()";
+      if (identName === "main") {
+        return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal + "\n}\n\n";
+      }
+      return "pub fn " + identName + "()" + (codegenExprType(true)(inferredType) === "" ? "" : " -> " + codegenExprType(true)(inferredType)) + " {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeFinal + "\n}\n\n";
+    })(group2.bindings),
+    arities: unsafeUnionWith(ordString.compare, $$const, groupArities, aritiesMap)
+  };
 };
-var codegenModule = (v) => (backendMod) => "// Code generated by purust for module " + backendMod.name + "\n\nuse perceus_ptr::PerceusPtr;\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\npub enum " + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType)(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a { pub a: i64 }\n\n// Bindings:\n" + foldMap7(codegenBindingGroup)(backendMod.bindings);
+var codegenModule = (v) => (backendMod) => {
+  const modNameStr = backendMod.name;
+  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn Effect_Console_log<T>(_: T) {}\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\npub enum " + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a {\n    pub a: i64,\n    pub x: UnknownType,\n    pub c: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> UnknownType>,\n    pub ccc: UnknownType,\n    pub Applicative0: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>,\n    pub pure: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
+    const res = codegenBindingGroup(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
+    return { code: acc.code + res.code, arities: res.arities };
+  })({ code: "", arities: Leaf })(backendMod.bindings).code;
+};
 
 // output-es/Main/index.js
 var buildModules2 = /* @__PURE__ */ buildModules(monadAff);
