@@ -1,14 +1,16 @@
 module Main where
 
 import Prelude
-import Effect.Console (log)
+import Effect
+import Effect.Console
 
-x :: forall a. a -> String
-x a = y "Test"
-  where
-  y :: forall a. Show a => a -> String
-  y a = show (a :: a)
+data Identity a = Identity a
 
-main = do
-  log (x 0)
-  log "Done"
+newtype IdentityEff a = IdentityEff (Effect (Identity a))
+
+test :: forall a. IdentityEff a -> IdentityEff Unit
+test (IdentityEff action) = IdentityEff $ do
+  (Identity x :: Identity _) <- action
+  pure $ Identity unit
+
+main = log "Done"
