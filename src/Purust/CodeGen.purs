@@ -64,11 +64,7 @@ codegenModule (Module coreFnMod) backendMod =
     "pub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\n" <>
     "pub fn unsafe_coerce<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\n" <>
     "pub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\n" <>
-    "pub fn Effect_Console_log<T>(_: T) -> UnknownType { unsafe_coerce(0) }\n\n" <>
-    "pub fn Control_Bind_discardUnit() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: Some(std::rc::Rc::new(move |_, _, cont| { cont })) }) }\n" <>
-    "pub fn Effect_bindEffect() -> UnknownType { unsafe_coerce(0) }\n" <>
-    "pub fn Data_Show_showString() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, discard: None, show: Some(std::rc::Rc::new(move |_| { unsafe_coerce(0) })) }) }\n\n" <>
-    "// Data declarations:\n" <>
+                    "// Data declarations:\n" <>
     dataDeclsCode <>
     "// Bindings:\n" <>
     bindingsCode
@@ -241,7 +237,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
         in case arg0 of
              Just a0 -> "println!(\"{}\", " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
-      _ -> "// Unsupported UncurriedEffectApp with fn: " <> printAST fn <> "\n"
+      _ -> "unimplemented!() /* Unsupported UncurriedEffectApp with fn: " <> printAST fn <> " */\n"
 
   Update base props ->
     let
@@ -270,7 +266,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
       OpIntNegate -> "-" <> aStr
       OpNumberNegate -> "-" <> aStr
       OpArrayLength -> "((" <> aStr <> ").len() as i32)"
-      _ -> "// Unsupported Op1"
+      _ -> "unimplemented!() /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
         aStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound aliveForA a
@@ -300,7 +296,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
       OpBooleanOrd OpNotEq -> "((" <> aStr <> ") != (" <> bStr <> "))"
       OpBooleanAnd -> "(" <> aStr <> " && " <> bStr <> ")"
       OpBooleanOr -> "(" <> aStr <> " || " <> bStr <> ")"
-      _ -> "// Unsupported Op2"
+      _ -> "unimplemented!() /* Unsupported Op2 */"
   Accessor base (GetProp k) -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive base <> "." <> sanitizeIdent k <> ".clone().unwrap()"
   Accessor base (GetCtorField qId ctorType (ProperName tyNameStr) (Ident ctorName) propName fieldIdx) ->
     let baseStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive base
@@ -400,7 +396,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
           ) fields) <> ")"
     in tyNameStr <> "::" <> ctorName <> fieldsCode
   CtorDef _ _ _ _ -> "unsafe_coerce(0)"
-  _ -> "// Unsupported Expr: " <> printAST (NeutralExpr expr)
+  _ -> "unimplemented!() /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
 
 printAST :: NeutralExpr -> String
 printAST (NeutralExpr expr) = case expr of

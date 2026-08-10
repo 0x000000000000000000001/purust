@@ -17,6 +17,7 @@ import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.CoreFn (Module(..))
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
 import Purust.CodeGen (codegenModule)
+import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
 import Effect.Class (liftEffect)
 
 cacheVersion :: String
@@ -57,7 +58,12 @@ main = launchAff_ do
           let cargoToml = "[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"../../../runtime/perceus_ptr\" }\n"
           FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") cargoToml
           
-          FS.writeTextFile UTF8 (outDir <> "/src/main.rs") rsFile
+          ffiPathMb <- findFfiFile ".rs" [] (Just "../") modNameStr (Just coreFnMod.path)
+          ffiContent <- case ffiPathMb of
+            Just ffiPath -> FS.readTextFile UTF8 ffiPath
+            Nothing -> pure ""
+
+          FS.writeTextFile UTF8 (outDir <> "/src/main.rs") (rsFile <> "\n\n" <> ffiContent)
     }
     finalModules
     

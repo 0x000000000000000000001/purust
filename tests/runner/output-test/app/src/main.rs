@@ -151,7 +151,7 @@ pub fn Control_Applicative_unless(mut a0: UnknownType, mut a1: bool, mut a2: Unk
     } else if v {
         (dictApplicative.pure.clone().unwrap())(Data_Unit_unit())
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -919,7 +919,7 @@ pub fn Control_Lazy_fix(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownT
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(LetRec(..., Typed(Local(...)))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut dictLazy: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -1033,14 +1033,14 @@ pub fn Control_Monad_Gen_Common_max() -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
     {
     let mut v = (lvl_0)(x.dup(), y.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         y
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -1209,7 +1209,7 @@ pub fn Control_Monad_Gen_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -1250,12 +1250,12 @@ pub fn Control_Monad_Gen_unfoldable(mut a0: UnknownType, mut a1: UnknownType, mu
     unsafe_coerce(std::rc::Rc::new(move |mut dictUnfoldable: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut gen: UnknownType| -> UnknownType {
     (((Bind1.dup().Apply0.clone().unwrap())(unimplemented!()).Functor0.clone().unwrap())(unimplemented!()).map.clone().unwrap())((dictUnfoldable.unfoldr.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(Tuple::Tuple((match v.dup() { LL::Cons(val, ..) => val, _ => unimplemented!() }), (match v { LL::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))), (dictMonadGen.sized.clone().unwrap())({
     let mut lvl_7 = (dictMonadRec.tailRecM.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
@@ -1301,7 +1301,7 @@ pub fn Control_Monad_Gen_fromIndex(mut a0: UnknownType, mut a1: i64, mut a2: Unk
     let mut foldMap1 = (dictFoldable1.dup().foldMap1.clone().unwrap())(Data_Semigroup_Last_semigroupLast());
     unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 }))
 }))
 }
@@ -1346,7 +1346,7 @@ pub fn Control_Monad_Gen_freqSemigroup(mut a0: Tuple, mut a1: f64) -> Tuple {
     } else {
         true
     } {
-        Tuple::Tuple(Maybe::Just(// Unsupported Op2), lvl_2)
+        Tuple::Tuple(Maybe::Just(unimplemented!() /* Unsupported Op2 */), lvl_2)
     } else {
         Tuple::Tuple(Maybe::Nothing, lvl_2)
     }
@@ -1389,12 +1389,12 @@ pub fn Control_Monad_Gen_filtered(mut a0: UnknownType, mut a1: UnknownType, mut 
     // DEBUG: bodyVars=["Data_Unit_unit","gen","lvl_2"] p=v
     v.drop_explicit();
     (lvl_2.map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Loop(Data_Unit_unit())
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Done((match a { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), gen)
 })), Data_Unit_unit())
@@ -1584,12 +1584,12 @@ pub fn Control_Monad_Rec_Class_untilJust(mut a0: UnknownType, mut a1: UnknownTyp
     // DEBUG: bodyVars=["Data_Unit_unit","lvl_1","m"] p=v
     v.drop_explicit();
     (lvl_1.map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Loop(Data_Unit_unit())
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Done((match v1 { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), m)
 })), Data_Unit_unit())
@@ -1609,12 +1609,12 @@ pub fn Control_Monad_Rec_Class_whileJust(mut a0: UnknownType, mut a1: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut m: UnknownType| -> UnknownType {
     (dictMonadRec.tailRecM.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     (lvl_3.map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Done(v)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Loop(((dictMonoid.Semigroup0.clone().unwrap())(unimplemented!()).append.clone().unwrap())(v, (match v1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), m)
 })), mempty)
@@ -1628,7 +1628,7 @@ pub fn Control_Monad_Rec_Class_whileJust(mut a0: UnknownType, mut a1: UnknownTyp
 pub fn Control_Monad_Rec_Class_tailRec(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Step>, mut a1: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -1637,7 +1637,7 @@ pub fn Control_Monad_Rec_Class_tailRec2(mut a0: std::rc::Rc<dyn Fn(UnknownType, 
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., App(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -1649,7 +1649,7 @@ pub fn Control_Monad_Rec_Class_tailRec3(mut a0: std::rc::Rc<dyn Fn(UnknownType, 
     unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut c: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., App(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */
 }))
 }))
 }))
@@ -2116,7 +2116,7 @@ pub fn Control_Monad_unlessM(mut a0: UnknownType, mut a1: UnknownType, mut a2: U
     } else if b {
         (lvl_1.pure.clone().unwrap())(Data_Unit_unit())
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))
 }))
@@ -2509,14 +2509,14 @@ pub fn Data_Array_NonEmpty_max() -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
     {
     let mut v = (lvl_0)(x.dup(), y.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         y
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -2548,7 +2548,7 @@ pub fn Data_Array_NonEmpty_greaterThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -2564,7 +2564,7 @@ pub fn Data_Array_NonEmpty_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -2645,7 +2645,7 @@ pub fn Data_Array_NonEmpty_updateAt(mut a0: i64, mut a1: UnknownType, mut a2: Un
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -2659,7 +2659,7 @@ pub fn Data_Array_NonEmpty_zip(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=ys
     ys.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -2675,7 +2675,7 @@ pub fn Data_Array_NonEmpty_zipWith(mut a0: std::rc::Rc<dyn Fn(UnknownType, Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=ys
     ys.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -2750,7 +2750,7 @@ pub fn Data_Array_NonEmpty_replicate(mut a0: i64, mut a1: UnknownType) -> Unknow
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -2763,7 +2763,7 @@ pub fn Data_Array_NonEmpty_range(mut a0: i64, mut a1: i64) -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=y
     y.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -2840,7 +2840,7 @@ pub fn Data_Array_NonEmpty_insertAt(mut a0: i64, mut a1: UnknownType, mut a2: Un
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -2855,7 +2855,7 @@ pub fn Data_Array_NonEmpty_fromFoldable1(mut a0: UnknownType, mut a1: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }
 })))(a0.clone(), a1.clone())
@@ -2882,7 +2882,7 @@ pub fn Data_Array_NonEmpty_fromFoldable(mut a0: UnknownType, mut a1: UnknownType
     // DEBUG: bodyVars=["Data_Array_NonEmpty_greaterThan"] p=x
     x.drop_explicit();
     {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
     if (Data_Array_NonEmpty_greaterThan())(((lvl_3.dup()).len() as i32), mk_int(0)) {
         Maybe::Just(lvl_3)
     } else {
@@ -3005,11 +3005,11 @@ pub fn Data_Array_NonEmpty_head(mut a0: UnknownType) -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
     {
-    let mut lvl_1 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_1 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -3019,9 +3019,9 @@ pub fn Data_Array_NonEmpty_init(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     if ((((x).len() as i32)).a == (mk_int(0)).a) {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 })))(a0.clone())
 }
@@ -3032,11 +3032,11 @@ pub fn Data_Array_NonEmpty_last(mut a0: UnknownType) -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
     {
-    let mut lvl_1 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_1 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -3048,11 +3048,11 @@ pub fn Data_Array_NonEmpty_tail(mut a0: UnknownType) -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
     {
-    let mut lvl_1 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_1 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -3064,11 +3064,11 @@ pub fn Data_Array_NonEmpty_uncons(mut a0: UnknownType) -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
     {
-    let mut lvl_1 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_1 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -3089,10 +3089,10 @@ pub fn Data_Array_NonEmpty_unsnoc(mut a0: UnknownType) -> UnknownType {
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_1 = (Data_Array_unsnoc())(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -3106,7 +3106,7 @@ pub fn Data_Array_NonEmpty_all(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>,
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3119,7 +3119,7 @@ pub fn Data_Array_NonEmpty_any(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>,
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3154,7 +3154,7 @@ pub fn Data_Array_NonEmpty_deleteAt(mut a0: i64, mut a1: UnknownType) -> Maybe {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3196,7 +3196,7 @@ pub fn Data_Array_NonEmpty_drop(mut a0: i64, mut a1: UnknownType) -> UnknownType
     if (Data_Array_lessThan())(i, mk_int(1)) {
         x
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -3244,7 +3244,7 @@ pub fn Data_Array_NonEmpty_elemIndex(mut a0: UnknownType, mut a1: UnknownType, m
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -3261,7 +3261,7 @@ pub fn Data_Array_NonEmpty_elemLastIndex(mut a0: UnknownType, mut a1: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -3275,7 +3275,7 @@ pub fn Data_Array_NonEmpty_filter(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> boo
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3314,7 +3314,7 @@ pub fn Data_Array_NonEmpty_findIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> 
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3327,7 +3327,7 @@ pub fn Data_Array_NonEmpty_findLastIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType)
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3340,7 +3340,7 @@ pub fn Data_Array_NonEmpty_findMap(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Ma
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3421,7 +3421,7 @@ pub fn Data_Array_NonEmpty_partition(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> 
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3437,7 +3437,7 @@ pub fn Data_Array_NonEmpty_slice(mut a0: i64, mut a1: i64, mut a2: UnknownType) 
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -3461,7 +3461,7 @@ pub fn Data_Array_NonEmpty_take(mut a0: i64, mut a1: UnknownType) -> UnknownType
     if (Data_Array_lessThan())(i, mk_int(1)) {
         vec![]
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -3672,7 +3672,7 @@ pub fn Data_Array_NonEmpty_scanl(mut a0: std::rc::Rc<dyn Fn(UnknownType, Unknown
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -3689,7 +3689,7 @@ pub fn Data_Array_NonEmpty_scanr(mut a0: std::rc::Rc<dyn Fn(UnknownType, Unknown
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -3751,7 +3751,7 @@ pub fn Data_Array_NonEmpty_unsafeIndex(mut a0: UnknownType, mut a1: UnknownType,
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut lvl_2: UnknownType| -> UnknownType {
-    // Unsupported Op2
+    unimplemented!() /* Unsupported Op2 */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -3764,7 +3764,7 @@ pub fn Data_Array_NonEmpty_toUnfoldable1(mut a0: UnknownType, mut a1: UnknownTyp
     {
     let mut len = ((xs.dup()).len() as i32);
     (dictUnfoldable1.unfoldr1.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
-    Tuple::Tuple(// Unsupported Op2, if (Data_Array_NonEmpty_lessThan())(i.dup(), mk_int((len).a - (mk_int(1)).a)) {
+    Tuple::Tuple(unimplemented!() /* Unsupported Op2 */, if (Data_Array_NonEmpty_lessThan())(i.dup(), mk_int((len).a - (mk_int(1)).a)) {
         Maybe::Just(mk_int((i).a + (mk_int(1)).a))
     } else {
         Maybe::Nothing
@@ -3816,7 +3816,7 @@ pub fn Data_Array_Partial_tail(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=xs
     xs.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3827,7 +3827,7 @@ pub fn Data_Array_Partial_last(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    // Unsupported Op2
+    unimplemented!() /* Unsupported Op2 */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3840,7 +3840,7 @@ pub fn Data_Array_Partial_init(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=xs
     xs.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3851,7 +3851,7 @@ pub fn Data_Array_Partial_head(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    // Unsupported Expr: Accessor(Local(...))
+    unimplemented!() /* Unsupported Expr: Accessor(Local(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -3924,7 +3924,7 @@ pub fn Data_Array_ST_Iterator_peek(mut a0: Iterator) -> ST {
     {
     let mut lvl_1 = (match v.dup() { Iterator::Iterator(_, val, ..) => val, _ => unimplemented!() });
     lvl_1.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported Expr: PrimEffect(...), unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported Expr: PrimEffect(...) */, unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     (Control_Monad_ST_Internal_applicativeST().pure.clone().unwrap())(((match v { Iterator::Iterator(val, ..) => val, _ => unimplemented!() }))(i))
 })))
 }
@@ -3937,11 +3937,11 @@ pub fn Data_Array_ST_Iterator_next(mut a0: Iterator) -> ST {
     {
     let mut lvl_1 = (match v.dup() { Iterator::Iterator(_, val, ..) => val, _ => unimplemented!() });
     lvl_1.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(// Unsupported Expr: PrimEffect(...), unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
+    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(unimplemented!() /* Unsupported Expr: PrimEffect(...) */, unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())({
-    let lvl_3 = // Unsupported Expr: PrimEffect(...);
+    let lvl_3 = unimplemented!() /* Unsupported Expr: PrimEffect(...) */;
     lvl_3.drop_explicit();
-    // Unsupported Expr: PrimEffect(...)
+    unimplemented!() /* Unsupported Expr: PrimEffect(...) */
 }, unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","i","v"] p=_dollar___unused
     _dollar___unused.drop_explicit();
@@ -3962,12 +3962,12 @@ pub fn Data_Array_ST_Iterator_pushWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) 
     (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Control_Monad_ST_Internal_newImpl())(false), unsafe_coerce(std::rc::Rc::new(move |mut break: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_bindST","Control_Monad_ST_Internal_functorST","Control_Monad_ST_Internal_while","Data_Array_ST_Iterator_next","Data_Array_ST_Iterator_peek","Data_Array_ST_Iterator_void","Data_Array_ST_Iterator_void1","Data_HeytingAlgebra_heytingAlgebraBoolean","iter","p"] p=break
     break.drop_explicit();
-    (Control_Monad_ST_Internal_while())((Control_Monad_ST_Internal_functorST().map.clone().unwrap())(Data_HeytingAlgebra_heytingAlgebraBoolean().not.clone().unwrap(), // Unsupported Expr: PrimEffect(...)), (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Data_Array_ST_Iterator_peek())(iter.dup()), unsafe_coerce(std::rc::Rc::new(move |mut mx: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (p)((match mx.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }))) {
+    (Control_Monad_ST_Internal_while())((Control_Monad_ST_Internal_functorST().map.clone().unwrap())(Data_HeytingAlgebra_heytingAlgebraBoolean().not.clone().unwrap(), unimplemented!() /* Unsupported Expr: PrimEffect(...) */), (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Data_Array_ST_Iterator_peek())(iter.dup()), unsafe_coerce(std::rc::Rc::new(move |mut mx: UnknownType| -> UnknownType {
+    if (unimplemented!() /* Unsupported Op1 */ && (p)((match mx.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }))) {
         {
     let mut lvl_5 = (match mx { Maybe::Just(val, ..) => val, _ => unimplemented!() });
     lvl_5.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Data_Array_ST_Iterator_next","Data_Array_ST_Iterator_void","iter"] p=_dollar___unused
     _dollar___unused.drop_explicit();
@@ -3975,7 +3975,7 @@ pub fn Data_Array_ST_Iterator_pushWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) 
 })))
 }
     } else {
-        (Data_Array_ST_Iterator_void1())(// Unsupported Expr: PrimEffect(...))
+        (Data_Array_ST_Iterator_void1())(unimplemented!() /* Unsupported Expr: PrimEffect(...) */)
     }
 }))))
 })))
@@ -4007,13 +4007,13 @@ pub fn Data_Array_ST_Iterator_iterate(mut a0: Iterator, mut a1: std::rc::Rc<dyn 
     (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Control_Monad_ST_Internal_newImpl())(false), unsafe_coerce(std::rc::Rc::new(move |mut break: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_bindST","Control_Monad_ST_Internal_functorST","Control_Monad_ST_Internal_while","Data_Array_ST_Iterator_next","Data_Array_ST_Iterator_void1","Data_HeytingAlgebra_heytingAlgebraBoolean","f","iter"] p=break
     break.drop_explicit();
-    (Control_Monad_ST_Internal_while())((Control_Monad_ST_Internal_functorST().map.clone().unwrap())(Data_HeytingAlgebra_heytingAlgebraBoolean().not.clone().unwrap(), // Unsupported Expr: PrimEffect(...)), (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())((Data_Array_ST_Iterator_next())(iter), unsafe_coerce(std::rc::Rc::new(move |mut mx: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    (Control_Monad_ST_Internal_while())((Control_Monad_ST_Internal_functorST().map.clone().unwrap())(Data_HeytingAlgebra_heytingAlgebraBoolean().not.clone().unwrap(), unimplemented!() /* Unsupported Expr: PrimEffect(...) */), (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())((Data_Array_ST_Iterator_next())(iter), unsafe_coerce(std::rc::Rc::new(move |mut mx: UnknownType| -> UnknownType {
+    if unimplemented!() /* Unsupported Op1 */ {
         (f)((match mx { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        (Data_Array_ST_Iterator_void1())(// Unsupported Expr: PrimEffect(...))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        (Data_Array_ST_Iterator_void1())(unimplemented!() /* Unsupported Expr: PrimEffect(...) */)
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))))
 })))
@@ -4153,12 +4153,12 @@ pub fn Data_Array_ST_withArray(mut a0: std::rc::Rc<dyn Fn(STArray) -> ST>, mut a
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_bindST","f"] p=xs
     xs.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut result: UnknownType| -> UnknownType {
     (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())((f)(result), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 })))
 })))
@@ -4175,14 +4175,14 @@ pub fn Data_Array_ST_sortBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType)
     // AST: Typed(Typed(Abs(..., Typed(App(Var(...))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut comp: UnknownType| -> UnknownType {
     (Control_Monad_ST_Uncurried_runSTFn3())(Data_Array_ST_sortByImpl(), comp, unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         mk_int(1)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         mk_int(0)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         mk_int(-1)
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))
 })))(a0.clone(), a1.clone())
@@ -4259,19 +4259,19 @@ pub fn Data_Array_ST_modify(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(UnknownType)
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","Control_Monad_ST_Internal_bindST","f"] p=xs
     xs.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut entry: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_4 = (f)((match entry { Maybe::Just(val, ..) => val, _ => unimplemented!() }));
     lvl_4.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 }
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Control_Monad_ST_Internal_applicativeST().pure.clone().unwrap())(false)
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))
 }))
@@ -4338,7 +4338,7 @@ pub fn Data_Array_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -4354,7 +4354,7 @@ pub fn Data_Array_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -4416,7 +4416,7 @@ pub fn Data_Array_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -4435,7 +4435,7 @@ pub fn Data_Array_zipWith(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
     lvl_1.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -4453,7 +4453,7 @@ pub fn Data_Array_zipWithA(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["sequence1"] p=ys
     ys.drop_explicit();
-    (sequence1)(// Unsupported Expr: UncurriedApp(Var(...)))
+    (sequence1)(unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */)
 }))
 }))
 }))
@@ -4483,7 +4483,7 @@ pub fn Data_Array_updateAtIndices(mut a0: UnknownType, mut a1: UnknownType, mut 
     {
     let mut lvl_7 = (match v { Tuple::Tuple(val, ..) => val, _ => unimplemented!() });
     lvl_7.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 }
 }
@@ -4504,7 +4504,7 @@ pub fn Data_Array_updateAt(mut a0: i64, mut a1: UnknownType, mut a2: UnknownType
     lvl_1.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -4514,7 +4514,7 @@ pub fn Data_Array_unsafeIndex(mut a0: UnknownType, mut a1: UnknownType, mut a2: 
     // DEBUG: bodyVars=["lvl_1","lvl_2"] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut lvl_1: UnknownType, mut lvl_2: UnknownType| -> UnknownType {
-    // Unsupported Op2
+    unimplemented!() /* Unsupported Op2 */
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
 }
@@ -4524,7 +4524,7 @@ pub fn Data_Array_uncons(mut a0: UnknownType) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut lvl_0: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=lvl_0
     lvl_0.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone())
 }
 
@@ -4536,7 +4536,7 @@ pub fn Data_Array_toUnfoldable(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     let mut len = ((xs.dup()).len() as i32);
     (dictUnfoldable.unfoldr.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     if (Data_Array_lessThan())(i.dup(), len) {
-        Maybe::Just(Tuple::Tuple(// Unsupported Op2, mk_int((i).a + (mk_int(1)).a)))
+        Maybe::Just(Tuple::Tuple(unimplemented!() /* Unsupported Op2 */, mk_int((i).a + (mk_int(1)).a)))
     } else {
         Maybe::Nothing
     }
@@ -4551,7 +4551,7 @@ pub fn Data_Array_tail(mut a0: UnknownType) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut lvl_0: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=lvl_0
     lvl_0.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone())
 }
 
@@ -4563,7 +4563,7 @@ pub fn Data_Array_sortBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) ->
     unsafe_coerce(std::rc::Rc::new(move |mut lvl_1: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -4611,7 +4611,7 @@ pub fn Data_Array_slice(mut a0: i64, mut a1: i64, mut a2: UnknownType) -> Unknow
     lvl_1.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -4637,7 +4637,7 @@ pub fn Data_Array_take(mut a0: i64, mut a1: UnknownType) -> UnknownType {
     if (Data_Array_lessThan())(n, mk_int(1)) {
         vec![]
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -4659,7 +4659,7 @@ pub fn Data_Array_scanr(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> 
     lvl_1.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -4672,7 +4672,7 @@ pub fn Data_Array_scanl(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> 
     lvl_1.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -4683,7 +4683,7 @@ pub fn Data_Array_replicate(mut a0: i64, mut a1: UnknownType) -> UnknownType {
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -4694,7 +4694,7 @@ pub fn Data_Array_range(mut a0: i64, mut a1: i64) -> UnknownType {
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -4705,7 +4705,7 @@ pub fn Data_Array_partition(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mu
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -4754,22 +4754,22 @@ pub fn Data_Array_intersperse(mut a0: UnknownType, mut a1: UnknownType) -> Unkno
     } else {
         (Control_Monad_ST_Internal_run())((Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(Data_Array_ST_newImpl(), unsafe_coerce(std::rc::Rc::new(move |mut out: UnknownType| -> UnknownType {
     (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())({
-    let mut lvl_4 = // Unsupported Expr: Accessor(Local(...));
+    let mut lvl_4 = unimplemented!() /* Unsupported Expr: Accessor(Local(...)) */;
     lvl_4.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 }, unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","Control_Monad_ST_Internal_bindST","Control_Monad_ST_Internal_forImpl","Data_Array_discard","Data_Array_void","arr","out","v"] p=_dollar___unused
     _dollar___unused.drop_explicit();
     (Data_Array_discard())((Control_Monad_ST_Internal_forImpl())(mk_int(1), v, unsafe_coerce(std::rc::Rc::new(move |mut idx: UnknownType| -> UnknownType {
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Data_Array_void","arr","idx"] p=_dollar___unused
     _dollar___unused.drop_explicit();
     (Data_Array_void())({
-    let mut lvl_7 = // Unsupported Op2;
+    let mut lvl_7 = unimplemented!() /* Unsupported Op2 */;
     lvl_7.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 })
 })))
@@ -4802,7 +4802,7 @@ pub fn Data_Array_insertAt(mut a0: i64, mut a1: UnknownType, mut a2: UnknownType
     lvl_1.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -4812,7 +4812,7 @@ pub fn Data_Array_init(mut a0: UnknownType) -> Maybe {
     if ((((xs).len() as i32)).a == (mk_int(0)).a) {
         Maybe::Nothing
     } else {
-        Maybe::Just(// Unsupported Expr: UncurriedApp(Var(...)))
+        Maybe::Just(unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */)
     }
 })))(a0.clone())
 }
@@ -4824,7 +4824,7 @@ pub fn Data_Array_index(mut a0: UnknownType, mut a1: i64) -> Maybe {
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -4833,7 +4833,7 @@ pub fn Data_Array_last(mut a0: UnknownType) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=xs
     xs.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone())
 }
 
@@ -4847,8 +4847,8 @@ pub fn Data_Array_unsnoc(mut a0: UnknownType) -> Maybe {
 })), if ((((xs).len() as i32)).a == (mk_int(0)).a) {
         Maybe::Nothing
     } else {
-        Maybe::Just(// Unsupported Expr: UncurriedApp(Var(...)))
-    }), // Unsupported Expr: UncurriedApp(Var(...)))
+        Maybe::Just(unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */)
+    }), unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */)
 })))(a0.clone())
 }
 
@@ -4864,13 +4864,13 @@ pub fn Data_Array_modifyAt(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(UnknownType) 
     // DEBUG: bodyVars=[] p=xs
     xs.drop_explicit();
     {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: UncurriedApp(Var(...))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -4892,7 +4892,7 @@ pub fn Data_Array_unzip(mut a0: UnknownType) -> Tuple {
     (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Control_Monad_ST_Internal_functorST().map.clone().unwrap())((Data_Array_ST_Iterator_Iterator())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=v
     v.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))), (Control_Monad_ST_Internal_newImpl())(mk_int(0))), unsafe_coerce(std::rc::Rc::new(move |mut iter: UnknownType| -> UnknownType {
     (Data_Array_discard().dup())((Data_Array_ST_Iterator_iterate())(iter, unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
@@ -4901,11 +4901,11 @@ pub fn Data_Array_unzip(mut a0: UnknownType) -> Tuple {
     {
     let mut lvl_6 = (match v { Tuple::Tuple(_, val, ..) => val, _ => unimplemented!() });
     lvl_6.drop_explicit();
-    (Data_Array_discard())((Data_Array_void1().dup())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Data_Array_discard())((Data_Array_void1().dup())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 ), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Data_Array_void1"] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    (Data_Array_void1())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Data_Array_void1())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 )
 })))
 }
@@ -4913,9 +4913,9 @@ pub fn Data_Array_unzip(mut a0: UnknownType) -> Tuple {
 }))), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","Control_Monad_ST_Internal_bindST"] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut fsts_prime: UnknownType| -> UnknownType {
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut snds_prime: UnknownType| -> UnknownType {
     (Control_Monad_ST_Internal_applicativeST().pure.clone().unwrap())(Tuple::Tuple(fsts_prime, snds_prime))
 })))
@@ -4932,7 +4932,7 @@ pub fn Data_Array_head(mut a0: UnknownType) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=xs
     xs.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone())
 }
 
@@ -4947,11 +4947,11 @@ pub fn Data_Array_nubBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> 
 }))
 })), (Data_FunctorWithIndex_functorWithIndexArray().mapWithIndex.clone().unwrap())(Data_Tuple_Tuple(), xs));
     {
-    let mut v = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut v = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         vec![]
-    } else if // Unsupported Op1 {
-        (Data_Functor_functorArray().map.clone().unwrap())(Data_Tuple_snd(), (Data_Array_sortWith())(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }), Data_Tuple_fst(), (Control_Monad_ST_Internal_run())((Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        (Data_Functor_functorArray().map.clone().unwrap())(Data_Tuple_snd(), (Data_Array_sortWith())(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }), Data_Tuple_fst(), (Control_Monad_ST_Internal_run())((Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut result: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","Control_Monad_ST_Internal_bindST","Control_Monad_ST_Internal_foreach","Control_Monad_ST_Internal_functorST","Data_Array_discard","Data_Array_void1","Data_Eq_eqBoolean","Data_Ordering_eqOrdering","Data_Unit_unit","comp","indexedAndSorted"] p=result
     result.drop_explicit();
@@ -4962,17 +4962,17 @@ pub fn Data_Array_nubBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> 
     // DEBUG: bodyVars=[] p=x
     x.drop_explicit();
     {
-    let mut lvl_8 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_8 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match (match lvl_8 { Maybe::Just(val, ..) => val, _ => unimplemented!() }) { Tuple::Tuple(_, val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
-})), // Unsupported UncurriedEffectApp with fn: Var(...)
+})), unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 ), unsafe_coerce(std::rc::Rc::new(move |mut lst: UnknownType| -> UnknownType {
     {
-    let mut lvl_8 = (Data_Array_void1())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    let mut lvl_8 = (Data_Array_void1())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 );
     if (Data_Eq_eqBoolean().eq.clone().unwrap())((Data_Ordering_eqOrdering().eq.clone().unwrap())((comp)(lst, lvl_6), Ordering::EQ), false) {
         lvl_8
@@ -4985,12 +4985,12 @@ pub fn Data_Array_nubBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> 
 }))), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 })))
 }))))))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }
@@ -5017,22 +5017,22 @@ pub fn Data_Array_groupBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
     (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())((Control_Monad_ST_Internal_functorST().map.clone().unwrap())((Data_Array_ST_Iterator_Iterator())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=v
     v.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))), (Control_Monad_ST_Internal_newImpl())(mk_int(0))), unsafe_coerce(std::rc::Rc::new(move |mut iter: UnknownType| -> UnknownType {
     (Data_Array_discard().dup())((Data_Array_ST_Iterator_iterate())(iter.dup(), unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     (Data_Array_void())((Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(Data_Array_ST_newImpl(), unsafe_coerce(std::rc::Rc::new(move |mut sub1: UnknownType| -> UnknownType {
-    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().dup().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_bindST","Data_Array_ST_Iterator_pushWhile","Data_Array_discard","iter","op","sub1","x"] p=_dollar___unused
     _dollar___unused.drop_explicit();
     (Data_Array_discard())((Data_Array_ST_Iterator_pushWhile())((op)(x), iter, sub1), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_bindST"] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported UncurriedEffectApp with fn: Var(...)
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 , unsafe_coerce(std::rc::Rc::new(move |mut grp: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=grp
     grp.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 })))
 })))
@@ -5041,7 +5041,7 @@ pub fn Data_Array_groupBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
 }))), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 })))
 })))
@@ -5094,7 +5094,7 @@ pub fn Data_Array_fromFoldable(mut a0: UnknownType, mut a1: UnknownType) -> Unkn
     unsafe_coerce(std::rc::Rc::new(move |mut lvl_2: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=lvl_2
     lvl_2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }
 })))(a0.clone(), a1.clone())
@@ -5113,7 +5113,7 @@ pub fn Data_Array_foldl(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> 
 pub fn Data_Array_transpose(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone())
 }
 
@@ -5131,7 +5131,7 @@ pub fn Data_Array_foldRecM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unkno
     if (Data_Array_greaterThanOrEq())(o.dup().b.clone().unwrap(), ((array).len() as i32)) {
         (lvl_2.pure.clone().unwrap())(Step::Done(o.a.clone().unwrap()))
     } else {
-        ((Monad0.Bind1.clone().unwrap())(unimplemented!()).bind.clone().unwrap())((f)(o.dup().a.clone().unwrap(), // Unsupported Op2), unsafe_coerce(std::rc::Rc::new(move |mut res_prime: UnknownType| -> UnknownType {
+        ((Monad0.Bind1.clone().unwrap())(unimplemented!()).bind.clone().unwrap())((f)(o.dup().a.clone().unwrap(), unimplemented!() /* Unsupported Op2 */), unsafe_coerce(std::rc::Rc::new(move |mut res_prime: UnknownType| -> UnknownType {
     (lvl_2.pure.clone().unwrap())(Step::Loop(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: Some(unsafe_coerce(mk_int((o.b.clone().unwrap()).a + (mk_int(1)).a))), c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })))
 })))
     }
@@ -5168,7 +5168,7 @@ pub fn Data_Array_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownT
     unsafe_coerce(std::rc::Rc::new(move |mut lvl_3: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=lvl_3
     lvl_3.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 }))
@@ -5190,7 +5190,7 @@ pub fn Data_Array_findMap(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>, mut
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -5201,7 +5201,7 @@ pub fn Data_Array_findLastIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -5217,11 +5217,11 @@ pub fn Data_Array_insertBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) 
     // DEBUG: bodyVars=[] p=ys
     ys.drop_explicit();
     {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_3 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -5243,7 +5243,7 @@ pub fn Data_Array_findIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mu
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -5254,17 +5254,17 @@ pub fn Data_Array_span(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1:
     p.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut arr: UnknownType| -> UnknownType {
     {
-    let mut breakIndex = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut breakIndex = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         if (((match breakIndex { Maybe::Just(val, ..) => val, _ => unimplemented!() })).a == (mk_int(0)).a) {
         perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })
     } else {
         perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })
     }
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -5287,8 +5287,8 @@ pub fn Data_Array_find(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1:
     f.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut lvl_2: UnknownType| -> UnknownType {
-    // Unsupported Op2
-})), // Unsupported Expr: UncurriedApp(Var(...)))
+    unimplemented!() /* Unsupported Op2 */
+})), unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */)
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -5300,7 +5300,7 @@ pub fn Data_Array_filter(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -5315,7 +5315,7 @@ pub fn Data_Array_intersectBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=ys
     ys.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -5362,13 +5362,13 @@ pub fn Data_Array_notElem(mut a0: UnknownType, mut a1: UnknownType, mut a2: Unkn
     // DEBUG: bodyVars=[] p=arr
     arr.drop_explicit();
     {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         true
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -5388,13 +5388,13 @@ pub fn Data_Array_elem(mut a0: UnknownType, mut a1: UnknownType, mut a2: Unknown
     // DEBUG: bodyVars=[] p=arr
     arr.drop_explicit();
     {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -5420,7 +5420,7 @@ pub fn Data_Array_dropEnd(mut a0: i64, mut a1: UnknownType) -> UnknownType {
     if (Data_Array_lessThan())(lvl_2, mk_int(1)) {
         vec![]
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 }
 }))
@@ -5434,7 +5434,7 @@ pub fn Data_Array_drop(mut a0: i64, mut a1: UnknownType) -> UnknownType {
     if (Data_Array_lessThan())(n, mk_int(1)) {
         xs
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -5449,7 +5449,7 @@ pub fn Data_Array_takeEnd(mut a0: i64, mut a1: UnknownType) -> UnknownType {
     if (Data_Array_lessThan())(lvl_2, mk_int(1)) {
         xs
     } else {
-        // Unsupported Expr: UncurriedApp(Var(...))
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     }
 }
 }))
@@ -5463,7 +5463,7 @@ pub fn Data_Array_deleteAt(mut a0: i64, mut a1: UnknownType) -> Maybe {
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -5480,20 +5480,20 @@ pub fn Data_Array_deleteBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) 
         vec![]
     } else {
         {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         v2
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
-    let mut lvl_4 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_4 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_4 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
     }
@@ -5566,12 +5566,12 @@ pub fn Data_Array_mapMaybe(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>, mu
     (Data_Array_concatMap())(unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_2 = (f)(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         vec![]
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         vec![(match lvl_2 { Maybe::Just(val, ..) => val, _ => unimplemented!() })]
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))
@@ -5623,7 +5623,7 @@ pub fn Data_Array_any(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: 
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -5642,10 +5642,10 @@ pub fn Data_Array_nubByEq(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     (Data_HeytingAlgebra_heytingAlgebraBoolean().not.clone().unwrap())((lvl_4)(x))
 }))
-}, // Unsupported UncurriedEffectApp with fn: Var(...)
+}, unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 ), unsafe_coerce(std::rc::Rc::new(move |mut e: UnknownType| -> UnknownType {
     {
-    let mut lvl_5 = (Data_Array_void1)(// Unsupported UncurriedEffectApp with fn: Var(...)
+    let mut lvl_5 = (Data_Array_void1)(unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 );
     if e {
         lvl_5
@@ -5657,7 +5657,7 @@ pub fn Data_Array_nubByEq(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
 }))), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
-    // Unsupported UncurriedEffectApp with fn: Var(...)
+    unimplemented!() /* Unsupported UncurriedEffectApp with fn: Var(...) */
 
 })))
 }))))
@@ -5704,22 +5704,22 @@ pub fn Data_Array_alterAt(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(UnknownType) -
     // DEBUG: bodyVars=["f"] p=xs
     xs.drop_explicit();
     {
-    let mut lvl_3 = // Unsupported Expr: UncurriedApp(Var(...));
-    if // Unsupported Op1 {
+    let mut lvl_3 = unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */;
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut v = (f)((match lvl_3 { Maybe::Just(val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
-        // Unsupported Expr: UncurriedApp(Var(...))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: UncurriedApp(Var(...))
+    if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -5734,7 +5734,7 @@ pub fn Data_Array_all(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: 
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -8222,60 +8222,60 @@ pub fn Data_Either_Nested_either9(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut h: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (h)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (i)((match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8300,54 +8300,54 @@ pub fn Data_Either_Nested_either8(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut g: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut h: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (h)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8370,48 +8370,48 @@ pub fn Data_Either_Nested_either7(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut g: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8432,42 +8432,42 @@ pub fn Data_Either_Nested_either6(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut e: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8486,36 +8486,36 @@ pub fn Data_Either_Nested_either5(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut d: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut e: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8532,30 +8532,30 @@ pub fn Data_Either_Nested_either4(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut c: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut d: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8570,24 +8570,24 @@ pub fn Data_Either_Nested_either3(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
     unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut c: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8600,18 +8600,18 @@ pub fn Data_Either_Nested_either2(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Unk
 (unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8631,66 +8631,66 @@ pub fn Data_Either_Nested_either10(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Un
     unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut j: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (h)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (i)((match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (j)((match (match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -8708,12 +8708,12 @@ pub fn Data_Either_Nested_either10(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Un
 pub fn Data_Either_Nested_either1(mut a0: Either) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match y { Either::Left(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -8723,7 +8723,7 @@ pub fn Data_Either_Nested_at9(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)))))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)))))))) {
         (f)((match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8738,7 +8738,7 @@ pub fn Data_Either_Nested_at8(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))))))) {
         (f)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8753,7 +8753,7 @@ pub fn Data_Either_Nested_at7(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)))))) {
         (f)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8768,7 +8768,7 @@ pub fn Data_Either_Nested_at6(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))))) {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8783,7 +8783,7 @@ pub fn Data_Either_Nested_at5(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)))) {
         (f)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8798,7 +8798,7 @@ pub fn Data_Either_Nested_at4(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))) {
         (f)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8813,7 +8813,7 @@ pub fn Data_Either_Nested_at3(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)) {
         (f)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8828,7 +8828,7 @@ pub fn Data_Either_Nested_at2(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && // Unsupported Op1) {
+    if (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */) {
         (f)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8843,7 +8843,7 @@ pub fn Data_Either_Nested_at10(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(U
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))))))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))))))))) {
         (f)((match (match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8858,7 +8858,7 @@ pub fn Data_Either_Nested_at1(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (f)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -8923,12 +8923,12 @@ pub fn Data_Either_showEither(mut a0: UnknownType, mut a1: UnknownType) -> Unkno
 (unsafe_coerce(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut dictShow1: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(Left "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow.show.clone().unwrap())((match v { Either::Left(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(Right "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow1.show.clone().unwrap())((match v { Either::Right(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 }))
@@ -8948,12 +8948,12 @@ pub fn Data_Either_note(mut a0: UnknownType, mut a1: Maybe) -> Either {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Either::Left(a)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Either::Right((match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -8978,7 +8978,7 @@ pub fn Data_Either_fromRight_prime(mut a0: std::rc::Rc<dyn Fn(Unit) -> UnknownTy
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v1 { Either::Right(val, ..) => val, _ => unimplemented!() })
     } else {
         (v)(Data_Unit_unit())
@@ -8991,7 +8991,7 @@ pub fn Data_Either_fromRight(mut a0: UnknownType, mut a1: Either) -> UnknownType
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v1 { Either::Right(val, ..) => val, _ => unimplemented!() })
     } else {
         v
@@ -9004,7 +9004,7 @@ pub fn Data_Either_fromLeft_prime(mut a0: std::rc::Rc<dyn Fn(Unit) -> UnknownTyp
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v1 { Either::Left(val, ..) => val, _ => unimplemented!() })
     } else {
         (v)(Data_Unit_unit())
@@ -9017,7 +9017,7 @@ pub fn Data_Either_fromLeft(mut a0: UnknownType, mut a1: Either) -> UnknownType 
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v1 { Either::Left(val, ..) => val, _ => unimplemented!() })
     } else {
         v
@@ -9086,12 +9086,12 @@ pub fn Data_Either_either(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (v)((match v2 { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (v1)((match v2 { Either::Right(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -9101,12 +9101,12 @@ pub fn Data_Either_either(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType
 pub fn Data_Either_hush(mut a0: Either) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just((match v2 { Either::Right(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -9114,12 +9114,12 @@ pub fn Data_Either_hush(mut a0: Either) -> Maybe {
 pub fn Data_Either_isLeft(mut a0: Either) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -9127,12 +9127,12 @@ pub fn Data_Either_isLeft(mut a0: Either) -> bool {
 pub fn Data_Either_isRight(mut a0: Either) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -9172,12 +9172,12 @@ pub fn Data_Either_boundedEither(mut a0: UnknownType, mut a1: UnknownType) -> Un
 pub fn Data_Either_blush(mut a0: Either) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just((match v2 { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -9271,12 +9271,12 @@ pub fn Data_Enum_Gen_genBoundedEnum(mut a0: UnknownType, mut a1: UnknownType) ->
     let mut Bounded0 = (dictBoundedEnum.Bounded0.clone().unwrap())(unimplemented!());
     {
     let mut v = (Enum1.dup().succ.clone().unwrap())(Bounded0.dup().bottom.clone().unwrap());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (elements)(NonEmpty::NonEmpty(Bounded0.dup().bottom.clone().unwrap(), (Data_Enum_enumFromTo())(Enum1, Data_Unfoldable1_unfoldable1Array(), (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() }), Bounded0.top.clone().unwrap())))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (((dictMonadGen.Monad0.clone().unwrap())(unimplemented!()).Applicative0.clone().unwrap())(unimplemented!()).pure.clone().unwrap())(Bounded0.bottom.clone().unwrap())
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }
@@ -9325,7 +9325,7 @@ pub fn Data_Enum_Generic_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -9341,7 +9341,7 @@ pub fn Data_Enum_Generic_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -9609,7 +9609,7 @@ pub fn Data_Enum_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -9625,7 +9625,7 @@ pub fn Data_Enum_greaterThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -9646,7 +9646,7 @@ pub fn Data_Enum_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -9662,7 +9662,7 @@ pub fn Data_Enum_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -9743,16 +9743,16 @@ pub fn Data_Enum_toEnumWithDefaults(mut a0: UnknownType, mut a1: UnknownType, mu
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut v = (dictBoundedEnum.dup().toEnum.clone().unwrap())(x.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if (Data_Enum_lessThan())(x, (dictBoundedEnum.fromEnum.clone().unwrap())(bottom2)) {
         low
     } else {
         high
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -9844,7 +9844,7 @@ pub fn Data_Enum_enumFromTo(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     if ((Ord0.Eq0.clone().unwrap())(unimplemented!()).eq.clone().unwrap())(v.dup(), v1) {
         (Data_Unfoldable1_replicate1())(dictUnfoldable1, mk_int(1), v)
-    } else if if // Unsupported Op1 {
+    } else if if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -9855,7 +9855,7 @@ pub fn Data_Enum_enumFromTo(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
     // DEBUG: bodyVars=["a_prime"] p=v
     v.drop_explicit();
     a_prime
-})), (Data_Enum_guard())(if // Unsupported Op1 {
+})), (Data_Enum_guard())(if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -9869,7 +9869,7 @@ pub fn Data_Enum_enumFromTo(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
     // DEBUG: bodyVars=["a_prime"] p=v
     v.drop_explicit();
     a_prime
-})), (Data_Enum_guard())(if // Unsupported Op1 {
+})), (Data_Enum_guard())(if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -9897,10 +9897,10 @@ pub fn Data_Enum_enumFromThenTo(mut a0: UnknownType, mut a1: UnknownType, mut a2
     (dictFunctor.map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_8 = (dictBoundedEnum.toEnum.clone().unwrap())(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_8 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })), (dictUnfoldable.unfoldr.clone().unwrap())({
@@ -10010,7 +10010,7 @@ pub fn Data_Enum_defaultToEnum(mut a0: UnknownType, mut a1: UnknownType, mut a2:
     let mut bottom2 = dictBounded.bottom.clone().unwrap();
     unsafe_coerce(std::rc::Rc::new(move |mut dictEnum: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut i_prime: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Branch(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Branch(...))) */
 }))
 }))
 }
@@ -10042,7 +10042,7 @@ pub fn Data_Enum_defaultPred(mut a0: std::rc::Rc<dyn Fn(i64) -> Maybe>, mut a1: 
 pub fn Data_Enum_defaultFromEnum(mut a0: UnknownType, mut a1: UnknownType) -> i64 {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut dictEnum: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -10052,7 +10052,7 @@ pub fn Data_Enum_defaultCardinality(mut a0: UnknownType, mut a1: UnknownType) ->
     {
     let mut bottom2 = dictBounded.bottom.clone().unwrap();
     unsafe_coerce(std::rc::Rc::new(move |mut dictEnum: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Typed(App(Local(...)))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Typed(App(Local(...))))) */
 }))
 }
 })))(a0.clone(), a1.clone())
@@ -10740,7 +10740,7 @@ pub fn Data_Foldable_indexr(mut a0: UnknownType, mut a1: i64, mut a2: UnknownTyp
     {
     let mut lvl_2 = (dictFoldable.foldr.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut cursor: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         cursor
     } else {
         if ((cursor.dup().pos.clone().unwrap()).a == (idx).a) {
@@ -10874,7 +10874,7 @@ pub fn Data_Foldable_indexl(mut a0: UnknownType, mut a1: i64, mut a2: UnknownTyp
     {
     let mut lvl_2 = (dictFoldable.foldl.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut cursor: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         cursor
     } else {
         if ((cursor.dup().pos.clone().unwrap()).a == (idx).a) {
@@ -10944,16 +10944,16 @@ pub fn Data_Foldable_maximumBy(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(U
     unsafe_coerce(std::rc::Rc::new(move |mut cmp: UnknownType| -> UnknownType {
     (dictFoldable.foldl.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(v1)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(if (Data_Ordering_eqOrdering().eq.clone().unwrap())((cmp)((match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }), v1), Ordering::GT) {
         (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
         v1
     })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })), Maybe::Nothing)
@@ -10979,16 +10979,16 @@ pub fn Data_Foldable_minimumBy(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(U
     unsafe_coerce(std::rc::Rc::new(move |mut cmp: UnknownType| -> UnknownType {
     (dictFoldable.foldl.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(v1)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(if (Data_Ordering_eqOrdering().eq.clone().unwrap())((cmp)((match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }), v1), Ordering::LT) {
         (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
         v1
     })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })), Maybe::Nothing)
@@ -11305,7 +11305,7 @@ pub fn Data_Foldable_findMap(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unk
     unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
     (dictFoldable.foldl.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (p)(v1)
     } else {
         v
@@ -11322,7 +11322,7 @@ pub fn Data_Foldable_find(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unknow
     unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
     (dictFoldable.foldl.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (p)(v1.dup())) {
+    if (unimplemented!() /* Unsupported Op1 */ && (p)(v1.dup())) {
         Maybe::Just(v1)
     } else {
         v
@@ -11860,7 +11860,7 @@ pub fn Data_FoldableWithIndex_findWithIndex(mut a0: UnknownType, mut a1: std::rc
     (dictFoldableWithIndex.foldlWithIndex.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (p)(v.dup(), v2.dup())) {
+    if (unimplemented!() /* Unsupported Op1 */ && (p)(v.dup(), v2.dup())) {
         Maybe::Just(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }))
     } else {
         v1
@@ -11879,7 +11879,7 @@ pub fn Data_FoldableWithIndex_findMapWithIndex(mut a0: UnknownType, mut a1: std:
     (dictFoldableWithIndex.foldlWithIndex.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (f)(v, v2)
     } else {
         v1
@@ -12035,7 +12035,7 @@ pub fn Data_Function_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -12083,7 +12083,7 @@ pub fn Data_Function_const(mut a0: UnknownType, mut a1: UnknownType) -> UnknownT
 pub fn Data_Function_applyN(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>, mut a1: i64, mut a2: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Local(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 })))(a0.clone(), a1.clone(), a2.clone())
 }
 
@@ -13028,60 +13028,60 @@ pub fn Data_Functor_Coproduct_Nested_coproduct9(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut h: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (h)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (i)((match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13106,54 +13106,54 @@ pub fn Data_Functor_Coproduct_Nested_coproduct8(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut g: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut h: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (h)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13176,48 +13176,48 @@ pub fn Data_Functor_Coproduct_Nested_coproduct7(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut g: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13238,42 +13238,42 @@ pub fn Data_Functor_Coproduct_Nested_coproduct6(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut e: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13292,36 +13292,36 @@ pub fn Data_Functor_Coproduct_Nested_coproduct5(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut d: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut e: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13338,30 +13338,30 @@ pub fn Data_Functor_Coproduct_Nested_coproduct4(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut c: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut d: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13376,24 +13376,24 @@ pub fn Data_Functor_Coproduct_Nested_coproduct3(mut a0: std::rc::Rc<dyn Fn(Unkno
     unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut c: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13406,18 +13406,18 @@ pub fn Data_Functor_Coproduct_Nested_coproduct2(mut a0: std::rc::Rc<dyn Fn(Unkno
 (unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13437,66 +13437,66 @@ pub fn Data_Functor_Coproduct_Nested_coproduct10(mut a0: std::rc::Rc<dyn Fn(Unkn
     unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut j: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (a)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (b)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (c)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (d)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (e)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (g)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (h)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (i)((match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (j)((match (match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -13514,12 +13514,12 @@ pub fn Data_Functor_Coproduct_Nested_coproduct10(mut a0: std::rc::Rc<dyn Fn(Unkn
 pub fn Data_Functor_Coproduct_Nested_coproduct1(mut a0: Either) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match y { Either::Left(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -13529,7 +13529,7 @@ pub fn Data_Functor_Coproduct_Nested_at9(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)))))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)))))))) {
         (f)((match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13544,7 +13544,7 @@ pub fn Data_Functor_Coproduct_Nested_at8(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))))))) {
         (f)((match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13559,7 +13559,7 @@ pub fn Data_Functor_Coproduct_Nested_at7(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)))))) {
         (f)((match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13574,7 +13574,7 @@ pub fn Data_Functor_Coproduct_Nested_at6(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))))) {
         (f)((match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13589,7 +13589,7 @@ pub fn Data_Functor_Coproduct_Nested_at5(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)))) {
         (f)((match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13604,7 +13604,7 @@ pub fn Data_Functor_Coproduct_Nested_at4(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))) {
         (f)((match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13619,7 +13619,7 @@ pub fn Data_Functor_Coproduct_Nested_at3(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1)) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */)) {
         (f)((match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13634,7 +13634,7 @@ pub fn Data_Functor_Coproduct_Nested_at2(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && // Unsupported Op1) {
+    if (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */) {
         (f)((match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13649,7 +13649,7 @@ pub fn Data_Functor_Coproduct_Nested_at10(mut a0: UnknownType, mut a1: std::rc::
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && (// Unsupported Op1 && // Unsupported Op1))))))))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */))))))))) {
         (f)((match (match (match (match (match (match (match (match (match (match y { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Right(val, ..) => val, _ => unimplemented!() }) { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13664,7 +13664,7 @@ pub fn Data_Functor_Coproduct_Nested_at1(mut a0: UnknownType, mut a1: std::rc::R
 (unsafe_coerce(std::rc::Rc::new(move |mut b: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (f)((match y { Either::Left(val, ..) => val, _ => unimplemented!() }))
     } else {
         b
@@ -13717,12 +13717,12 @@ pub fn Data_Functor_Coproduct_showCoproduct(mut a0: UnknownType, mut a1: Unknown
 (unsafe_coerce(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut dictShow1: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(left "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow.show.clone().unwrap())((match v { Either::Left(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(right "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow1.show.clone().unwrap())((match v { Either::Right(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 }))
@@ -13826,12 +13826,12 @@ pub fn Data_Functor_Coproduct_coproduct(mut a0: std::rc::Rc<dyn Fn(UnknownType) 
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (v)((match v2 { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (v1)((match v2 { Either::Right(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -15527,12 +15527,12 @@ pub fn Data_Generic_Rep_showSum(mut a0: UnknownType, mut a1: UnknownType) -> Unk
 (unsafe_coerce(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut dictShow1: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(Inl "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow.show.clone().unwrap())((match v { Sum::Inl(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(Inr "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow1.show.clone().unwrap())((match v { Sum::Inr(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 }))
@@ -16232,7 +16232,7 @@ pub fn Data_Int_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -16248,7 +16248,7 @@ pub fn Data_Int_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -16271,12 +16271,12 @@ unsafe_coerce(0)
 pub fn Data_Int_showParity() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
 perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("Even")
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("Odd")
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 }
@@ -16295,7 +16295,7 @@ pub fn Data_Int_radix(mut a0: i64) -> Maybe {
 pub fn Data_Int_odd(mut a0: i64) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(App(Accessor(Var(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (Data_Eq_eqBoolean().eq.clone().unwrap())(((// Unsupported Op2).a == (mk_int(0)).a), false)
+    (Data_Eq_eqBoolean().eq.clone().unwrap())(((unimplemented!() /* Unsupported Op2 */).a == (mk_int(0)).a), false)
 })))(a0.clone())
 }
 
@@ -16344,12 +16344,12 @@ pub fn Data_Int_unsafeClamp(mut a0: f64) -> i64 {
     } else {
         {
     let mut lvl_1 = (Data_Int_fromNumber())(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         mk_int(0)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
     }
@@ -16380,14 +16380,14 @@ pub fn Data_Int_floor(mut a0: f64) -> i64 {
 pub fn Data_Int_even(mut a0: i64) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(PrimOp(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    ((// Unsupported Op2).a == (mk_int(0)).a)
+    ((unimplemented!() /* Unsupported Op2 */).a == (mk_int(0)).a)
 })))(a0.clone())
 }
 
 pub fn Data_Int_parity(mut a0: i64) -> Parity {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut n: UnknownType| -> UnknownType {
-    if ((// Unsupported Op2).a == (mk_int(0)).a) {
+    if ((unimplemented!() /* Unsupported Op2 */).a == (mk_int(0)).a) {
         Parity::Even
     } else {
         Parity::Odd
@@ -16842,24 +16842,24 @@ pub fn Data_List_Internal_fromZipper(mut a0: List, mut a1: Set) -> Set {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         v1
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_Internal_fromZipper())((match v.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }), Set::Two(v1, (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::TwoLeft(val, ..) => val, _ => unimplemented!() }), (match (match v { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::TwoLeft(_, val, ..) => val, _ => unimplemented!() })))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_Internal_fromZipper())((match v.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }), Set::Two((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::TwoRight(val, ..) => val, _ => unimplemented!() }), (match (match v { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::TwoRight(_, val, ..) => val, _ => unimplemented!() }), v1))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_Internal_fromZipper())((match v.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }), Set::Three(v1, (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeLeft(val, ..) => val, _ => unimplemented!() }), (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeLeft(_, val, ..) => val, _ => unimplemented!() }), (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeLeft(_, _, val, ..) => val, _ => unimplemented!() }), (match (match v { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeLeft(_, _, _, val, ..) => val, _ => unimplemented!() })))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_Internal_fromZipper())((match v.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }), Set::Three((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeMiddle(val, ..) => val, _ => unimplemented!() }), (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeMiddle(_, val, ..) => val, _ => unimplemented!() }), v1, (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeMiddle(_, _, val, ..) => val, _ => unimplemented!() }), (match (match v { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeMiddle(_, _, _, val, ..) => val, _ => unimplemented!() })))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_Internal_fromZipper())((match v.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }), Set::Three((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeRight(val, ..) => val, _ => unimplemented!() }), (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeRight(_, val, ..) => val, _ => unimplemented!() }), (match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeRight(_, _, val, ..) => val, _ => unimplemented!() }), (match (match v { List::Cons(val, ..) => val, _ => unimplemented!() }) { TreeContext::ThreeRight(_, _, _, val, ..) => val, _ => unimplemented!() }), v1))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -16871,7 +16871,7 @@ pub fn Data_List_Internal_insertAndLookupBy(mut a0: std::rc::Rc<dyn Fn(UnknownTy
 (unsafe_coerce(std::rc::Rc::new(move |mut comp: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut k: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut orig: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., LetRec(..., Typed(App(Local(...)))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., LetRec(..., Typed(App(Local(...))))) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -16979,7 +16979,7 @@ pub fn Data_List_Lazy_NonEmpty_repeat(mut a0: UnknownType) -> Lazy {
     (Data_Lazy_defer().dup())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Data_Lazy_defer","Data_List_Lazy_Types_lazyList","go","x"] p=v
     v.drop_explicit();
-    NonEmpty::NonEmpty(x.dup(), // Unsupported Expr: LetRec(..., Typed(Local(...))))
+    NonEmpty::NonEmpty(x.dup(), unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */)
 })))
 })))(a0.clone())
 }
@@ -16998,12 +16998,12 @@ pub fn Data_List_Lazy_NonEmpty_last(mut a0: Lazy) -> UnknownType {
     let mut v1 = (Data_Lazy_force())(v);
     {
     let mut lvl_2 = (Data_List_Lazy_last())((match v1.dup() { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v1 { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_2 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }
@@ -17030,9 +17030,9 @@ pub fn Data_List_Lazy_NonEmpty_init(mut a0: Lazy) -> Lazy {
     let mut v1 = (Data_Lazy_force())(v);
     {
     let mut lvl_2 = (Data_List_Lazy_init())((match v1.dup() { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Data_List_Lazy_Types_nil()
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_3 = (match lvl_2 { Maybe::Just(val, ..) => val, _ => unimplemented!() });
     (Data_Lazy_defer())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
@@ -17042,7 +17042,7 @@ pub fn Data_List_Lazy_NonEmpty_init(mut a0: Lazy) -> Lazy {
 })))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }
@@ -17061,9 +17061,9 @@ pub fn Data_List_Lazy_NonEmpty_fromList(mut a0: Lazy) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut l: UnknownType| -> UnknownType {
     {
     let mut v = (Data_Lazy_force())(l);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_2 = (match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() });
     {
@@ -17076,7 +17076,7 @@ pub fn Data_List_Lazy_NonEmpty_fromList(mut a0: Lazy) -> Maybe {
 }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -17372,16 +17372,16 @@ pub fn Data_List_Lazy_Types_showList(mut a0: UnknownType) -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(fromFoldable ["), (Data_Semigroup_semigroupString().dup().append.clone().unwrap())({
     let mut v = (Data_Lazy_force())(xs);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("")
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())((dictShow.dup().show.clone().unwrap())((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() })), (Data_List_Lazy_Types_foldableList().foldl.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut shown: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut x_prime: UnknownType| -> UnknownType {
     (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(shown, (Data_Semigroup_semigroupString().append.clone().unwrap())(unsafe_coerce(","), (dictShow.show.clone().unwrap())(x_prime)))
 }))
 })), unsafe_coerce(""), (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }, unsafe_coerce("])")))
 })))), discard: None })
@@ -17401,12 +17401,12 @@ pub fn Data_List_Lazy_Types_showStep(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Typed(Lit)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("Nil")
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("("), (Data_Semigroup_semigroupString().dup().append.clone().unwrap())((dictShow.dup().show.clone().unwrap())((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() })), (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce(" : "), (Data_Semigroup_semigroupString().append.clone().unwrap())(((Data_List_Lazy_Types_showList())(dictShow).show.clone().unwrap())((match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 })))(a0.clone())
@@ -17658,7 +17658,7 @@ pub fn Data_List_Lazy_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -17685,7 +17685,7 @@ pub fn Data_List_Lazy_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -17701,7 +17701,7 @@ pub fn Data_List_Lazy_greaterThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -17717,7 +17717,7 @@ pub fn Data_List_Lazy_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -17757,14 +17757,14 @@ pub fn Data_List_Lazy_zipWith(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
     (Data_Lazy_applyLazy().apply.clone().unwrap())((Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if (// Unsupported Op1 && // Unsupported Op1) {
+    } else if (unimplemented!() /* Unsupported Op1 */ && unimplemented!() /* Unsupported Op1 */) {
         Step::Cons((f.dup())((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() })), (Data_List_Lazy_zipWith())(f, (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() }), (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })), xs), ys)
@@ -17804,16 +17804,16 @@ pub fn Data_List_Lazy_updateAt(mut a0: i64, mut a1: UnknownType, mut a2: Lazy) -
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if ((n).a == (mk_int(0)).a) {
         Step::Cons(x, (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
         Step::Cons((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_updateAt())(mk_int((n).a - (mk_int(1)).a), x, (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), xs)
 }))
@@ -17856,12 +17856,12 @@ pub fn Data_List_Lazy_uncons(mut a0: Lazy) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     {
     let mut v = (Data_Lazy_force())(xs);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -17886,7 +17886,7 @@ pub fn Data_List_Lazy_takeWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>
         (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
     {
     let mut lvl_1 = (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (p.dup())((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (p.dup())((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }))) {
         Step::Cons((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_takeWhile())(p, (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
         Step::Nil
@@ -17915,12 +17915,12 @@ pub fn Data_List_Lazy_take(mut a0: i64, mut a1: Lazy) -> Lazy {
     } else {
         {
     let mut lvl_1 = (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Cons((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_take())(mk_int((n).a - (mk_int(1)).a), (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })));
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
@@ -17950,19 +17950,19 @@ pub fn Data_List_Lazy_stripPrefix(mut a0: UnknownType, mut a1: Lazy, mut a2: Laz
     unsafe_coerce(std::rc::Rc::new(move |mut input: UnknownType| -> UnknownType {
     {
     let mut v1 = (Data_Lazy_force().dup())(prefix);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(Step::Done(input))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut v2 = (Data_Lazy_force())(input);
-    if (// Unsupported Op1 && (dictEq.eq.clone().unwrap())((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (match v2.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (dictEq.eq.clone().unwrap())((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (match v2.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }))) {
         Maybe::Just(Step::Loop(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: Some(unsafe_coerce((match v2 { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))), c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })))
     } else {
         Maybe::Nothing
     }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -17981,7 +17981,7 @@ pub fn Data_List_Lazy_span(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     {
     let mut v = (Data_List_Lazy_uncons)(xs.dup());
-    if (// Unsupported Op1 && (p.dup())((match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap())) {
+    if (unimplemented!() /* Unsupported Op1 */ && (p.dup())((match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap())) {
         {
     let mut lvl_3 = (match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap();
     {
@@ -18043,15 +18043,15 @@ pub fn Data_List_Lazy_scanlLazy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownT
     unsafe_coerce(std::rc::Rc::new(move |mut acc: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut acc_prime = (f.dup())(acc, (match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }));
     Step::Cons(acc_prime.dup(), (Data_List_Lazy_scanlLazy())(f, acc_prime, (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), xs)
 }))
@@ -18115,7 +18115,7 @@ pub fn Data_List_Lazy_replicateM(mut a0: UnknownType, mut a1: i64, mut a2: Unkno
 pub fn Data_List_Lazy_repeat(mut a0: UnknownType) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Local(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 })))(a0.clone())
 }
 
@@ -18123,7 +18123,7 @@ pub fn Data_List_Lazy_replicate(mut a0: i64, mut a1: UnknownType) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Var(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut i: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    (Data_List_Lazy_take)(i, // Unsupported Expr: LetRec(..., Typed(Local(...))))
+    (Data_List_Lazy_take)(i, unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */)
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -18173,12 +18173,12 @@ pub fn Data_List_Lazy_null(mut a0: Lazy) -> bool {
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_1 = (Data_List_Lazy_uncons)(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -18187,7 +18187,7 @@ pub fn Data_List_Lazy_null(mut a0: Lazy) -> bool {
 pub fn Data_List_Lazy_nubBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> Ordering>, mut a1: Lazy) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -18209,7 +18209,7 @@ pub fn Data_List_Lazy_mapMaybe(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>
     while _tco_loop {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Let(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Let(...))) */
 })))(a0.clone(), a1.clone())
     }
 }
@@ -18253,14 +18253,14 @@ pub fn Data_List_Lazy_length(mut a0: Lazy) -> i64 {
 
 pub fn Data_List_Lazy_last(mut a0: Lazy) -> Maybe {
     // AST: Typed(Typed(LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))))
-(// Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))))(a0.clone())
+(unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))) */)(a0.clone())
 }
 
 pub fn Data_List_Lazy_iterate(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>, mut a1: UnknownType) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(LetRec(..., Typed(Local(...)))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -18281,12 +18281,12 @@ pub fn Data_List_Lazy_insertAt(mut a0: i64, mut a1: UnknownType, mut a2: Lazy) -
 })))
     } else {
         (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v3: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Cons(v1, Data_List_Lazy_Types_nil())
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Cons((match v3.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_insertAt())(mk_int((v).a - (mk_int(1)).a), v1, (match v3 { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), v2)
     }
@@ -18298,13 +18298,13 @@ pub fn Data_List_Lazy_insertAt(mut a0: i64, mut a1: UnknownType, mut a2: Lazy) -
 
 pub fn Data_List_Lazy_init(mut a0: Lazy) -> Maybe {
     // AST: Typed(Typed(LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))))
-(// Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))))(a0.clone())
+(unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))) */)(a0.clone())
 }
 
 pub fn Data_List_Lazy_index(mut a0: Lazy, mut a1: i64) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -18325,14 +18325,14 @@ pub fn Data_List_Lazy_transpose(mut a0: Lazy) -> Lazy {
         (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     {
     let mut v = (Data_List_Lazy_uncons.dup())(xs.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         xs
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut v1 = (Data_List_Lazy_uncons)((match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_Lazy_transpose())((match v { Maybe::Just(val, ..) => val, _ => unimplemented!() }).tail.clone().unwrap())
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_3 = (match v1.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap();
     {
@@ -18365,11 +18365,11 @@ pub fn Data_List_Lazy_transpose(mut a0: Lazy) -> Lazy {
 }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -18384,9 +18384,9 @@ pub fn Data_List_Lazy_groupBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTyp
         (unsafe_coerce(std::rc::Rc::new(move |mut eq: UnknownType| -> UnknownType {
     {
     let mut lvl_1 = (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_2 = (match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() });
     {
@@ -18402,7 +18402,7 @@ pub fn Data_List_Lazy_groupBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTyp
 }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })));
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
@@ -18429,16 +18429,16 @@ pub fn Data_List_Lazy_insertBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTy
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Cons(x, Data_List_Lazy_Types_nil())
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         Step::Cons((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_insertBy())(cmp, x, (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
         Step::Cons(x, (Data_Lazy_applicativeLazy().pure.clone().unwrap())(v))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), xs)
 }))
@@ -18466,7 +18466,7 @@ pub fn Data_List_Lazy_foldrLazy(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(
 (unsafe_coerce(std::rc::Rc::new(move |mut dictLazy: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut op: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut z: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone(), a3.clone())
@@ -18483,9 +18483,9 @@ pub fn Data_List_Lazy_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unkn
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     {
     let mut v = (Data_List_Lazy_uncons)(xs);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         ((dictMonad.Applicative0.clone().unwrap())(unimplemented!()).pure.clone().unwrap())(b)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_5 = (match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).tail.clone().unwrap();
     ((dictMonad.dup().Bind1.clone().unwrap())(unimplemented!()).bind.clone().unwrap())((f.dup())(b, (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap()), unsafe_coerce(std::rc::Rc::new(move |mut b_prime: UnknownType| -> UnknownType {
@@ -18493,7 +18493,7 @@ pub fn Data_List_Lazy_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unkn
 })))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -18506,7 +18506,7 @@ pub fn Data_List_Lazy_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unkn
 pub fn Data_List_Lazy_findIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: Lazy) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut fn_kw: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -18535,9 +18535,9 @@ pub fn Data_List_Lazy_filterM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
     unsafe_coerce(std::rc::Rc::new(move |mut list: UnknownType| -> UnknownType {
     {
     let mut v = (Data_List_Lazy_uncons)(list);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (lvl_1.pure.clone().unwrap())(Data_List_Lazy_Types_nil())
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_6 = (match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap();
     {
@@ -18558,7 +18558,7 @@ pub fn Data_List_Lazy_filterM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Un
 }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -18575,7 +18575,7 @@ pub fn Data_List_Lazy_filter(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, m
     while _tco_loop {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Let(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Let(...))) */
 })))(a0.clone(), a1.clone())
     }
 }
@@ -18608,9 +18608,9 @@ pub fn Data_List_Lazy_nubByEq(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTyp
         (unsafe_coerce(std::rc::Rc::new(move |mut eq: UnknownType| -> UnknownType {
     {
     let mut lvl_1 = (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_2 = (match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() });
     Step::Cons(lvl_2.dup(), (Data_List_Lazy_nubByEq())(eq.dup(), (Data_List_Lazy_filter)(unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
@@ -18618,7 +18618,7 @@ pub fn Data_List_Lazy_nubByEq(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTyp
 })), (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })));
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
@@ -18681,14 +18681,14 @@ pub fn Data_List_Lazy_elemIndex(mut a0: UnknownType, mut a1: UnknownType, mut a2
 pub fn Data_List_Lazy_dropWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: Lazy) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))) */
 })))(a0.clone(), a1.clone())
 }
 
 pub fn Data_List_Lazy_drop(mut a0: i64, mut a1: Lazy) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Let(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut n: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Let(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Let(...))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -18712,16 +18712,16 @@ pub fn Data_List_Lazy_deleteBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownTy
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if (eq)(x, (match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() })) {
         (Data_Lazy_force())((match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
         Step::Cons((match v.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_deleteBy())(eq, x, (match v { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), xs)
 }))
@@ -18760,16 +18760,16 @@ pub fn Data_List_Lazy_deleteAt(mut a0: i64, mut a1: Lazy) -> Lazy {
         (unsafe_coerce(std::rc::Rc::new(move |mut n: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if ((n).a == (mk_int(0)).a) {
         (Data_Lazy_force())((match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
         Step::Cons((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_deleteAt())(mk_int((n).a - (mk_int(1)).a), (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), xs)
 }))
@@ -18798,7 +18798,7 @@ pub fn Data_List_Lazy_difference(mut a0: UnknownType, mut a1: Lazy, mut a2: Lazy
 pub fn Data_List_Lazy_cycle(mut a0: Lazy) -> Lazy {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Local(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 })))(a0.clone())
 }
 
@@ -18834,25 +18834,25 @@ pub fn Data_List_Lazy_alterAt(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Lazy_functorLazy().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Step::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if ((n).a == (mk_int(0)).a) {
         {
     let mut v2 = (f)((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Lazy_force())((match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Step::Cons((match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() }), (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
     } else {
         Step::Cons((match v1.dup() { Step::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Lazy_alterAt())(mk_int((n).a - (mk_int(1)).a), f, (match v1 { Step::Cons(_, val, ..) => val, _ => unimplemented!() })))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), xs)
 }))
@@ -18917,7 +18917,7 @@ pub fn Data_List_NonEmpty_zipWith(mut a0: std::rc::Rc<dyn Fn(UnknownType, Unknow
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    NonEmpty::NonEmpty((f.dup())((match v.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() }), (match v1.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() })), // Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...))))))
+    NonEmpty::NonEmpty((f.dup())((match v.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() }), (match v1.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() })), unimplemented!() /* Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...))))) */)
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -18952,12 +18952,12 @@ pub fn Data_List_NonEmpty_wrappedOperation2(mut a0: String, mut a1: std::rc::Rc<
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     {
     let mut v2 = (f)(List::Cons((match v.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() }), (match v { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() })), List::Cons((match v1.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() }), (match v1 { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() })));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         NonEmpty::NonEmpty((match v2.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Partial__crashWith())((Data_Semigroup_semigroupString().append.clone().unwrap())(unsafe_coerce("Impossible: empty list in NonEmptyList "), name))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -18973,12 +18973,12 @@ pub fn Data_List_NonEmpty_wrappedOperation(mut a0: String, mut a1: std::rc::Rc<d
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
     let mut v1 = (f)(List::Cons((match v.dup() { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() }), (match v { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() })));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         NonEmpty::NonEmpty((match v1.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (match v1 { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Partial__crashWith())((Data_Semigroup_semigroupString().append.clone().unwrap())(unsafe_coerce("Impossible: empty list in NonEmptyList "), name))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -19018,12 +19018,12 @@ pub fn Data_List_NonEmpty_unsnoc(mut a0: NonEmpty) -> UnknownType {
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
     let mut v1 = (Data_List_unsnoc())((match v.dup() { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -19064,12 +19064,12 @@ pub fn Data_List_NonEmpty_toUnfoldable(mut a0: UnknownType, mut a1: NonEmpty) ->
     let mut lvl_1 = (dictUnfoldable.unfoldr.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut rec: UnknownType| -> UnknownType {
     Tuple::Tuple(rec.dup().head.clone().unwrap(), rec.tail.clone().unwrap())
-})), if // Unsupported Op1 {
+})), if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     })
 })));
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
@@ -19125,12 +19125,12 @@ pub fn Data_List_NonEmpty_snoc_prime(mut a0: List, mut a1: UnknownType) -> NonEm
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         NonEmpty::NonEmpty((match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Types_foldableList().foldr.clone().unwrap())(Data_List_Types_Cons(), List::Cons(v1, List::Nil), (match v { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         NonEmpty::NonEmpty(v1, Data_List_Types_plusList().empty.clone().unwrap())
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -19194,7 +19194,7 @@ pub fn Data_List_NonEmpty_modifyAt(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(Unkno
 pub fn Data_List_NonEmpty_mapMaybe(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>, mut a1: NonEmpty) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Let(...))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Let(...))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Let(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -19231,7 +19231,7 @@ pub fn Data_List_NonEmpty_take(mut a0: i64, mut a1: NonEmpty) -> List {
 pub fn Data_List_NonEmpty_takeWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: NonEmpty) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Let(...))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Let(...))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Let(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -19245,15 +19245,15 @@ pub fn Data_List_NonEmpty_length(mut a0: NonEmpty) -> i64 {
 pub fn Data_List_NonEmpty_last(mut a0: NonEmpty) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Typed(Branch(...))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (match (match v { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() }) { List::Cons(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match v { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match (Data_List_last())((match (match v { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() }) { List::Cons(_, val, ..) => val, _ => unimplemented!() })) { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
         (match v { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() })
@@ -19302,12 +19302,12 @@ pub fn Data_List_NonEmpty_init(mut a0: NonEmpty) -> List {
     let mut lvl_1 = (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     v.init.clone().unwrap()
 })), (Data_List_unsnoc())((match v.dup() { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() })));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         List::Cons((match v { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() }), (match lvl_1 { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -19364,12 +19364,12 @@ pub fn Data_List_NonEmpty_group(mut a0: UnknownType, mut a1: NonEmpty) -> NonEmp
 pub fn Data_List_NonEmpty_fromList(mut a0: List) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(NonEmpty::NonEmpty((match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (match v { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -19382,12 +19382,12 @@ pub fn Data_List_NonEmpty_fromFoldable(mut a0: UnknownType, mut a1: UnknownType)
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_3 = (lvl_1)(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(NonEmpty::NonEmpty((match lvl_3.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (match lvl_3 { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -19419,16 +19419,16 @@ pub fn Data_List_NonEmpty_findLastIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) 
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
     let mut v1 = (Data_List_findLastIndex())(f.dup(), (match v.dup() { NonEmpty::NonEmpty(_, val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(mk_int(((match v1 { Maybe::Just(val, ..) => val, _ => unimplemented!() })).a + (mk_int(1)).a))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if (f)((match v { NonEmpty::NonEmpty(val, ..) => val, _ => unimplemented!() })) {
         Maybe::Just(mk_int(0))
     } else {
         Maybe::Nothing
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -19444,7 +19444,7 @@ pub fn Data_List_NonEmpty_findIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> b
     } else {
         (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     mk_int((v1).a + (mk_int(1)).a)
-})), // Unsupported Expr: LetRec(..., App(Local(...))))
+})), unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */)
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -19470,7 +19470,7 @@ pub fn Data_List_NonEmpty_filterM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn F
 pub fn Data_List_NonEmpty_filter(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: NonEmpty) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Let(...))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Let(...))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Let(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -19499,7 +19499,7 @@ pub fn Data_List_NonEmpty_elemIndex(mut a0: UnknownType, mut a1: UnknownType, mu
 pub fn Data_List_NonEmpty_dropWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: NonEmpty) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Abs(..., Typed(Typed(App(Local(...))))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Abs(..., Typed(Typed(App(Local(...))))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Abs(..., Typed(Typed(App(Local(...)))))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -19549,7 +19549,7 @@ pub fn Data_List_NonEmpty_concat(mut a0: NonEmpty) -> NonEmpty {
 pub fn Data_List_NonEmpty_catMaybes(mut a0: NonEmpty) -> List {
     // AST: Typed(Typed(Abs(..., Typed(Typed(LetRec(..., App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., App(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */
 })))(a0.clone())
 }
 
@@ -19606,10 +19606,10 @@ pub fn Data_List_Partial_tail(mut a0: UnknownType, mut a1: List) -> List {
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v { List::Cons(_, val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -19624,14 +19624,14 @@ pub fn Data_List_Partial_last(mut a0: UnknownType, mut a1: List) -> UnknownType 
     // DEBUG: bodyVars=["Data_List_Partial_last"] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (match v { List::Cons(val, ..) => val, _ => unimplemented!() })
     } else {
         (Data_List_Partial_last())(unimplemented!(), (match v { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -19647,14 +19647,14 @@ pub fn Data_List_Partial_init(mut a0: UnknownType, mut a1: List) -> List {
     // DEBUG: bodyVars=["Data_List_Partial_init"] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
     } else {
         List::Cons((match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_Partial_init())(unimplemented!(), (match v { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -19667,10 +19667,10 @@ pub fn Data_List_Partial_head(mut a0: UnknownType, mut a1: List) -> UnknownType 
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v { List::Cons(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -19769,7 +19769,7 @@ pub fn Data_List_Types_nelCons(mut a0: UnknownType, mut a1: NonEmpty) -> NonEmpt
 pub fn Data_List_Types_listMap(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -19868,7 +19868,7 @@ pub fn Data_List_Types_showList(mut a0: UnknownType) -> UnknownType {
     {
     let mut show = dictShow.show.clone().unwrap();
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("Nil")
     } else {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("("), (Data_Semigroup_semigroupString().append.clone().unwrap())((Data_List_Types_intercalate())(unsafe_coerce(" : "), (Data_List_Types_functorList().map.clone().unwrap())(show, v)), unsafe_coerce(" : Nil)")))
@@ -20197,7 +20197,7 @@ pub fn Data_List_ZipList_zipListIsNotBind(mut a0: UnknownType) -> UnknownType {
 pub fn Data_List_ZipList_applicativeZipList() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
 perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 })))), show: None, discard: None })
 }
 
@@ -20270,7 +20270,7 @@ pub fn Data_List_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -20286,7 +20286,7 @@ pub fn Data_List_greaterThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -20324,7 +20324,7 @@ pub fn Data_List_updateAt(mut a0: i64, mut a1: UnknownType, mut a2: List) -> May
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         if ((v).a == (mk_int(0)).a) {
         Maybe::Just(List::Cons(v1, (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
@@ -20362,12 +20362,12 @@ pub fn Data_List_unzip(mut a0: List) -> Tuple {
 pub fn Data_List_uncons(mut a0: List) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -20378,12 +20378,12 @@ pub fn Data_List_toUnfoldable(mut a0: UnknownType, mut a1: List) -> UnknownType 
     (dictUnfoldable.unfoldr.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut rec: UnknownType| -> UnknownType {
     Tuple::Tuple(rec.dup().head.clone().unwrap(), rec.tail.clone().unwrap())
-})), if // Unsupported Op1 {
+})), if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     })
 })))
 })))(a0.clone(), a1.clone())
@@ -20392,12 +20392,12 @@ pub fn Data_List_toUnfoldable(mut a0: UnknownType, mut a1: List) -> UnknownType 
 pub fn Data_List_tail(mut a0: List) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just((match v { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -20409,19 +20409,19 @@ pub fn Data_List_stripPrefix(mut a0: UnknownType, mut a1: List, mut a2: List) ->
     unsafe_coerce(std::rc::Rc::new(move |mut s: UnknownType| -> UnknownType {
     (Data_List_tailRecM2())(unsafe_coerce(std::rc::Rc::new(move |mut prefix: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut input: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         if (dictEq.eq.clone().unwrap())((match prefix.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (match input.dup() { List::Cons(val, ..) => val, _ => unimplemented!() })) {
         Maybe::Just(Step::Loop(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: Some(unsafe_coerce((match input { List::Cons(_, val, ..) => val, _ => unimplemented!() }))), c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })))
     } else {
         Maybe::Nothing
     }
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(Step::Done(input))
     } else {
         Maybe::Nothing
     }
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(Step::Done(input))
     } else {
         Maybe::Nothing
@@ -20440,7 +20440,7 @@ pub fn Data_List_span(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: 
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if (// Unsupported Op1 && (v.dup())((match v1.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }))) {
+    if (unimplemented!() /* Unsupported Op1 */ && (v.dup())((match v1.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }))) {
         {
     let mut v2 = (Data_List_span())(v, (match v1.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }));
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None })
@@ -20472,7 +20472,7 @@ pub fn Data_List_singleton(mut a0: UnknownType) -> List {
 pub fn Data_List_sortBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> Ordering>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., LetRec(..., LetRec(..., LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut cmp: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., LetRec(..., LetRec(..., LetRec(..., Typed(Abs(..., Typed(App(Local(...)))))))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., LetRec(..., LetRec(..., LetRec(..., Typed(Abs(..., Typed(App(Local(...))))))))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -20499,25 +20499,25 @@ pub fn Data_List_showPattern(mut a0: UnknownType) -> UnknownType {
 
 pub fn Data_List_reverse(mut a0: List) -> List {
     // AST: Typed(Typed(LetRec(..., Typed(App(Local(...))))))
-(// Unsupported Expr: LetRec(..., Typed(App(Local(...)))))(a0.clone())
+(unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */)(a0.clone())
 }
 
 pub fn Data_List_take(mut a0: i64, mut a1: List) -> List {
     // AST: Typed(Typed(LetRec(..., Typed(App(Local(...))))))
-(// Unsupported Expr: LetRec(..., Typed(App(Local(...)))))(a0.clone(), a1.clone())
+(unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */)(a0.clone(), a1.clone())
 }
 
 pub fn Data_List_takeWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
 pub fn Data_List_unsnoc(mut a0: List) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Accessor(Var(...)))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut lst: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Accessor(Var(...)))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Accessor(Var(...))))) */
 })))(a0.clone())
 }
 
@@ -20526,7 +20526,7 @@ pub fn Data_List_zipWith(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) ->
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...)))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...))))) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -20536,7 +20536,7 @@ pub fn Data_List_zip(mut a0: List, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(LetRec(..., Typed(LetRec(..., App(Local(...)))))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...)))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...))))) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -20549,7 +20549,7 @@ pub fn Data_List_zipWithA(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unknow
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut ys: UnknownType| -> UnknownType {
-    (sequence1)(// Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...))))))
+    (sequence1)(unimplemented!() /* Unsupported Expr: LetRec(..., Typed(LetRec(..., App(Local(...))))) */)
 }))
 }))
 }))
@@ -20564,7 +20564,7 @@ pub fn Data_List_range(mut a0: i64, mut a1: i64) -> List {
     if ((start.dup()).a == (end).a) {
         List::Cons(start, List::Nil)
     } else {
-        // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+        unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -20590,7 +20590,7 @@ pub fn Data_List_partition(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut
 pub fn Data_List_null(mut a0: List) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -20601,7 +20601,7 @@ pub fn Data_List_null(mut a0: List) -> bool {
 pub fn Data_List_nubBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -> Ordering>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Let(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Let(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Let(...))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -20620,7 +20620,7 @@ perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: No
 pub fn Data_List_mapMaybe(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -20640,7 +20640,7 @@ pub fn Data_List_manyRec(mut a0: UnknownType, mut a1: UnknownType, mut a2: Unkno
 })), unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["acc","go"] p=v
     v.drop_explicit();
-    // Unsupported Expr: LetRec(..., App(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */
 })), aa))
 })))
 })), List::Nil)
@@ -20708,8 +20708,8 @@ pub fn Data_List_last(mut a0: List) -> Maybe {
     while _tco_loop {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just((match v { List::Cons(val, ..) => val, _ => unimplemented!() }))
     } else {
         (Data_List_last())((match v { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
@@ -20729,16 +20729,16 @@ pub fn Data_List_insertBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Cons(v1, List::Nil)
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         List::Cons((match v2.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_insertBy())(v, v1, (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
     } else {
         List::Cons(v1, v2)
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -20756,7 +20756,7 @@ pub fn Data_List_insertAt(mut a0: i64, mut a1: UnknownType, mut a2: List) -> May
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
     if ((v).a == (mk_int(0)).a) {
         Maybe::Just(List::Cons(v1, v2))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_3 = (match v2.dup() { List::Cons(val, ..) => val, _ => unimplemented!() });
     (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v3: UnknownType| -> UnknownType {
@@ -20795,16 +20795,16 @@ pub fn Data_List_index(mut a0: List, mut a1: i64) -> Maybe {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if ((v1).a == (mk_int(0)).a) {
         Maybe::Just((match v { List::Cons(val, ..) => val, _ => unimplemented!() }))
     } else {
         (Data_List_index())((match v { List::Cons(_, val, ..) => val, _ => unimplemented!() }), mk_int((v1).a - (mk_int(1)).a))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -20814,12 +20814,12 @@ pub fn Data_List_index(mut a0: List, mut a1: i64) -> Maybe {
 pub fn Data_List_head(mut a0: List) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just((match v { List::Cons(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -20830,18 +20830,18 @@ pub fn Data_List_transpose(mut a0: List) -> List {
     while _tco_loop {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
-        if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_transpose())((match v { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
-        List::Cons(List::Cons((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { List::Cons(val, ..) => val, _ => unimplemented!() }), // Unsupported Expr: LetRec(..., App(Local(...)))), (Data_List_transpose())(List::Cons((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { List::Cons(_, val, ..) => val, _ => unimplemented!() }), // Unsupported Expr: LetRec(..., App(Local(...))))))
+    } else if unimplemented!() /* Unsupported Op1 */ {
+        List::Cons(List::Cons((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { List::Cons(val, ..) => val, _ => unimplemented!() }), unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */), (Data_List_transpose())(List::Cons((match (match v.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }) { List::Cons(_, val, ..) => val, _ => unimplemented!() }), unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */)))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
     }
@@ -20854,15 +20854,15 @@ pub fn Data_List_groupBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) ->
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut v2 = (Data_List_span)((v.dup())((match v1.dup() { List::Cons(val, ..) => val, _ => unimplemented!() })), (match v1.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() }));
     List::Cons(NonEmpty::NonEmpty((match v1 { List::Cons(val, ..) => val, _ => unimplemented!() }), v2.dup().init.clone().unwrap()), (Data_List_groupBy())(v, v2.rest.clone().unwrap()))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -20926,9 +20926,9 @@ pub fn Data_List_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownTy
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         ((dictMonad.Applicative0.clone().unwrap())(unimplemented!()).pure.clone().unwrap())(v1)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_4 = (match v2.dup() { List::Cons(_, val, ..) => val, _ => unimplemented!() });
     ((dictMonad.dup().Bind1.clone().unwrap())(unimplemented!()).bind.clone().unwrap())((v.dup())(v1, (match v2 { List::Cons(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(std::rc::Rc::new(move |mut b_prime: UnknownType| -> UnknownType {
@@ -20936,7 +20936,7 @@ pub fn Data_List_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownTy
 })))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -20948,7 +20948,7 @@ pub fn Data_List_foldM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownTy
 pub fn Data_List_findIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: List) -> Maybe {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut fn_kw: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -20958,7 +20958,7 @@ pub fn Data_List_findLastIndex(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>,
     unsafe_coerce(std::rc::Rc::new(move |mut xs: UnknownType| -> UnknownType {
     (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     mk_int((mk_int(((Data_List_length)(xs)).a - (mk_int(1)).a)).a - (v).a)
-})), // Unsupported Expr: LetRec(..., App(Local(...))))
+})), unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */)
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -20975,9 +20975,9 @@ pub fn Data_List_filterM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unknown
     let mut lvl_2 = (dictMonad.dup().Bind1.clone().unwrap())(unimplemented!());
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (lvl_1.pure.clone().unwrap())(List::Nil)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_5 = (match v1.dup() { List::Cons(val, ..) => val, _ => unimplemented!() });
     {
@@ -20994,7 +20994,7 @@ pub fn Data_List_filterM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unknown
 }
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -21007,7 +21007,7 @@ pub fn Data_List_filterM(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(Unknown
 pub fn Data_List_filter(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -21018,12 +21018,12 @@ pub fn Data_List_intersectBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType
     v.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
     } else {
-        // Unsupported Expr: LetRec(..., App(Local(...)))
+        unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */
     }
 }))
 }))
@@ -21044,15 +21044,15 @@ pub fn Data_List_nubByEq(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) ->
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         {
     let mut lvl_2 = (match v1.dup() { List::Cons(val, ..) => val, _ => unimplemented!() });
-    List::Cons(lvl_2.dup(), (Data_List_nubByEq())(v, // Unsupported Expr: LetRec(..., App(Local(...)))))
+    List::Cons(lvl_2.dup(), (Data_List_nubByEq())(v, unimplemented!() /* Unsupported Expr: LetRec(..., App(Local(...))) */))
 }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -21101,7 +21101,7 @@ pub fn Data_List_elemIndex(mut a0: UnknownType, mut a1: UnknownType, mut a2: Lis
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut dictEq: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
 }
@@ -21109,7 +21109,7 @@ pub fn Data_List_elemIndex(mut a0: UnknownType, mut a1: UnknownType, mut a2: Lis
 pub fn Data_List_dropWhile(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> bool>, mut a1: List) -> List {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(Local(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut p: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -21131,12 +21131,12 @@ pub fn Data_List_drop(mut a0: i64, mut a1: List) -> List {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     if (Data_List_lessThan())(v, mk_int(1)) {
         v1
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_List_drop())(mk_int((v).a - (mk_int(1)).a), (match v1 { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -21171,16 +21171,16 @@ pub fn Data_List_deleteBy(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownType) -
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         List::Nil
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         if (v)(v1, (match v2.dup() { List::Cons(val, ..) => val, _ => unimplemented!() })) {
         (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() })
     } else {
         List::Cons((match v2.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }), (Data_List_deleteBy())(v, v1, (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() })))
     }
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -21217,7 +21217,7 @@ pub fn Data_List_deleteAt(mut a0: i64, mut a1: List) -> Maybe {
         _tco_loop = false;
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         if ((v).a == (mk_int(0)).a) {
         Maybe::Just((match v1 { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
@@ -21272,7 +21272,7 @@ pub fn Data_List_concat(mut a0: List) -> List {
 
 pub fn Data_List_catMaybes(mut a0: List) -> List {
     // AST: Typed(Typed(LetRec(..., Typed(App(Local(...))))))
-(// Unsupported Expr: LetRec(..., Typed(App(Local(...)))))(a0.clone())
+(unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */)(a0.clone())
 }
 
 pub fn Data_List_alterAt(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>, mut a2: List) -> Maybe {
@@ -21283,16 +21283,16 @@ pub fn Data_List_alterAt(mut a0: i64, mut a1: std::rc::Rc<dyn Fn(UnknownType) ->
         (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         if ((v).a == (mk_int(0)).a) {
         Maybe::Just({
     let mut v3 = (v1)((match v2.dup() { List::Cons(val, ..) => val, _ => unimplemented!() }));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         List::Cons((match v3 { Maybe::Just(val, ..) => val, _ => unimplemented!() }), (match v2 { List::Cons(_, val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })
     } else {
@@ -21690,12 +21690,12 @@ pub fn Data_Maybe_showMaybe(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Typed(Lit)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().dup().append.clone().unwrap())(unsafe_coerce("(Just "), (Data_Semigroup_semigroupString().append.clone().unwrap())((dictShow.show.clone().unwrap())((match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })), unsafe_coerce(")")))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("Nothing")
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 })))(a0.clone())
@@ -21734,12 +21734,12 @@ pub fn Data_Maybe_maybe_prime(mut a0: std::rc::Rc<dyn Fn(Unit) -> UnknownType>, 
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (v)(Data_Unit_unit())
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (v1)((match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -21751,12 +21751,12 @@ pub fn Data_Maybe_maybe(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownT
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         v
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (v1)((match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 }))
@@ -21766,12 +21766,12 @@ pub fn Data_Maybe_maybe(mut a0: UnknownType, mut a1: std::rc::Rc<dyn Fn(UnknownT
 pub fn Data_Maybe_isNothing(mut a0: Maybe) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -21779,12 +21779,12 @@ pub fn Data_Maybe_isNothing(mut a0: Maybe) -> bool {
 pub fn Data_Maybe_isJust(mut a0: Maybe) -> bool {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -21815,12 +21815,12 @@ pub fn Data_Maybe_fromMaybe(mut a0: UnknownType, mut a1: Maybe) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         a
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -21832,10 +21832,10 @@ pub fn Data_Maybe_fromJust(mut a0: UnknownType, mut a1: Maybe) -> UnknownType {
     // DEBUG: bodyVars=[] p=_dollar___unused
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())
@@ -22969,7 +22969,7 @@ pub fn Data_Monoid_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -23083,7 +23083,7 @@ pub fn Data_Monoid_power(mut a0: UnknownType, mut a1: UnknownType, mut a2: i64) 
     {
     let mut lvl_2 = (dictMonoid.Semigroup0.clone().unwrap())(unimplemented!());
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(Local(...)))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(Local(...))) */
 }))
 }
 }
@@ -23838,7 +23838,7 @@ pub fn Data_Number_Approximate_eqRelative(mut a0: f64, mut a1: f64, mut a2: f64)
         true
     }
     } else {
-        if (((Data_Number_abs().dup())(// Unsupported Op2)) > ((Data_EuclideanRing_euclideanRingNumber().div.clone().unwrap())(// Unsupported Op2, 2.0 /* f64 */))) {
+        if (((Data_Number_abs().dup())(unimplemented!() /* Unsupported Op2 */)) > ((Data_EuclideanRing_euclideanRingNumber().div.clone().unwrap())(unimplemented!() /* Unsupported Op2 */, 2.0 /* f64 */))) {
         false
     } else {
         true
@@ -23868,7 +23868,7 @@ pub fn Data_Number_Approximate_eqAbsolute(mut a0: f64, mut a1: f64, mut a2: f64)
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
-    if (((Data_Number_abs())(// Unsupported Op2)) > (v)) {
+    if (((Data_Number_abs())(unimplemented!() /* Unsupported Op2 */)) > (v)) {
         false
     } else {
         true
@@ -23929,25 +23929,25 @@ pub fn Data_Number_Format_clamp() -> UnknownType {
     {
     let mut v = (lvl_0.dup())(low.dup(), x.dup());
     {
-    let mut lvl_5 = if // Unsupported Op1 {
+    let mut lvl_5 = if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         low
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         low
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     };
     {
     let mut v = (lvl_0)(hi.dup(), lvl_5.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         hi
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         hi
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         lvl_5
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }
@@ -23976,14 +23976,14 @@ unsafe_coerce(0)
 pub fn Data_Number_Format_toStringWith(mut a0: Format, mut a1: f64) -> String {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Number_Format_toPrecisionNative())((match v { Format::Precision(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Number_Format_toFixedNative())((match v { Format::Fixed(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Data_Number_Format_toExponentialNative())((match v { Format::Exponential(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone(), a1.clone())
 }
@@ -24096,7 +24096,7 @@ pub fn Data_Number_fromString(mut a0: String) -> Maybe {
 (unsafe_coerce(std::rc::Rc::new(move |mut str: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=str
     str.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone())
 }
 
@@ -24685,7 +24685,7 @@ pub fn Data_Ord_greaterThan(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
 (unsafe_coerce(std::rc::Rc::new(move |mut dictOrd: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -24700,7 +24700,7 @@ pub fn Data_Ord_greaterThanOrEq(mut a0: UnknownType, mut a1: UnknownType, mut a2
 (unsafe_coerce(std::rc::Rc::new(move |mut dictOrd: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -24715,7 +24715,7 @@ pub fn Data_Ord_lessThan(mut a0: UnknownType, mut a1: UnknownType, mut a2: Unkno
 (unsafe_coerce(std::rc::Rc::new(move |mut dictOrd: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -24741,14 +24741,14 @@ pub fn Data_Ord_signum(mut a0: UnknownType, mut a1: UnknownType, mut a2: Unknown
     {
     let mut one1 = Semiring0.one.clone().unwrap();
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    if if // Unsupported Op1 {
+    if if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
     } {
         (dictRing.sub.clone().unwrap())(zero, one)
     } else {
-        if if // Unsupported Op1 {
+        if if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -24773,7 +24773,7 @@ pub fn Data_Ord_lessThanOrEq(mut a0: UnknownType, mut a1: UnknownType, mut a2: U
 (unsafe_coerce(std::rc::Rc::new(move |mut dictOrd: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -24790,14 +24790,14 @@ pub fn Data_Ord_max(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
     {
     let mut v = (dictOrd.compare.clone().unwrap())(x.dup(), y.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         y
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -24812,14 +24812,14 @@ pub fn Data_Ord_min(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
     {
     let mut v = (dictOrd.compare.clone().unwrap())(x.dup(), y.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         y
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -24875,25 +24875,25 @@ pub fn Data_Ord_clamp(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownT
     {
     let mut v = (dictOrd.dup().compare.clone().unwrap())(low.dup(), x.dup());
     {
-    let mut lvl_5 = if // Unsupported Op1 {
+    let mut lvl_5 = if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         low
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         low
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     };
     {
     let mut v = (dictOrd.compare.clone().unwrap())(hi.dup(), lvl_5.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         hi
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         hi
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         lvl_5
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }
@@ -24910,13 +24910,13 @@ pub fn Data_Ord_between(mut a0: UnknownType, mut a1: UnknownType, mut a2: Unknow
     unsafe_coerce(std::rc::Rc::new(move |mut low: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut hi: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    if if // Unsupported Op1 {
+    if if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
     } {
         false
-    } else if if // Unsupported Op1 {
+    } else if if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -24941,7 +24941,7 @@ pub fn Data_Ord_abs(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownTyp
     {
     let mut zero = (dictRing.dup().Semiring0.clone().unwrap())(unimplemented!()).zero.clone().unwrap();
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    if if // Unsupported Op1 {
+    if if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -25016,14 +25016,14 @@ unsafe_coerce(0)
 pub fn Data_Ordering_showOrdering() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
 perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: Some(unsafe_coerce(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("LT")
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("GT")
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         unsafe_coerce("EQ")
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))), discard: None })
 }
@@ -25036,14 +25036,14 @@ perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: No
 pub fn Data_Ordering_invert(mut a0: Ordering) -> Ordering {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Ordering::LT
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Ordering::EQ
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Ordering::GT
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -25180,12 +25180,12 @@ pub fn Data_Profunctor_Choice_fanin(mut a0: UnknownType, mut a1: UnknownType, mu
     unsafe_coerce(std::rc::Rc::new(move |mut l: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut r: UnknownType| -> UnknownType {
     (rmap)(unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v2 { Either::Left(val, ..) => val, _ => unimplemented!() })
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match v2 { Either::Right(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), (dictSemigroupoid.compose.clone().unwrap())((dictChoice.dup().right.clone().unwrap())(r), (dictChoice.left.clone().unwrap())(l)))
 }))
@@ -27926,7 +27926,7 @@ pub fn Data_String_CodePoints_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -27942,7 +27942,7 @@ pub fn Data_String_CodePoints_greaterThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -27958,7 +27958,7 @@ pub fn Data_String_CodePoints_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -27979,7 +27979,7 @@ pub fn Data_String_CodePoints_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -28007,12 +28007,12 @@ pub fn Data_String_CodePoints_uncons(mut a0: String) -> Maybe {
     (Data_Enum_boundedEnumChar().fromEnum.clone().unwrap())((lvl_1)(x))
 }))
 }, mk_int(0), s.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Just(perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -28144,7 +28144,7 @@ pub fn Data_String_CodePoints_takeFallback(mut a0: i64, mut a1: String) -> Strin
     } else {
         {
     let mut v2 = (Data_String_CodePoints_uncons)(v1.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Data_Semigroup_semigroupString().append.clone().unwrap())((Data_String_CodePoints_singleton)((match v2.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap()), (Data_String_CodePoints_takeFallback())(mk_int((v).a - (mk_int(1)).a), (match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() }).tail.clone().unwrap()))
     } else {
         v1
@@ -28231,7 +28231,7 @@ pub fn Data_String_CodePoints_countTail(mut a0: std::rc::Rc<dyn Fn(i64) -> bool>
     unsafe_coerce(std::rc::Rc::new(move |mut accum: UnknownType| -> UnknownType {
     {
     let mut v = (Data_String_CodePoints_uncons)(s);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         if (p.dup())((match v.dup() { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap()) {
         (Data_String_CodePoints_countTail())(p, (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() }).tail.clone().unwrap(), mk_int((accum).a + (mk_int(1)).a))
     } else {
@@ -28295,7 +28295,7 @@ pub fn Data_String_CodePoints_codePointAtFallback(mut a0: i64, mut a1: String) -
     unsafe_coerce(std::rc::Rc::new(move |mut s: UnknownType| -> UnknownType {
     {
     let mut v = (Data_String_CodePoints_uncons)(s);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         if ((n).a == (mk_int(0)).a) {
         Maybe::Just((match v { Maybe::Just(val, ..) => val, _ => unimplemented!() }).head.clone().unwrap())
     } else {
@@ -28449,12 +28449,12 @@ pub fn Data_String_CodeUnits_startsWith(mut a0: String, mut a1: String) -> bool 
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_2 = (Data_String_CodeUnits_stripPrefix())(pat, x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -28487,12 +28487,12 @@ pub fn Data_String_CodeUnits_endsWith(mut a0: String, mut a1: String) -> bool {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_2 = (Data_String_CodeUnits_stripSuffix())(pat, x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -28525,12 +28525,12 @@ pub fn Data_String_CodeUnits_contains(mut a0: String, mut a1: String) -> bool {
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     {
     let mut lvl_3 = (lvl_1)(x);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -28629,14 +28629,14 @@ pub fn Data_String_Gen_max() -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut y: UnknownType| -> UnknownType {
     {
     let mut v = (lvl_0)(x.dup(), y.dup());
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         y
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         x
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -28831,7 +28831,7 @@ pub fn Data_String_NonEmpty_CodePoints_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -28847,7 +28847,7 @@ pub fn Data_String_NonEmpty_CodePoints_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -28976,7 +28976,7 @@ pub fn Data_String_NonEmpty_CodePoints_toNonEmptyCodePointArray(mut a0: String) 
     if (Data_Array_NonEmpty_greaterThan())(((lvl_1.dup()).len() as i32), mk_int(0)) {
         lvl_1
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -29011,7 +29011,7 @@ pub fn Data_String_NonEmpty_CodePoints_fromNonEmptyCodePointArray(mut a0: Unknow
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     if ((((x).len() as i32)).a == (mk_int(0)).a) {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     } else {
         (Data_String_CodePoints_fromCodePointArray())(x)
     }
@@ -29116,7 +29116,7 @@ pub fn Data_String_NonEmpty_CodeUnits_lessThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -29132,7 +29132,7 @@ pub fn Data_String_NonEmpty_CodeUnits_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -29299,7 +29299,7 @@ pub fn Data_String_NonEmpty_CodeUnits_toNonEmptyCharArray(mut a0: String) -> Unk
     if (Data_Array_NonEmpty_greaterThan())(((lvl_1.dup()).len() as i32), mk_int(0)) {
         lvl_1
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 })))(a0.clone())
@@ -29334,7 +29334,7 @@ pub fn Data_String_NonEmpty_CodeUnits_fromNonEmptyCharArray(mut a0: UnknownType)
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     if ((((x).len() as i32)).a == (mk_int(0)).a) {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     } else {
         (Data_String_CodeUnits_fromCharArray())(x)
     }
@@ -29601,12 +29601,12 @@ pub fn Data_String_NonEmpty_Internal_startsWith(mut a0: String, mut a1: String) 
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
     let mut lvl_2 = (Data_String_CodeUnits_stripPrefix())(x, v);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -29729,7 +29729,7 @@ pub fn Data_String_NonEmpty_Internal_unsafeFromString(mut a0: UnknownType, mut a
     _dollar___unused.drop_explicit();
     unsafe_coerce(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
     if ((x) == (unsafe_coerce(""))) {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     } else {
         x
     }
@@ -29753,12 +29753,12 @@ pub fn Data_String_NonEmpty_Internal_endsWith(mut a0: String, mut a1: String) ->
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
     let mut lvl_2 = (Data_String_CodeUnits_stripSuffix())(x, v);
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -30086,12 +30086,12 @@ pub fn Data_String_Regex_Unsafe_unsafeRegex(mut a0: String, mut a1: UnknownType)
     unsafe_coerce(std::rc::Rc::new(move |mut f: UnknownType| -> UnknownType {
     {
     let mut lvl_2 = (Data_String_Regex_regexImpl())(Data_Either_Left(), Data_Either_Right(), s, (Data_String_Regex_renderFlags())(f));
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (Partial__crashWith())((match lvl_2 { Either::Left(val, ..) => val, _ => unimplemented!() }))
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (match lvl_2 { Either::Right(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -32194,10 +32194,10 @@ pub struct Record_a {
 pub fn Data_Unfoldable_fromJust(mut a0: Maybe) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -32208,7 +32208,7 @@ pub fn Data_Unfoldable_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -32328,10 +32328,10 @@ pub struct Record_a {
 pub fn Data_Unfoldable1_fromJust(mut a0: Maybe) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })))(a0.clone())
 }
@@ -32342,7 +32342,7 @@ pub fn Data_Unfoldable1_lessThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -32358,7 +32358,7 @@ pub fn Data_Unfoldable1_greaterThanOrEq() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         false
     } else {
         true
@@ -32374,7 +32374,7 @@ pub fn Data_Unfoldable1_greaterThan() -> UnknownType {
     let mut lvl_0 = (Data_Ord_ordIntImpl())(Ordering::LT, Ordering::EQ, Ordering::GT);
     unsafe_coerce(std::rc::Rc::new(move |mut a1: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut a2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         true
     } else {
         false
@@ -32558,7 +32558,7 @@ pub struct Record_a {
 pub fn Data_Void_absurd(mut a0: Void) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(LetRec(..., Typed(App(Local(...))))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
-    // Unsupported Expr: LetRec(..., Typed(App(Local(...))))
+    unimplemented!() /* Unsupported Expr: LetRec(..., Typed(App(Local(...)))) */
 })))(a0.clone())
 }
 
@@ -33840,7 +33840,7 @@ pub fn Foreign_Object_member(mut a0: String, mut a1: Object) -> bool {
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -33852,7 +33852,7 @@ pub fn Foreign_Object_mapWithKey(mut a0: std::rc::Rc<dyn Fn(String, UnknownType)
     unsafe_coerce(std::rc::Rc::new(move |mut m: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=m
     m.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -33864,7 +33864,7 @@ pub fn Foreign_Object_lookup(mut a0: String, mut a1: Object) -> Maybe {
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -33883,7 +33883,7 @@ pub fn Foreign_Object_isSubmap(mut a0: UnknownType, mut a1: Object, mut a2: Obje
     unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=v
     v.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 })), m1)
 }))
@@ -33967,7 +33967,7 @@ pub fn Foreign_Object_fromFoldableWith(mut a0: UnknownType, mut a1: std::rc::Rc<
     (Foreign_Object_discard())((for_1)(l, unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     {
     let mut lvl_6 = (match v { Tuple::Tuple(val, ..) => val, _ => unimplemented!() });
-    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(// Unsupported Expr: UncurriedApp(Var(...)), unsafe_coerce(std::rc::Rc::new(move |mut v_prime: UnknownType| -> UnknownType {
+    (Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */, unsafe_coerce(std::rc::Rc::new(move |mut v_prime: UnknownType| -> UnknownType {
     (Foreign_Object_ST_poke())(lvl_6, v_prime, s)
 })))
 }
@@ -33993,7 +33993,7 @@ pub fn Foreign_Object_fromFoldable(mut a0: UnknownType, mut a1: UnknownType) -> 
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","Control_Monad_ST_Internal_bindST","Control_Monad_ST_Internal_foreach","Foreign_Object_ST_newImpl","Foreign_Object_ST_poke","Foreign_Object__dereference","Foreign_Object__runST","Foreign_Object_discard","Foreign_Object_void"] p=l
     l.drop_explicit();
     (Foreign_Object__dereference())((Foreign_Object__runST())((Control_Monad_ST_Internal_bindST().bind.clone().unwrap())(Foreign_Object_ST_newImpl(), unsafe_coerce(std::rc::Rc::new(move |mut s: UnknownType| -> UnknownType {
-    (Foreign_Object_discard())((Control_Monad_ST_Internal_foreach())(// Unsupported Expr: UncurriedApp(Var(...)), unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
+    (Foreign_Object_discard())((Control_Monad_ST_Internal_foreach())(unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */, unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     (Foreign_Object_void())((Foreign_Object_ST_poke())((match v.dup() { Tuple::Tuple(val, ..) => val, _ => unimplemented!() }), (match v { Tuple::Tuple(_, val, ..) => val, _ => unimplemented!() }), s))
 }))), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Control_Monad_ST_Internal_applicativeST","s"] p=_dollar___unused
@@ -34027,7 +34027,7 @@ pub fn Foreign_Object_foldMaybe(mut a0: std::rc::Rc<dyn Fn(UnknownType, String, 
     unsafe_coerce(std::rc::Rc::new(move |mut m: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=m
     m.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -34087,7 +34087,7 @@ pub fn Foreign_Object_unionWith(mut a0: std::rc::Rc<dyn Fn(UnknownType, UnknownT
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Foreign_Object_ST_poke","k","s2"] p=v1
     v1.drop_explicit();
-    (Foreign_Object_ST_poke())(k, // Unsupported Expr: UncurriedApp(Var(...)), s2)
+    (Foreign_Object_ST_poke())(k, unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */, s2)
 }))
 }))
 })), s1, m1)
@@ -34237,7 +34237,7 @@ pub fn Foreign_Object_pop(mut a0: String, mut a1: Object) -> Maybe {
     unsafe_coerce(std::rc::Rc::new(move |mut m: UnknownType| -> UnknownType {
     (Data_Maybe_functorMaybe().map.clone().unwrap())(unsafe_coerce(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
     Tuple::Tuple(a, (Foreign_Object_mutate)((Foreign_Object_ST_deleteImpl())(k), m))
-})), // Unsupported Expr: UncurriedApp(Var(...)))
+})), unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */)
 }))
 })))(a0.clone(), a1.clone())
 }
@@ -34248,13 +34248,13 @@ pub fn Foreign_Object_alter(mut a0: std::rc::Rc<dyn Fn(Maybe) -> Maybe>, mut a1:
     unsafe_coerce(std::rc::Rc::new(move |mut k: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut m: UnknownType| -> UnknownType {
     {
-    let mut v = (f)(// Unsupported Expr: UncurriedApp(Var(...)));
-    if // Unsupported Op1 {
+    let mut v = (f)(unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */);
+    if unimplemented!() /* Unsupported Op1 */ {
         (Foreign_Object_mutate)((Foreign_Object_ST_deleteImpl())(k), m)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (Foreign_Object_mutate)((Foreign_Object_ST_poke())(k, (match v { Maybe::Just(val, ..) => val, _ => unimplemented!() })), m)
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }
 }))
@@ -34268,12 +34268,12 @@ pub fn Foreign_Object_update(mut a0: std::rc::Rc<dyn Fn(UnknownType) -> Maybe>, 
     unsafe_coerce(std::rc::Rc::new(move |mut k: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut m: UnknownType| -> UnknownType {
     (Foreign_Object_alter())(unsafe_coerce(std::rc::Rc::new(move |mut v2: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         Maybe::Nothing
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (f)((match v2 { Maybe::Just(val, ..) => val, _ => unimplemented!() }))
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 })), k, m)
 }))
@@ -34299,12 +34299,6 @@ pub fn Effect_bindEffect() -> UnknownType { unsafe_coerce(0) }
 pub fn Data_Show_showString() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, discard: None, show: Some(std::rc::Rc::new(move |_| { unsafe_coerce(0) })) }) }
 
 // Data declarations:
-// Enum for ADT: Identity
-#[derive(Clone)]
-pub enum Identity {
-    Identity(UnknownType),
-}
-
 #[derive(Clone)]
 pub struct Record_a {
     pub a: i64,
@@ -34320,34 +34314,9 @@ pub struct Record_a {
 }
 
 // Bindings:
-pub fn Main_Identity() -> UnknownType {
-    // AST: CtorDef
-unsafe_coerce(0)
-}
-
-pub fn Main_IdentityEff(mut x: UnknownType) -> UnknownType {
-    // AST: Abs(..., Local(...))
-x
-}
-
-pub fn Main_test(mut a0: Effect) -> Effect {
-    // AST: Typed(Typed(Abs(..., Typed(Typed(Typed(App(Accessor(Var(...)))))))))
-(unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
-    (Effect_bindEffect().bind.clone().unwrap())(v, unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    // DEBUG: bodyVars=["Data_Unit_unit","Effect_applicativeEffect"] p=v1
-    v1.drop_explicit();
-    (Effect_applicativeEffect().pure.clone().unwrap())(Identity::Identity(Data_Unit_unit()))
-})))
-})))(a0.clone())
-}
-
 pub fn main() {
-    // AST: Typed(Typed(App(Accessor(Var(...)))))
-    (Control_Bind_discardUnit().discard.clone().unwrap())(Effect_bindEffect(), (Effect_Console_log)(unsafe_coerce("Done")), unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
-    // DEBUG: bodyVars=["Test_Mutation_main"] p=_dollar___unused
-    _dollar___unused.drop_explicit();
-    Test_Mutation_main()
-})));
+    // AST: Typed(Typed(App(Var(...))))
+    (Effect_Console_log)(unsafe_coerce("Hello from Purust!"));
 }
 
 #![allow(warnings)]
@@ -34523,7 +34492,7 @@ pub fn Record_Builder_union(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
     unsafe_coerce(std::rc::Rc::new(move |mut r2: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=r2
     r2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -34609,7 +34578,7 @@ pub fn Record_Builder_merge(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
     unsafe_coerce(std::rc::Rc::new(move |mut r2: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=r2
     r2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 }))
@@ -34651,7 +34620,7 @@ pub fn Record_Builder_disjointUnion(mut a0: UnknownType, mut a1: UnknownType, mu
     unsafe_coerce(std::rc::Rc::new(move |mut r2: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=r2
     r2.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 }))
@@ -34754,7 +34723,7 @@ pub fn Record_Unsafe_Union_unsafeUnion(mut a0: UnknownType, mut a1: UnknownType)
     lvl_0.drop_explicit();
     // DEBUG: bodyVars=[] p=lvl_1
     lvl_1.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 })))(a0.clone(), a1.clone())
 }
 
@@ -34835,7 +34804,7 @@ pub fn Record_union(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut r: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=r
     r.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 })))(a0.clone(), a1.clone(), a2.clone())
@@ -34885,7 +34854,7 @@ pub fn Record_merge(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownTyp
     unsafe_coerce(std::rc::Rc::new(move |mut r: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=r
     r.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 }))
@@ -35005,7 +34974,7 @@ pub fn Record_disjointUnion(mut a0: UnknownType, mut a1: UnknownType, mut a2: Un
     unsafe_coerce(std::rc::Rc::new(move |mut r: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=[] p=r
     r.drop_explicit();
-    // Unsupported Expr: UncurriedApp(Var(...))
+    unimplemented!() /* Unsupported Expr: UncurriedApp(Var(...)) */
 }))
 }))
 }))
@@ -35218,7 +35187,7 @@ Actual:   "), (dictShow.show.clone().unwrap())(v.actual.clone().unwrap())))));
     } else if result.dup() {
         (Effect_applicativeEffect().pure.clone().unwrap())(Data_Unit_unit())
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }, unsafe_coerce(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     // DEBUG: bodyVars=["Test_Assert_assertImpl","message","result"] p=_dollar___unused
@@ -35681,14 +35650,14 @@ pub fn Type_Data_Ordering_reifyOrdering(mut a0: Ordering, mut a1: std::rc::Rc<dy
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(Branch(...)))))))
 (unsafe_coerce(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     unsafe_coerce(std::rc::Rc::new(move |mut v1: UnknownType| -> UnknownType {
-    if // Unsupported Op1 {
+    if unimplemented!() /* Unsupported Op1 */ {
         (v1)(Type_Data_Ordering_isOrderingLT(), Proxy::Proxy)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (v1)(Type_Data_Ordering_isOrderingEQ(), Proxy::Proxy)
-    } else if // Unsupported Op1 {
+    } else if unimplemented!() /* Unsupported Op1 */ {
         (v1)(Type_Data_Ordering_isOrderingGT(), Proxy::Proxy)
     } else {
-        // Unsupported Expr: Fail(Failed pattern match)
+        unimplemented!() /* Unsupported Expr: Fail(Failed pattern match) */
     }
 }))
 })))(a0.clone(), a1.clone())

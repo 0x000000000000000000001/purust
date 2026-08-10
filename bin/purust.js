@@ -16487,7 +16487,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
           }
           return "// Unsupported UncurriedEffectApp without args\n";
         }
-        return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+        return "unimplemented!() /* Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + " */\n";
       }
       if (v._1._2.tag === "Var" && v._1._2._1._2 === "logRecord") {
         if (0 < v._2.length) {
@@ -16495,7 +16495,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
-      return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+      return "unimplemented!() /* Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + " */\n";
     }
     if (v._1.tag === "Accessor") {
       if (v._1._2.tag === "GetProp" && v._1._2._1 === "logRecord") {
@@ -16504,7 +16504,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
-      return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+      return "unimplemented!() /* Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + " */\n";
     }
     if (v._1.tag === "Var" && v._1._1._2 === "logRecord") {
       if (0 < v._2.length) {
@@ -16512,7 +16512,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       return "// Unsupported UncurriedEffectApp without args\n";
     }
-    return "// Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + "\n";
+    return "unimplemented!() /* Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + " */\n";
   }
   if (v.tag === "Update") {
     return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
@@ -16540,7 +16540,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       if (v._1._1.tag === "OpArrayLength") {
         return "((" + aStr + ").len() as i32)";
       }
-      return "// Unsupported Op1";
+      return "unimplemented!() /* Unsupported Op1 */";
     }
     if (v._1.tag === "Op2") {
       const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1._3);
@@ -16563,7 +16563,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpDivide") {
           return "mk_int((" + aStr + ").a / (" + bStr + ").a)";
         }
-        return "// Unsupported Op2";
+        return "unimplemented!() /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpIntOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -16584,7 +16584,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpLte") {
           return "(" + aStr + " <= " + bStr + ")";
         }
-        return "// Unsupported Op2";
+        return "unimplemented!() /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpNumberOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -16605,7 +16605,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpGte") {
           return "((" + aStr + ") >= (" + bStr + "))";
         }
-        return "// Unsupported Op2";
+        return "unimplemented!() /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpStringOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -16614,7 +16614,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpNotEq") {
           return "((" + aStr + ") != (" + bStr + "))";
         }
-        return "// Unsupported Op2";
+        return "unimplemented!() /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpCharOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -16623,7 +16623,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpNotEq") {
           return "((" + aStr + ") != (" + bStr + "))";
         }
-        return "// Unsupported Op2";
+        return "unimplemented!() /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpBooleanOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -16632,7 +16632,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpNotEq") {
           return "((" + aStr + ") != (" + bStr + "))";
         }
-        return "// Unsupported Op2";
+        return "unimplemented!() /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpBooleanAnd") {
         return "(" + aStr + " && " + bStr + ")";
@@ -16640,9 +16640,9 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       if (v._1._1.tag === "OpBooleanOr") {
         return "(" + aStr + " || " + bStr + ")";
       }
-      return "// Unsupported Op2";
+      return "unimplemented!() /* Unsupported Op2 */";
     }
-    return "// Unsupported Expr: " + printAST(v);
+    return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
@@ -16652,7 +16652,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       const placeholders = joinWith(", ")(replicateImpl(v._2._6, "_"));
       return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + " { " + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
     }
-    return "// Unsupported Expr: " + printAST(v);
+    return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
   }
   if (v.tag === "Var") {
     const fullName = sanitizeIdent((() => {
@@ -16837,7 +16837,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   if (v.tag === "CtorDef") {
     return "unsafe_coerce(0)";
   }
-  return "// Unsupported Expr: " + printAST(v);
+  return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
 };
 var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) => (aritiesMap) => (group2) => {
   const isSelfRecursive = group2.recursive && group2.bindings.length === 1;
