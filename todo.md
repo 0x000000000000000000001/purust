@@ -1,30 +1,41 @@
-Oui, je suis totalement prêt ! Le harnais d'exécution que nous venons de monter est la fondation parfaite pour tester scientifiquement chacune de ces hypothèses. 
+# Purust - État des Lieux et Todo (10 Août 2026)
 
-Puisque nous sommes en mode `/discuss`, je ne vais rien coder pour le moment. Voici la liste exhaustive des idées ambitieuses évoquées précédemment, et la façon dont nous allons pouvoir **prouver leur viabilité** pas à pas :
+## 1. Ce qui était en cours juste avant l'interruption
+- **Résolution des erreurs `cargo check` sur le monolithe `main.rs`.**
+- **Correction de `E0425` (Types manquants)** : Le compilateur paniquait sur les Foreign Data Types. Résolu en injectant automatiquement des alias globaux via `fix_main_regex.cjs` (`pub type Control_Monad_ST_Internal_ST = UnknownType;`, `Data_Array_ST_STArray`, `Data_Unit_Unit`, `Data_Lazy_Lazy`, `Effect_Effect`).
+- **Correction de `E0428` (Définitions multiples)** : Chaque fichier concaténé embarquait ses propres fonctions utilitaires `unsafe_coerce` et `mk_int`. Résolu en modifiant le script pour ne garder que la toute première définition de ces fonctions au début du fichier.
+- **En plein debug d'une erreur de syntaxe (`) }` orpheline)** : La regex qui supprimait les helpers laissait traîner la fermeture de l'instanciation de `Record_a`. La regex a été corrigée (`/pub fn unsafe_coerce<T>\(_: T\) -> UnknownType \{.*\}\n*/g`) et j'étais **sur le point de relancer le build** pour vérifier.
 
-### 1. La supériorité du TAST (Monomorphisation sans effacement de type)
-- **L'idée :** Grâce au `tcorefn` (qui inclut `dataDecls` et `ann.type`), nous ne sommes pas obligés de "boxer" (allouer sur le tas) toutes nos variables. Nous connaissons les types primitifs et l'agencement mémoire exact à la compilation.
-- **La preuve :** Lire un fichier PureScript déclarant un `data Shape = Circle Int | Rect Int Int`. Notre compilateur `purust` devra générer un parfait `enum Shape { Circle(i64), Rect(i64, i64) }` en Rust pur, sans pointeurs génériques ou `Box<dyn Any>`, démontrant ainsi que le type a bien survécu à la compilation.
+## 2. Ce qu'il reste à faire dans l'immédiat
+- Lancer le pipeline de build (`node ../../bin/purust.js run` + `fix_main_regex.cjs` + `cargo check`) pour confirmer que la syntaxe est propre.
+- Récupérer les vraies erreurs d'arité et de typage (`E0061`) qui étaient jusqu'à présent masquées par les erreurs de syntaxe et de types manquants. 
 
-### 2. Le moteur Perceus (Analyse de vivacité et `dup`/`drop`)
-- **L'idée :** Au lieu de laisser le Borrow Checker de Rust deviner la durée de vie (ce qui échouerait avec les fermetures fonctionnelles), c'est notre compilateur PureScript qui calcule la dernière utilisation (Liveness Analysis) de chaque variable.
-- **La preuve :** Créer une fonction PureScript où une variable `x` est utilisée deux fois, puis plus du tout. Notre compilateur devra injecter *explicitement* dans le code source Rust généré un `x.dup()` avant la première utilisation, et un `x.drop()` juste après la dernière. Le compilateur Rust sera alors "aveugle" et obéira à notre propre gestion mémoire.
+## 3. Le plan pour régler le problème d'uncurrying (Refactor Majeur)
+L'actuel `CodeGen.purs` de Purust tente d'aplatir (uncurry) les fonctions "à la main" en lisant les types inférés, tout en continuant d'utiliser l'AST brut (`NeutralExpr`). Résultat : la signature de la fonction attend `X` arguments natifs, mais son corps génère les fermetures imbriquées (`unsafe_coerce(Rc::new(...))`) du CoreFn classique.
 
-### 3. Le FBIP (Functional But In-Place)
-- **L'idée :** Si une structure de données purement fonctionnelle (comme un Record) possède un compteur de référence exactement égal à 1 (donc un seul propriétaire), on peut écraser sa mémoire sur place lors d'une mise à jour (`record { a = 2 }`), court-circuitant ainsi l'allocation dynamique.
-- **La preuve :** Traduire une mise à jour de record PureScript. Le code Rust généré devra appeler une méthode type `make_mut()` sur notre pointeur intelligent, qui fera un test `if ref_count == 1` suivi d'une mutation native en mémoire.
+Pour résoudre cela de manière robuste, nous allons **aligner l'architecture sur celle de `gopurs`** :
+1. **Intégration de l'analyse TCO** : 
+   - Importer `PureScript.Backend.Optimizer.Codegen.Tco (TcoExpr(..), tcoAnalysisOf)` dans `Purust/CodeGen.purs`.
+2. **Transformation de l'AST** : 
+   - Au lieu de passer directement `NeutralExpr` au générateur de code, exécuter `tcoAnalysisOf` sur les bindings. Cela transforme automatiquement et sans erreur les `Abs` imbriqués en `TcoAbs` (fonctions aplaties à plusieurs paramètres) et les appels en `TcoApp`.
+3. **Refonte de `codegenExpr`** :
+   - Réécrire le pattern matching de `codegenExpr` pour matcher sur l'enum `TcoExpr` au lieu de `NeutralExpr`.
+   - Cela réglera non seulement les problèmes de fermetures imbriquées, mais apportera en bonus **la Tail-Call Optimization (TCO)** native pour les fonctions récursives, indispensable pour des performances de haut niveau en Rust.
 
-### 4. Le "Sticky Sharing" (Pointeur intelligent minimaliste)
-- **L'idée :** Ne pas utiliser le standard `std::rc::Rc` de Rust (trop lourd), mais créer notre propre `PerceusPtr<T>` avec un compteur sur 8 ou 16 bits. Si le compteur sature (ex: 255), il devient "collant" et ne décrémente plus.
-- **La preuve :** Coder une petite crate *runtime* embarquée avec notre projet, implémentant `PerceusPtr` en Rust `unsafe`, et faire tourner un test dessus pour prouver qu'il est capable d'être incrémenté, décrémenté, ou "saturé" sans exploser.
+## 4. Bilan architectural (Les ambitions initiales vs la réalité actuelle)
+À la lumière de l'analyse du code source actuel, voici le diagnostic scientifique du backend `purust` face aux 6 grands piliers prévus par son concepteur :
 
-### 5. L'optimisation TCO via les boucles natives (Trampoline statique)
-- **L'idée :** Le compilateur PureScript détecte la récursion terminale et génère des nœuds de type boucle (`Loop` / `LetRec` dans l'AST).
-- **La preuve :** Traduire une fonction récursive profonde de PureScript vers une simple construction `loop { ... }` ou `while` en Rust, garantissant l'absence de Stack Overflow (là où Python ou JS sans TCO exploseraient).
+1. **Supériorité du TAST (Monomorphisation sans pointeur)** ❌ *Échec actuel*
+   - Le parsing des `dataDecls` est fait (on génère bien des `pub enum`), mais le générateur ne passe pas par la passe d'optimisation `Monomorphize`. Résultat : les fonctions tombent dans le plus grand commun dénominateur (`UnknownType`) et chaque `enum` finit enfermé dans un `unsafe_coerce(Rc::new(Record_a { ... }))`.
+2. **Moteur Perceus (Analyse de vivacité et Liveness)** ⚠️ *Partiel*
+   - L'analyse est fournie par le framework (`UsageAnalysis`), mais `purust` ne l'exploite pas pleinement pour émettre des `dup()`/`drop()` chirurgicaux, préférant un `.clone()` massif des arguments capturés par les fermetures.
+3. **FBIP (Functional But In-Place)** ❌ *Non implémenté*
+   - Aucune trace de code généré du style `Rc::make_mut` pour muter en place les objets ayant un compteur de référence à 1.
+4. **"Sticky Sharing" (Pointeur intelligent PerceusPtr)** ✅ *Validé*
+   - `purust` s'appuie effectivement sur un `perceus_ptr::PerceusPtr<Record_a>` embarqué qui gère la logique de comptage de référence customisée (court-circuitant le Borrow Checker strict).
+5. **Optimisation TCO via boucles natives** ❌ *Totalement absent*
+   - Comme `purust` n'utilise pas `TcoExpr` (contrairement à `gopurs`), la récursion terminale produit de bêtes appels de fermetures qui provoqueront inévitablement un Stack Overflow en Rust.
+6. **Passage de Dictionnaires (Type Classes monomorphisées)** ❌ *Absent*
+   - Le backend omet totalement la passe `Monomorphize`, les dictionnaires continuent donc d'exister en tant que pointeurs à l'exécution.
 
-### 6. Le passage de dictionnaires (Type Classes monomorphisées)
-- **L'idée :** Résoudre les instances de Type Classes dynamiquement passées en paramètres en les inlinant statiquement lorsque l'on connaît le type cible (grâce au TAST).
-- **La preuve :** Faire passer un test utilisant `Show` sur un entier, et observer que le code Rust généré appelle directement `int_show` au lieu de passer un objet dictionnaire en mémoire.
-
-Toutes ces idées forment l'architecture de ce que serait un compilateur de la classe de Koka ou Roc. 
-Est-ce que cette feuille de route te convient ? Par laquelle de ces preuves souhaiterais-tu que l'on commence au prochain tour (en désactivant le `/discuss`) ? Le parsing du TAST pour générer des types forts (Preuve 1) me semble être la fondation logique.
+**Conclusion :** `purust` est actuellement une "V1 / Preuve de concept". L'auteur a brillamment branché la plomberie externe (parsing TAST, exécution de Cargo, pointeur Perceus), mais a complètement esquivé les passes d'optimisation internes de `purescript-backend-optimizer` (`TcoExpr`, `Monomorphize`) au profit d'un hack global de contournement de type (`UnknownType`). L'étape 3 du refactor (intégration de `TcoExpr`) est la première clé pour déverrouiller ce potentiel gâché.

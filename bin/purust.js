@@ -1705,8 +1705,12 @@ var $Encoding = (tag) => tag;
 var UTF8 = /* @__PURE__ */ $Encoding("UTF8");
 
 // output-es/Data.Nullable/foreign.js
+var nullImpl = null;
 function nullable(a, r, f) {
   return a == null ? r : f(a);
+}
+function notNull(x) {
+  return x;
 }
 
 // output-es/Data.Eq/foreign.js
@@ -2417,12 +2421,47 @@ var writeTextFile2 = (encoding) => (file) => (text) => {
   };
   return () => writeFileSync(file, text, $0);
 };
-var mkdir3 = (path) => {
+var readTextFile2 = (encoding) => (file) => {
+  const $0 = {
+    encoding: (() => {
+      if (encoding === "ASCII") {
+        return "ASCII";
+      }
+      if (encoding === "UTF8") {
+        return "UTF8";
+      }
+      if (encoding === "UTF16LE") {
+        return "UTF16LE";
+      }
+      if (encoding === "UCS2") {
+        return "UCS2";
+      }
+      if (encoding === "Base64") {
+        return "Base64";
+      }
+      if (encoding === "Base64Url") {
+        return "Base64Url";
+      }
+      if (encoding === "Latin1") {
+        return "Latin1";
+      }
+      if (encoding === "Binary") {
+        return "Binary";
+      }
+      if (encoding === "Hex") {
+        return "Hex";
+      }
+      fail();
+    })()
+  };
+  return () => readFileSync(file, $0);
+};
+var mkdir3 = (path2) => {
   const $0 = {
     recursive: false,
     mode: permsToString({ u: semiringPerm.one, g: semiringPerm.one, o: semiringPerm.one })
   };
-  return () => mkdirSync(path, $0);
+  return () => mkdirSync(path2, $0);
 };
 
 // output-es/Control.Monad.ST.Internal/foreign.js
@@ -2934,23 +2973,23 @@ var keys = Object.keys || toArrayWithKey(function(k) {
 });
 
 // output-es/Node.Process/foreign.js
-import process from "process";
-var abortImpl = process.abort ? () => process.abort() : null;
-var argv = () => process.argv.slice();
-var channelRefImpl = process.channel && process.channel.ref ? () => process.channel.ref() : null;
-var channelUnrefImpl = process.channel && process.channel.unref ? () => process.channel.unref() : null;
-var debugPort = process.debugPort;
-var disconnectImpl = process.disconnect ? () => process.disconnect() : null;
-var pid = process.pid;
-var platformStr = process.platform;
-var ppid = process.ppid;
-var stdin = process.stdin;
-var stdout = process.stdout;
-var stderr = process.stderr;
-var stdinIsTTY = process.stdinIsTTY;
-var stdoutIsTTY = process.stdoutIsTTY;
-var stderrIsTTY = process.stderrIsTTY;
-var version = process.version;
+import process2 from "process";
+var abortImpl = process2.abort ? () => process2.abort() : null;
+var argv = () => process2.argv.slice();
+var channelRefImpl = process2.channel && process2.channel.ref ? () => process2.channel.ref() : null;
+var channelUnrefImpl = process2.channel && process2.channel.unref ? () => process2.channel.unref() : null;
+var debugPort = process2.debugPort;
+var disconnectImpl = process2.disconnect ? () => process2.disconnect() : null;
+var pid = process2.pid;
+var platformStr = process2.platform;
+var ppid = process2.ppid;
+var stdin = process2.stdin;
+var stdout = process2.stdout;
+var stderr = process2.stderr;
+var stdinIsTTY = process2.stdinIsTTY;
+var stdoutIsTTY = process2.stdoutIsTTY;
+var stderrIsTTY = process2.stderrIsTTY;
+var version = process2.version;
 
 // output-es/Data.Argonaut.Core/foreign.js
 function stringify(j) {
@@ -3665,7 +3704,7 @@ var decodeSourcePos = (json) => {
   }
   fail();
 };
-var decodeSourceSpan = (path) => (json) => {
+var decodeSourceSpan = (path2) => (json) => {
   const $0 = decodeJObject(json);
   if ($0.tag === "Left") {
     return $Either("Left", $0._1);
@@ -3681,7 +3720,7 @@ var decodeSourceSpan = (path) => (json) => {
         return $Either("Left", $2._1);
       }
       if ($2.tag === "Right") {
-        return $Either("Right", { path, start: $1._1, end: $2._1 });
+        return $Either("Right", { path: path2, start: $1._1, end: $2._1 });
       }
     }
   }
@@ -14883,6 +14922,136 @@ var buildModules = (dictMonad) => {
   };
 };
 
+// output-es/PureScript.Backend.Optimizer.FfiSupport/foreign.js
+import fs from "fs";
+import path from "path";
+var cachedScanDirs = null;
+function getScanDirs(mbFfiDir, extraSpagoDirs) {
+  if (cachedScanDirs !== null) return cachedScanDirs;
+  const rootDir = process.cwd();
+  const scanDirs = [];
+  const spagoDirs = [
+    path.join(rootDir, ".spago"),
+    path.join(rootDir, "spago.d")
+  ];
+  for (const d of extraSpagoDirs) {
+    spagoDirs.push(path.join(rootDir, d));
+  }
+  for (const spagoDir of spagoDirs) {
+    if (fs.existsSync(spagoDir) && fs.statSync(spagoDir).isDirectory()) {
+      const packages = fs.readdirSync(spagoDir);
+      for (const pkg of packages) {
+        const pkgDir = path.join(spagoDir, pkg);
+        if (fs.statSync(pkgDir).isDirectory()) {
+          let hasVersion = false;
+          const subdirs = fs.readdirSync(pkgDir);
+          for (const subdir of subdirs) {
+            const versionDir = path.join(pkgDir, subdir);
+            if (subdir.startsWith("v") && fs.statSync(versionDir).isDirectory()) {
+              scanDirs.push(versionDir);
+              hasVersion = true;
+            }
+          }
+          if (!hasVersion) {
+            scanDirs.push(pkgDir);
+          }
+        }
+      }
+    }
+  }
+  if (mbFfiDir) {
+    scanDirs.push(path.join(rootDir, mbFfiDir));
+  } else {
+    scanDirs.push(rootDir);
+  }
+  cachedScanDirs = scanDirs;
+  return scanDirs;
+}
+var ffiFileIndexes = {};
+function buildFfiFileIndex(scanDirs, extension) {
+  if (ffiFileIndexes[extension]) return;
+  const index = /* @__PURE__ */ new Set();
+  function walk(dir) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (e) {
+      return;
+    }
+    for (const entry of entries) {
+      const res = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(res);
+      } else if (entry.name.endsWith(extension)) {
+        index.add(res);
+      }
+    }
+  }
+  for (const d of scanDirs) {
+    walk(d);
+  }
+  ffiFileIndexes[extension] = index;
+}
+var findFfiFileImpl = function(extension) {
+  return function(extraSpagoDirs) {
+    return function(mbFfiDir) {
+      return function(modNameStr) {
+        return function(mbModulePath) {
+          return function() {
+            if (mbModulePath) {
+              const ffiPath = mbModulePath.replace(/\.purs$/, extension);
+              if (fs.existsSync(ffiPath)) {
+                return ffiPath;
+              }
+            }
+            const scanDirs = getScanDirs(mbFfiDir, extraSpagoDirs);
+            buildFfiFileIndex(scanDirs, extension);
+            const index = ffiFileIndexes[extension];
+            for (const dir of scanDirs) {
+              const searchPaths = [
+                path.join(dir, "src", ...modNameStr.split(".")) + extension,
+                path.join(dir, "src", modNameStr + extension),
+                path.join(dir, modNameStr + extension)
+              ];
+              for (const p of searchPaths) {
+                if (index.has(p)) {
+                  return p;
+                }
+              }
+            }
+            return null;
+          };
+        };
+      };
+    };
+  };
+};
+
+// output-es/PureScript.Backend.Optimizer.FfiSupport/index.js
+var findFfiFile = (extension) => (extraSpagoDirs) => (mbFfiDir) => (modName) => (mbModulePath) => {
+  const $0 = findFfiFileImpl(extension)(extraSpagoDirs)((() => {
+    if (mbFfiDir.tag === "Nothing") {
+      return nullImpl;
+    }
+    if (mbFfiDir.tag === "Just") {
+      return notNull(mbFfiDir._1);
+    }
+    fail();
+  })())(modName)((() => {
+    if (mbModulePath.tag === "Nothing") {
+      return nullImpl;
+    }
+    if (mbModulePath.tag === "Just") {
+      return notNull(mbModulePath._1);
+    }
+    fail();
+  })());
+  return () => {
+    const path2 = $0();
+    return nullable(path2, Nothing, Just);
+  };
+};
+
 // output-es/PureScript.Backend.Optimizer.Semantics.Foreign/index.js
 var fromFoldable6 = /* @__PURE__ */ foldrArray(Cons)(Nil);
 var record_builder_copyRecord = /* @__PURE__ */ $Tuple(
@@ -16085,6 +16254,39 @@ var sanitizeIdent = (s) => {
   if (s2 === "fn") {
     return "fn_kw";
   }
+  if (s2 === "break") {
+    return "break_kw";
+  }
+  if (s2 === "mod") {
+    return "mod_kw";
+  }
+  if (s2 === "as") {
+    return "as_kw";
+  }
+  if (s2 === "gen") {
+    return "gen_kw";
+  }
+  if (s2 === "use") {
+    return "use_kw";
+  }
+  if (s2 === "pub") {
+    return "pub_kw";
+  }
+  if (s2 === "ref") {
+    return "ref_kw";
+  }
+  if (s2 === "mut") {
+    return "mut_kw";
+  }
+  if (s2 === "move") {
+    return "move_kw";
+  }
+  if (s2 === "match") {
+    return "match_kw";
+  }
+  if (s2 === "loop") {
+    return "loop_kw";
+  }
   return s2;
 };
 var printAST = (v) => {
@@ -16235,6 +16437,15 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     return inferTypeExpr(currentMod)(aritiesMap)(insert(ordString)(sanitizeIdent(v._1._1))(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(v._4);
   }
   return Any;
+};
+var getTyPrefix = (currentMod) => (v) => {
+  if (v._1.tag === "Just") {
+    return replaceAll(".")("_")(v._1._1) + "_";
+  }
+  if (v._1.tag === "Nothing") {
+    return replaceAll(".")("_")(currentMod) + "_";
+  }
+  fail();
 };
 var freeVariables = (v) => {
   if (v.tag === "Var") {
@@ -16428,16 +16639,12 @@ var codegenExprType = (isRet) => (v) => {
   }
   if (v.tag === "ADT") {
     if ((() => {
-      const $02 = v._1.length - 1 | 0;
-      return $02 >= 0 && $02 < v._1.length && v._1[$02] === "Boolean";
+      const $0 = v._1.length - 1 | 0;
+      return $0 >= 0 && $0 < v._1.length && v._1[$0] === "Boolean";
     })()) {
       return "bool";
     }
-    const $0 = v._1.length - 1 | 0;
-    if ($0 >= 0 && $0 < v._1.length) {
-      return v._1[$0];
-    }
-    return "UnknownType";
+    return joinWith("_")(v._1);
   }
   return "UnknownType";
 };
@@ -16650,7 +16857,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     }
     if (v._2.tag === "GetCtorField") {
       const placeholders = joinWith(", ")(replicateImpl(v._2._6, "_"));
-      return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + " { " + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
+      return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + " { " + getTyPrefix(currentMod)(v._2._1) + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
     }
     return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
   }
@@ -16740,7 +16947,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return showNumberImpl(v._1._1) + " /* f64 */";
     }
     if (v._1.tag === "LitString") {
-      return 'unsafe_coerce("' + v._1._1 + '")';
+      return 'unsafe_coerce(r#"' + v._1._1 + '"#)';
     }
     if (v._1.tag === "LitChar") {
       return showCharImpl(v._1._1);
@@ -16821,7 +17028,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return "unimplemented!()";
   }
   if (v.tag === "CtorSaturated") {
-    return v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    return getTyPrefix(currentMod)(v._1) + v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -16945,7 +17152,7 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
 };
 var codegenModule = (v) => (backendMod) => {
   const modNameStr = replaceAll(".")("_")(backendMod.name);
-  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn Effect_Console_log<T>(_: T) -> UnknownType { unsafe_coerce(0) }\n\npub fn Control_Bind_discardUnit() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: Some(std::rc::Rc::new(move |_, _, cont| { cont })) }) }\npub fn Effect_bindEffect() -> UnknownType { unsafe_coerce(0) }\npub fn Data_Show_showString() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, discard: None, show: Some(std::rc::Rc::new(move |_| { unsafe_coerce(0) })) }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\n#[derive(Clone)]\npub enum " + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
+  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\n#[derive(Clone)]\npub enum " + replaceAll(".")("_")(backendMod.name) + "_" + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
     const res = codegenBindingGroup(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
     return { code: acc.code + res.code, arities: res.arities };
   })({ code: "", arities: Leaf })(backendMod.bindings).code;
@@ -16953,6 +17160,15 @@ var codegenModule = (v) => (backendMod) => {
 
 // output-es/Main/index.js
 var buildModules2 = /* @__PURE__ */ buildModules(monadAff);
+var show1 = (v) => {
+  if (v.tag === "Just") {
+    return "(Just " + showStringImpl(v._1) + ")";
+  }
+  if (v.tag === "Nothing") {
+    return "Nothing";
+  }
+  fail();
+};
 var main = /* @__PURE__ */ (() => {
   const $0 = _makeFiber(
     ffiUtil,
@@ -16977,7 +17193,18 @@ var main = /* @__PURE__ */ (() => {
                 $1();
               }
               writeTextFile2(UTF8)(outDir + "/Cargo.toml")('[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "../../../runtime/perceus_ptr" }\n')();
-              return writeTextFile2(UTF8)(outDir + "/src/main.rs")(rsFile)();
+              const ffiPathMb = findFfiFile(".rs")([])($Maybe("Just", "../"))(modNameStr)($Maybe("Just", v1.path))();
+              log("Looking for FFI for " + modNameStr + " path: " + showStringImpl(v1.path) + " found: " + show1(ffiPathMb))();
+              const ffiContent = (() => {
+                if (ffiPathMb.tag === "Just") {
+                  return readTextFile2(UTF8)(ffiPathMb._1)();
+                }
+                if (ffiPathMb.tag === "Nothing") {
+                  return "";
+                }
+                fail();
+              })();
+              return writeTextFile2(UTF8)(outDir + "/src/main.rs")(rsFile + "\n\n" + ffiContent)();
             };
           })());
         });

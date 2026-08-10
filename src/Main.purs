@@ -18,6 +18,7 @@ import PureScript.Backend.Optimizer.CoreFn (Module(..))
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
 import Purust.CodeGen (codegenModule)
 import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
+import Effect.Console as Console
 import Effect.Class (liftEffect)
 
 cacheVersion :: String
@@ -59,6 +60,7 @@ main = launchAff_ do
           FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") cargoToml
           
           ffiPathMb <- findFfiFile ".rs" [] (Just "../") modNameStr (Just coreFnMod.path)
+          Console.log ("Looking for FFI for " <> modNameStr <> " path: " <> show coreFnMod.path <> " found: " <> show ffiPathMb)
           ffiContent <- case ffiPathMb of
             Just ffiPath -> FS.readTextFile UTF8 ffiPath
             Nothing -> pure ""

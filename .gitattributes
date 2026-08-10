@@ -1,0 +1,4 @@
+*.js linguist-generated
+*.js linguist-vendored
+bin/purust.js linguist-generated
+bin/purust.js linguist-vendored

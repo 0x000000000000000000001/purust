@@ -680,65 +680,65 @@
     },
     "extra_packages": {
       "arrays": {
-        "path": "../../../gopurs-arrays"
+        "path": "../../../purust-arrays"
       },
       "assert": {
-        "path": "../../../gopurs-assert"
+        "path": "../../../purust-assert"
       },
       "console": {
-        "path": "../../../gopurs-console"
+        "path": "../../../purust-console"
       },
       "effect": {
-        "path": "../../../gopurs-effect"
+        "path": "../../../purust-effect"
       },
       "enums": {
-        "path": "../../../gopurs-enums"
+        "path": "../../../purust-enums"
       },
       "exceptions": {
-        "path": "../../../gopurs-exceptions"
+        "path": "../../../purust-exceptions"
       },
       "foldable-traversable": {
-        "path": "../../../gopurs-foldable-traversable"
+        "path": "../../../purust-foldable-traversable"
       },
       "foreign-object": {
-        "path": "../../../gopurs-foreign-object"
+        "path": "../../../purust-foreign-object"
       },
       "functions": {
-        "path": "../../../gopurs-functions"
+        "path": "../../../purust-functions"
       },
       "integers": {
-        "path": "../../../gopurs-integers"
+        "path": "../../../purust-integers"
       },
       "numbers": {
-        "path": "../../../gopurs-numbers"
+        "path": "../../../purust-numbers"
       },
       "partial": {
-        "path": "../../../gopurs-partial"
+        "path": "../../../purust-partial"
       },
       "prelude": {
-        "path": "../../../gopurs-prelude"
+        "path": "../../../purust-prelude"
       },
       "record": {
-        "path": "../../../gopurs-record"
+        "path": "../../../purust-record"
       },
       "refs": {
-        "path": "../../../gopurs-refs"
+        "path": "../../../purust-refs"
       },
       "st": {
-        "path": "../../../gopurs-st"
+        "path": "../../../purust-st"
       },
       "strings": {
-        "path": "../../../gopurs-strings"
+        "path": "../../../purust-strings"
       },
       "unsafe-coerce": {
-        "path": "../../../gopurs-unsafe-coerce"
+        "path": "../../../purust-unsafe-coerce"
       }
     }
   },
   "packages": {
     "arrays": {
       "type": "local",
-      "path": "../../../gopurs-arrays",
+      "path": "../../../purust-arrays",
       "dependencies": [
         "bifunctors",
         "control",
@@ -758,7 +758,7 @@
     },
     "assert": {
       "type": "local",
-      "path": "../../../gopurs-assert",
+      "path": "../../../purust-assert",
       "dependencies": [
         "console",
         "effect",
@@ -779,7 +779,7 @@
     },
     "console": {
       "type": "local",
-      "path": "../../../gopurs-console",
+      "path": "../../../purust-console",
       "dependencies": [
         "effect",
         "prelude"
@@ -830,7 +830,7 @@
     },
     "effect": {
       "type": "local",
-      "path": "../../../gopurs-effect",
+      "path": "../../../purust-effect",
       "dependencies": [
         "prelude"
       ]
@@ -848,7 +848,7 @@
     },
     "enums": {
       "type": "local",
-      "path": "../../../gopurs-enums",
+      "path": "../../../purust-enums",
       "dependencies": [
         "control",
         "either",
@@ -864,7 +864,7 @@
     },
     "exceptions": {
       "type": "local",
-      "path": "../../../gopurs-exceptions",
+      "path": "../../../purust-exceptions",
       "dependencies": [
         "effect",
         "either",
@@ -882,7 +882,7 @@
     },
     "foldable-traversable": {
       "type": "local",
-      "path": "../../../gopurs-foldable-traversable",
+      "path": "../../../purust-foldable-traversable",
       "dependencies": [
         "bifunctors",
         "const",
@@ -899,7 +899,7 @@
     },
     "foreign-object": {
       "type": "local",
-      "path": "../../../gopurs-foreign-object",
+      "path": "../../../purust-foreign-object",
       "dependencies": [
         "arrays",
         "foldable-traversable",
@@ -917,7 +917,7 @@
     },
     "functions": {
       "type": "local",
-      "path": "../../../gopurs-functions",
+      "path": "../../../purust-functions",
       "dependencies": [
         "prelude"
       ]
@@ -972,7 +972,7 @@
     },
     "integers": {
       "type": "local",
-      "path": "../../../gopurs-integers",
+      "path": "../../../purust-integers",
       "dependencies": [
         "maybe",
         "numbers",
@@ -1053,7 +1053,7 @@
     },
     "numbers": {
       "type": "local",
-      "path": "../../../gopurs-numbers",
+      "path": "../../../purust-numbers",
       "dependencies": [
         "functions",
         "maybe"
@@ -1070,12 +1070,12 @@
     },
     "partial": {
       "type": "local",
-      "path": "../../../gopurs-partial",
+      "path": "../../../purust-partial",
       "dependencies": []
     },
     "prelude": {
       "type": "local",
-      "path": "../../../gopurs-prelude",
+      "path": "../../../purust-prelude",
       "dependencies": []
     },
     "profunctor": {
@@ -1095,7 +1095,7 @@
     },
     "record": {
       "type": "local",
-      "path": "../../../gopurs-record",
+      "path": "../../../purust-record",
       "dependencies": [
         "functions",
         "prelude",
@@ -1104,7 +1104,7 @@
     },
     "refs": {
       "type": "local",
-      "path": "../../../gopurs-refs",
+      "path": "../../../purust-refs",
       "dependencies": [
         "effect",
         "prelude"
@@ -1120,7 +1120,7 @@
     },
     "st": {
       "type": "local",
-      "path": "../../../gopurs-st",
+      "path": "../../../purust-st",
       "dependencies": [
         "partial",
         "prelude",
@@ -1130,7 +1130,7 @@
     },
     "strings": {
       "type": "local",
-      "path": "../../../gopurs-strings",
+      "path": "../../../purust-strings",
       "dependencies": [
         "arrays",
         "control",
@@ -1204,7 +1204,7 @@
     },
     "unsafe-coerce": {
       "type": "local",
-      "path": "../../../gopurs-unsafe-coerce",
+      "path": "../../../purust-unsafe-coerce",
       "dependencies": []
     }
   }

@@ -1,0 +1,342 @@
+{
+  "annotation": {
+    "meta": null,
+    "sourceSpan": {
+      "end": [
+        556,
+        13
+      ],
+      "start": [
+        551,
+        1
+      ]
+    },
+    "type": {
+      "Func": {
+        "args": [
+          {
+            "Func": {
+              "args": [
+                {
+                  "TypeVar": "a"
+                },
+                {
+                  "TypeVar": "a"
+                }
+              ],
+              "ret": "Boolean"
+            }
+          },
+          {
+            "Array": {
+              "TypeVar": "a"
+            }
+          },
+          {
+            "Array": {
+              "TypeVar": "a"
+            }
+          }
+        ],
+        "ret": {
+          "Array": {
+            "TypeVar": "a"
+          }
+        }
+      }
+    }
+  },
+  "argument": "eq",
+  "body": {
+    "annotation": {
+      "meta": null,
+      "sourceSpan": {
+        "end": [
+          556,
+          13
+        ],
+        "start": [
+          551,
+          1
+        ]
+      },
+      "type": {
+        "Func": {
+          "args": [
+            {
+              "Array": {
+                "TypeVar": "a"
+              }
+            },
+            {
+              "Array": {
+                "TypeVar": "a"
+              }
+            }
+          ],
+          "ret": {
+            "Array": {
+              "TypeVar": "a"
+            }
+          }
+        }
+      }
+    },
+    "argument": "xs",
+    "body": {
+      "abstraction": {
+        "abstraction": {
+          "annotation": {
+            "meta": {
+              "metaType": "IsForeign"
+            },
+            "sourceSpan": {
+              "end": [
+                557,
+                35
+              ],
+              "start": [
+                557,
+                22
+              ]
+            },
+            "type": {
+              "Func": {
+                "args": [
+                  {
+                    "Func": {
+                      "args": [
+                        {
+                          "TypeVar": "a"
+                        },
+                        {
+                          "TypeVar": "a"
+                        }
+                      ],
+                      "ret": "Boolean"
+                    }
+                  },
+                  {
+                    "Array": {
+                      "TypeVar": "a"
+                    }
+                  },
+                  {
+                    "Array": {
+                      "TypeVar": "a"
+                    }
+                  }
+                ],
+                "ret": {
+                  "Array": {
+                    "TypeVar": "a"
+                  }
+                }
+              }
+            }
+          },
+          "type": "Var",
+          "value": {
+            "identifier": "intersectBy",
+            "moduleName": [
+              "Data",
+              "Array"
+            ]
+          }
+        },
+        "annotation": {
+          "meta": null,
+          "sourceSpan": {
+            "end": [
+              557,
+              38
+            ],
+            "start": [
+              557,
+              22
+            ]
+          },
+          "type": {
+            "Func": {
+              "args": [
+                {
+                  "Array": {
+                    "TypeVar": "a"
+                  }
+                },
+                {
+                  "Array": {
+                    "TypeVar": "a"
+                  }
+                }
+              ],
+              "ret": {
+                "Array": {
+                  "TypeVar": "a"
+                }
+              }
+            }
+          }
+        },
+        "argument": {
+          "annotation": {
+            "meta": null,
+            "sourceSpan": {
+              "end": [
+                557,
+                38
+              ],
+              "start": [
+                557,
+                36
+              ]
+            },
+            "type": {
+              "Func": {
+                "args": [
+                  {
+                    "TypeVar": "a"
+                  },
+                  {
+                    "TypeVar": "a"
+                  }
+                ],
+                "ret": "Boolean"
+              }
+            }
+          },
+          "type": "Var",
+          "value": {
+            "identifier": "eq",
+            "sourcePos": [
+              557,
+              1
+            ]
+          }
+        },
+        "type": "App"
+      },
+      "annotation": {
+        "meta": null,
+        "sourceSpan": {
+          "end": [
+            557,
+            51
+          ],
+          "start": [
+            557,
+            22
+          ]
+        },
+        "type": {
+          "Func": {
+            "args": [
+              {
+                "Array": {
+                  "TypeVar": "a"
+                }
+              }
+            ],
+            "ret": {
+              "Array": {
+                "TypeVar": "a"
+              }
+            }
+          }
+        }
+      },
+      "argument": {
+        "abstraction": {
+          "annotation": {
+            "meta": null,
+            "sourceSpan": {
+              "end": [
+                557,
+                47
+              ],
+              "start": [
+                557,
+                40
+              ]
+            },
+            "type": {
+              "Func": {
+                "args": [
+                  {
+                    "Array": {
+                      "TypeVar": "a"
+                    }
+                  }
+                ],
+                "ret": {
+                  "Array": {
+                    "TypeVar": "a"
+                  }
+                }
+              }
+            }
+          },
+          "type": "Var",
+          "value": {
+            "identifier": "toArray",
+            "moduleName": [
+              "Data",
+              "Array",
+              "NonEmpty"
+            ]
+          }
+        },
+        "annotation": {
+          "meta": null,
+          "sourceSpan": {
+            "end": [
+              557,
+              50
+            ],
+            "start": [
+              557,
+              40
+            ]
+          },
+          "type": {
+            "Array": {
+              "TypeVar": "a"
+            }
+          }
+        },
+        "argument": {
+          "annotation": {
+            "meta": null,
+            "sourceSpan": {
+              "end": [
+                557,
+                50
+              ],
+              "start": [
+                557,
+                48
+              ]
+            },
+            "type": {
+              "Array": {
+                "TypeVar": "a"
+              }
+            }
+          },
+          "type": "Var",
+          "value": {
+            "identifier": "xs",
+            "sourcePos": [
+              557,
+              1
+            ]
+          }
+        },
+        "type": "App"
+      },
+      "type": "App"
+    },
+    "type": "Abs"
+  },
+  "type": "Abs"
+}

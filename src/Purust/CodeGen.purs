@@ -28,7 +28,7 @@ codegenModule (Module coreFnMod) backendMod =
     -- Traduction des DataDecls
     dataDeclsCode = foldMap (\(decl :: DataDecl) ->
         "// Enum for ADT: " <> decl.typeName <> "\n" <>
-        "#[derive(Clone)]\npub enum " <> decl.typeName <> " {\n" <>
+        "#[derive(Clone)]\npub enum " <> String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name) <> "_" <> decl.typeName <> " {\n" <>
         foldMap (\ctor -> 
           let fields = if Array.null ctor.fieldTypes then "" 
                        else "(" <> String.joinWith ", " (map (codegenExprType true) ctor.fieldTypes) <> ")"
@@ -81,7 +81,7 @@ codegenExprType isRet = case _ of
   Boolean -> "bool"
   Char -> "char"
   ADT name _ | Array.last name == Just "Boolean" -> "bool"
-  ADT name _ -> Array.last name # fromMaybe "UnknownType"
+  ADT name _ -> String.joinWith "_" name
   TypeVar _ -> "UnknownType"
   _ -> "UnknownType"
 
@@ -182,6 +182,12 @@ codegenBindingGroup modNameStr allZeroArity allMacroBindings aritiesMap group =
     ) group.bindings
   in { code: code, arities: mergedArities }
 
+
+
+getTyPrefix :: forall a. String -> Qualified a -> String
+getTyPrefix currentMod (Qualified mbMod _) = case mbMod of
+  Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
+  Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_"
 
 codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
 codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (NeutralExpr expr) = case expr of
@@ -302,7 +308,8 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
     let baseStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive base
         placeholders = String.joinWith ", " (Array.replicate fieldIdx "_")
         prefix = if fieldIdx == 0 then "" else placeholders <> ", "
-    in "(match " <> baseStr <> " { " <> tyNameStr <> "::" <> ctorName <> "(" <> prefix <> "val, ..) => val, _ => unimplemented!() })"
+        fullTyName = getTyPrefix currentMod qId <> tyNameStr
+    in "(match " <> baseStr <> " { " <> fullTyName <> "::" <> ctorName <> "(" <> prefix <> "val, ..) => val, _ => unimplemented!() })"
   Var (Qualified mbMod (Ident name)) ->
     let
       modPrefix = case mbMod of
@@ -355,7 +362,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
   Lit lit -> case lit of
     LitInt i -> "mk_int(" <> show i <> ")"
     LitNumber n -> show n <> " /* f64 */"
-    LitString s -> "unsafe_coerce(\"" <> s <> "\")"
+    LitString s -> "unsafe_coerce(r#\"" <> s <> "\"#)"
     LitChar c -> show c
     LitBoolean b -> if b then "true" else "false"
     LitArray arr -> 
@@ -387,14 +394,15 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive (Neutral
        "    " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound Set.empty body <> "\n" <>
        "}))"
   PrimUndefined -> "unimplemented!()"
-  CtorSaturated _ _ (ProperName tyNameStr) (Ident ctorName) fields ->
+  CtorSaturated qId _ (ProperName tyNameStr) (Ident ctorName) fields ->
     let fieldsCode = if Array.null fields then "" else 
           "(" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
             let subsequent = Array.drop (i + 1) fields
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
             in codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound aliveForV val
           ) fields) <> ")"
-    in tyNameStr <> "::" <> ctorName <> fieldsCode
+        fullTyName = getTyPrefix currentMod qId <> tyNameStr
+    in fullTyName <> "::" <> ctorName <> fieldsCode
   CtorDef _ _ _ _ -> "unsafe_coerce(0)"
   _ -> "unimplemented!() /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
 
@@ -518,6 +526,17 @@ sanitizeIdent s =
       s2 = String.replaceAll (Pattern "$") (Replacement "_dollar_") s1
   in if s2 == "type" then "type_kw" 
      else if s2 == "fn" then "fn_kw" 
+     else if s2 == "break" then "break_kw"
+     else if s2 == "mod" then "mod_kw"
+     else if s2 == "as" then "as_kw"
+     else if s2 == "gen" then "gen_kw"
+     else if s2 == "use" then "use_kw"
+     else if s2 == "pub" then "pub_kw"
+     else if s2 == "ref" then "ref_kw"
+     else if s2 == "mut" then "mut_kw"
+     else if s2 == "move" then "move_kw"
+     else if s2 == "match" then "match_kw"
+     else if s2 == "loop" then "loop_kw"
      else s2
 
 dedupArgs :: Array String -> Array String

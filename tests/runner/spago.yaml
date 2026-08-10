@@ -24,38 +24,38 @@ workspace:
     registry: 77.10.1
   extraPackages:
     assert:
-      path: "../../../gopurs-assert"
+      path: "../../../purust-assert"
     prelude:
-      path: "../../../gopurs-prelude"
+      path: "../../../purust-prelude"
     effect:
-      path: "../../../gopurs-effect"
+      path: "../../../purust-effect"
     console:
-      path: "../../../gopurs-console"
+      path: "../../../purust-console"
     arrays:
-      path: "../../../gopurs-arrays"
+      path: "../../../purust-arrays"
     partial:
-      path: "../../../gopurs-partial"
+      path: "../../../purust-partial"
     foldable-traversable:
-      path: "../../../gopurs-foldable-traversable"
+      path: "../../../purust-foldable-traversable"
     st:
-      path: "../../../gopurs-st"
+      path: "../../../purust-st"
     exceptions:
-      path: "../../../gopurs-exceptions"
+      path: "../../../purust-exceptions"
     integers:
-      path: "../../../gopurs-integers"
+      path: "../../../purust-integers"
     strings:
-      path: "../../../gopurs-strings"
+      path: "../../../purust-strings"
     enums:
-      path: "../../../gopurs-enums"
+      path: "../../../purust-enums"
     foreign-object:
-      path: "../../../gopurs-foreign-object"
+      path: "../../../purust-foreign-object"
     numbers:
-      path: "../../../gopurs-numbers"
+      path: "../../../purust-numbers"
     refs:
-      path: "../../../gopurs-refs"
+      path: "../../../purust-refs"
     unsafe-coerce:
-      path: "../../../gopurs-unsafe-coerce"
+      path: "../../../purust-unsafe-coerce"
     functions:
-      path: "../../../gopurs-functions"
+      path: "../../../purust-functions"
     record:
-      path: "../../../gopurs-record"
+      path: "../../../purust-record"
