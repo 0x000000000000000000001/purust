@@ -164,4 +164,29 @@ mod tests {
         }
         assert_eq!(DROP_COUNT.load(Ordering::SeqCst), 0);
     }
+
+    #[derive(Clone)]
+    struct Record_a {
+        a: i64,
+    }
+
+    fn count_up(mut v: PerceusPtr<Record_a>, n: i64) -> PerceusPtr<Record_a> {
+        if n == 0 {
+            v
+        } else {
+            let mut _base = v;
+            {
+                let _mut = PerceusPtr::make_mut(&mut _base);
+                _mut.a = _mut.a + 1;
+            }
+            count_up(_base, n - 1)
+        }
+    }
+
+    #[test]
+    fn test_fbip_recursive() {
+        let initial = PerceusPtr::new(Record_a { a: 0 });
+        let result = count_up(initial, 5);
+        assert_eq!(result.a, 5);
+    }
 }

@@ -1,4 +1,5 @@
 module Main where
+import Test.Mutation as Mutation
 
 import Prelude
 import Effect
@@ -13,4 +14,6 @@ test (IdentityEff action) = IdentityEff $ do
   (Identity x :: Identity _) <- action
   pure $ Identity unit
 
-main = log "Done"
+main = do
+  log "Done"
+  Mutation.main
