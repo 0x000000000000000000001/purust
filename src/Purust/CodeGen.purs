@@ -28,13 +28,13 @@ codegenModule (Module coreFnMod) backendMod =
     
     -- Traduction des DataDecls
     dataDeclsCode = foldMap (\(decl :: DataDecl) ->
-        "// Enum for ADT: " <> decl.typeName <> "\n" <>
-        "#[derive(Clone)]\npub enum " <> String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name) <> "_" <> decl.typeName <> " {\n" <>
-        foldMap (\ctor -> 
-          let fields = if Array.null ctor.fieldTypes then "" 
-                       else "(" <> String.joinWith ", " (map (codegenExprType true) ctor.fieldTypes) <> ")"
-          in "    " <> ctor.constructorName <> fields <> ",\n"
-        ) decl.constructors <>
+        "// Enum for ADT: " <> decl.name <> "\n" <>
+        "#[derive(Clone)]\npub enum " <> String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name) <> "_" <> decl.name <> " {\n" <>
+        String.joinWith "" (map (\ctor ->
+          let fields' = if Array.null ctor.fields then "" 
+                       else "(" <> String.joinWith ", " (map (codegenExprType true) ctor.fields) <> ")"
+          in "    " <> ctor.name <> fields' <> ",\n"
+        ) decl.constructors) <>
         "}\n\n"
       ) backendMod.dataDecls <>
       "#[derive(Clone, Default)]\npub struct Record_a {\n" <>

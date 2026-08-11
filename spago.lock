@@ -678,16 +678,16 @@
     },
     "extra_packages": {
       "assert": {
-        \"path\": \"../../gopurs/gopurs-assert\"
+        "path": "../../gopurs/gopurs-assert"
       },
       "backend-optimizer": {
         "path": "../../purescript-backend-optimizer"
       },
       "st": {
-        \"path\": \"../../gopurs/gopurs-st\"
+        "path": "../../gopurs/gopurs-st"
       },
       "unsafe-coerce": {
-        \"path\": \"../../gopurs/gopurs-unsafe-coerce\"
+        "path": "../../gopurs/gopurs-unsafe-coerce"
       }
     }
   },
@@ -1563,7 +1563,7 @@
     },
     "st": {
       "type": "local",
-      \"path\": \"../../gopurs/gopurs-st\",
+      "path": "../../gopurs/gopurs-st",
       "dependencies": [
         "partial",
         "prelude",
@@ -1670,7 +1670,7 @@
     },
     "unsafe-coerce": {
       "type": "local",
-      \"path\": \"../../gopurs/gopurs-unsafe-coerce\",
+      "path": "../../gopurs/gopurs-unsafe-coerce",
       "dependencies": []
     }
   }
