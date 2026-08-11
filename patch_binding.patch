@@ -1,0 +1,23 @@
+--- bin/purust.js
++++ bin/purust.js
+@@ -17124,12 +17124,13 @@
+             bound,
+             aritiesMap
+           ))(Leaf)(innerExpr._2);
+         }
+-        return "(" + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
++        let res = "(" + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+           ordString.compare,
+           $$const,
+           bound,
+           aritiesMap
+-        ))(Leaf)(innerExpr) + ")(" + joinWith(", ")(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ")";
++        ))(Leaf)(innerExpr) + ")";
++        
++        const argsList = fromFoldableImpl((x) => x, deduped);
++        for (let i = 0; i < argsList.length; i++) {
++          res += ".call.clone().unwrap()(" + sanitizeIdent(argsList[i]) + ".clone())";
++        }
++        return res;
+       })();
+       if (identName === "main") {

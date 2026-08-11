@@ -115,15 +115,6 @@ var showStringImpl = function(s) {
     }
   ) + '"';
 };
-var showArrayImpl = function(f) {
-  return function(xs) {
-    var ss = [];
-    for (var i = 0, l = xs.length; i < l; i++) {
-      ss[i] = f(xs[i]);
-    }
-    return "[" + ss.join(",") + "]";
-  };
-};
 
 // output-es/Data.Ordering/index.js
 var $Ordering = (tag) => tag;
@@ -1793,7 +1784,7 @@ var ordInt = { compare: /* @__PURE__ */ ordIntImpl(LT)(EQ)(GT), Eq0: () => eqInt
 var ordChar = { compare: /* @__PURE__ */ ordCharImpl(LT)(EQ)(GT), Eq0: () => eqChar };
 var ordBoolean = { compare: /* @__PURE__ */ ordBooleanImpl(LT)(EQ)(GT), Eq0: () => eqBoolean };
 var ordArray = (dictOrd) => {
-  const eqArray = { eq: eqArrayImpl(dictOrd.Eq0().eq) };
+  const eqArray2 = { eq: eqArrayImpl(dictOrd.Eq0().eq) };
   return {
     compare: (xs) => (ys) => ordInt.compare(0)(ordArrayImpl((x) => (y) => {
       const v = dictOrd.compare(x)(y);
@@ -1808,7 +1799,7 @@ var ordArray = (dictOrd) => {
       }
       fail();
     })(xs)(ys)),
-    Eq0: () => eqArray
+    Eq0: () => eqArray2
   };
 };
 
@@ -2758,6 +2749,12 @@ var findMapImpl = function(nothing, isJust2, f, xs) {
   }
   return nothing;
 };
+var findIndexImpl = function(just, nothing, f, xs) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    if (f(xs[i])) return just(i);
+  }
+  return nothing;
+};
 var reverse = function(l) {
   return l.slice().reverse();
 };
@@ -2899,6 +2896,16 @@ var groupBy = (op) => (xs) => {
 var groupAllBy = (cmp) => {
   const $0 = groupBy((x) => (y) => cmp(x)(y) === "EQ");
   return (x) => $0(sortBy(cmp)(x));
+};
+var elem = (dictEq) => (a) => (arr) => {
+  const $0 = findIndexImpl(Just, Nothing, (v) => dictEq.eq(v)(a), arr);
+  if ($0.tag === "Nothing") {
+    return false;
+  }
+  if ($0.tag === "Just") {
+    return true;
+  }
+  fail();
 };
 var concatMap = (b) => (a) => arrayBind(a)(b);
 var mapMaybe = (f) => concatMap((x) => {
@@ -3189,7 +3196,8 @@ var $Meta = (tag, _1, _2) => ({ tag, _1, _2 });
 var $Prop = (_1, _2) => ({ tag: "Prop", _1, _2 });
 var $Qualified = (_1, _2) => ({ tag: "Qualified", _1, _2 });
 var $ReExport = (_1, _2) => ({ tag: "ReExport", _1, _2 });
-var eq5 = /* @__PURE__ */ eqArrayImpl(eqStringImpl);
+var eqArray = { eq: /* @__PURE__ */ eqArrayImpl(eqStringImpl) };
+var eqTuple1 = (dictEq1) => ({ eq: (x) => (y) => eqArray.eq(x._1)(y._1) && dictEq1.eq(x._2)(y._2) });
 var zero = /* @__PURE__ */ (() => semiringRecordCons({ reflectSymbol: () => "column" })()(semiringRecordCons({ reflectSymbol: () => "line" })()(semiringRecordNil)(semiringInt))(semiringInt).zeroRecord($$Proxy)($$Proxy))();
 var Prop = (value0) => (value1) => $Prop(value0, value1);
 var LitArray = (value0) => $Literal("LitArray", value0);
@@ -3200,6 +3208,7 @@ var $$Number = /* @__PURE__ */ $ExprType("Number");
 var $$String = /* @__PURE__ */ $ExprType("String");
 var Char = /* @__PURE__ */ $ExprType("Char");
 var $$Boolean = /* @__PURE__ */ $ExprType("Boolean");
+var Unit = /* @__PURE__ */ $ExprType("Unit");
 var Any = /* @__PURE__ */ $ExprType("Any");
 var ProductType = /* @__PURE__ */ $ConstructorType("ProductType");
 var SumType = /* @__PURE__ */ $ConstructorType("SumType");
@@ -3386,22 +3395,40 @@ var eqExprType = {
     if (x.tag === "Boolean") {
       return y.tag === "Boolean";
     }
+    if (x.tag === "Unit") {
+      return y.tag === "Unit";
+    }
+    if (x.tag === "Any") {
+      return y.tag === "Any";
+    }
+    if (x.tag === "TypeLevelString") {
+      return y.tag === "TypeLevelString" && x._1 === y._1;
+    }
     if (x.tag === "Array") {
       return y.tag === "Array" && eqExprType.eq(x._1)(y._1);
-    }
-    if (x.tag === "Func") {
-      return y.tag === "Func" && eqArrayImpl(eqExprType.eq)(x._1)(y._1) && eqExprType.eq(x._2)(y._2);
-    }
-    if (x.tag === "Record") {
-      return y.tag === "Record" && eqArrayImpl((x$1) => (y$1) => x$1._1 === y$1._1 && eqExprType.eq(x$1._2)(y$1._2))(x._1)(y._1);
-    }
-    if (x.tag === "ADT") {
-      return y.tag === "ADT" && eq5(x._1)(y._1) && eqArrayImpl(eqExprType.eq)(x._2)(y._2);
     }
     if (x.tag === "TypeVar") {
       return y.tag === "TypeVar" && x._1 === y._1;
     }
-    return x.tag === "Any" && y.tag === "Any";
+    if (x.tag === "ADT") {
+      return y.tag === "ADT" && eqArray.eq(x._1)(y._1) && eqArrayImpl(eqExprType.eq)(x._2)(y._2);
+    }
+    if (x.tag === "TypeApp") {
+      return y.tag === "TypeApp" && eqExprType.eq(x._1)(y._1) && eqArrayImpl(eqExprType.eq)(x._2)(y._2);
+    }
+    if (x.tag === "Func") {
+      return y.tag === "Func" && eqArrayImpl(eqExprType.eq)(x._1)(y._1) && eqExprType.eq(x._2)(y._2);
+    }
+    if (x.tag === "Row") {
+      return y.tag === "Row" && eqArrayImpl((x$1) => (y$1) => x$1._1 === y$1._1 && eqExprType.eq(x$1._2)(y$1._2))(x._1)(y._1) && (x._2.tag === "Nothing" ? y._2.tag === "Nothing" : x._2.tag === "Just" && y._2.tag === "Just" && eqExprType.eq(x._2._1)(y._2._1));
+    }
+    if (x.tag === "Record") {
+      return y.tag === "Record" && eqExprType.eq(x._1)(y._1);
+    }
+    if (x.tag === "ForAll") {
+      return y.tag === "ForAll" && eqArray.eq(x._1)(y._1) && eqExprType.eq(x._2)(y._2);
+    }
+    return x.tag === "ConstrainedType" && y.tag === "ConstrainedType" && eqArrayImpl(eqTuple1({ eq: eqArrayImpl(eqExprType.eq) }).eq)(x._1)(y._1) && eqExprType.eq(x._2)(y._2);
   }
 };
 var emptySpan = { path: "<internal>", start: zero, end: zero };
@@ -3555,6 +3582,280 @@ var decodeConstructorType = (json) => {
   }
   fail();
 };
+var decodeExprType = (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("type");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      if ($1._1 === "Int") {
+        return $Either("Right", Int);
+      }
+      if ($1._1 === "Number") {
+        return $Either("Right", $$Number);
+      }
+      if ($1._1 === "String") {
+        return $Either("Right", $$String);
+      }
+      if ($1._1 === "Char") {
+        return $Either("Right", Char);
+      }
+      if ($1._1 === "Boolean") {
+        return $Either("Right", $$Boolean);
+      }
+      if ($1._1 === "Unit") {
+        return $Either("Right", Unit);
+      }
+      if ($1._1 === "Any") {
+        return $Either("Right", Any);
+      }
+      if ($1._1 === "TypeLevelString") {
+        const $2 = getField(decodeString)($0._1)("value");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          return $Either("Right", $ExprType("TypeLevelString", $2._1));
+        }
+        fail();
+      }
+      if ($1._1 === "Array") {
+        const $2 = getField(decodeExprType)($0._1)("element");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          return $Either("Right", $ExprType("Array", $2._1));
+        }
+        fail();
+      }
+      if ($1._1 === "TypeVar") {
+        const $2 = getField(decodeString)($0._1)("name");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          return $Either("Right", $ExprType("TypeVar", $2._1));
+        }
+        fail();
+      }
+      if ($1._1 === "Adt") {
+        const $2 = getField(decodeArray2(decodeString))($0._1)("fqn");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          const $3 = getField(decodeArray2(decodeExprType))($0._1)("args");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            return $Either("Right", $ExprType("ADT", $2._1, $3._1));
+          }
+        }
+        fail();
+      }
+      if ($1._1 === "TypeApp") {
+        const $2 = getField(decodeExprType)($0._1)("constructor");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          const $3 = getField(decodeArray2(decodeExprType))($0._1)("args");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            return $Either("Right", $ExprType("TypeApp", $2._1, $3._1));
+          }
+        }
+        fail();
+      }
+      if ($1._1 === "Func") {
+        const $2 = getField(decodeArray2(decodeExprType))($0._1)("args");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          const $3 = getField(decodeExprType)($0._1)("ret");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            return $Either("Right", $ExprType("Func", $2._1, $3._1));
+          }
+        }
+        fail();
+      }
+      if ($1._1 === "Row") {
+        const $2 = getField(decodeArray2((j) => {
+          const $22 = decodeJObject(j);
+          if ($22.tag === "Left") {
+            return $Either("Left", $22._1);
+          }
+          if ($22.tag === "Right") {
+            const $3 = getField(decodeString)($22._1)("label");
+            if ($3.tag === "Left") {
+              return $Either("Left", $3._1);
+            }
+            if ($3.tag === "Right") {
+              const $4 = getField(decodeExprType)($22._1)("type");
+              if ($4.tag === "Left") {
+                return $Either("Left", $4._1);
+              }
+              if ($4.tag === "Right") {
+                return $Either("Right", $Tuple($3._1, $4._1));
+              }
+            }
+          }
+          fail();
+        }))($0._1)("fields");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          const $3 = getFieldOptional$p(decodeExprType)($0._1)("tail");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            return $Either("Right", $ExprType("Row", $2._1, $3._1));
+          }
+        }
+        fail();
+      }
+      if ($1._1 === "Record") {
+        const $2 = getField(decodeExprType)($0._1)("row");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          return $Either("Right", $ExprType("Record", $2._1));
+        }
+        fail();
+      }
+      if ($1._1 === "ForAll") {
+        const $2 = getField(decodeArray2(decodeString))($0._1)("vars");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          const $3 = getField(decodeExprType)($0._1)("body");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            return $Either("Right", $ExprType("ForAll", $2._1, $3._1));
+          }
+        }
+        fail();
+      }
+      if ($1._1 === "ConstrainedType") {
+        const $2 = getField(decodeArray2((j) => {
+          const $22 = decodeJObject(j);
+          if ($22.tag === "Left") {
+            return $Either("Left", $22._1);
+          }
+          if ($22.tag === "Right") {
+            const $3 = getField(decodeArray2(decodeString))($22._1)("fqn");
+            if ($3.tag === "Left") {
+              return $Either("Left", $3._1);
+            }
+            if ($3.tag === "Right") {
+              const $4 = getField(decodeArray2(decodeExprType))($22._1)("args");
+              if ($4.tag === "Left") {
+                return $Either("Left", $4._1);
+              }
+              if ($4.tag === "Right") {
+                return $Either("Right", $Tuple($3._1, $4._1));
+              }
+            }
+          }
+          fail();
+        }))($0._1)("constraints");
+        if ($2.tag === "Left") {
+          return $Either("Left", $2._1);
+        }
+        if ($2.tag === "Right") {
+          const $3 = getField(decodeExprType)($0._1)("body");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            return $Either("Right", $ExprType("ConstrainedType", $2._1, $3._1));
+          }
+        }
+        fail();
+      }
+      return $Either("Left", $JsonDecodeError("TypeMismatch", "ExprType"));
+    }
+  }
+  fail();
+};
+var decodeDataConstructor = (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("constructorName");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getField(decodeArray2(decodeExprType))($0._1)("fieldTypes");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either("Right", { constructorName: $1._1, fieldTypes: $2._1 });
+      }
+    }
+  }
+  fail();
+};
+var decodeDataDecl = (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("typeName");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getFieldOptional$p(decodeArray2(decodeString))($0._1)("typeVars");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        const typeVars = (() => {
+          if ($2._1.tag === "Nothing") {
+            return [];
+          }
+          if ($2._1.tag === "Just") {
+            return $2._1._1;
+          }
+          fail();
+        })();
+        const $3 = getField(decodeArray2(decodeDataConstructor))($0._1)("constructors");
+        if ($3.tag === "Left") {
+          return $Either("Left", $3._1);
+        }
+        if ($3.tag === "Right") {
+          return $Either("Right", { typeName: $1._1, typeVars, constructors: $3._1 });
+        }
+      }
+    }
+  }
+  fail();
+};
 var decodeImport = (decodeAnn$p) => (json) => {
   const $0 = decodeJObject(json);
   if ($0.tag === "Left") {
@@ -3652,6 +3953,28 @@ var decodeMeta = (json) => {
         return $Either("Right", IsSyntheticApp);
       }
       return $Either("Left", $JsonDecodeError("TypeMismatch", "Meta"));
+    }
+  }
+  fail();
+};
+var decodeAnn = (_path) => (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getFieldOptional$p(decodeMeta)($0._1)("meta");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getFieldOptional$p(decodeExprType)($0._1)("type");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either("Right", { span: emptySpan, meta: $1._1, type: $2._1 });
+      }
     }
   }
   fail();
@@ -3754,236 +4077,6 @@ var decodeComment = (json) => {
     }
     if ($2.tag === "Right") {
       return $2;
-    }
-  }
-  fail();
-};
-var decodeExprType = (json) => {
-  const $0 = decodeString(json);
-  const $1 = (() => {
-    if ($0.tag === "Left") {
-      return $Either("Left", $0._1);
-    }
-    if ($0.tag === "Right") {
-      if ($0._1 === "Int") {
-        return $Either("Right", Int);
-      }
-      if ($0._1 === "Number") {
-        return $Either("Right", $$Number);
-      }
-      if ($0._1 === "String") {
-        return $Either("Right", $$String);
-      }
-      if ($0._1 === "Char") {
-        return $Either("Right", Char);
-      }
-      if ($0._1 === "Boolean") {
-        return $Either("Right", $$Boolean);
-      }
-      if ($0._1 === "Any") {
-        return $Either("Right", Any);
-      }
-      return $Either("Left", $JsonDecodeError("TypeMismatch", "ExprType"));
-    }
-    fail();
-  })();
-  if ($1.tag === "Left") {
-    const $2 = decodeJObject(json);
-    if ($2.tag === "Left") {
-      return $Either("Left", $2._1);
-    }
-    if ($2.tag === "Right") {
-      const v1 = _lookup(Nothing, Just, "Func", $2._1);
-      if (v1.tag === "Just") {
-        const $3 = decodeJObject(v1._1);
-        if ($3.tag === "Left") {
-          return $Either("Left", $3._1);
-        }
-        if ($3.tag === "Right") {
-          const $4 = getField(decodeArray2(decodeExprType))($3._1)("args");
-          if ($4.tag === "Left") {
-            return $Either("Left", $4._1);
-          }
-          if ($4.tag === "Right") {
-            const $5 = getField(decodeExprType)($3._1)("ret");
-            if ($5.tag === "Left") {
-              return $Either("Left", $5._1);
-            }
-            if ($5.tag === "Right") {
-              return $Either("Right", $ExprType("Func", $4._1, $5._1));
-            }
-          }
-        }
-        fail();
-      }
-      if (v1.tag === "Nothing") {
-        const v2 = _lookup(Nothing, Just, "Record", $2._1);
-        if (v2.tag === "Just") {
-          const $3 = decodeJObject(v2._1);
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            const $4 = traverse((v3) => {
-              const $42 = Tuple(v3._1);
-              const $5 = decodeExprType(v3._2);
-              if ($5.tag === "Left") {
-                return $Either("Left", $5._1);
-              }
-              if ($5.tag === "Right") {
-                return $Either("Right", $42($5._1));
-              }
-              fail();
-            })(toArrayWithKey(Tuple)($3._1));
-            if ($4.tag === "Left") {
-              return $Either("Left", $4._1);
-            }
-            if ($4.tag === "Right") {
-              return $Either("Right", $ExprType("Record", $4._1));
-            }
-          }
-          fail();
-        }
-        if (v2.tag === "Nothing") {
-          const v3 = _lookup(Nothing, Just, "Array", $2._1);
-          if (v3.tag === "Just") {
-            const $3 = decodeExprType(v3._1);
-            if ($3.tag === "Left") {
-              return $Either("Left", $3._1);
-            }
-            if ($3.tag === "Right") {
-              return $Either("Right", $ExprType("Array", $3._1));
-            }
-            fail();
-          }
-          if (v3.tag === "Nothing") {
-            const v4 = _lookup(Nothing, Just, "ADT", $2._1);
-            if (v4.tag === "Just") {
-              const $3 = decodeJObject(v4._1);
-              if ($3.tag === "Left") {
-                return $Either("Left", $3._1);
-              }
-              if ($3.tag === "Right") {
-                const $4 = getField(decodeArray2(decodeString))($3._1)("path");
-                if ($4.tag === "Left") {
-                  return $Either("Left", $4._1);
-                }
-                if ($4.tag === "Right") {
-                  const $5 = getField(decodeArray2(decodeExprType))($3._1)("args");
-                  if ($5.tag === "Left") {
-                    return $Either("Left", $5._1);
-                  }
-                  if ($5.tag === "Right") {
-                    return $Either("Right", $ExprType("ADT", $4._1, $5._1));
-                  }
-                }
-              }
-              fail();
-            }
-            if (v4.tag === "Nothing") {
-              const v5 = _lookup(Nothing, Just, "TypeVar", $2._1);
-              if (v5.tag === "Just") {
-                const $3 = decodeString(v5._1);
-                if ($3.tag === "Left") {
-                  return $Either("Left", $3._1);
-                }
-                if ($3.tag === "Right") {
-                  return $Either("Right", $ExprType("TypeVar", $3._1));
-                }
-                fail();
-              }
-              if (v5.tag === "Nothing") {
-                return $Either("Left", $JsonDecodeError("TypeMismatch", "ExprType"));
-              }
-            }
-          }
-        }
-      }
-    }
-    fail();
-  }
-  if ($1.tag === "Right") {
-    return $1;
-  }
-  fail();
-};
-var decodeAnn = (_path) => (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getFieldOptional$p(decodeMeta)($0._1)("meta");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getFieldOptional$p(decodeExprType)($0._1)("type");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        return $Either("Right", { span: emptySpan, meta: $1._1, type: $2._1 });
-      }
-    }
-  }
-  fail();
-};
-var decodeDataConstructor = (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getField(decodeString)($0._1)("constructorName");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getField(decodeArray2(decodeExprType))($0._1)("fieldTypes");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        return $Either("Right", { constructorName: $1._1, fieldTypes: $2._1 });
-      }
-    }
-  }
-  fail();
-};
-var decodeDataDecl = (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getField(decodeString)($0._1)("typeName");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getFieldOptional$p(decodeArray2(decodeString))($0._1)("typeVars");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        const typeVars = (() => {
-          if ($2._1.tag === "Nothing") {
-            return [];
-          }
-          if ($2._1.tag === "Just") {
-            return $2._1._1;
-          }
-          fail();
-        })();
-        const $3 = getField(decodeArray2(decodeDataConstructor))($0._1)("constructors");
-        if ($3.tag === "Left") {
-          return $Either("Left", $3._1);
-        }
-        if ($3.tag === "Right") {
-          return $Either("Right", { typeName: $1._1, typeVars, constructors: $3._1 });
-        }
-      }
     }
   }
   fail();
@@ -5821,7 +5914,7 @@ var analyzeDefault = (dictHasAnalysis) => {
 };
 var accessed = (level) => (v) => ({ ...v, usages: update(ordInt)((x) => $Maybe("Just", { ...x, access: x.access + 1 | 0 }))(level)(v.usages) });
 var analyze = (dictHasAnalysis) => {
-  const analysisOf1 = dictHasAnalysis.analysisOf;
+  const analysisOf2 = dictHasAnalysis.analysisOf;
   const analyzeDefault1 = analyzeDefault(dictHasAnalysis);
   return (dictHasSyntax) => (externAnalysis) => (expr) => {
     if (expr.tag === "Var") {
@@ -5840,8 +5933,8 @@ var analyze = (dictHasAnalysis) => {
       return { ...$0, size: $0.size + 1 | 0 };
     }
     if (expr.tag === "Let") {
-      const $0 = semigroupBackendAnalysis.append(analysisOf1(expr._3))((() => {
-        const $02 = analysisOf1(expr._4);
+      const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
+        const $02 = dictHasAnalysis.analysisOf(expr._4);
         return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
       })());
       return {
@@ -5866,7 +5959,7 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "LetRec") {
-      const $0 = semigroupBackendAnalysis.append(foldMap3((x) => analysisOf1(x._2))(expr._2))(analysisOf1(expr._3));
+      const $0 = semigroupBackendAnalysis.append(foldMap3((x) => analysisOf2(x._2))(expr._2))(dictHasAnalysis.analysisOf(expr._3));
       return {
         ...$0,
         complexity: (() => {
@@ -5890,8 +5983,8 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "EffectBind") {
-      const $0 = semigroupBackendAnalysis.append(analysisOf1(expr._3))((() => {
-        const $02 = analysisOf1(expr._4);
+      const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
+        const $02 = dictHasAnalysis.analysisOf(expr._4);
         return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
       })());
       const go = (v) => {
@@ -5926,7 +6019,7 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "EffectPure") {
-      const $0 = analysisOf1(expr._1);
+      const $0 = dictHasAnalysis.analysisOf(expr._1);
       return {
         ...$0,
         result: Unknown,
@@ -5946,7 +6039,7 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "EffectDefer") {
-      const $0 = analysisOf1(expr._1);
+      const $0 = dictHasAnalysis.analysisOf(expr._1);
       return {
         ...$0,
         result: Unknown,
@@ -6108,7 +6201,7 @@ var analyze = (dictHasAnalysis) => {
       return analysis;
     }
     if (expr.tag === "App") {
-      const $0 = analysisOf1(expr._1).args;
+      const $0 = dictHasAnalysis.analysisOf(expr._1).args;
       const $1 = expr._2.length;
       const remainingArgs = $1 < 1 ? $0 : sliceImpl2($1, $0.length, $0);
       const analysis = (() => {
@@ -6169,7 +6262,7 @@ var analyze = (dictHasAnalysis) => {
       return analysis;
     }
     if (expr.tag === "CtorSaturated") {
-      const $0 = foldMap4((v) => analysisOf1(v._2))(expr._5);
+      const $0 = foldMap4((v) => analysisOf2(v._2))(expr._5);
       return { ...$0, deps: insert(ordQualified2)(expr._1)()($0.deps), result: KnownNeutral, size: $0.size + 1 | 0 };
     }
     if (expr.tag === "CtorDef") {
@@ -6200,8 +6293,8 @@ var analyze = (dictHasAnalysis) => {
         }
         fail();
       })();
-      const $0 = semigroupBackendAnalysis.append(analysisOf1(v2._1))(semigroupBackendAnalysis.append((() => {
-        const $02 = analysisOf1(v2._2);
+      const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(v2._1))(semigroupBackendAnalysis.append((() => {
+        const $02 = dictHasAnalysis.analysisOf(v2._2);
         return {
           ...$02,
           usages: (() => {
@@ -6218,7 +6311,7 @@ var analyze = (dictHasAnalysis) => {
           })()
         };
       })())(semigroupBackendAnalysis.append((() => {
-        const $02 = foldMap4(foldMap6(analysisOf1))((() => {
+        const $02 = foldMap4(foldMap6(analysisOf2))((() => {
           const $03 = unconsImpl((v) => Nothing, (v) => (xs) => $Maybe("Just", xs), expr._1);
           if ($03.tag === "Just") {
             return $03._1;
@@ -6241,7 +6334,7 @@ var analyze = (dictHasAnalysis) => {
           })()
         };
       })())((() => {
-        const $02 = analysisOf1(expr._2);
+        const $02 = dictHasAnalysis.analysisOf(expr._2);
         return {
           ...$02,
           usages: (() => {
@@ -6451,7 +6544,7 @@ var analyze = (dictHasAnalysis) => {
       return analysis;
     }
     if (expr.tag === "Typed") {
-      return analysisOf1(expr._2);
+      return dictHasAnalysis.analysisOf(expr._2);
     }
     fail();
   };
@@ -13269,6 +13362,10 @@ var fromFoldable42 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var maximum2 = /* @__PURE__ */ maximum(ordInt)(foldable1NonEmptyArray);
 var mapAccumR2 = /* @__PURE__ */ mapAccumR(traversableArray);
 var foldMap52 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidSet(ordQualified3)))();
+var toUnfoldable22 = /* @__PURE__ */ (() => {
+  const $0 = unfoldableArray.unfoldr(stepUnfoldr);
+  return (x) => $0($MapIter("IterNode", x, IterLeaf));
+})();
 var fromFoldable5 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordReExport)(a)()(m))(Leaf);
 var PatWild = /* @__PURE__ */ $PatternCase("PatWild");
 var eqPatternCase = {
@@ -14797,7 +14894,7 @@ var toBackendModule = (v) => (env) => {
       })(usedBindings.accum),
       dataTypes: (() => {
         const $0 = any(isBindingUsed(usedBindings.accum));
-        return filterWithKey(ordString)((v$1) => (x) => $0(toUnfoldable12(x.constructors)))(dataTypes);
+        return filterWithKey(ordString)((v$1) => (x) => $0(toUnfoldable22(x.constructors)))(dataTypes);
       })(),
       bindings: usedBindings.value,
       exports: localExports,
@@ -16243,8 +16340,39 @@ var member2 = (k) => {
   };
   return go;
 };
+var member12 = (k) => {
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = false;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordString.compare(k)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = true;
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  return go;
+};
 var fromFoldable12 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
-var show3 = /* @__PURE__ */ showArrayImpl(showStringImpl);
 var foldMap7 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
 var sanitizeIdent = (s) => {
   const s2 = replaceAll("$")("_dollar_")(replaceAll("'")("_prime")(s));
@@ -16644,20 +16772,33 @@ var codegenExprType = (isRet) => (v) => {
     })()) {
       return "bool";
     }
-    return joinWith("_")(v._1);
+    return "UnknownType";
   }
   return "UnknownType";
 };
-var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (bound) => (alive) => (v) => {
+var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (v) => {
   if (v.tag === "Typed") {
-    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._2);
+    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2);
   }
   if (v.tag === "App") {
     const numProvided = v._2.length;
-    const fnTy = inferTypeExpr(currentMod)(Leaf)(bound)(v._1);
+    const getInner = (getInner$a0$copy) => {
+      let getInner$a0 = getInner$a0$copy, getInner$c = true, getInner$r;
+      while (getInner$c) {
+        const v1 = getInner$a0;
+        if (v1.tag === "Typed") {
+          getInner$a0 = v1._2;
+          continue;
+        }
+        getInner$c = false;
+        getInner$r = v1;
+      }
+      return getInner$r;
+    };
+    const fnTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1);
     const fnArity = fnTy.tag === "Func" ? fnTy._1.length : 0;
     const argsFree = arrayMap(freeVariables)(v._2);
-    const argsCodeArray = mapWithIndexArray((i) => (arg) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    const argsCodeArray = mapWithIndexArray((i) => (arg) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -16670,27 +16811,44 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       })())
     ))(arg))(v._2);
     const argsCode = joinWith(", ")(argsCodeArray);
-    const fnCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    const fnCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       foldlArray(union)(Leaf)(argsFree)
     ))(v._1);
-    if (fnArity > numProvided) {
-      const missingVars = mapWithIndexArray((i) => (v1) => "c_" + showIntImpl(i))(replicateImpl(fnArity - numProvided | 0, void 0));
-      return "std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v1) => "mut " + v1 + ": UnknownType")(missingVars)) + "| (" + fnCode + ")(" + joinWith(", ")([
-        ...argsCodeArray,
-        ...missingVars
-      ]) + "))";
+    if ((() => {
+      const v1 = getInner(v._1);
+      return v1.tag === "Var" && (() => {
+        const fullName = (() => {
+          if (v1._1._1.tag === "Just") {
+            return replaceAll(".")("_")(v1._1._1._1) + "_";
+          }
+          if (v1._1._1.tag === "Nothing") {
+            return "";
+          }
+          fail();
+        })() + sanitizeIdent(v1._1._2);
+        return member2(fullName === "main" ? "main" : fullName)(aritiesMap);
+      })();
+    })()) {
+      if (fnArity > numProvided) {
+        const missingVars = mapWithIndexArray((i) => (v1) => "c_" + showIntImpl(i))(replicateImpl(fnArity - numProvided | 0, void 0));
+        return "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v1) => "mut " + v1 + ": UnknownType")(missingVars)) + "| -> UnknownType {\n    (" + fnCode + ")(" + joinWith(", ")([
+          ...argsCodeArray,
+          ...missingVars
+        ]) + ")\n})), ..Default::default() })";
+      }
+      return "(" + fnCode + ")(" + argsCode + ")";
     }
-    return "(" + fnCode + ")(" + argsCode + ")";
+    return foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(fnCode)(argsCodeArray);
   }
   if (v.tag === "UncurriedEffectApp") {
     if (v._1.tag === "Typed") {
       if (v._1._2.tag === "Accessor") {
         if (v._1._2._2.tag === "GetProp" && v._1._2._2._1 === "logRecord") {
           if (0 < v._2.length) {
-            return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._2[0]) + ".a);";
+            return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
           }
           return "// Unsupported UncurriedEffectApp without args\n";
         }
@@ -16698,7 +16856,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       if (v._1._2.tag === "Var" && v._1._2._1._2 === "logRecord") {
         if (0 < v._2.length) {
-          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._2[0]) + ".a);";
+          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
@@ -16707,7 +16865,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     if (v._1.tag === "Accessor") {
       if (v._1._2.tag === "GetProp" && v._1._2._1 === "logRecord") {
         if (0 < v._2.length) {
-          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._2[0]) + ".a);";
+          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
@@ -16715,26 +16873,26 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     }
     if (v._1.tag === "Var" && v._1._1._2 === "logRecord") {
       if (0 < v._2.length) {
-        return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._2[0]) + ".a);";
+        return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
       }
       return "// Unsupported UncurriedEffectApp without args\n";
     }
     return "unimplemented!() /* Unsupported UncurriedEffectApp with fn: " + printAST(v._1) + " */\n";
   }
   if (v.tag === "Update") {
-    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v1._2) + ";")(v._2)) + "\n    }\n    _base\n}";
+    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = Some(std::rc::Rc::new(|_| " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v1._2) + "));")(v._2)) + "\n    }\n    _base\n}";
   }
   if (v.tag === "Branch") {
-    return joinWith(" else ")(arrayMap((v1) => "if " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    return joinWith(" else ")(arrayMap((v1) => "if " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       freeVariables(v1._2)
-    ))(v1._1) + " {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v1._2) + "\n    }")(v._1)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._2) + "\n    }";
+    ))(v1._1) + " {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v1._2) + "\n    }")(v._1)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2) + "\n    }";
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
-      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1._2);
+      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1._2);
       if (v._1._1.tag === "OpBooleanNot") {
         return "!" + aStr;
       }
@@ -16750,8 +16908,8 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return "unimplemented!() /* Unsupported Op1 */";
     }
     if (v._1.tag === "Op2") {
-      const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1._3);
-      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+      const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1._3);
+      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -16853,11 +17011,11 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
+      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()(unsafe_coerce_type(0))";
     }
     if (v._2.tag === "GetCtorField") {
       const placeholders = joinWith(", ")(replicateImpl(v._2._6, "_"));
-      return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1) + " { " + getTyPrefix(currentMod)(v._2._1) + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
+      return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + " { " + getTyPrefix(currentMod)(v._2._1) + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
     }
     return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
   }
@@ -16877,11 +17035,17 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         return v1._1.tag !== "Func";
       }
       if (v1.tag === "Nothing") {
-        return fullName !== "Effect_Console_log";
+        const v2 = lookup5(fullName)(aritiesMap);
+        if (v2.tag === "Just") {
+          return v2._1.tag !== "Func";
+        }
+        if (v2.tag === "Nothing") {
+          return fullName !== "Effect_Console_log";
+        }
       }
       fail();
     })() ? fullName + "()" : fullName;
-    if (member2(fullName)(alive)) {
+    if (member12(fullName)(alive)) {
       return varCode + ".dup()";
     }
     return varCode;
@@ -16897,12 +17061,12 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       fail();
     })();
     const bodyVars = freeVariables(v._4);
-    return "{\n    let mut " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    return "{\n    let mut " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       bodyVars
-    ))(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._4) + "\n}";
+    ))(v._3) + ";\n" + (member12(name2)(bodyVars) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._4) + "\n}";
   }
   if (v.tag === "EffectBind") {
     const name2 = (() => {
@@ -16914,15 +17078,15 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       fail();
     })();
-    return "{\n    let " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    return "{\n    let " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       freeVariables(v._4)
-    ))(v._3) + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._4) + "\n}";
+    ))(v._3) + ";\n" + (member12(name2)(freeVariables(v._4)) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._4) + "\n}";
   }
   if (v.tag === "EffectPure") {
-    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(alive)(v._1);
+    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1);
   }
   if (v.tag === "Local") {
     const name2 = (() => {
@@ -16934,7 +17098,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       fail();
     })();
-    if (member2(name2)(alive)) {
+    if (member12(name2)(alive)) {
       return name2 + ".dup()";
     }
     return name2;
@@ -16960,7 +17124,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     }
     if (v._1.tag === "LitArray") {
       const $0 = v._1._1;
-      return "vec![" + joinWith(", ")(mapWithIndexArray((i) => (a) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+      return "vec![" + joinWith(", ")(mapWithIndexArray((i) => (a) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -16974,30 +17138,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       ))(a))($0)) + "]";
     }
     if (v._1.tag === "LitRecord") {
-      const propsArr = fromFoldableImpl(foldrArray, v._1._1);
-      const fieldsMap = fromFoldable12(mapWithIndexArray((i) => (v1) => $Tuple(
-        sanitizeIdent(v1._1),
-        codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
-          ordString.compare,
-          $$const,
-          alive,
-          foldlArray(union)(Leaf)(arrayMap((v3) => freeVariables(v3._2))((() => {
-            const $0 = i + 1 | 0;
-            if ($0 < 1) {
-              return propsArr;
-            }
-            return sliceImpl2($0, propsArr.length, propsArr);
-          })()))
-        ))(v1._2)
-      ))(propsArr));
-      const getF = (k) => {
-        const $0 = lookup5(k)(fieldsMap);
-        if ($0.tag === "Just") {
-          return "Some(unsafe_coerce(" + $0._1 + "))";
-        }
-        return "None";
-      };
-      return "perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: " + getF("b") + ", c: " + getF("c") + ", ccc: " + getF("ccc") + ", d: " + getF("d") + ", x: " + getF("x") + ", Applicative0: " + getF("Applicative0") + ", pure: " + getF("pure") + ", show: " + getF("show") + ", discard: " + getF("discard") + " })";
+      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => sanitizeIdent(v1._1) + ": Some(std::rc::Rc::new(|_| " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(v1._2) + "))")(v._1._1)) + (v._1._1.length > 0 ? ", " : "") + "..Default::default() })";
     }
     fail();
   }
@@ -17012,23 +17153,26 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       fail();
     })(v._1);
     const bodyVars = freeVariables(v._2);
-    return "unsafe_coerce(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((p) => {
+    return "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((p) => {
       if (p === "_") {
         return "" + p + ": UnknownType";
       }
       return "mut " + p + ": UnknownType";
-    })(paramsArr)) + "| -> UnknownType {\n" + joinWith("")(arrayMap((p) => {
-      if (p !== "_" && !member2(p)(bodyVars)) {
-        return "    // DEBUG: bodyVars=" + show3(fromFoldableImpl(foldableSet.foldr, bodyVars)) + " p=" + p + "\n    " + p + ".drop_explicit();\n";
+    })(paramsArr)) + "| -> UnknownType {\n" + joinWith("")(arrayMap((v1) => "    let mut " + v1 + " = " + v1 + ".clone();\n")(filterImpl(
+      (v1) => !member2(v1)(aritiesMap) && !member12(v1)(allZeroArity) && !elem(eqString)(v1)(paramsArr),
+      fromFoldableImpl(foldableSet.foldr, bodyVars)
+    ))) + joinWith("")(arrayMap((p) => {
+      if (p !== "_" && !member12(p)(bodyVars)) {
+        return "    " + p + ".drop_explicit();\n";
       }
       return "";
-    })(paramsArr)) + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(Leaf)(v._2) + "\n}))";
+    })(paramsArr)) + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(v._2) + "\n})), ..Default::default() })";
   }
   if (v.tag === "PrimUndefined") {
     return "unimplemented!()";
   }
   if (v.tag === "CtorSaturated") {
-    return getTyPrefix(currentMod)(v._1) + v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(bound)(unsafeUnionWith(
+    return getTyPrefix(currentMod)(v._1) + v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -17042,7 +17186,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     ))(v1._2))(v._5)) + ")");
   }
   if (v.tag === "CtorDef") {
-    return "unsafe_coerce(0)";
+    return "perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() })";
   }
   return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
 };
@@ -17080,34 +17224,34 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
         const bodyCodeWithLoop2 = (() => {
           if (isSelfRecursive) {
             if (innerExpr.tag === "Abs") {
-              return "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+              return "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(unsafeUnionWith(
                 ordString.compare,
                 $$const,
                 bound,
                 aritiesMap
               ))(Leaf)(innerExpr._2) + "\n    }";
             }
-            return "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        (" + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+            return "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(unsafeUnionWith(
               ordString.compare,
               $$const,
               bound,
               aritiesMap
-            ))(Leaf)(innerExpr) + ")(" + joinWith(", ")(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ")\n    }";
+            ))(Leaf)(innerExpr))(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + "\n    }";
           }
           if (innerExpr.tag === "Abs") {
-            return codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+            return codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(unsafeUnionWith(
               ordString.compare,
               $$const,
               bound,
               aritiesMap
             ))(Leaf)(innerExpr._2);
           }
-          return "(" + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(unsafeUnionWith(
+          return foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(unsafeUnionWith(
             ordString.compare,
             $$const,
             bound,
             aritiesMap
-          ))(Leaf)(innerExpr) + ")(" + joinWith(", ")(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ")";
+          ))(Leaf)(innerExpr))(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped));
         })();
         if (identName === "main") {
           return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + ";\n}\n\n";
@@ -17124,7 +17268,7 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
           }
           return "_";
         })(innerExpr.tag === "Abs" ? innerExpr._1 : _crashWith("impossible")));
-        const bodyCodeWithLoop2 = isSelfRecursive ? "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(unsafeUnionWith(ordString.compare, $$const, Leaf, aritiesMap))(Leaf)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + "\n    }" : codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(unsafeUnionWith(
+        const bodyCodeWithLoop2 = isSelfRecursive ? "    let mut _tco_loop = true;\n    while _tco_loop {\n        _tco_loop = false;\n        " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(unsafeUnionWith(ordString.compare, $$const, Leaf, aritiesMap))(Leaf)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + "\n    }" : codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(unsafeUnionWith(
           ordString.compare,
           $$const,
           Leaf,
@@ -17141,7 +17285,7 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
           return "mut " + p + ": UnknownType";
         })(deduped)) + ") -> UnknownType {\n    // AST: " + printAST(v._2) + "\n" + bodyCodeWithLoop2 + "\n}\n\n";
       }
-      const bodyCodeWithLoop = codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(Leaf)(v._2);
+      const bodyCodeWithLoop = codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(aritiesMap)(Leaf)(v._2);
       if (identName === "main") {
         return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop + ";\n}\n\n";
       }
@@ -17152,7 +17296,7 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
 };
 var codegenModule = (v) => (backendMod) => {
   const modNameStr = replaceAll(".")("_")(backendMod.name);
-  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\n#[derive(Clone)]\npub enum " + replaceAll(".")("_")(backendMod.name) + "_" + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
+  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce(x: UnknownType) -> UnknownType { x }\npub fn unsafe_coerce_type<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, ..Default::default() }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\n#[derive(Clone)]\npub enum " + replaceAll(".")("_")(backendMod.name) + "_" + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone, Default)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub proof: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
     const res = codegenBindingGroup(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
     return { code: acc.code + res.code, arities: res.arities };
   })({ code: "", arities: Leaf })(backendMod.bindings).code;

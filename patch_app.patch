@@ -1,0 +1,44 @@
+--- src/Purust/CodeGen.purs
++++ src/Purust/CodeGen.purs
+@@ -194,6 +194,18 @@
+   Typed _ inner -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop bound alive inner
+ 
+   App fn args -> 
++    let getInner :: NeutralExpr -> NeutralExpr
++        getInner (NeutralExpr (Typed _ inner)) = getInner inner
++        getInner e = e
++        isTopLevelFn = case getInner fn of
++                 NeutralExpr (Var (Qualified mbMod (Ident name))) -> 
++                   let modPrefix = case mbMod of
++                         Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
++                         Nothing -> ""
++                       fullName = modPrefix <> sanitizeIdent name
++                   in Map.member (if fullName == "main" then "main" else fullName) aritiesMap
++                 _ -> false
++
+     let argsArray = NonEmptyArray.toArray args
+         argsFree = map freeVariables argsArray
+         aliveForFn = Set.union alive (Array.foldl Set.union Set.empty argsFree)
+@@ -212,11 +224,14 @@
+           _ -> 0
+         
+         numProvided = Array.length (NonEmptyArray.toArray args)
+-    in if fnArity > numProvided then
+-         let numMissing = fnArity - numProvided
+-             missingVars = Array.mapWithIndex (\i _ -> "c_" <> show i) (Array.replicate numMissing unit)
+-             missingArgs = String.joinWith ", " (map (\v -> "mut " <> v <> ": UnknownType") missingVars)
+-             closureArgs = String.joinWith ", " (argsCodeArray <> missingVars)
+-         in "std::rc::Rc::new(move |" <> missingArgs <> "| (" <> fnCode <> ")(" <> closureArgs <> "))"
+-       else
+-         "(" <> fnCode <> ")(" <> argsCode <> ")"
++    in if isTopLevelFn then
++         if fnArity > numProvided then
++           let numMissing = fnArity - numProvided
++               missingVars = Array.mapWithIndex (\i _ -> "c_" <> show i) (Array.replicate numMissing unit)
++               missingArgs = String.joinWith ", " (map (\v -> "mut " <> v <> ": UnknownType") missingVars)
++               closureArgs = String.joinWith ", " (argsCodeArray <> missingVars)
++           in "perceus_ptr::PerceusPtr::new(Record_a { a: 0, b: None, c: None, ccc: None, d: None, x: None, Applicative0: None, pure: None, show: None, discard: None, proof: None, call: Some(std::rc::Rc::new(move |" <> missingArgs <> "| -> UnknownType {\n    (" <> fnCode <> ")(" <> closureArgs <> ")\n})) })"
++         else
++           "(" <> fnCode <> ")(" <> argsCode <> ")"
++       else
++         Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray

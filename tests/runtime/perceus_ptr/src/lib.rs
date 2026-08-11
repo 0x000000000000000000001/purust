@@ -45,6 +45,11 @@ impl<T> PerceusPtr<T> {
     pub fn count(&self) -> u32 {
         unsafe { self.ptr.as_ref().count }
     }
+
+    /// Explicitement drop le pointeur
+    pub fn drop_explicit(self) {
+        // nothing to do, taking ownership will drop it
+    }
 }
 
 impl<T: Clone> PerceusPtr<T> {

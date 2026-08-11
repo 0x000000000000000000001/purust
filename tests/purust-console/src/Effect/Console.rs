@@ -9,3 +9,9 @@ pub fn Effect_Console_groupCollapsed() -> crate::UnknownType { crate::UnknownTyp
 pub fn Effect_Console_group() -> crate::UnknownType { crate::UnknownType::new(0) }
 pub fn Effect_Console_debug() -> crate::UnknownType { crate::UnknownType::new(0) }
 pub fn Effect_Console_clear() -> crate::UnknownType { crate::UnknownType::new(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::UnknownType::new(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::UnknownType::new(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::UnknownType::new(0) }
