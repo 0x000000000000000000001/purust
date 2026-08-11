@@ -20,10 +20,20 @@ Les erreurs actuelles ne sont plus des problèmes de plomberie externe, mais des
 4. **E0425 (Cannot find value) :**
    - `Effect_Console_log` n'est pas trouvé. Les alias/bindings FFI manquent encore pour certaines fonctions de base.
 
-## 3. Ce qu'il reste à faire dans l'immédiat (Next Baby Steps)
-- **Refactor des appels de fonction (`App`)** : Modifier `codegenExpr` pour que les appels de `.call` s'exécutent correctement (ex: en stockant une vraie closure `Rc<dyn Fn...>` dans le `Record_a`, ou en castant via `unsafe_coerce`).
-- **Correction des Records (`LitRecord`)** : Enlever le `Rc::new(|_| ...)` superflu lors de la création de champs de records.
-- **Correction des Constructeurs (`CtorSaturated`)** : Wrapper les instanciations d'enum pour respecter le type de retour `UnknownType` (`PerceusPtr<Record_a>`).
+## 3. Ce qui vient d'être résolu (Succès Historique !)
+- **Refactor des appels de fonction (`App`)** : Corrigé en uniformisant les champs de `Record_a` vers `Option<UnknownType>`.
+- **Correction des Records (`LitRecord`)** : Le wrapper erroné `Rc::new(|_| ...)` a été retiré, les champs sont maintenant assignés proprement.
+- **Correction des Constructeurs (`CtorSaturated`)** : Corrigé avec `unsafe_coerce_type(...)`.
+- **Correction des variables globales (`Var`) et FFI** : Toutes les références aux fonctions globales émettent maintenant `()`, et un binding FFI natif pour `Effect_Console_log` a été injecté.
+- 🎉 **RÉSULTAT : Le TOUT PREMIER TEST (`1110.purs`) a compilé ET S'EST EXÉCUTÉ avec succès en Rust (`[OK]`) !** C'est une étape massive.
+
+## 4. Ce qu'il reste à faire dans l'immédiat (Next Baby Steps)
+- 🎉 **SUCCÈS : Le test 1185.purs (Pattern Matching et ADTs) a compilé et s'est exécuté avec succès en Rust (`[OK]`) !**
+- Le mécanisme des constructeurs (`CtorSaturated`) a été mis à jour pour stocker les champs de l'enum directement dans le `Record_a` (unboxing via Universal Box).
+- Le mécanisme d'accès (`Accessor`) déréférence désormais correctement les champs du `Record_a`.
+- Les opérations booléennes et de chaîne ont été unifiées sous `UnknownType` avec `mk_bool` et `mk_string`.
+
+Prochaine étape : Faire passer toute la suite de tests ou s'attaquer à un nouveau test spécifique.
 
 ## 4. Le plan à plus long terme (TCO & Uncurrying)
 *(Le refactor vers `TcoExpr` n'a en réalité pas encore été fait dans `CodeGen.purs`, il utilise toujours `NeutralExpr` et l'uncurrying est bancal).*

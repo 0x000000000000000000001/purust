@@ -13652,10 +13652,6 @@ var fromFoldable42 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var maximum2 = /* @__PURE__ */ maximum(ordInt)(foldable1NonEmptyArray);
 var mapAccumR2 = /* @__PURE__ */ mapAccumR(traversableArray);
 var foldMap52 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidSet(ordQualified3)))();
-var toUnfoldable22 = /* @__PURE__ */ (() => {
-  const $0 = unfoldableArray.unfoldr(stepUnfoldr);
-  return (x) => $0($MapIter("IterNode", x, IterLeaf));
-})();
 var fromFoldable5 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordReExport)(a)()(m))(Leaf);
 var PatWild = /* @__PURE__ */ $PatternCase("PatWild");
 var eqPatternCase = {
@@ -15170,6 +15166,7 @@ var toBackendModule = (v) => (env) => {
       name: v.name,
       comments: v.comments,
       dataDecls: v.dataDecls,
+      classDecls: v.classDecls,
       imports: mapMaybe2(ordString)((qi) => {
         if (qi._1.tag === "Just") {
           if (qi._1._1 !== v.name && qi._1._1 !== "Prim") {
@@ -15184,7 +15181,7 @@ var toBackendModule = (v) => (env) => {
       })(usedBindings.accum),
       dataTypes: (() => {
         const $0 = any(isBindingUsed(usedBindings.accum));
-        return filterWithKey(ordString)((v$1) => (x) => $0(toUnfoldable22(x.constructors)))(dataTypes);
+        return filterWithKey(ordString)((v$1) => (x) => $0(toUnfoldable12(x.constructors)))(dataTypes);
       })(),
       bindings: usedBindings.value,
       exports: localExports,
@@ -15710,359 +15707,6 @@ var runEffectFn = (mod) => (name2) => (n) => {
     }
   );
 };
-var test_data_undefinedOr_compareUndefinedOrImpl = /* @__PURE__ */ $Tuple(
-  /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Test.Data.UndefinedOr"), "compareUndefinedOrImpl"),
-  (env) => (v) => (v1) => {
-    if (v1.length === 1) {
-      if (v1[0].tag === "ExternApp") {
-        if (v1[0]._1.length === 6) {
-          return $Maybe(
-            "Just",
-            (() => {
-              if (v1[0]._1[4].tag === "NeutPrimUndefined") {
-                if (v1[0]._1[5].tag === "NeutPrimUndefined") {
-                  return v1[0]._1[1];
-                }
-                return v1[0]._1[0];
-              }
-              if (v1[0]._1[5].tag === "NeutPrimUndefined") {
-                return v1[0]._1[2];
-              }
-              return evalApp(env)(v1[0]._1[3])([v1[0]._1[4], v1[0]._1[5]]);
-            })()
-          );
-        }
-        if (v1[0]._1.length === 5) {
-          const $0 = v1[0]._1[4];
-          const $1 = v1[0]._1[3];
-          const $2 = v1[0]._1[1];
-          const $3 = v1[0]._1[2];
-          const $4 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (b) => {
-                if ($0.tag === "NeutPrimUndefined") {
-                  if (b.tag === "NeutPrimUndefined") {
-                    return $2;
-                  }
-                  return $4;
-                }
-                if (b.tag === "NeutPrimUndefined") {
-                  return $3;
-                }
-                return evalApp(env)($1)([$0, b]);
-              }
-            )
-          );
-        }
-        if (v1[0]._1.length === 4) {
-          const $0 = v1[0]._1[3];
-          const $1 = v1[0]._1[1];
-          const $2 = v1[0]._1[2];
-          const $3 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (a) => $BackendSemantics(
-                "SemLam",
-                Nothing,
-                (b) => {
-                  if (a.tag === "NeutPrimUndefined") {
-                    if (b.tag === "NeutPrimUndefined") {
-                      return $1;
-                    }
-                    return $3;
-                  }
-                  if (b.tag === "NeutPrimUndefined") {
-                    return $2;
-                  }
-                  return evalApp(env)($0)([a, b]);
-                }
-              )
-            )
-          );
-        }
-        if (v1[0]._1.length === 3) {
-          const $0 = v1[0]._1[1];
-          const $1 = v1[0]._1[2];
-          const $2 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (compareFn) => $BackendSemantics(
-                "SemLam",
-                Nothing,
-                (a) => $BackendSemantics(
-                  "SemLam",
-                  Nothing,
-                  (b) => {
-                    if (a.tag === "NeutPrimUndefined") {
-                      if (b.tag === "NeutPrimUndefined") {
-                        return $0;
-                      }
-                      return $2;
-                    }
-                    if (b.tag === "NeutPrimUndefined") {
-                      return $1;
-                    }
-                    return evalApp(env)(compareFn)([a, b]);
-                  }
-                )
-              )
-            )
-          );
-        }
-        if (v1[0]._1.length === 2) {
-          const $0 = v1[0]._1[1];
-          const $1 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (gt) => $BackendSemantics(
-                "SemLam",
-                Nothing,
-                (compareFn) => $BackendSemantics(
-                  "SemLam",
-                  Nothing,
-                  (a) => $BackendSemantics(
-                    "SemLam",
-                    Nothing,
-                    (b) => {
-                      if (a.tag === "NeutPrimUndefined") {
-                        if (b.tag === "NeutPrimUndefined") {
-                          return $0;
-                        }
-                        return $1;
-                      }
-                      if (b.tag === "NeutPrimUndefined") {
-                        return gt;
-                      }
-                      return evalApp(env)(compareFn)([a, b]);
-                    }
-                  )
-                )
-              )
-            )
-          );
-        }
-        if (v1[0]._1.length === 1) {
-          const $0 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (eq2) => $BackendSemantics(
-                "SemLam",
-                Nothing,
-                (gt) => $BackendSemantics(
-                  "SemLam",
-                  Nothing,
-                  (compareFn) => $BackendSemantics(
-                    "SemLam",
-                    Nothing,
-                    (a) => $BackendSemantics(
-                      "SemLam",
-                      Nothing,
-                      (b) => {
-                        if (a.tag === "NeutPrimUndefined") {
-                          if (b.tag === "NeutPrimUndefined") {
-                            return eq2;
-                          }
-                          return $0;
-                        }
-                        if (b.tag === "NeutPrimUndefined") {
-                          return gt;
-                        }
-                        return evalApp(env)(compareFn)([a, b]);
-                      }
-                    )
-                  )
-                )
-              )
-            )
-          );
-        }
-      }
-      return Nothing;
-    }
-    if (v1.length === 0) {
-      return $Maybe(
-        "Just",
-        $BackendSemantics(
-          "SemLam",
-          Nothing,
-          (lt) => $BackendSemantics(
-            "SemLam",
-            Nothing,
-            (eq2) => $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (gt) => $BackendSemantics(
-                "SemLam",
-                Nothing,
-                (compareFn) => $BackendSemantics(
-                  "SemLam",
-                  Nothing,
-                  (a) => $BackendSemantics(
-                    "SemLam",
-                    Nothing,
-                    (b) => {
-                      if (a.tag === "NeutPrimUndefined") {
-                        if (b.tag === "NeutPrimUndefined") {
-                          return eq2;
-                        }
-                        return lt;
-                      }
-                      if (b.tag === "NeutPrimUndefined") {
-                        return gt;
-                      }
-                      return evalApp(env)(compareFn)([a, b]);
-                    }
-                  )
-                )
-              )
-            )
-          )
-        )
-      );
-    }
-    return Nothing;
-  }
-);
-var test_data_undefinedOr_defined = /* @__PURE__ */ $Tuple(
-  /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Test.Data.UndefinedOr"), "defined"),
-  (v) => (v1) => (v2) => {
-    if (v2.length === 1 && v2[0].tag === "ExternApp" && v2[0]._1.length === 1) {
-      return $Maybe("Just", v2[0]._1[0]);
-    }
-    return Nothing;
-  }
-);
-var test_data_undefinedOr_eqUndefinedOrImpl = /* @__PURE__ */ $Tuple(
-  /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Test.Data.UndefinedOr"), "eqUndefinedOrImpl"),
-  (env) => (v) => (v1) => {
-    if (v1.length === 1) {
-      if (v1[0].tag === "ExternApp") {
-        if (v1[0]._1.length === 3) {
-          return $Maybe(
-            "Just",
-            (() => {
-              if (v1[0]._1[1].tag === "NeutPrimUndefined") {
-                if (v1[0]._1[2].tag === "NeutPrimUndefined") {
-                  return $BackendSemantics("NeutLit", $Literal("LitBoolean", true));
-                }
-                return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-              }
-              if (v1[0]._1[2].tag === "NeutPrimUndefined") {
-                return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-              }
-              return evalApp(env)(v1[0]._1[0])([v1[0]._1[1], v1[0]._1[2]]);
-            })()
-          );
-        }
-        if (v1[0]._1.length === 2) {
-          const $0 = v1[0]._1[1];
-          const $1 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (b) => {
-                if ($0.tag === "NeutPrimUndefined") {
-                  if (b.tag === "NeutPrimUndefined") {
-                    return $BackendSemantics("NeutLit", $Literal("LitBoolean", true));
-                  }
-                  return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-                }
-                if (b.tag === "NeutPrimUndefined") {
-                  return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-                }
-                return evalApp(env)($1)([$0, b]);
-              }
-            )
-          );
-        }
-        if (v1[0]._1.length === 1) {
-          const $0 = v1[0]._1[0];
-          return $Maybe(
-            "Just",
-            $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (a) => $BackendSemantics(
-                "SemLam",
-                Nothing,
-                (b) => {
-                  if (a.tag === "NeutPrimUndefined") {
-                    if (b.tag === "NeutPrimUndefined") {
-                      return $BackendSemantics("NeutLit", $Literal("LitBoolean", true));
-                    }
-                    return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-                  }
-                  if (b.tag === "NeutPrimUndefined") {
-                    return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-                  }
-                  return evalApp(env)($0)([a, b]);
-                }
-              )
-            )
-          );
-        }
-      }
-      return Nothing;
-    }
-    if (v1.length === 0) {
-      return $Maybe(
-        "Just",
-        $BackendSemantics(
-          "SemLam",
-          Nothing,
-          (eqFn) => $BackendSemantics(
-            "SemLam",
-            Nothing,
-            (a) => $BackendSemantics(
-              "SemLam",
-              Nothing,
-              (b) => {
-                if (a.tag === "NeutPrimUndefined") {
-                  if (b.tag === "NeutPrimUndefined") {
-                    return $BackendSemantics("NeutLit", $Literal("LitBoolean", true));
-                  }
-                  return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-                }
-                if (b.tag === "NeutPrimUndefined") {
-                  return $BackendSemantics("NeutLit", $Literal("LitBoolean", false));
-                }
-                return evalApp(env)(eqFn)([a, b]);
-              }
-            )
-          )
-        )
-      );
-    }
-    return Nothing;
-  }
-);
-var test_data_undefinedOr_undefined = /* @__PURE__ */ $Tuple(
-  /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Test.Data.UndefinedOr"), "undefined"),
-  (v) => (v1) => (v2) => {
-    if (v2.length === 0) {
-      return $Maybe("Just", NeutPrimUndefined);
-    }
-    return Nothing;
-  }
-);
 var unsafe_coerce_unsafeCoerce = /* @__PURE__ */ $Tuple(
   /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Unsafe.Coerce"), "unsafeCoerce"),
   (v) => (v1) => (v2) => {
@@ -16550,10 +16194,6 @@ var coreForeignSemantics = /* @__PURE__ */ (() => {
     record_unsafe_unsafeGet,
     record_unsafe_unsafeHas,
     record_unsafe_unsafeSet,
-    test_data_undefinedOr_compareUndefinedOrImpl,
-    test_data_undefinedOr_defined,
-    test_data_undefinedOr_eqUndefinedOrImpl,
-    test_data_undefinedOr_undefined,
     unsafe_coerce_unsafeCoerce,
     ...arrayMap(data_function_uncurried_mkFn)(oneToTen),
     ...arrayMap(data_function_uncurried_runFn)(oneToTen),
@@ -16855,15 +16495,6 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     return inferTypeExpr(currentMod)(aritiesMap)(insert(ordString)(sanitizeIdent(v._1._1))(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(v._4);
   }
   return Any;
-};
-var getTyPrefix = (currentMod) => (v) => {
-  if (v._1.tag === "Just") {
-    return replaceAll(".")("_")(v._1._1) + "_";
-  }
-  if (v._1.tag === "Nothing") {
-    return replaceAll(".")("_")(currentMod) + "_";
-  }
-  fail();
 };
 var freeVariables = (v) => {
   if (v.tag === "Var") {
@@ -17195,6 +16826,9 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       if (v._1._1.tag === "OpArrayLength") {
         return "((" + aStr + ").len() as i32)";
       }
+      if (v._1._1.tag === "OpIsTag") {
+        return "(" + aStr + '.tag == "' + v._1._1._1._2 + '")';
+      }
       return "unimplemented!() /* Unsupported Op1 */";
     }
     if (v._1.tag === "Op2") {
@@ -17304,8 +16938,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
     }
     if (v._2.tag === "GetCtorField") {
-      const placeholders = joinWith(", ")(replicateImpl(v._2._6, "_"));
-      return "(match " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + " { " + getTyPrefix(currentMod)(v._2._1) + v._2._3 + "::" + v._2._4 + "(" + (v._2._6 === 0 ? "" : placeholders + ", ") + "val, ..) => val, _ => unimplemented!() })";
+      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + ".vals.as_ref().unwrap()[" + showIntImpl(v._2._6) + "].clone()";
     }
     return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
   }
@@ -17336,7 +16969,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       fail();
     })() ? fullName + "()" : fullName;
     if (member12(fullName)(alive)) {
-      return varCode + ".dup()";
+      return varCode + ".clone()";
     }
     return varCode;
   }
@@ -17389,7 +17022,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       fail();
     })();
     if (member12(name2)(alive)) {
-      return name2 + ".dup()";
+      return name2 + ".clone()";
     }
     return name2;
   }
@@ -17462,7 +17095,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return "unimplemented!()";
   }
   if (v.tag === "CtorSaturated") {
-    return "unsafe_coerce_type(" + getTyPrefix(currentMod)(v._1) + v._3 + "::" + v._4 + (v._5.length === 0 ? "" : "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    return 'perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._4 + '", vals: ' + (v._5.length === 0 ? "None" : "Some(std::rc::Rc::new(vec![" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -17473,10 +17106,10 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         }
         return sliceImpl2($0, v._5.length, v._5);
       })()))
-    ))(v1._2))(v._5)) + ")") + ")";
+    ))(v1._2))(v._5)) + "]))") + ", ..Default::default() })";
   }
   if (v.tag === "CtorDef") {
-    return "perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() })";
+    return 'perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._3 + '", ..Default::default() })';
   }
   return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
 };
@@ -17589,7 +17222,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
 };
 var codegenModule = (v) => (backendMod) => {
   const modNameStr = replaceAll(".")("_")(backendMod.name);
-  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce(x: UnknownType) -> UnknownType { x }\npub fn unsafe_coerce_type<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, ..Default::default() }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.name + "\n#[derive(Clone)]\npub enum " + replaceAll(".")("_")(backendMod.name) + "_" + v1.name + " {\n" + joinWith("")(arrayMap((ctor) => "    " + ctor.name + (ctor.fields.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fields)) + ")") + ",\n")(v1.constructors)) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone, Default)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub proof: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
+  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce(x: UnknownType) -> UnknownType { x }\npub fn unsafe_coerce_type<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, ..Default::default() }) }\n\n// Data declarations:\n#[derive(Clone, Default)]\npub struct Record_a {\n    pub tag: &'static str,\n    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<UnknownType>,\n    pub pure: Option<UnknownType>,\n    pub discard: Option<UnknownType>,\n    pub show: Option<UnknownType>,\n    pub proof: Option<UnknownType>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
     const res = codegenBindingGroup(v.name)(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
     return { code: acc.code + res.code, arities: res.arities };
   })({ code: "", arities: Leaf })(backendMod.bindings).code;

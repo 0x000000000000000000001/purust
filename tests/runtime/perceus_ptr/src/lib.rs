@@ -62,6 +62,11 @@ impl<T: Clone> PerceusPtr<T> {
         }
         unsafe { &mut (*this.ptr.as_ptr()).data }
     }
+
+    /// Unsafe mutation without checking refcount. Used for LetRec knot-tying.
+    pub unsafe fn force_mut(this: &mut Self) -> &mut T {
+        &mut (*this.ptr.as_ptr()).data
+    }
 }
 
 impl<T> Clone for PerceusPtr<T> {

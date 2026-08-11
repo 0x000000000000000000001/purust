@@ -16,6 +16,7 @@ pub type Data_Void_Void = UnknownType;
 pub type Data_Exists_Exists = UnknownType;
 pub type Data_String_Regex_Regex = UnknownType;
 pub type Effect_Effect = UnknownType;
+pub fn Effect_Console_log() -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(|msg| { println!("LOG: {:?}", msg.a); unsafe_coerce_type(0) })), ..Default::default() }) }
 pub type Effect_Exception_Error = UnknownType;
 pub type Effect_Ref_Ref = UnknownType;
 pub type Foreign_Object_Object = UnknownType;
@@ -47,38 +48,7 @@ cleanCode = cleanCode.replace(/pub fn Data_Lazy_defer\(\) -> crate::UnknownType 
     return '';
 });
 
-const parts = cleanCode.split('#[derive(Clone)]\npub struct Record_a {');
-let newCode = parts[0];
-if (parts.length > 1) {
-  // Merge all Record_a fields
-  const allFields = new Set();
-  for (let i = 1; i < parts.length; i++) {
-      const endIdx = parts[i].indexOf('}');
-      const fieldsText = parts[i].substring(0, endIdx);
-      const fields = fieldsText.split('\n');
-      for (const f of fields) {
-          if (f.trim().length > 0) allFields.add(f);
-      }
-  }
-  allFields.add("    pub proof: Option<UnknownType>,");
-  allFields.add("    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,");
-  let recordA = '#[derive(Clone)]\npub struct Record_a {\n' + Array.from(allFields).join('\n') + '\n}';
-  recordA = recordA.replace(/r#mod/g, 'mod_kw')
-                 .replace(/r#as/g, 'as_kw')
-                 .replace(/r#break/g, 'break_kw')
-                 .replace(/r#type/g, 'type_kw')
-                 .replace(/r#fn/g, 'fn_kw')
-                 .replace(/r#gen/g, 'gen_kw')
-                 .replace(/r#pub/g, 'pub_kw')
-                 .replace(/r#use/g, 'use_kw');
-  newCode += recordA;
-
-  for (let i = 1; i < parts.length; i++) {
-    const endIdx = parts[i].indexOf('}');
-    let partContent = parts[i].substring(endIdx + 1);
-    newCode += partContent;
-  }
-}
+let newCode = cleanCode;
 
 // Fix recursive enums by adding Box
 newCode = newCode.replace(/Cons\(UnknownType, Control_Monad_Gen_LL\)/g, 'Cons(UnknownType, Box<Control_Monad_Gen_LL>)');

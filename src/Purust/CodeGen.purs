@@ -27,17 +27,10 @@ codegenModule (Module coreFnMod) backendMod =
     modNameStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name)
     
     -- Traduction des DataDecls
-    dataDeclsCode = foldMap (\(decl :: DataDecl) ->
-        "// Enum for ADT: " <> decl.name <> "\n" <>
-        "#[derive(Clone)]\npub enum " <> String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name) <> "_" <> decl.name <> " {\n" <>
-        String.joinWith "" (map (\ctor ->
-          let fields' = if Array.null ctor.fields then "" 
-                       else "(" <> String.joinWith ", " (map (codegenExprType true) ctor.fields) <> ")"
-          in "    " <> ctor.name <> fields' <> ",\n"
-        ) decl.constructors) <>
-        "}\n\n"
-      ) backendMod.dataDecls <>
+    dataDeclsCode = "" <>
       "#[derive(Clone, Default)]\npub struct Record_a {\n" <>
+      "    pub tag: &'static str,\n" <>
+      "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
       "    pub a: i64,\n" <>
       "    pub b: Option<UnknownType>,\n" <>
       "    pub c: Option<UnknownType>,\n" <>
@@ -290,6 +283,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpIntNegate -> "-" <> aStr
       OpNumberNegate -> "-" <> aStr
       OpArrayLength -> "((" <> aStr <> ").len() as i32)"
+      OpIsTag (Qualified _ (Ident ctorName)) -> "(" <> aStr <> ".tag == \"" <> ctorName <> "\")"
       _ -> "unimplemented!() /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
@@ -322,12 +316,9 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpBooleanOr -> "(" <> aStr <> " || " <> bStr <> ")"
       _ -> "unimplemented!() /* Unsupported Op2 */"
   Accessor base (GetProp k) -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base <> "." <> sanitizeIdent k <> ".clone().unwrap()"
-  Accessor base (GetCtorField qId ctorType (ProperName tyNameStr) (Ident ctorName) propName fieldIdx) ->
+  Accessor base (GetCtorField _ _ _ _ _ fieldIdx) ->
     let baseStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base
-        placeholders = String.joinWith ", " (Array.replicate fieldIdx "_")
-        prefix = if fieldIdx == 0 then "" else placeholders <> ", "
-        fullTyName = getTyPrefix currentMod qId <> tyNameStr
-    in "(match " <> baseStr <> " { " <> fullTyName <> "::" <> ctorName <> "(" <> prefix <> "val, ..) => val, _ => unimplemented!() })"
+    in baseStr <> ".vals.as_ref().unwrap()[" <> show fieldIdx <> "].clone()"
   Var (Qualified mbMod (Ident name)) ->
     let
       modPrefix = case mbMod of
@@ -343,7 +334,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
           Nothing -> fullName /= "Effect_Console_log"
       isAlive = Set.member fullName alive
       varCode = if isZeroArity then fullName <> "()" else fullName
-    in if isAlive then varCode <> ".dup()" else varCode
+    in if isAlive then varCode <> ".clone()" else varCode
   Let mbId lvl val body ->
     let
       name = case mbId of
@@ -379,7 +370,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
     let name = case mbId of
           Just (Ident nameRaw) -> sanitizeIdent nameRaw
           Nothing -> "lvl_" <> show (unwrap lvl)
-    in if Set.member name alive then name <> ".dup()" else name
+    in if Set.member name alive then name <> ".clone()" else name
   Lit lit -> case lit of
     LitInt i -> "mk_int(" <> show i <> ")"
     LitNumber n -> show n <> " /* f64 */"
@@ -414,16 +405,15 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
        "    " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty body <> "\n" <>
        "})), ..Default::default() })"
   PrimUndefined -> "unimplemented!()"
-  CtorSaturated qId _ (ProperName tyNameStr) (Ident ctorName) fields ->
-    let fieldsCode = if Array.null fields then "" else 
-          "(" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
+  CtorSaturated _ _ _ (Ident ctorName) fields ->
+    let fieldsCode = if Array.null fields then "None" else 
+          "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
             let subsequent = Array.drop (i + 1) fields
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
             in codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForV val
-          ) fields) <> ")"
-        fullTyName = getTyPrefix currentMod qId <> tyNameStr
-    in "unsafe_coerce_type(" <> fullTyName <> "::" <> ctorName <> fieldsCode <> ")"
-  CtorDef _ _ _ _ -> "perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() })"
+          ) fields) <> "]))"
+    in "perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() })"
+  CtorDef _ _ (Ident ctorName) _ -> "perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", ..Default::default() })"
   _ -> "unimplemented!() /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
 
 printAST :: NeutralExpr -> String
