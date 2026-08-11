@@ -25,10 +25,10 @@ workspace:
     registry: 77.10.1
   extraPackages:
     backend-optimizer:
-      path: "../purescript-backend-optimizer"
+      path: "../../purescript-backend-optimizer"
     st:
-      path: "../gopurs-st"
+      path: "../../gopurs/gopurs-st"
     unsafe-coerce:
-      path: "../gopurs-unsafe-coerce"
+      path: "../../gopurs/gopurs-unsafe-coerce"
     assert:
-      path: "../gopurs-assert"
+      path: "../../gopurs/gopurs-assert"
