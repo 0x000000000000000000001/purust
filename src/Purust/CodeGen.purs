@@ -225,9 +225,15 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
          if fnArity > numProvided then
            let numMissing = fnArity - numProvided
                missingVars = Array.mapWithIndex (\i _ -> "c_" <> show i) (Array.replicate numMissing unit)
-               missingArgs = String.joinWith ", " (map (\v -> "mut " <> v <> ": UnknownType") missingVars)
                closureArgs = String.joinWith ", " (argsCodeArray <> missingVars)
-           in "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" <> missingArgs <> "| -> UnknownType {\n    (" <> fnCode <> ")(" <> closureArgs <> ")\n})), ..Default::default() })"
+               callCode = fnCode <> "(" <> closureArgs <> ")"
+               
+               wrapClosure :: Int -> String -> String
+               wrapClosure idx acc =
+                   if idx < 0 then acc
+                   else "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut c_" <> show idx <> ": UnknownType| -> UnknownType {\n    " <> wrapClosure (idx - 1) acc <> "\n})), ..Default::default() })"
+                   
+           in wrapClosure (numMissing - 1) callCode
          else
            "(" <> fnCode <> ")(" <> argsCode <> ")"
        else

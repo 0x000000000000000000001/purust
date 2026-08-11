@@ -54,8 +54,189 @@ for (const f of Array.from(fields).sort()) {
 }
 dynamicRecordA += "}\n\n";
 
-const finalBundle = unknownDef + dynamicRecordA + cleanedContent;
+let fullCode = unknownDef + dynamicRecordA + cleanedContent;
+
+const sigRegex = /pub fn ([a-zA-Z0-9_]+)\((.*?)\) -> UnknownType/g;
+let signatures = {};
+while ((match = sigRegex.exec(fullCode)) !== null) {
+    const fnName = match[1];
+    const argsStr = match[2].trim();
+    if (argsStr.length === 0) {
+        signatures[fnName] = [];
+        continue;
+    }
+    
+    // Parse arguments accounting for nested <>, ()
+    let args = [];
+    let currentArg = "";
+    let depth = 0;
+    for (let i = 0; i < argsStr.length; i++) {
+        let c = argsStr[i];
+        if (c === '<' || c === '(') depth++;
+        if (c === '>' || c === ')') depth--;
+        if (c === ',' && depth === 0) {
+            args.push(currentArg.trim());
+            currentArg = "";
+        } else {
+            currentArg += c;
+        }
+    }
+    if (currentArg.trim().length > 0) args.push(currentArg.trim());
+    
+    signatures[fnName] = args.map(a => {
+        let colonIdx = a.indexOf(':');
+        return a.substring(colonIdx + 1).trim();
+    });
+}
+
+const appRegex = /__PURUST_APP__!\(([\s\S]*?), \[([\s\S]*?)\]\)/g;
+const resolveApp = (fullMatch, fnName, argCode) => {
+    fnName = fnName.trim();
+    
+    // Parse args carefully
+    let parsedArgs = [];
+    let currentArg = "";
+    let depth = 0;
+    for (let i = 0; i < argCode.length; i++) {
+        let c = argCode[i];
+        if (c === '[' || c === '(' || c === '{') depth++;
+        if (c === ']' || c === ')' || c === '}') depth--;
+        if (c === ',' && depth === 0) {
+            let ac = currentArg.trim();
+            if (ac.length > 0) {
+                let ty = 'unk';
+                if (ac.endsWith('/*i64*/')) ty = 'i64';
+                if (ac.endsWith('/*bool*/')) ty = 'bool';
+                parsedArgs.push({code: ac.replace(/\/\*.*?\*\//g, '').trim(), ty});
+            }
+            currentArg = "";
+        } else {
+            currentArg += c;
+        }
+    }
+    let ac = currentArg.trim();
+    if (ac.length > 0) {
+        let ty = 'unk';
+        if (ac.endsWith('/*i64*/')) ty = 'i64';
+        if (ac.endsWith('/*bool*/')) ty = 'bool';
+        parsedArgs.push({code: ac.replace(/\/\*.*?\*\//g, '').trim(), ty});
+    }
+
+    if (signatures[fnName]) {
+        let expectedTypes = signatures[fnName];
+        let providedArgsLength = parsedArgs.length;
+        
+        let finalArgs = parsedArgs.map((arg, i) => {
+            let exp = expectedTypes[i];
+            if (!exp) return arg.code;
+            if (exp === 'UnknownType' && arg.ty === 'i64') return 'crate::mk_int(' + arg.code + ')';
+            if (exp === 'UnknownType' && arg.ty === 'bool') return 'crate::mk_bool(' + arg.code + ')';
+            if (exp === 'i64' && arg.ty === 'unk') return '(' + arg.code + ').a';
+            if (exp === 'bool' && arg.ty === 'unk') return '(' + arg.code + ').init_bool.unwrap()'; // hack for now
+            return arg.code;
+        });
+
+        if (expectedTypes.length === providedArgsLength) {
+            return fnName + '(' + finalArgs.join(', ') + ')';
+        } else if (expectedTypes.length > providedArgsLength) {
+            // Eta-expansion for partial application!
+            let missingCount = expectedTypes.length - providedArgsLength;
+            let code = fnName + '(' + finalArgs.join(', ') + (finalArgs.length > 0 ? ', ' : '');
+            let etaArgs = [];
+            for (let i = 0; i < missingCount; i++) {
+                let exp = expectedTypes[providedArgsLength + i];
+                if (exp === 'UnknownType') {
+                    etaArgs.push('mut eta_' + i + ': UnknownType');
+                    code += 'eta_' + i + '.clone()';
+                } else if (exp === 'i64') {
+                    etaArgs.push('mut eta_' + i + ': i64');
+                    code += 'eta_' + i;
+                } else if (exp === 'bool') {
+                    etaArgs.push('mut eta_' + i + ': bool');
+                    code += 'eta_' + i;
+                } else {
+                    etaArgs.push('mut eta_' + i + ': ' + exp);
+                    code += 'eta_' + i + '.clone()';
+                }
+                if (i < missingCount - 1) code += ', ';
+            }
+            code += ')';
+            
+            // Wrap in closures
+            for (let i = missingCount - 1; i >= 0; i--) {
+                code = 'perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |' + etaArgs[i] + '| -> UnknownType { ' + code + ' })), ..Default::default() })';
+            }
+            return code;
+        } else {
+            // Over-applied: call the function, then unwrap the returned closures
+            let acc = fnName + '(' + finalArgs.slice(0, expectedTypes.length).join(', ') + ')';
+            for (let i = expectedTypes.length; i < parsedArgs.length; i++) {
+                let arg = parsedArgs[i];
+                let argCode = arg.code;
+                if (arg.ty === 'i64') argCode = 'crate::mk_int(' + argCode + ')';
+                if (arg.ty === 'bool') argCode = 'crate::mk_bool(' + argCode + ')';
+                acc = '(' + acc + ').call.clone().unwrap()(' + argCode + ')';
+            }
+            return acc;
+        }
+    }
+    
+    // Fallback if not a top-level function
+    let acc = fnName;
+    for (let arg of parsedArgs) {
+        let argCode = arg.code;
+        if (arg.ty === 'i64') argCode = 'crate::mk_int(' + argCode + ')';
+        if (arg.ty === 'bool') argCode = 'crate::mk_bool(' + argCode + ')';
+        acc = '(' + acc + ').call.clone().unwrap()(' + argCode + ')';
+    }
+    return acc;
+};
+
+let lastCode = "";
+while (fullCode.match(/__PURUST_APP__!/) && fullCode !== lastCode) {
+    lastCode = fullCode;
+    fullCode = fullCode.replace(appRegex, resolveApp);
+}
+
+// Third pass: resolve __PURUST_VAR__!
+const varRegex = /__PURUST_VAR__!\(([\s\S]*?)\)/g;
+fullCode = fullCode.replace(varRegex, (fullMatch, fnName) => {
+    fnName = fnName.trim();
+    if (signatures[fnName]) {
+        let expectedTypes = signatures[fnName];
+        let missingCount = expectedTypes.length;
+        if (missingCount === 0) return fnName + '()';
+        
+        let code = fnName + '(';
+        let etaArgs = [];
+        for (let i = 0; i < missingCount; i++) {
+            let exp = expectedTypes[i];
+            if (exp === 'UnknownType') {
+                etaArgs.push('mut eta_' + i + ': UnknownType');
+                code += 'eta_' + i + '.clone()';
+            } else if (exp === 'i64') {
+                etaArgs.push('mut eta_' + i + ': i64');
+                code += 'eta_' + i;
+            } else if (exp === 'bool') {
+                etaArgs.push('mut eta_' + i + ': bool');
+                code += 'eta_' + i;
+            } else {
+                etaArgs.push('mut eta_' + i + ': ' + exp);
+                code += 'eta_' + i + '.clone()';
+            }
+            if (i < missingCount - 1) code += ', ';
+        }
+        code += ')';
+        
+        // Wrap in closures
+        for (let i = missingCount - 1; i >= 0; i--) {
+            code = 'perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |' + etaArgs[i] + '| -> UnknownType { ' + code + ' })), ..Default::default() })';
+        }
+        return code;
+    }
+    return fnName; // Fallback
+});
 
 fs.mkdirSync('output-test/app/src', { recursive: true });
-fs.writeFileSync('output-test/app/src/main.rs', finalBundle);
+fs.writeFileSync('output-test/app/src/main.rs', fullCode);
 console.log('Bundled ' + dirs.length + ' modules into output-test/app/src/main.rs with ' + fields.size + ' dynamic fields.');

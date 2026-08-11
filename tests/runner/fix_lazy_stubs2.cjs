@@ -4,4 +4,4 @@ function append(file, stub) {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.appendFileSync(file, '\n' + stub + '\n');
 }
-append('/Users/0x1/Documents/htdocs/purust-console/src/Effect/Console.rs', 'pub fn Effect_Console_log() -> crate::UnknownType { crate::UnknownType::new(0) }');
+append('/Users/0x1/Documents/htdocs/purust-console/src/Effect/Console.rs', 'pub fn Effect_Console_log() -> crate::UnknownType { crate::mk_int(0) }');

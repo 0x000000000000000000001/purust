@@ -714,6 +714,7 @@ var foldlArray = function(f) {
 };
 
 // output-es/Data.Foldable/index.js
+var identity2 = (x) => x;
 var monoidEndo = /* @__PURE__ */ (() => {
   const semigroupEndo1 = { append: (v) => (v1) => (x) => v(v1(x)) };
   return { mempty: (x) => x, Semigroup0: () => semigroupEndo1 };
@@ -723,8 +724,6 @@ var monoidDual = /* @__PURE__ */ (() => {
   const semigroupDual1 = { append: (v) => (v1) => $0.append(v1)(v) };
   return { mempty: monoidEndo.mempty, Semigroup0: () => semigroupDual1 };
 })();
-var identity1 = (x) => x;
-var identity2 = (x) => x;
 var foldableTuple = { foldr: (f) => (z) => (v) => f(v._2)(z), foldl: (f) => (z) => (v) => f(z)(v._2), foldMap: (dictMonoid) => (f) => (v) => f(v._2) };
 var foldableArray = {
   foldr: foldrArray,
@@ -958,11 +957,11 @@ var Aff = (function() {
     var joins = null;
     var rethrow = true;
     function run2(localRunTick) {
-      var tmp, result, attempt2;
+      var tmp, result, attempt;
       while (true) {
         tmp = null;
         result = null;
-        attempt2 = null;
+        attempt = null;
         switch (status) {
           case STEP_BIND:
             status = CONTINUE;
@@ -1091,9 +1090,9 @@ var Aff = (function() {
               step = interrupt || fail2 || step;
             } else {
               tmp = attempts._3;
-              attempt2 = attempts._1;
+              attempt = attempts._1;
               attempts = attempts._2;
-              switch (attempt2.tag) {
+              switch (attempt.tag) {
                 // We cannot recover from an unmasked interrupt. Otherwise we should
                 // continue stepping, or run the exception handler if an exception
                 // was raised.
@@ -1102,7 +1101,7 @@ var Aff = (function() {
                     status = RETURN;
                   } else if (fail2) {
                     status = CONTINUE;
-                    step = attempt2._2(util.fromLeft(fail2));
+                    step = attempt._2(util.fromLeft(fail2));
                     fail2 = null;
                   }
                   break;
@@ -1111,8 +1110,8 @@ var Aff = (function() {
                   if (interrupt && interrupt !== tmp && bracketCount === 0 || fail2) {
                     status = RETURN;
                   } else {
-                    bhead = attempt2._1;
-                    btail = attempt2._2;
+                    bhead = attempt._1;
+                    btail = attempt._2;
                     status = STEP_BIND;
                     step = util.fromRight(step);
                   }
@@ -1125,10 +1124,10 @@ var Aff = (function() {
                   bracketCount--;
                   if (fail2 === null) {
                     result = util.fromRight(step);
-                    attempts = new Aff2(CONS, new Aff2(RELEASE, attempt2._2, result), attempts, tmp);
+                    attempts = new Aff2(CONS, new Aff2(RELEASE, attempt._2, result), attempts, tmp);
                     if (interrupt === tmp || bracketCount > 0) {
                       status = CONTINUE;
-                      step = attempt2._3(result);
+                      step = attempt._3(result);
                     }
                   }
                   break;
@@ -1138,11 +1137,11 @@ var Aff = (function() {
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
                   if (interrupt && interrupt !== tmp && bracketCount === 0) {
-                    step = attempt2._1.killed(util.fromLeft(interrupt))(attempt2._2);
+                    step = attempt._1.killed(util.fromLeft(interrupt))(attempt._2);
                   } else if (fail2) {
-                    step = attempt2._1.failed(util.fromLeft(fail2))(attempt2._2);
+                    step = attempt._1.failed(util.fromLeft(fail2))(attempt._2);
                   } else {
-                    step = attempt2._1.completed(util.fromRight(step))(attempt2._2);
+                    step = attempt._1.completed(util.fromRight(step))(attempt._2);
                   }
                   fail2 = null;
                   bracketCount++;
@@ -1151,13 +1150,13 @@ var Aff = (function() {
                   bracketCount++;
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
-                  step = attempt2._1;
+                  step = attempt._1;
                   break;
                 case FINALIZED:
                   bracketCount--;
                   status = RETURN;
-                  step = attempt2._1;
-                  fail2 = attempt2._2;
+                  step = attempt._1;
+                  fail2 = attempt._2;
                   break;
               }
             }
@@ -1674,7 +1673,7 @@ var applyAff = { apply: (f) => (a) => _bind(f)((f$p) => _bind(a)((a$p) => applic
 var applicativeAff = { pure: _pure, Apply0: () => applyAff };
 var monadThrowAff = { throwError: _throwError, Monad0: () => monadAff };
 var monadErrorAff = { catchError: _catchError, MonadThrow0: () => monadThrowAff };
-var attempt = /* @__PURE__ */ $$try(monadErrorAff);
+var $$try2 = /* @__PURE__ */ $$try(monadErrorAff);
 var nonCanceler = /* @__PURE__ */ (() => {
   const $0 = _pure();
   return (v) => $0;
@@ -6204,7 +6203,7 @@ var analyzeDefault = (dictHasAnalysis) => {
 };
 var accessed = (level) => (v) => ({ ...v, usages: update(ordInt)((x) => $Maybe("Just", { ...x, access: x.access + 1 | 0 }))(level)(v.usages) });
 var analyze = (dictHasAnalysis) => {
-  const analysisOf2 = dictHasAnalysis.analysisOf;
+  const analysisOf1 = dictHasAnalysis.analysisOf;
   const analyzeDefault1 = analyzeDefault(dictHasAnalysis);
   return (dictHasSyntax) => (externAnalysis) => (expr) => {
     if (expr.tag === "Var") {
@@ -6223,8 +6222,8 @@ var analyze = (dictHasAnalysis) => {
       return { ...$0, size: $0.size + 1 | 0 };
     }
     if (expr.tag === "Let") {
-      const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
-        const $02 = dictHasAnalysis.analysisOf(expr._4);
+      const $0 = semigroupBackendAnalysis.append(analysisOf1(expr._3))((() => {
+        const $02 = analysisOf1(expr._4);
         return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
       })());
       return {
@@ -6249,7 +6248,7 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "LetRec") {
-      const $0 = semigroupBackendAnalysis.append(foldMap3((x) => analysisOf2(x._2))(expr._2))(dictHasAnalysis.analysisOf(expr._3));
+      const $0 = semigroupBackendAnalysis.append(foldMap3((x) => analysisOf1(x._2))(expr._2))(analysisOf1(expr._3));
       return {
         ...$0,
         complexity: (() => {
@@ -6273,8 +6272,8 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "EffectBind") {
-      const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
-        const $02 = dictHasAnalysis.analysisOf(expr._4);
+      const $0 = semigroupBackendAnalysis.append(analysisOf1(expr._3))((() => {
+        const $02 = analysisOf1(expr._4);
         return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
       })());
       const go = (v) => {
@@ -6309,7 +6308,7 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "EffectPure") {
-      const $0 = dictHasAnalysis.analysisOf(expr._1);
+      const $0 = analysisOf1(expr._1);
       return {
         ...$0,
         result: Unknown,
@@ -6329,7 +6328,7 @@ var analyze = (dictHasAnalysis) => {
       };
     }
     if (expr.tag === "EffectDefer") {
-      const $0 = dictHasAnalysis.analysisOf(expr._1);
+      const $0 = analysisOf1(expr._1);
       return {
         ...$0,
         result: Unknown,
@@ -6491,7 +6490,7 @@ var analyze = (dictHasAnalysis) => {
       return analysis;
     }
     if (expr.tag === "App") {
-      const $0 = dictHasAnalysis.analysisOf(expr._1).args;
+      const $0 = analysisOf1(expr._1).args;
       const $1 = expr._2.length;
       const remainingArgs = $1 < 1 ? $0 : sliceImpl2($1, $0.length, $0);
       const analysis = (() => {
@@ -6552,7 +6551,7 @@ var analyze = (dictHasAnalysis) => {
       return analysis;
     }
     if (expr.tag === "CtorSaturated") {
-      const $0 = foldMap4((v) => analysisOf2(v._2))(expr._5);
+      const $0 = foldMap4((v) => analysisOf1(v._2))(expr._5);
       return { ...$0, deps: insert(ordQualified2)(expr._1)()($0.deps), result: KnownNeutral, size: $0.size + 1 | 0 };
     }
     if (expr.tag === "CtorDef") {
@@ -6583,8 +6582,8 @@ var analyze = (dictHasAnalysis) => {
         }
         fail();
       })();
-      const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(v2._1))(semigroupBackendAnalysis.append((() => {
-        const $02 = dictHasAnalysis.analysisOf(v2._2);
+      const $0 = semigroupBackendAnalysis.append(analysisOf1(v2._1))(semigroupBackendAnalysis.append((() => {
+        const $02 = analysisOf1(v2._2);
         return {
           ...$02,
           usages: (() => {
@@ -6601,7 +6600,7 @@ var analyze = (dictHasAnalysis) => {
           })()
         };
       })())(semigroupBackendAnalysis.append((() => {
-        const $02 = foldMap4(foldMap6(analysisOf2))((() => {
+        const $02 = foldMap4(foldMap6(analysisOf1))((() => {
           const $03 = unconsImpl((v) => Nothing, (v) => (xs) => $Maybe("Just", xs), expr._1);
           if ($03.tag === "Just") {
             return $03._1;
@@ -6624,7 +6623,7 @@ var analyze = (dictHasAnalysis) => {
           })()
         };
       })())((() => {
-        const $02 = dictHasAnalysis.analysisOf(expr._2);
+        const $02 = analysisOf1(expr._2);
         return {
           ...$02,
           usages: (() => {
@@ -6834,7 +6833,7 @@ var analyze = (dictHasAnalysis) => {
       return analysis;
     }
     if (expr.tag === "Typed") {
-      return dictHasAnalysis.analysisOf(expr._2);
+      return analysisOf1(expr._2);
     }
     fail();
   };
@@ -11718,7 +11717,7 @@ var $LexResult = (tag, _1, _2) => ({ tag, _1, _2 });
 var fold1 = /* @__PURE__ */ (() => foldableArray.foldMap(/* @__PURE__ */ (() => {
   const semigroupRecord1 = { append: (ra) => (rb) => ({ raw: ra.raw + rb.raw, string: ra.string + rb.string }) };
   return { mempty: { raw: "", string: "" }, Semigroup0: () => semigroupRecord1 };
-})())(identity1))();
+})())(identity2))();
 var consTokens2 = /* @__PURE__ */ consTokens(foldableArray);
 var isCharCodePoint = /* @__PURE__ */ (() => ({ fromChar: codePointFromChar, fromCharCode: boundedEnumCodePoint.toEnum }))();
 var isCharChar = { fromChar: (x) => x, fromCharCode: charToEnum };
@@ -13182,7 +13181,7 @@ var parseImpl = function(just) {
 var filterA2 = /* @__PURE__ */ filterA(applicativeAff);
 var traverse2 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeAff))();
 var fromFoldable4 = /* @__PURE__ */ foldrArray(Cons)(Nil);
-var readCoreFnModule = (filePath) => _bind(attempt(toAff1(stat2)(filePath)))((statRes) => {
+var readCoreFnModule = (filePath) => _bind($$try2(toAff1(stat2)(filePath)))((statRes) => {
   if (statRes.tag === "Right") {
     if (isFileImpl(statRes._1)) {
       return _bind(toAff2(readTextFile)(UTF8)(filePath))((contents) => {
@@ -13235,7 +13234,7 @@ var loadDirectives = /* @__PURE__ */ (() => {
   })())(() => _pure(parsedDirectives.directives));
 })();
 var coreFnModulesFromOutput = (outputDir) => _bind(toAff1(readdir2)(outputDir))((files) => _bind(filterA2((f) => _bind(toAff1(stat2)(outputDir + "/" + f))((stat3) => _pure(isDirectoryImpl(stat3))))(files))((validDirs) => _bind(traverse2((dir) => readCoreFnModule(outputDir + "/" + dir + "/corefn.json"))(validDirs))((mbModules) => _pure(sortModules(foldableList)(fromFoldable4(mapMaybe((x) => x)(mbModules)))))));
-var checkCache = (version2) => (corefnPath) => (cachePath) => _bind(attempt(toAff1(stat2)(corefnPath)))((corefnStatRes) => _bind(attempt(toAff1(stat2)(cachePath)))((cacheStatRes) => {
+var checkCache = (version2) => (corefnPath) => (cachePath) => _bind($$try2(toAff1(stat2)(corefnPath)))((corefnStatRes) => _bind($$try2(toAff1(stat2)(cachePath)))((cacheStatRes) => {
   if (corefnStatRes.tag === "Right" && cacheStatRes.tag === "Right" && modifiedTimeMsImpl(cacheStatRes._1) >= modifiedTimeMsImpl(corefnStatRes._1)) {
     return _bind(toAff2(readTextFile)(UTF8)(cachePath))((cacheContent) => _pure(parseImpl(Just)(Nothing)(version2)(cacheContent)));
   }
@@ -16754,11 +16753,17 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       })();
     })()) {
       if (fnArity > numProvided) {
-        const missingVars = mapWithIndexArray((i) => (v1) => "c_" + showIntImpl(i))(replicateImpl(fnArity - numProvided | 0, void 0));
-        return "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v1) => "mut " + v1 + ": UnknownType")(missingVars)) + "| -> UnknownType {\n    (" + fnCode + ")(" + joinWith(", ")([
+        const wrapClosure = (idx) => (acc) => {
+          if (idx < 0) {
+            return acc;
+          }
+          return "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut c_" + showIntImpl(idx) + ": UnknownType| -> UnknownType {\n    " + wrapClosure(idx - 1 | 0)(acc) + "\n})), ..Default::default() })";
+        };
+        const numMissing = fnArity - numProvided | 0;
+        return wrapClosure(numMissing - 1 | 0)(fnCode + "(" + joinWith(", ")([
           ...argsCodeArray,
-          ...missingVars
-        ]) + ")\n})), ..Default::default() })";
+          ...mapWithIndexArray((i) => (v1) => "c_" + showIntImpl(i))(replicateImpl(numMissing, void 0))
+        ]) + ")");
       }
       return "(" + fnCode + ")(" + argsCode + ")";
     }

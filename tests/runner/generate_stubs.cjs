@@ -56,7 +56,7 @@ for (let func of missing) {
   let f = getFileForFunc(func);
   if (f) {
     if (!files[f]) files[f] = [];
-    files[f].push(`pub fn ${func}() -> crate::UnknownType { crate::UnknownType::new(0) }`);
+    files[f].push(`pub fn ${func}() -> crate::UnknownType { crate::mk_int(0) }`);
   } else {
     console.log("Unknown prefix for: " + func);
   }
