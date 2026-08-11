@@ -84,8 +84,8 @@ codegenExprType isRet = case _ of
   Number -> "f64"
   Boolean -> "bool"
   Char -> "char"
-  ADT name _ | Array.last name == Just "Boolean" -> "bool"
-  ADT name _ -> "UnknownType"
+  ADT _ name _ | Array.last name == Just "Boolean" -> "bool"
+  ADT _ name _ -> "UnknownType"
   TypeVar _ -> "UnknownType"
   _ -> "UnknownType"
 
@@ -525,7 +525,7 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
   Typed Any inner -> inferTypeExpr currentMod aritiesMap bound inner
   Typed (TypeVar _) inner -> inferTypeExpr currentMod aritiesMap bound inner
   Typed t _ -> t
-  CtorSaturated _ _ (ProperName tyNameStr) _ _ -> ADT ["Main", tyNameStr] []
+  CtorSaturated _ _ (ProperName tyNameStr) _ _ -> ADT "Main" ["Main", tyNameStr] []
   Var (Qualified mbMod (Ident name)) -> 
     let
       modPrefix = case mbMod of
