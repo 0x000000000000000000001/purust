@@ -714,7 +714,6 @@ var foldlArray = function(f) {
 };
 
 // output-es/Data.Foldable/index.js
-var identity2 = (x) => x;
 var monoidEndo = /* @__PURE__ */ (() => {
   const semigroupEndo1 = { append: (v) => (v1) => (x) => v(v1(x)) };
   return { mempty: (x) => x, Semigroup0: () => semigroupEndo1 };
@@ -724,6 +723,8 @@ var monoidDual = /* @__PURE__ */ (() => {
   const semigroupDual1 = { append: (v) => (v1) => $0.append(v1)(v) };
   return { mempty: monoidEndo.mempty, Semigroup0: () => semigroupDual1 };
 })();
+var identity1 = (x) => x;
+var identity2 = (x) => x;
 var foldableTuple = { foldr: (f) => (z) => (v) => f(v._2)(z), foldl: (f) => (z) => (v) => f(z)(v._2), foldMap: (dictMonoid) => (f) => (v) => f(v._2) };
 var foldableArray = {
   foldr: foldrArray,
@@ -957,11 +958,11 @@ var Aff = (function() {
     var joins = null;
     var rethrow = true;
     function run2(localRunTick) {
-      var tmp, result, attempt;
+      var tmp, result, attempt2;
       while (true) {
         tmp = null;
         result = null;
-        attempt = null;
+        attempt2 = null;
         switch (status) {
           case STEP_BIND:
             status = CONTINUE;
@@ -1090,9 +1091,9 @@ var Aff = (function() {
               step = interrupt || fail2 || step;
             } else {
               tmp = attempts._3;
-              attempt = attempts._1;
+              attempt2 = attempts._1;
               attempts = attempts._2;
-              switch (attempt.tag) {
+              switch (attempt2.tag) {
                 // We cannot recover from an unmasked interrupt. Otherwise we should
                 // continue stepping, or run the exception handler if an exception
                 // was raised.
@@ -1101,7 +1102,7 @@ var Aff = (function() {
                     status = RETURN;
                   } else if (fail2) {
                     status = CONTINUE;
-                    step = attempt._2(util.fromLeft(fail2));
+                    step = attempt2._2(util.fromLeft(fail2));
                     fail2 = null;
                   }
                   break;
@@ -1110,8 +1111,8 @@ var Aff = (function() {
                   if (interrupt && interrupt !== tmp && bracketCount === 0 || fail2) {
                     status = RETURN;
                   } else {
-                    bhead = attempt._1;
-                    btail = attempt._2;
+                    bhead = attempt2._1;
+                    btail = attempt2._2;
                     status = STEP_BIND;
                     step = util.fromRight(step);
                   }
@@ -1124,10 +1125,10 @@ var Aff = (function() {
                   bracketCount--;
                   if (fail2 === null) {
                     result = util.fromRight(step);
-                    attempts = new Aff2(CONS, new Aff2(RELEASE, attempt._2, result), attempts, tmp);
+                    attempts = new Aff2(CONS, new Aff2(RELEASE, attempt2._2, result), attempts, tmp);
                     if (interrupt === tmp || bracketCount > 0) {
                       status = CONTINUE;
-                      step = attempt._3(result);
+                      step = attempt2._3(result);
                     }
                   }
                   break;
@@ -1137,11 +1138,11 @@ var Aff = (function() {
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
                   if (interrupt && interrupt !== tmp && bracketCount === 0) {
-                    step = attempt._1.killed(util.fromLeft(interrupt))(attempt._2);
+                    step = attempt2._1.killed(util.fromLeft(interrupt))(attempt2._2);
                   } else if (fail2) {
-                    step = attempt._1.failed(util.fromLeft(fail2))(attempt._2);
+                    step = attempt2._1.failed(util.fromLeft(fail2))(attempt2._2);
                   } else {
-                    step = attempt._1.completed(util.fromRight(step))(attempt._2);
+                    step = attempt2._1.completed(util.fromRight(step))(attempt2._2);
                   }
                   fail2 = null;
                   bracketCount++;
@@ -1150,13 +1151,13 @@ var Aff = (function() {
                   bracketCount++;
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
-                  step = attempt._1;
+                  step = attempt2._1;
                   break;
                 case FINALIZED:
                   bracketCount--;
                   status = RETURN;
-                  step = attempt._1;
-                  fail2 = attempt._2;
+                  step = attempt2._1;
+                  fail2 = attempt2._2;
                   break;
               }
             }
@@ -1673,7 +1674,7 @@ var applyAff = { apply: (f) => (a) => _bind(f)((f$p) => _bind(a)((a$p) => applic
 var applicativeAff = { pure: _pure, Apply0: () => applyAff };
 var monadThrowAff = { throwError: _throwError, Monad0: () => monadAff };
 var monadErrorAff = { catchError: _catchError, MonadThrow0: () => monadThrowAff };
-var $$try2 = /* @__PURE__ */ $$try(monadErrorAff);
+var attempt = /* @__PURE__ */ $$try(monadErrorAff);
 var nonCanceler = /* @__PURE__ */ (() => {
   const $0 = _pure();
   return (v) => $0;
@@ -3188,7 +3189,7 @@ var $CaseGuard = (tag, _1) => ({ tag, _1 });
 var $Comment = (tag, _1) => ({ tag, _1 });
 var $ConstructorType = (tag) => tag;
 var $Expr = (tag, _1, _2, _3, _4) => ({ tag, _1, _2, _3, _4 });
-var $ExprType = (tag, _1, _2) => ({ tag, _1, _2 });
+var $ExprType = (tag, _1, _2, _3) => ({ tag, _1, _2, _3 });
 var $Guard = (_1, _2) => ({ tag: "Guard", _1, _2 });
 var $Import = (_1, _2) => ({ tag: "Import", _1, _2 });
 var $Literal = (tag, _1) => ({ tag, _1 });
@@ -3411,7 +3412,7 @@ var eqExprType = {
       return y.tag === "TypeVar" && x._1 === y._1;
     }
     if (x.tag === "ADT") {
-      return y.tag === "ADT" && eqArray.eq(x._1)(y._1) && eqArrayImpl(eqExprType.eq)(x._2)(y._2);
+      return y.tag === "ADT" && x._1 === y._1 && eqArray.eq(x._2)(y._2) && eqArrayImpl(eqExprType.eq)(x._3)(y._3);
     }
     if (x.tag === "TypeApp") {
       return y.tag === "TypeApp" && eqExprType.eq(x._1)(y._1) && eqArrayImpl(eqExprType.eq)(x._2)(y._2);
@@ -3434,6 +3435,12 @@ var eqExprType = {
 var emptySpan = { path: "<internal>", start: zero, end: zero };
 
 // output-es/PureScript.Backend.Optimizer.CoreFn.Json/index.js
+var intercalate = (sep) => (xs) => foldlArray((v) => (v1) => {
+  if (v.init) {
+    return { init: false, acc: v1 };
+  }
+  return { init: false, acc: v.acc + sep + v1 };
+})({ init: true, acc: "" })(xs).acc;
 var traverse = /* @__PURE__ */ (() => traversableArray.traverse(applicativeEither))();
 var fromFoldable2 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var getFieldOptional$p = (decode) => (obj) => (prop) => {
@@ -3554,15 +3561,7 @@ var decodeModuleName = (x) => {
     return $Either("Left", $0._1);
   }
   if ($0.tag === "Right") {
-    return $Either(
-      "Right",
-      foldlArray((v) => (v1) => {
-        if (v.init) {
-          return { init: false, acc: v1 };
-        }
-        return { init: false, acc: v.acc + "." + v1 };
-      })({ init: true, acc: "" })($0._1).acc
-    );
+    return $Either("Right", intercalate(".")($0._1));
   }
   fail();
 };
@@ -3579,280 +3578,6 @@ var decodeConstructorType = (json) => {
       return $Either("Right", SumType);
     }
     return $Either("Left", $JsonDecodeError("TypeMismatch", "ConstructorType"));
-  }
-  fail();
-};
-var decodeExprType = (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getField(decodeString)($0._1)("type");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      if ($1._1 === "Int") {
-        return $Either("Right", Int);
-      }
-      if ($1._1 === "Number") {
-        return $Either("Right", $$Number);
-      }
-      if ($1._1 === "String") {
-        return $Either("Right", $$String);
-      }
-      if ($1._1 === "Char") {
-        return $Either("Right", Char);
-      }
-      if ($1._1 === "Boolean") {
-        return $Either("Right", $$Boolean);
-      }
-      if ($1._1 === "Unit") {
-        return $Either("Right", Unit);
-      }
-      if ($1._1 === "Any") {
-        return $Either("Right", Any);
-      }
-      if ($1._1 === "TypeLevelString") {
-        const $2 = getField(decodeString)($0._1)("value");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          return $Either("Right", $ExprType("TypeLevelString", $2._1));
-        }
-        fail();
-      }
-      if ($1._1 === "Array") {
-        const $2 = getField(decodeExprType)($0._1)("element");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          return $Either("Right", $ExprType("Array", $2._1));
-        }
-        fail();
-      }
-      if ($1._1 === "TypeVar") {
-        const $2 = getField(decodeString)($0._1)("name");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          return $Either("Right", $ExprType("TypeVar", $2._1));
-        }
-        fail();
-      }
-      if ($1._1 === "Adt") {
-        const $2 = getField(decodeArray2(decodeString))($0._1)("fqn");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          const $3 = getField(decodeArray2(decodeExprType))($0._1)("args");
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            return $Either("Right", $ExprType("ADT", $2._1, $3._1));
-          }
-        }
-        fail();
-      }
-      if ($1._1 === "TypeApp") {
-        const $2 = getField(decodeExprType)($0._1)("constructor");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          const $3 = getField(decodeArray2(decodeExprType))($0._1)("args");
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            return $Either("Right", $ExprType("TypeApp", $2._1, $3._1));
-          }
-        }
-        fail();
-      }
-      if ($1._1 === "Func") {
-        const $2 = getField(decodeArray2(decodeExprType))($0._1)("args");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          const $3 = getField(decodeExprType)($0._1)("ret");
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            return $Either("Right", $ExprType("Func", $2._1, $3._1));
-          }
-        }
-        fail();
-      }
-      if ($1._1 === "Row") {
-        const $2 = getField(decodeArray2((j) => {
-          const $22 = decodeJObject(j);
-          if ($22.tag === "Left") {
-            return $Either("Left", $22._1);
-          }
-          if ($22.tag === "Right") {
-            const $3 = getField(decodeString)($22._1)("label");
-            if ($3.tag === "Left") {
-              return $Either("Left", $3._1);
-            }
-            if ($3.tag === "Right") {
-              const $4 = getField(decodeExprType)($22._1)("type");
-              if ($4.tag === "Left") {
-                return $Either("Left", $4._1);
-              }
-              if ($4.tag === "Right") {
-                return $Either("Right", $Tuple($3._1, $4._1));
-              }
-            }
-          }
-          fail();
-        }))($0._1)("fields");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          const $3 = getFieldOptional$p(decodeExprType)($0._1)("tail");
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            return $Either("Right", $ExprType("Row", $2._1, $3._1));
-          }
-        }
-        fail();
-      }
-      if ($1._1 === "Record") {
-        const $2 = getField(decodeExprType)($0._1)("row");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          return $Either("Right", $ExprType("Record", $2._1));
-        }
-        fail();
-      }
-      if ($1._1 === "ForAll") {
-        const $2 = getField(decodeArray2(decodeString))($0._1)("vars");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          const $3 = getField(decodeExprType)($0._1)("body");
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            return $Either("Right", $ExprType("ForAll", $2._1, $3._1));
-          }
-        }
-        fail();
-      }
-      if ($1._1 === "ConstrainedType") {
-        const $2 = getField(decodeArray2((j) => {
-          const $22 = decodeJObject(j);
-          if ($22.tag === "Left") {
-            return $Either("Left", $22._1);
-          }
-          if ($22.tag === "Right") {
-            const $3 = getField(decodeArray2(decodeString))($22._1)("fqn");
-            if ($3.tag === "Left") {
-              return $Either("Left", $3._1);
-            }
-            if ($3.tag === "Right") {
-              const $4 = getField(decodeArray2(decodeExprType))($22._1)("args");
-              if ($4.tag === "Left") {
-                return $Either("Left", $4._1);
-              }
-              if ($4.tag === "Right") {
-                return $Either("Right", $Tuple($3._1, $4._1));
-              }
-            }
-          }
-          fail();
-        }))($0._1)("constraints");
-        if ($2.tag === "Left") {
-          return $Either("Left", $2._1);
-        }
-        if ($2.tag === "Right") {
-          const $3 = getField(decodeExprType)($0._1)("body");
-          if ($3.tag === "Left") {
-            return $Either("Left", $3._1);
-          }
-          if ($3.tag === "Right") {
-            return $Either("Right", $ExprType("ConstrainedType", $2._1, $3._1));
-          }
-        }
-        fail();
-      }
-      return $Either("Left", $JsonDecodeError("TypeMismatch", "ExprType"));
-    }
-  }
-  fail();
-};
-var decodeDataConstructor = (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getField(decodeString)($0._1)("constructorName");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getField(decodeArray2(decodeExprType))($0._1)("fieldTypes");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        return $Either("Right", { constructorName: $1._1, fieldTypes: $2._1 });
-      }
-    }
-  }
-  fail();
-};
-var decodeDataDecl = (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getField(decodeString)($0._1)("typeName");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getFieldOptional$p(decodeArray2(decodeString))($0._1)("typeVars");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        const typeVars = (() => {
-          if ($2._1.tag === "Nothing") {
-            return [];
-          }
-          if ($2._1.tag === "Just") {
-            return $2._1._1;
-          }
-          fail();
-        })();
-        const $3 = getField(decodeArray2(decodeDataConstructor))($0._1)("constructors");
-        if ($3.tag === "Left") {
-          return $Either("Left", $3._1);
-        }
-        if ($3.tag === "Right") {
-          return $Either("Right", { typeName: $1._1, typeVars, constructors: $3._1 });
-        }
-      }
-    }
   }
   fail();
 };
@@ -3957,28 +3682,6 @@ var decodeMeta = (json) => {
   }
   fail();
 };
-var decodeAnn = (_path) => (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getFieldOptional$p(decodeMeta)($0._1)("meta");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getFieldOptional$p(decodeExprType)($0._1)("type");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        return $Either("Right", { span: emptySpan, meta: $1._1, type: $2._1 });
-      }
-    }
-  }
-  fail();
-};
 var decodeQualified = (k) => (json) => {
   const $0 = decodeJObject(json);
   if ($0.tag === "Left") {
@@ -4077,6 +3780,550 @@ var decodeComment = (json) => {
     }
     if ($2.tag === "Right") {
       return $2;
+    }
+  }
+  fail();
+};
+var decodeField = (j) => {
+  const $0 = decodeJObject(j);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("label");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getField(decodeExprType)($0._1)("type");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either("Right", $Tuple($1._1, $2._1));
+      }
+    }
+  }
+  fail();
+};
+var decodeExprType = (json) => {
+  const $0 = decodeString(json);
+  const $1 = (() => {
+    if ($0.tag === "Left") {
+      return $Either("Left", $0._1);
+    }
+    if ($0.tag === "Right") {
+      if ($0._1 === "Int") {
+        return $Either("Right", Int);
+      }
+      if ($0._1 === "Number") {
+        return $Either("Right", $$Number);
+      }
+      if ($0._1 === "String") {
+        return $Either("Right", $$String);
+      }
+      if ($0._1 === "Char") {
+        return $Either("Right", Char);
+      }
+      if ($0._1 === "Boolean") {
+        return $Either("Right", $$Boolean);
+      }
+      if ($0._1 === "Unit") {
+        return $Either("Right", Unit);
+      }
+      if ($0._1 === "Any") {
+        return $Either("Right", Any);
+      }
+      return $Either("Left", $JsonDecodeError("TypeMismatch", "ExprType"));
+    }
+    fail();
+  })();
+  if ($1.tag === "Left") {
+    const $2 = decodeJObject(json);
+    if ($2.tag === "Left") {
+      return $Either("Left", $2._1);
+    }
+    if ($2.tag === "Right") {
+      const v1 = _lookup(Nothing, Just, "Func", $2._1);
+      if (v1.tag === "Just") {
+        const $3 = decodeJObject(v1._1);
+        if ($3.tag === "Left") {
+          return $Either("Left", $3._1);
+        }
+        if ($3.tag === "Right") {
+          const $4 = getField(decodeArray2(decodeExprType))($3._1)("args");
+          if ($4.tag === "Left") {
+            return $Either("Left", $4._1);
+          }
+          if ($4.tag === "Right") {
+            const $5 = getField(decodeExprType)($3._1)("ret");
+            if ($5.tag === "Left") {
+              return $Either("Left", $5._1);
+            }
+            if ($5.tag === "Right") {
+              return $Either("Right", $ExprType("Func", $4._1, $5._1));
+            }
+          }
+        }
+        fail();
+      }
+      if (v1.tag === "Nothing") {
+        const v2 = _lookup(Nothing, Just, "Record", $2._1);
+        if (v2.tag === "Just") {
+          const $3 = decodeJObject(v2._1);
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            const $4 = traverse((v3) => {
+              const $42 = Tuple(v3._1);
+              const $5 = decodeExprType(v3._2);
+              if ($5.tag === "Left") {
+                return $Either("Left", $5._1);
+              }
+              if ($5.tag === "Right") {
+                return $Either("Right", $42($5._1));
+              }
+              fail();
+            })(toArrayWithKey(Tuple)($3._1));
+            if ($4.tag === "Left") {
+              return $Either("Left", $4._1);
+            }
+            if ($4.tag === "Right") {
+              return $Either(
+                "Right",
+                $ExprType("Record", $ExprType("Row", $4._1, Nothing))
+              );
+            }
+          }
+          fail();
+        }
+        if (v2.tag === "Nothing") {
+          const v3 = _lookup(Nothing, Just, "Array", $2._1);
+          if (v3.tag === "Just") {
+            const $3 = decodeExprType(v3._1);
+            if ($3.tag === "Left") {
+              return $Either("Left", $3._1);
+            }
+            if ($3.tag === "Right") {
+              return $Either("Right", $ExprType("Array", $3._1));
+            }
+            fail();
+          }
+          if (v3.tag === "Nothing") {
+            const v4 = _lookup(Nothing, Just, "ADT", $2._1);
+            if (v4.tag === "Just") {
+              const $3 = decodeJObject(v4._1);
+              if ($3.tag === "Left") {
+                return $Either("Left", $3._1);
+              }
+              if ($3.tag === "Right") {
+                const $4 = getField(decodeArray2(decodeString))($3._1)("path");
+                if ($4.tag === "Left") {
+                  return $Either("Left", $4._1);
+                }
+                if ($4.tag === "Right") {
+                  const $5 = getField(decodeArray2(decodeExprType))($3._1)("args");
+                  if ($5.tag === "Left") {
+                    return $Either("Left", $5._1);
+                  }
+                  if ($5.tag === "Right") {
+                    return $Either("Right", $ExprType("ADT", intercalate(".")($4._1), $4._1, $5._1));
+                  }
+                }
+              }
+              fail();
+            }
+            if (v4.tag === "Nothing") {
+              const v5 = _lookup(Nothing, Just, "TypeVar", $2._1);
+              if (v5.tag === "Just") {
+                const $3 = decodeString(v5._1);
+                if ($3.tag === "Left") {
+                  return $Either("Left", $3._1);
+                }
+                if ($3.tag === "Right") {
+                  return $Either("Right", $ExprType("TypeVar", $3._1));
+                }
+                fail();
+              }
+              if (v5.tag === "Nothing") {
+                const $3 = getField(decodeString)($2._1)("type");
+                if ($3.tag === "Left") {
+                  return $Either("Left", $3._1);
+                }
+                if ($3.tag === "Right") {
+                  if ($3._1 === "Int") {
+                    return $Either("Right", Int);
+                  }
+                  if ($3._1 === "Number") {
+                    return $Either("Right", $$Number);
+                  }
+                  if ($3._1 === "String") {
+                    return $Either("Right", $$String);
+                  }
+                  if ($3._1 === "Char") {
+                    return $Either("Right", Char);
+                  }
+                  if ($3._1 === "Boolean") {
+                    return $Either("Right", $$Boolean);
+                  }
+                  if ($3._1 === "Unit") {
+                    return $Either("Right", Unit);
+                  }
+                  if ($3._1 === "Any") {
+                    return $Either("Right", Any);
+                  }
+                  if ($3._1 === "TypeLevelString") {
+                    const $4 = getField(decodeString)($2._1)("value");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      return $Either("Right", $ExprType("TypeLevelString", $4._1));
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "Array") {
+                    const $4 = getField(decodeExprType)($2._1)("element");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      return $Either("Right", $ExprType("Array", $4._1));
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "TypeVar") {
+                    const $4 = getField(decodeString)($2._1)("name");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      return $Either("Right", $ExprType("TypeVar", $4._1));
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "Adt") {
+                    const $4 = getField(decodeArray2(decodeString))($2._1)("fqn");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      const $5 = getField(decodeArray2(decodeExprType))($2._1)("args");
+                      if ($5.tag === "Left") {
+                        return $Either("Left", $5._1);
+                      }
+                      if ($5.tag === "Right") {
+                        return $Either("Right", $ExprType("ADT", intercalate(".")($4._1), $4._1, $5._1));
+                      }
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "TypeApp") {
+                    const $4 = getField(decodeExprType)($2._1)("constructor");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      const $5 = getField(decodeArray2(decodeExprType))($2._1)("args");
+                      if ($5.tag === "Left") {
+                        return $Either("Left", $5._1);
+                      }
+                      if ($5.tag === "Right") {
+                        return $Either("Right", $ExprType("TypeApp", $4._1, $5._1));
+                      }
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "Func") {
+                    const $4 = getField(decodeArray2(decodeExprType))($2._1)("args");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      const $5 = getField(decodeExprType)($2._1)("ret");
+                      if ($5.tag === "Left") {
+                        return $Either("Left", $5._1);
+                      }
+                      if ($5.tag === "Right") {
+                        return $Either("Right", $ExprType("Func", $4._1, $5._1));
+                      }
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "Row") {
+                    const $4 = getField(decodeArray2(decodeField))($2._1)("fields");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      const $5 = getFieldOptional$p(decodeExprType)($2._1)("tail");
+                      if ($5.tag === "Left") {
+                        return $Either("Left", $5._1);
+                      }
+                      if ($5.tag === "Right") {
+                        return $Either("Right", $ExprType("Row", $4._1, $5._1));
+                      }
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "Record") {
+                    const $4 = getField(decodeExprType)($2._1)("row");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      return $Either("Right", $ExprType("Record", $4._1));
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "ForAll") {
+                    const $4 = getField(decodeArray2(decodeString))($2._1)("vars");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      const $5 = getField(decodeExprType)($2._1)("body");
+                      if ($5.tag === "Left") {
+                        return $Either("Left", $5._1);
+                      }
+                      if ($5.tag === "Right") {
+                        return $Either("Right", $ExprType("ForAll", $4._1, $5._1));
+                      }
+                    }
+                    fail();
+                  }
+                  if ($3._1 === "ConstrainedType") {
+                    const $4 = getField(decodeArray2(decodeConstraint))($2._1)("constraints");
+                    if ($4.tag === "Left") {
+                      return $Either("Left", $4._1);
+                    }
+                    if ($4.tag === "Right") {
+                      const $5 = getField(decodeExprType)($2._1)("body");
+                      if ($5.tag === "Left") {
+                        return $Either("Left", $5._1);
+                      }
+                      if ($5.tag === "Right") {
+                        return $Either("Right", $ExprType("ConstrainedType", $4._1, $5._1));
+                      }
+                    }
+                    fail();
+                  }
+                  return $Either("Left", $JsonDecodeError("TypeMismatch", "ExprType"));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    fail();
+  }
+  if ($1.tag === "Right") {
+    return $1;
+  }
+  fail();
+};
+var decodeConstraint = (j) => {
+  const $0 = decodeJObject(j);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeArray2(decodeString))($0._1)("fqn");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getField(decodeArray2(decodeExprType))($0._1)("args");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either("Right", $Tuple($1._1, $2._1));
+      }
+    }
+  }
+  fail();
+};
+var decodeAnn = (_path) => (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getFieldOptional$p(decodeMeta)($0._1)("meta");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getFieldOptional$p(decodeExprType)($0._1)("type");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either("Right", { span: emptySpan, meta: $1._1, type: $2._1 });
+      }
+    }
+  }
+  fail();
+};
+var decodeDataConstructor = (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("name");
+    const $2 = (() => {
+      if ($1.tag === "Left") {
+        return getField(decodeString)($0._1)("constructorName");
+      }
+      if ($1.tag === "Right") {
+        return $1;
+      }
+      fail();
+    })();
+    if ($2.tag === "Left") {
+      return $Either("Left", $2._1);
+    }
+    if ($2.tag === "Right") {
+      const $3 = getField(decodeArray2(decodeExprType))($0._1)("fields");
+      const $4 = (() => {
+        if ($3.tag === "Left") {
+          return getField(decodeArray2(decodeExprType))($0._1)("fieldTypes");
+        }
+        if ($3.tag === "Right") {
+          return $3;
+        }
+        fail();
+      })();
+      if ($4.tag === "Left") {
+        return $Either("Left", $4._1);
+      }
+      if ($4.tag === "Right") {
+        return $Either("Right", { name: $2._1, fields: $4._1 });
+      }
+    }
+  }
+  fail();
+};
+var decodeDataDecl = (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("name");
+    const $2 = (() => {
+      if ($1.tag === "Left") {
+        return getField(decodeString)($0._1)("typeName");
+      }
+      if ($1.tag === "Right") {
+        return $1;
+      }
+      fail();
+    })();
+    if ($2.tag === "Left") {
+      return $Either("Left", $2._1);
+    }
+    if ($2.tag === "Right") {
+      const $3 = getFieldOptional$p(decodeArray2(decodeString))($0._1)("vars");
+      const $4 = (() => {
+        if ($3.tag === "Left") {
+          return getFieldOptional$p(decodeArray2(decodeString))($0._1)("typeVars");
+        }
+        if ($3.tag === "Right") {
+          return $3;
+        }
+        fail();
+      })();
+      if ($4.tag === "Left") {
+        return $Either("Left", $4._1);
+      }
+      if ($4.tag === "Right") {
+        const vars = (() => {
+          if ($4._1.tag === "Nothing") {
+            return [];
+          }
+          if ($4._1.tag === "Just") {
+            return $4._1._1;
+          }
+          fail();
+        })();
+        const $5 = getField(decodeArray2(decodeDataConstructor))($0._1)("constructors");
+        if ($5.tag === "Left") {
+          return $Either("Left", $5._1);
+        }
+        if ($5.tag === "Right") {
+          return $Either("Right", { name: $2._1, vars, constructors: $5._1 });
+        }
+      }
+    }
+  }
+  fail();
+};
+var decodeMethod = (j) => {
+  const $0 = decodeJObject(j);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("name");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getField(decodeExprType)($0._1)("type");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either("Right", $Tuple($1._1, $2._1));
+      }
+    }
+  }
+  fail();
+};
+var decodeClassDecl = (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getField(decodeString)($0._1)("name");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getFieldOptional$p(decodeArray2(decodeString))($0._1)("vars");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        const vars = (() => {
+          if ($2._1.tag === "Nothing") {
+            return [];
+          }
+          if ($2._1.tag === "Just") {
+            return $2._1._1;
+          }
+          fail();
+        })();
+        const $3 = getField(decodeArray2(decodeConstraint))($0._1)("superclasses");
+        if ($3.tag === "Left") {
+          return $Either("Left", $3._1);
+        }
+        if ($3.tag === "Right") {
+          const $4 = getField(decodeArray2(decodeMethod))($0._1)("methods");
+          if ($4.tag === "Left") {
+            return $Either("Left", $4._1);
+          }
+          if ($4.tag === "Right") {
+            return $Either("Right", { name: $1._1, vars, superclasses: $3._1, methods: $4._1 });
+          }
+        }
+      }
     }
   }
   fail();
@@ -4272,17 +4519,26 @@ var decodeBinder = (decAnn) => (json) => {
             return $Either("Left", $3._1);
           }
           if ($3.tag === "Right") {
-            const $4 = getField(decodeQualified(decodeString))($0._1)("constructorName");
-            if ($4.tag === "Left") {
-              return $Either("Left", $4._1);
-            }
-            if ($4.tag === "Right") {
-              const $5 = getField(decodeArray2(decodeBinder(decAnn)))($0._1)("binders");
-              if ($5.tag === "Left") {
-                return $Either("Left", $5._1);
+            const $4 = getField(decodeQualified(decodeString))($0._1)("name");
+            const $5 = (() => {
+              if ($4.tag === "Left") {
+                return getField(decodeQualified(decodeString))($0._1)("constructorName");
               }
-              if ($5.tag === "Right") {
-                return $Either("Right", $Binder("BinderConstructor", $1._1, $3._1, $4._1, $5._1));
+              if ($4.tag === "Right") {
+                return $4;
+              }
+              fail();
+            })();
+            if ($5.tag === "Left") {
+              return $Either("Left", $5._1);
+            }
+            if ($5.tag === "Right") {
+              const $6 = getField(decodeArray2(decodeBinder(decAnn)))($0._1)("binders");
+              if ($6.tag === "Left") {
+                return $Either("Left", $6._1);
+              }
+              if ($6.tag === "Right") {
+                return $Either("Right", $Binder("BinderConstructor", $1._1, $3._1, $5._1, $6._1));
               }
             }
           }
@@ -4376,17 +4632,35 @@ var decodeExpr = (decAnn) => (json) => {
             return $Either("Left", $3._1);
           }
           if ($3.tag === "Right") {
-            const $4 = getField(decodeString)($0._1)("constructorName");
-            if ($4.tag === "Left") {
-              return $Either("Left", $4._1);
-            }
-            if ($4.tag === "Right") {
-              const $5 = getField(decodeArray2(decodeStringLiteral))($0._1)("fieldNames");
-              if ($5.tag === "Left") {
-                return $Either("Left", $5._1);
+            const $4 = getField(decodeString)($0._1)("name");
+            const $5 = (() => {
+              if ($4.tag === "Left") {
+                return getField(decodeString)($0._1)("constructorName");
               }
-              if ($5.tag === "Right") {
-                return $Either("Right", $Expr("ExprConstructor", $1._1, $3._1, $4._1, $5._1));
+              if ($4.tag === "Right") {
+                return $4;
+              }
+              fail();
+            })();
+            if ($5.tag === "Left") {
+              return $Either("Left", $5._1);
+            }
+            if ($5.tag === "Right") {
+              const $6 = getField(decodeArray2(decodeStringLiteral))($0._1)("fields");
+              const $7 = (() => {
+                if ($6.tag === "Left") {
+                  return getField(decodeArray2(decodeStringLiteral))($0._1)("fieldNames");
+                }
+                if ($6.tag === "Right") {
+                  return $6;
+                }
+                fail();
+              })();
+              if ($7.tag === "Left") {
+                return $Either("Left", $7._1);
+              }
+              if ($7.tag === "Right") {
+                return $Either("Right", $Expr("ExprConstructor", $1._1, $3._1, $5._1, $7._1));
               }
             }
           }
@@ -4646,72 +4920,88 @@ var decodeModule$p = (decodeAnn$p) => (json) => {
                   return $Either("Left", $7._1);
                 }
                 if ($7.tag === "Right") {
-                  const $8 = getField(decodeArray2(decodeBind(decodeAnn$p($2._1))))($0._1)("decls");
+                  const $8 = getFieldOptional$p(decodeArray2(decodeClassDecl))($0._1)("classDecls");
                   if ($8.tag === "Left") {
                     return $Either("Left", $8._1);
                   }
                   if ($8.tag === "Right") {
-                    const $9 = getField(decodeArray2(decodeString))($0._1)("foreign");
+                    const classDecls = (() => {
+                      if ($8._1.tag === "Nothing") {
+                        return [];
+                      }
+                      if ($8._1.tag === "Just") {
+                        return $8._1._1;
+                      }
+                      fail();
+                    })();
+                    const $9 = getField(decodeArray2(decodeBind(decodeAnn$p($2._1))))($0._1)("decls");
                     if ($9.tag === "Left") {
                       return $Either("Left", $9._1);
                     }
                     if ($9.tag === "Right") {
-                      const $10 = getFieldOptional$p(decodeJObject)($0._1)("foreignAnnotations");
+                      const $10 = getField(decodeArray2(decodeString))($0._1)("foreign");
                       if ($10.tag === "Left") {
                         return $Either("Left", $10._1);
                       }
                       if ($10.tag === "Right") {
-                        const $11 = (() => {
-                          if ($10._1.tag === "Nothing") {
-                            return empty;
-                          }
-                          if ($10._1.tag === "Just") {
-                            return $10._1._1;
-                          }
-                          fail();
-                        })();
-                        const $12 = traverse((v) => {
-                          const v1 = _lookup(Nothing, Just, v, $11);
-                          if (v1.tag === "Just") {
-                            const $122 = decodeAnn($2._1)(v1._1);
-                            if ($122.tag === "Left") {
-                              return $Either("Left", $122._1);
+                        const $11 = getFieldOptional$p(decodeJObject)($0._1)("foreignAnnotations");
+                        if ($11.tag === "Left") {
+                          return $Either("Left", $11._1);
+                        }
+                        if ($11.tag === "Right") {
+                          const $12 = (() => {
+                            if ($11._1.tag === "Nothing") {
+                              return empty;
                             }
-                            if ($122.tag === "Right") {
-                              return $Either("Right", $Tuple(v, $122._1.type));
+                            if ($11._1.tag === "Just") {
+                              return $11._1._1;
                             }
                             fail();
-                          }
-                          if (v1.tag === "Nothing") {
-                            return $Either("Right", $Tuple(v, Nothing));
-                          }
-                          fail();
-                        })($9._1);
-                        if ($12.tag === "Left") {
-                          return $Either("Left", $12._1);
-                        }
-                        if ($12.tag === "Right") {
-                          const foreign_ = fromFoldable2($12._1);
-                          const $13 = getField(decodeArray2(decodeComment))($0._1)("comments");
+                          })();
+                          const $13 = traverse((v) => {
+                            const v1 = _lookup(Nothing, Just, v, $12);
+                            if (v1.tag === "Just") {
+                              const $132 = decodeAnn($2._1)(v1._1);
+                              if ($132.tag === "Left") {
+                                return $Either("Left", $132._1);
+                              }
+                              if ($132.tag === "Right") {
+                                return $Either("Right", $Tuple(v, $132._1.type));
+                              }
+                              fail();
+                            }
+                            if (v1.tag === "Nothing") {
+                              return $Either("Right", $Tuple(v, Nothing));
+                            }
+                            fail();
+                          })($10._1);
                           if ($13.tag === "Left") {
                             return $Either("Left", $13._1);
                           }
                           if ($13.tag === "Right") {
-                            return $Either(
-                              "Right",
-                              {
-                                name: $1._1,
-                                path: $2._1,
-                                span: $3._1,
-                                imports: $4._1,
-                                exports: $5._1,
-                                reExports: $6._1,
-                                dataDecls: $7._1,
-                                decls: $8._1,
-                                foreign: foreign_,
-                                comments: $13._1
-                              }
-                            );
+                            const foreignMap = fromFoldable2($13._1);
+                            const $14 = getField(decodeArray2(decodeComment))($0._1)("comments");
+                            if ($14.tag === "Left") {
+                              return $Either("Left", $14._1);
+                            }
+                            if ($14.tag === "Right") {
+                              return $Either(
+                                "Right",
+                                {
+                                  name: $1._1,
+                                  path: $2._1,
+                                  span: $3._1,
+                                  imports: $4._1,
+                                  exports: $5._1,
+                                  reExports: $6._1,
+                                  dataDecls: $7._1,
+                                  classDecls,
+                                  decls: $9._1,
+                                  foreign: foreignMap,
+                                  comments: $14._1
+                                }
+                              );
+                            }
                           }
                         }
                       }
@@ -11428,7 +11718,7 @@ var $LexResult = (tag, _1, _2) => ({ tag, _1, _2 });
 var fold1 = /* @__PURE__ */ (() => foldableArray.foldMap(/* @__PURE__ */ (() => {
   const semigroupRecord1 = { append: (ra) => (rb) => ({ raw: ra.raw + rb.raw, string: ra.string + rb.string }) };
   return { mempty: { raw: "", string: "" }, Semigroup0: () => semigroupRecord1 };
-})())(identity2))();
+})())(identity1))();
 var consTokens2 = /* @__PURE__ */ consTokens(foldableArray);
 var isCharCodePoint = /* @__PURE__ */ (() => ({ fromChar: codePointFromChar, fromCharCode: boundedEnumCodePoint.toEnum }))();
 var isCharChar = { fromChar: (x) => x, fromCharCode: charToEnum };
@@ -12892,7 +13182,7 @@ var parseImpl = function(just) {
 var filterA2 = /* @__PURE__ */ filterA(applicativeAff);
 var traverse2 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeAff))();
 var fromFoldable4 = /* @__PURE__ */ foldrArray(Cons)(Nil);
-var readCoreFnModule = (filePath) => _bind($$try2(toAff1(stat2)(filePath)))((statRes) => {
+var readCoreFnModule = (filePath) => _bind(attempt(toAff1(stat2)(filePath)))((statRes) => {
   if (statRes.tag === "Right") {
     if (isFileImpl(statRes._1)) {
       return _bind(toAff2(readTextFile)(UTF8)(filePath))((contents) => {
@@ -12945,7 +13235,7 @@ var loadDirectives = /* @__PURE__ */ (() => {
   })())(() => _pure(parsedDirectives.directives));
 })();
 var coreFnModulesFromOutput = (outputDir) => _bind(toAff1(readdir2)(outputDir))((files) => _bind(filterA2((f) => _bind(toAff1(stat2)(outputDir + "/" + f))((stat3) => _pure(isDirectoryImpl(stat3))))(files))((validDirs) => _bind(traverse2((dir) => readCoreFnModule(outputDir + "/" + dir + "/corefn.json"))(validDirs))((mbModules) => _pure(sortModules(foldableList)(fromFoldable4(mapMaybe((x) => x)(mbModules)))))));
-var checkCache = (version2) => (corefnPath) => (cachePath) => _bind($$try2(toAff1(stat2)(corefnPath)))((corefnStatRes) => _bind($$try2(toAff1(stat2)(cachePath)))((cacheStatRes) => {
+var checkCache = (version2) => (corefnPath) => (cachePath) => _bind(attempt(toAff1(stat2)(corefnPath)))((corefnStatRes) => _bind(attempt(toAff1(stat2)(cachePath)))((cacheStatRes) => {
   if (corefnStatRes.tag === "Right" && cacheStatRes.tag === "Right" && modifiedTimeMsImpl(cacheStatRes._1) >= modifiedTimeMsImpl(corefnStatRes._1)) {
     return _bind(toAff2(readTextFile)(UTF8)(cachePath))((cacheContent) => _pure(parseImpl(Just)(Nothing)(version2)(cacheContent)));
   }
@@ -16534,7 +16824,7 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     return v._1;
   }
   if (v.tag === "CtorSaturated") {
-    return $ExprType("ADT", ["Main", v._3], []);
+    return $ExprType("ADT", "Main", ["Main", v._3], []);
   }
   if (v.tag === "Var") {
     const fullName = (() => {
@@ -16767,8 +17057,8 @@ var codegenExprType = (isRet) => (v) => {
   }
   if (v.tag === "ADT") {
     if ((() => {
-      const $0 = v._1.length - 1 | 0;
-      return $0 >= 0 && $0 < v._1.length && v._1[$0] === "Boolean";
+      const $0 = v._2.length - 1 | 0;
+      return $0 >= 0 && $0 < v._2.length && v._2[$0] === "Boolean";
     })()) {
       return "bool";
     }
@@ -17011,7 +17301,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()(unsafe_coerce_type(0))";
+      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
     }
     if (v._2.tag === "GetCtorField") {
       const placeholders = joinWith(", ")(replicateImpl(v._2._6, "_"));
@@ -17138,7 +17428,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       ))(a))($0)) + "]";
     }
     if (v._1.tag === "LitRecord") {
-      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => sanitizeIdent(v1._1) + ": Some(std::rc::Rc::new(|_| " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(v1._2) + "))")(v._1._1)) + (v._1._1.length > 0 ? ", " : "") + "..Default::default() })";
+      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => sanitizeIdent(v1._1) + ": Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(v1._2) + ")")(v._1._1)) + (v._1._1.length > 0 ? ", " : "") + "..Default::default() })";
     }
     fail();
   }
@@ -17172,7 +17462,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return "unimplemented!()";
   }
   if (v.tag === "CtorSaturated") {
-    return getTyPrefix(currentMod)(v._1) + v._3 + "::" + (v._5.length === 0 ? v._4 + "" : v._4 + "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    return "unsafe_coerce_type(" + getTyPrefix(currentMod)(v._1) + v._3 + "::" + v._4 + (v._5.length === 0 ? "" : "(" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -17183,14 +17473,17 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         }
         return sliceImpl2($0, v._5.length, v._5);
       })()))
-    ))(v1._2))(v._5)) + ")");
+    ))(v1._2))(v._5)) + ")") + ")";
   }
   if (v.tag === "CtorDef") {
     return "perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() })";
   }
   return "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */";
 };
-var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) => (aritiesMap) => (group2) => {
+var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMacroBindings) => (aritiesMap) => (group2) => {
+  if (group2.bindings.length === 0) {
+    return { code: "", arities: Leaf };
+  }
   const isSelfRecursive = group2.recursive && group2.bindings.length === 1;
   const groupArities = fromFoldable12(arrayMap((v) => {
     const rawIdentName = sanitizeIdent(v._1);
@@ -17296,8 +17589,8 @@ var codegenBindingGroup = (modNameStr) => (allZeroArity) => (allMacroBindings) =
 };
 var codegenModule = (v) => (backendMod) => {
   const modNameStr = replaceAll(".")("_")(backendMod.name);
-  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce(x: UnknownType) -> UnknownType { x }\npub fn unsafe_coerce_type<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, ..Default::default() }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.typeName + "\n#[derive(Clone)]\npub enum " + replaceAll(".")("_")(backendMod.name) + "_" + v1.typeName + " {\n" + foldMap7((ctor) => "    " + ctor.constructorName + (ctor.fieldTypes.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fieldTypes)) + ")") + ",\n")(v1.constructors) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone, Default)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub proof: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
-    const res = codegenBindingGroup(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
+  return "#![allow(warnings)]\n// Code generated by purust for module " + modNameStr + "\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn unsafe_coerce(x: UnknownType) -> UnknownType { x }\npub fn unsafe_coerce_type<T>(_: T) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }) }\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { a: val, ..Default::default() }) }\n\n// Data declarations:\n" + foldMap7((v1) => "// Enum for ADT: " + v1.name + "\n#[derive(Clone)]\npub enum " + replaceAll(".")("_")(backendMod.name) + "_" + v1.name + " {\n" + joinWith("")(arrayMap((ctor) => "    " + ctor.name + (ctor.fields.length === 0 ? "" : "(" + joinWith(", ")(arrayMap(codegenExprType(true))(ctor.fields)) + ")") + ",\n")(v1.constructors)) + "}\n\n")(backendMod.dataDecls) + "#[derive(Clone, Default)]\npub struct Record_a {\n    pub a: i64,\n    pub b: Option<UnknownType>,\n    pub c: Option<UnknownType>,\n    pub ccc: Option<UnknownType>,\n    pub d: Option<UnknownType>,\n    pub x: Option<UnknownType>,\n    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub proof: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n// Bindings:\n" + foldlArray((acc) => (group2) => {
+    const res = codegenBindingGroup(v.name)(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
     return { code: acc.code + res.code, arities: res.arities };
   })({ code: "", arities: Leaf })(backendMod.bindings).code;
 };

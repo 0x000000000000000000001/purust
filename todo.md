@@ -1,41 +1,31 @@
-# Purust - État des Lieux et Todo (10 Août 2026)
+# Purust - État des Lieux et Todo (11 Août 2026)
 
-## 1. Ce qui était en cours juste avant l'interruption
-- **Résolution des erreurs `cargo check` sur le monolithe `main.rs`.**
-- **Correction de `E0425` (Types manquants)** : Le compilateur paniquait sur les Foreign Data Types. Résolu en injectant automatiquement des alias globaux via `fix_main_regex.cjs` (`pub type Control_Monad_ST_Internal_ST = UnknownType;`, `Data_Array_ST_STArray`, `Data_Unit_Unit`, `Data_Lazy_Lazy`, `Effect_Effect`).
-- **Correction de `E0428` (Définitions multiples)** : Chaque fichier concaténé embarquait ses propres fonctions utilitaires `unsafe_coerce` et `mk_int`. Résolu en modifiant le script pour ne garder que la toute première définition de ces fonctions au début du fichier.
-- **En plein debug d'une erreur de syntaxe (`) }` orpheline)** : La regex qui supprimait les helpers laissait traîner la fermeture de l'instanciation de `Record_a`. La regex a été corrigée (`/pub fn unsafe_coerce<T>\(_: T\) -> UnknownType \{.*\}\n*/g`) et j'étais **sur le point de relancer le build** pour vérifier.
+## 1. Ce qui a été accompli récemment
+- **Résolution du "faux problème" de parsing JSON :** Le compilateur plantait avec `At object key 'typeName': No value was found.` car le binaire `bin/purust.js` n'avait pas été recompilé. Un `npm run build` a corrigé ce décalage.
+- **Résolution du crash `Empty binding group` :** Corrigé dans `src/Purust/CodeGen.purs` en gérant correctement les groupes de liaisons vides filtrés par le compilateur.
+- **Le build a été relancé (`cargo check`) sur la base de code générée :**
+  - **Résultat :** Le code Rust est bien généré pour `Main`, mais il échoue à la compilation avec 7 erreurs (essentiellement `E0308`, `E0425`, `E0618`).
 
-## 2. Ce qu'il reste à faire dans l'immédiat
-- Lancer le pipeline de build (`node ../../bin/purust.js run` + `fix_main_regex.cjs` + `cargo check`) pour confirmer que la syntaxe est propre.
-- Récupérer les vraies erreurs d'arité et de typage (`E0061`) qui étaient jusqu'à présent masquées par les erreurs de syntaxe et de types manquants. 
+## 2. L'état actuel des erreurs Rust (Les vrais problèmes de CodeGen)
+Les erreurs actuelles ne sont plus des problèmes de plomberie externe, mais des bugs directs dans `src/Purust/CodeGen.purs` qui génère du Rust invalide :
+1. **E0308 (Type Mismatch) sur les Enums (CtorSaturated) :**
+   - Le code génère `Main_X::X`, mais la signature de la fonction attend un `PerceusPtr<Record_a>`.
+   - Il manque un wrapper du type `unsafe_coerce(Main_X::X)` ou `PerceusPtr::new(...)` pour convertir l'ADTs natif en pointeur universel.
+2. **E0308 (Type Mismatch) sur les champs de `LitRecord` :**
+   - Le code génère `c: Some(std::rc::Rc::new(|_| ...))` pour les champs des records.
+   - Mais les champs de `Record_a` attendent des `Option<PerceusPtr<Record_a>>`. Le `Rc::new(|_| ...)` (thunk) est de trop ou mal typé.
+3. **E0618 (Expected function, found `PerceusPtr`) sur les appels de closure (`App`) :**
+   - Le code génère `.call.clone().unwrap()(arg)`.
+   - `.unwrap()` renvoie un `PerceusPtr<Record_a>`, qui n'est *pas* une fonction Rust appelable avec `()`. La structure attendue pour les closures n'est pas correctement implémentée ou castée.
+4. **E0425 (Cannot find value) :**
+   - `Effect_Console_log` n'est pas trouvé. Les alias/bindings FFI manquent encore pour certaines fonctions de base.
 
-## 3. Le plan pour régler le problème d'uncurrying (Refactor Majeur)
-L'actuel `CodeGen.purs` de Purust tente d'aplatir (uncurry) les fonctions "à la main" en lisant les types inférés, tout en continuant d'utiliser l'AST brut (`NeutralExpr`). Résultat : la signature de la fonction attend `X` arguments natifs, mais son corps génère les fermetures imbriquées (`unsafe_coerce(Rc::new(...))`) du CoreFn classique.
+## 3. Ce qu'il reste à faire dans l'immédiat (Next Baby Steps)
+- **Refactor des appels de fonction (`App`)** : Modifier `codegenExpr` pour que les appels de `.call` s'exécutent correctement (ex: en stockant une vraie closure `Rc<dyn Fn...>` dans le `Record_a`, ou en castant via `unsafe_coerce`).
+- **Correction des Records (`LitRecord`)** : Enlever le `Rc::new(|_| ...)` superflu lors de la création de champs de records.
+- **Correction des Constructeurs (`CtorSaturated`)** : Wrapper les instanciations d'enum pour respecter le type de retour `UnknownType` (`PerceusPtr<Record_a>`).
 
-Pour résoudre cela de manière robuste, nous allons **aligner l'architecture sur celle de `gopurs`** :
-1. **Intégration de l'analyse TCO** : 
-   - Importer `PureScript.Backend.Optimizer.Codegen.Tco (TcoExpr(..), tcoAnalysisOf)` dans `Purust/CodeGen.purs`.
-2. **Transformation de l'AST** : 
-   - Au lieu de passer directement `NeutralExpr` au générateur de code, exécuter `tcoAnalysisOf` sur les bindings. Cela transforme automatiquement et sans erreur les `Abs` imbriqués en `TcoAbs` (fonctions aplaties à plusieurs paramètres) et les appels en `TcoApp`.
-3. **Refonte de `codegenExpr`** :
-   - Réécrire le pattern matching de `codegenExpr` pour matcher sur l'enum `TcoExpr` au lieu de `NeutralExpr`.
-   - Cela réglera non seulement les problèmes de fermetures imbriquées, mais apportera en bonus **la Tail-Call Optimization (TCO)** native pour les fonctions récursives, indispensable pour des performances de haut niveau en Rust.
-
-## 4. Bilan architectural (Les ambitions initiales vs la réalité actuelle)
-À la lumière de l'analyse du code source actuel, voici le diagnostic scientifique du backend `purust` face aux 6 grands piliers prévus par son concepteur :
-
-1. **Supériorité du TAST (Monomorphisation sans pointeur)** ❌ *Échec actuel*
-   - Le parsing des `dataDecls` est fait (on génère bien des `pub enum`), mais le générateur ne passe pas par la passe d'optimisation `Monomorphize`. Résultat : les fonctions tombent dans le plus grand commun dénominateur (`UnknownType`) et chaque `enum` finit enfermé dans un `unsafe_coerce(Rc::new(Record_a { ... }))`.
-2. **Moteur Perceus (Analyse de vivacité et Liveness)** ⚠️ *Partiel*
-   - L'analyse est fournie par le framework (`UsageAnalysis`), mais `purust` ne l'exploite pas pleinement pour émettre des `dup()`/`drop()` chirurgicaux, préférant un `.clone()` massif des arguments capturés par les fermetures.
-3. **FBIP (Functional But In-Place)** ❌ *Non implémenté*
-   - Aucune trace de code généré du style `Rc::make_mut` pour muter en place les objets ayant un compteur de référence à 1.
-4. **"Sticky Sharing" (Pointeur intelligent PerceusPtr)** ✅ *Validé*
-   - `purust` s'appuie effectivement sur un `perceus_ptr::PerceusPtr<Record_a>` embarqué qui gère la logique de comptage de référence customisée (court-circuitant le Borrow Checker strict).
-5. **Optimisation TCO via boucles natives** ❌ *Totalement absent*
-   - Comme `purust` n'utilise pas `TcoExpr` (contrairement à `gopurs`), la récursion terminale produit de bêtes appels de fermetures qui provoqueront inévitablement un Stack Overflow en Rust.
-6. **Passage de Dictionnaires (Type Classes monomorphisées)** ❌ *Absent*
-   - Le backend omet totalement la passe `Monomorphize`, les dictionnaires continuent donc d'exister en tant que pointeurs à l'exécution.
-
-**Conclusion :** `purust` est actuellement une "V1 / Preuve de concept". L'auteur a brillamment branché la plomberie externe (parsing TAST, exécution de Cargo, pointeur Perceus), mais a complètement esquivé les passes d'optimisation internes de `purescript-backend-optimizer` (`TcoExpr`, `Monomorphize`) au profit d'un hack global de contournement de type (`UnknownType`). L'étape 3 du refactor (intégration de `TcoExpr`) est la première clé pour déverrouiller ce potentiel gâché.
+## 4. Le plan à plus long terme (TCO & Uncurrying)
+*(Le refactor vers `TcoExpr` n'a en réalité pas encore été fait dans `CodeGen.purs`, il utilise toujours `NeutralExpr` et l'uncurrying est bancal).*
+1. **Intégration de l'analyse TCO** : Importer et utiliser `PureScript.Backend.Optimizer.Codegen.Tco (TcoExpr(..), tcoAnalysisOf)` pour obtenir des fermetures aplaties (TcoAbs) et des appels TCO (TcoApp).
+2. **Monomorphisation** : Activer la passe `Monomorphize` du compilateur pour éliminer le besoin de `Record_a` et générer du Rust statiquement typé.

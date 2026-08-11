@@ -20,6 +20,11 @@ import Data.Map as Map
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafeCrashWith)
+import PureScript.Backend.Optimizer.Codegen.Tco (TcoExpr(..), tcoAnalysisOf, analyze, topLevelTcoEnvGroup, TcoEnv, localTcoEnvGroup)
+unwrapTcoExpr :: TcoExpr -> BackendSyntax TcoExpr
+unwrapTcoExpr (TcoExpr _ syn) = case syn of
+  Typed _ inner -> unwrapTcoExpr inner
+  _ -> syn
 
 codegenModule :: Module Ann -> BackendModule -> String
 codegenModule (Module coreFnMod) backendMod =
@@ -44,16 +49,17 @@ codegenModule (Module coreFnMod) backendMod =
       "    pub ccc: Option<UnknownType>,\n" <>
       "    pub d: Option<UnknownType>,\n" <>
       "    pub x: Option<UnknownType>,\n" <>
-      "    pub Applicative0: Option<UnknownType>,\n" <>
-      "    pub pure: Option<UnknownType>,\n" <>
-      "    pub discard: Option<UnknownType>,\n" <>
-      "    pub show: Option<UnknownType>,\n" <>
-      "    pub proof: Option<UnknownType>,\n" <>
+      "    pub Applicative0: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
+      "    pub pure: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
+      "    pub discard: Option<std::rc::Rc<dyn Fn(UnknownType, UnknownType, UnknownType) -> UnknownType>>,\n" <>
+      "    pub show: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
+      "    pub proof: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
       "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
       "}\n\n"
       
     -- Traduction des Bindings
-    bindingsRes = Array.foldl (\acc group ->        let res = codegenBindingGroup coreFnMod.name modNameStr Set.empty Set.empty acc.arities group
+    bindingsRes = Array.foldl (\acc group -> 
+      let res = codegenBindingGroup backendMod.name modNameStr Set.empty Set.empty acc.arities group
       in { code: acc.code <> res.code, arities: res.arities }
     ) { code: "", arities: Map.empty } backendMod.bindings
     
@@ -90,10 +96,14 @@ codegenExprType isRet = case _ of
 
 codegenBindingGroup :: ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
 codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap group =
-  if Array.null group.bindings then { code: "", arities: Map.empty } else
   let
     isSelfRecursive = group.recursive && Array.length group.bindings == 1
     
+    tcoEnv = case NonEmptyArray.fromArray group.bindings of
+               Just ne -> topLevelTcoEnvGroup modName ne
+               Nothing -> unsafeCrashWith "Empty binding group"
+    tcoBinds = map (\(Tuple k v) -> Tuple k (analyze tcoEnv v)) group.bindings
+
     groupArities = Map.fromFoldable $ map (\(Tuple ident expr) -> 
         let rawIdentName = case ident of
               Ident i -> sanitizeIdent i
@@ -101,7 +111,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
             identName = if rawIdentName == "main" then "main" else modNameStr <> "_" <> rawIdentName
             inferredTy = inferTypeExpr modNameStr aritiesMap Map.empty expr
         in Tuple identName inferredTy
-      ) group.bindings
+      ) tcoBinds
       
     mergedArities = Map.union groupArities aritiesMap
     
@@ -112,15 +122,15 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
           _ -> "unknown"
         identName = if rawIdentName == "main" then "main" else modNameStr <> "_" <> rawIdentName
         inferredType = fromMaybe Any (Map.lookup identName groupArities)
-        innerExpr = case expr of
-           NeutralExpr (Typed _ inner) -> inner
-           NeutralExpr inner -> NeutralExpr inner
-           _ -> expr
+        innerExpr = unwrapTcoExpr expr
         { paramsCode, retCode, bodyCode, isFunc } = case inferredType of
           Func argTypes retType ->
             let
               paramsArr = case innerExpr of
-                NeutralExpr (Abs params _) -> map (\(Tuple mbId _) -> case mbId of
+                UncurriedAbs params _ -> map (\(Tuple mbId _) -> case mbId of
+                  Just (Ident n) -> n
+                  _ -> "_") params
+                Abs params _ -> map (\(Tuple mbId _) -> case mbId of
                   Just (Ident n) -> n
                   _ -> "_") (NonEmptyArray.toArray params)
                 _ -> Array.mapWithIndex (\i _ -> "a" <> show i) argTypes
@@ -132,24 +142,28 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                 (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType true ty) paramPairs
               bound = Map.fromFoldable (map (\(Tuple k v) -> Tuple (if k == "_" then "_" else k) v) paramPairs)
               bodyCodeRaw = case innerExpr of
-                NeutralExpr (Abs _ body) -> codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap (Map.union bound aritiesMap) Set.empty body
+                UncurriedAbs _ body -> codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap (Map.union bound aritiesMap) Set.empty body
+                Abs _ body -> codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap (Map.union bound aritiesMap) Set.empty body
                 _ -> 
-                   let fnCode = codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap (Map.union bound aritiesMap) Set.empty innerExpr
+                   let fnCode = codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap (Map.union bound aritiesMap) Set.empty expr
                        argsCodeArray = map (\p -> sanitizeIdent p <> ".clone()") deduped
                    in Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
             in { paramsCode: pCode, retCode: codegenExprType true retType, bodyCode: bodyCodeRaw, isFunc: true }
           _ -> 
             let isAbs = case innerExpr of
-                  NeutralExpr (Abs _ _) -> true
+                  UncurriedAbs _ _ -> true
+                  Abs _ _ -> true
                   _ -> false
             in if isAbs then
               let
-                params = case innerExpr of
-                  NeutralExpr (Abs p _) -> p
+                paramsArr = case innerExpr of
+                  UncurriedAbs params _ -> map (\(Tuple mbId _) -> case mbId of
+                    Just (Ident n) -> n
+                    _ -> "_") params
+                  Abs params _ -> map (\(Tuple mbId _) -> case mbId of
+                    Just (Ident n) -> n
+                    _ -> "_") (NonEmptyArray.toArray params)
                   _ -> unsafeCrashWith "impossible"
-                paramsArr = map (\(Tuple mbId _) -> case mbId of
-                  Just (Ident n) -> n
-                  _ -> "_") (NonEmptyArray.toArray params)
                 deduped = dedupArgs paramsArr
                 mbLoop = if isSelfRecursive then Just { name: identName, params: deduped } else Nothing
                 pCode = String.joinWith ", " $ map (\pName ->
@@ -157,7 +171,8 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                   (if p == "_" then "" else "mut ") <> p <> ": UnknownType") deduped
                 bound = Map.empty
                 body = case innerExpr of
-                  NeutralExpr (Abs _ b) -> b
+                  UncurriedAbs _ b -> b
+                  Abs _ b -> b
                   _ -> unsafeCrashWith "impossible"
               in { paramsCode: pCode, retCode: "UnknownType", bodyCode: codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap (Map.union bound aritiesMap) Set.empty body, isFunc: true }
             else
@@ -183,7 +198,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
           "    // AST: " <> printAST expr <> "\n" <>
           bodyCodeFinal <> "\n" <>
           "}\n\n"
-    ) group.bindings
+    ) tcoBinds
   in { code: code, arities: mergedArities }
 
 
@@ -193,16 +208,17 @@ getTyPrefix currentMod (Qualified mbMod _) = case mbMod of
   Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
   Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_"
 
-codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
-codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive (NeutralExpr expr) = case expr of
+codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> TcoExpr -> String
+codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive tcoExpr = case unwrapTcoExpr tcoExpr of
   Typed _ inner -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inner
 
   App fn args -> 
-    let getInner :: NeutralExpr -> NeutralExpr
-        getInner (NeutralExpr (Typed _ inner)) = getInner inner
-        getInner e = e
+    let getInner :: TcoExpr -> BackendSyntax TcoExpr
+        getInner t = case unwrapTcoExpr t of
+          Typed _ inner -> getInner inner
+          e -> e
         isTopLevelFn = case getInner fn of
-                 NeutralExpr (Var (Qualified mbMod (Ident name))) -> 
+                 Var (Qualified mbMod (Ident name)) -> 
                    let modPrefix = case mbMod of
                          Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
                          Nothing -> ""
@@ -232,31 +248,33 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
          if fnArity > numProvided then
            let numMissing = fnArity - numProvided
                missingVars = Array.mapWithIndex (\i _ -> "c_" <> show i) (Array.replicate numMissing unit)
-               missingArgs = String.joinWith ", " (map (\v -> "mut " <> v <> ": UnknownType") missingVars)
                closureArgs = String.joinWith ", " (argsCodeArray <> missingVars)
-           in "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" <> missingArgs <> "| -> UnknownType {\n    (" <> fnCode <> ")(" <> closureArgs <> ")\n})), ..Default::default() })"
+               baseCall = "(" <> fnCode <> ")(" <> closureArgs <> ")"
+               curryClosures = Array.foldr (\var inner -> 
+                   "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> var <> ": UnknownType| -> UnknownType {\n    " <> inner <> "\n})), ..Default::default() })"
+                 ) baseCall missingVars
+           in curryClosures
+         else if fnArity < numProvided then
+           let exactArgs = Array.take fnArity argsCodeArray
+               extraArgs = Array.drop fnArity argsCodeArray
+               baseCall = "(" <> fnCode <> ")(" <> String.joinWith ", " exactArgs <> ")"
+           in Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") baseCall extraArgs
          else
            "(" <> fnCode <> ")(" <> argsCode <> ")"
        else
          Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
   UncurriedEffectApp fn args -> 
-    case fn of
-      NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
+    let getInner :: TcoExpr -> BackendSyntax TcoExpr
+        getInner t = case unwrapTcoExpr t of
+          Typed _ inner -> getInner inner
+          e -> e
+    in case getInner fn of
+      Accessor _ (GetProp "logRecord") -> 
         let arg0 = Array.head args
         in case arg0 of
              Just a0 -> "println!(\"{}\", " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
-      NeutralExpr (Accessor _ (GetProp "logRecord")) -> 
-        let arg0 = Array.head args
-        in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive a0 <> ".a);"
-             Nothing -> "// Unsupported UncurriedEffectApp without args\n"
-      NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logRecord"))))) -> 
-        let arg0 = Array.head args
-        in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive a0 <> ".a);"
-             Nothing -> "// Unsupported UncurriedEffectApp without args\n"
-      NeutralExpr (Var (Qualified _ (Ident "logRecord"))) -> 
+      Var (Qualified _ (Ident "logRecord")) -> 
         let arg0 = Array.head args
         in case arg0 of
              Just a0 -> "println!(\"{}\", " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive a0 <> ".a);"
@@ -321,7 +339,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpBooleanAnd -> "(" <> aStr <> " && " <> bStr <> ")"
       OpBooleanOr -> "(" <> aStr <> " || " <> bStr <> ")"
       _ -> "unimplemented!() /* Unsupported Op2 */"
-  Accessor base (GetProp k) -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base <> "." <> sanitizeIdent k <> ".clone().unwrap()"
+  Accessor base (GetProp k) -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base <> "." <> sanitizeIdent k <> ".clone().unwrap()(unsafe_coerce_type(0))"
   Accessor base (GetCtorField qId ctorType (ProperName tyNameStr) (Ident ctorName) propName fieldIdx) ->
     let baseStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base
         placeholders = String.joinWith ", " (Array.replicate fieldIdx "_")
@@ -353,7 +371,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       aliveForVal = Set.union alive bodyVars
       valCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForVal val
       -- if name is not in bodyVars, it's dead immediately
-      deadCode = if Set.member name bodyVars then "" else "    " <> name <> ".drop_explicit();\n"
+      deadCode = ""
     in
       "{\n" <> 
       "    let mut " <> name <> " = " <> valCode <> ";\n" <>
@@ -367,7 +385,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
         aliveForVal = Set.union alive (freeVariables body)
         valCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForVal val
         bodyVars = freeVariables body
-        deadCode = if Set.member name bodyVars then "" else "    " <> name <> ".drop_explicit();\n"
+        deadCode = ""
     in
     "{\n" <>
     "    let " <> name <> " = " <> valCode <> ";\n" <>
@@ -379,7 +397,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
     let name = case mbId of
           Just (Ident nameRaw) -> sanitizeIdent nameRaw
           Nothing -> "lvl_" <> show (unwrap lvl)
-    in if Set.member name alive then name <> ".dup()" else name
+    in if Set.member name alive then name <> ".clone()" else name
   Lit lit -> case lit of
     LitInt i -> "mk_int(" <> show i <> ")"
     LitNumber n -> show n <> " /* f64 */"
@@ -394,7 +412,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
           ) arr
       in "vec![" <> String.joinWith ", " arrCode <> "]"
     LitRecord props ->
-      let fields = String.joinWith ", " (map (\(Prop k v) -> sanitizeIdent k <> ": Some(" <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty v <> ")") props)
+      let fields = String.joinWith ", " (map (\(Prop k v) -> sanitizeIdent k <> ": Some(std::rc::Rc::new(|_| " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty v <> "))") props)
       in "perceus_ptr::PerceusPtr::new(Record_a { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() })"
   Abs params body -> 
     let
@@ -408,7 +426,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
           filtered = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity) && not (Array.elem v paramsArr)) unfiltered
         in filtered
       clones = String.joinWith "" (map (\v -> "    let mut " <> v <> " = " <> v <> ".clone();\n") capturedVars)
-      drops = String.joinWith "" (map (\p -> if p /= "_" && not (Set.member p bodyVars) then "    " <> p <> ".drop_explicit();\n" else "") paramsArr)
+      drops = ""
     in "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" <> paramsCode <> "| -> UnknownType {\n" <>
        clones <> drops <>
        "    " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty body <> "\n" <>
@@ -422,12 +440,82 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
             in codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForV val
           ) fields) <> ")"
         fullTyName = getTyPrefix currentMod qId <> tyNameStr
-    in "unsafe_coerce_type(" <> fullTyName <> "::" <> ctorName <> fieldsCode <> ")"
+    in fullTyName <> "::" <> ctorName <> fieldsCode
+  UncurriedAbs params body -> 
+    let
+      paramsArr = map (\(Tuple mbId lvl) -> case mbId of
+        Just (Ident n) -> sanitizeIdent n
+        Nothing -> "lvl_" <> show (unwrap lvl)) params
+      bodyVars = freeVariables body
+      
+      -- Fold from innermost to outermost
+      res = Array.foldr (\param (Tuple innerCode innerFree) -> 
+          let 
+              capturedVars = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity) && v /= param) (Array.fromFoldable innerFree)
+              clones = String.joinWith "" (map (\v -> "    let mut " <> v <> " = " <> v <> ".clone();\n") capturedVars)
+              
+              mutModifier = if param == "_" then "" else "mut "
+              newCode = "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" <> mutModifier <> param <> ": UnknownType| -> UnknownType {\n" <>
+                        clones <>
+                        "    " <> innerCode <> "\n" <>
+                        "})), ..Default::default() })"
+              newFree = Set.delete param innerFree
+          in Tuple newCode newFree
+        ) (Tuple (codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty body) bodyVars) paramsArr
+    in (case res of Tuple code _ -> code)
+  UncurriedApp fn args ->
+    let argsArray = args
+        argsFree = map freeVariables argsArray
+        aliveForFn = Set.union alive (Array.foldl Set.union Set.empty argsFree)
+        fnCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForFn fn
+        argsCodeArray = Array.mapWithIndex (\i arg -> 
+            let subsequentArgsFree = Array.drop (i + 1) argsFree
+                aliveForArg = Set.union alive (Array.foldl Set.union Set.empty subsequentArgsFree)
+            in codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForArg arg
+          ) argsArray
+        argsCode = String.joinWith ", " argsCodeArray
+        
+        getInner :: TcoExpr -> BackendSyntax TcoExpr
+        getInner t = case unwrapTcoExpr t of
+          Typed _ inner -> getInner inner
+          e -> e
+        isTopLevelFn = case getInner fn of
+                 Var (Qualified mbMod (Ident name)) -> 
+                   let modPrefix = case mbMod of
+                         Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
+                         Nothing -> ""
+                       fullName = modPrefix <> sanitizeIdent name
+                   in Map.member (if fullName == "main" then "main" else fullName) aritiesMap
+                 _ -> false
+        fnTy = inferTypeExpr currentMod aritiesMap bound fn
+        fnArity = case fnTy of
+          Func a _ -> Array.length a
+          _ -> 0
+        numProvided = Array.length args
+    in if isTopLevelFn then
+         if fnArity > numProvided then
+           let numMissing = fnArity - numProvided
+               missingVars = Array.mapWithIndex (\i _ -> "c_" <> show i) (Array.replicate numMissing unit)
+               closureArgs = String.joinWith ", " (argsCodeArray <> missingVars)
+               baseCall = "(" <> fnCode <> ")(" <> closureArgs <> ")"
+               curryClosures = Array.foldr (\var inner -> 
+                   "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> var <> ": UnknownType| -> UnknownType {\n    " <> inner <> "\n})), ..Default::default() })"
+                 ) baseCall missingVars
+           in curryClosures
+         else if fnArity < numProvided then
+           let exactArgs = Array.take fnArity argsCodeArray
+               extraArgs = Array.drop fnArity argsCodeArray
+               baseCall = "(" <> fnCode <> ")(" <> String.joinWith ", " exactArgs <> ")"
+           in Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") baseCall extraArgs
+         else
+           "(" <> fnCode <> ")(" <> argsCode <> ")"
+       else
+         Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
   CtorDef _ _ _ _ -> "perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() })"
-  _ -> "unimplemented!() /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
+  _ -> "unimplemented!() /* Unsupported Expr: " <> printAST tcoExpr <> " */"
 
-printAST :: NeutralExpr -> String
-printAST (NeutralExpr expr) = case expr of
+printAST :: TcoExpr -> String
+printAST tcoExpr = case unwrapTcoExpr tcoExpr of
   App fn _ -> "App(" <> printAST fn <> ")"
   Lit _ -> "Lit"
   Var _ -> "Var(...)"
@@ -453,8 +541,8 @@ printAST (NeutralExpr expr) = case expr of
   PrimUndefined -> "PrimUndefined"
   Fail msg -> "Fail(" <> msg <> ")"
 
-freeVariables :: NeutralExpr -> Set String
-freeVariables (NeutralExpr expr) = case expr of
+freeVariables :: TcoExpr -> Set String
+freeVariables tcoExpr = case unwrapTcoExpr tcoExpr of
   Var (Qualified mbMod (Ident name)) -> 
     let modPrefix = case mbMod of
           Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
@@ -501,8 +589,8 @@ freeVariables (NeutralExpr expr) = case expr of
   CtorSaturated _ _ _ _ fields -> Array.foldl (\acc (Tuple _ v) -> Set.union acc (freeVariables v)) Set.empty fields
   _ -> Set.empty
 
-inferTypeExpr :: String -> Map.Map String ExprType -> Map.Map String ExprType -> NeutralExpr -> ExprType
-inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
+inferTypeExpr :: String -> Map.Map String ExprType -> Map.Map String ExprType -> TcoExpr -> ExprType
+inferTypeExpr currentMod aritiesMap bound tcoExpr = case unwrapTcoExpr tcoExpr of
   App fn args -> 
     case inferTypeExpr currentMod aritiesMap bound fn of
       Func argTypes retTy -> 

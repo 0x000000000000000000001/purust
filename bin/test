@@ -5,7 +5,7 @@
 
 ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 TEST_DIR="$ROOT_DIR/tests"
-PASSING_DIR="$ROOT_DIR/../purescript/tests/purs/passing"
+PASSING_DIR="$ROOT_DIR/../../purescript/tests/purs/passing"
 RUNNER_DIR="$TEST_DIR/runner"
 
 source "$(dirname "$0")/pkg"
