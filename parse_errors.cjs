@@ -102,7 +102,7 @@ for (const fn of missingFns) {
     if (!stubsByFile[path]) {
         stubsByFile[path] = [];
     }
-    stubsByFile[path].push(`pub fn ${fn}() -> crate::UnknownType { crate::UnknownType::new(0) }`);
+    stubsByFile[path].push(`pub fn ${fn}() -> crate::UnknownType { crate::mk_int(0) }`);
 }
 
 for (const path of Object.keys(stubsByFile)) {

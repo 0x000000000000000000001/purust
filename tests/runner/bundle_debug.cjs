@@ -209,65 +209,11 @@ const resolveApp = (fullMatch, fnName, argCode) => {
     return acc;
 };
 
-function resolveApps(code) {
-    let startIdx;
-    while ((startIdx = code.lastIndexOf('__PURUST_APP__!(')) !== -1) {
-        let openParen = startIdx + '__PURUST_APP__!'.length;
-        let depth = 0;
-        let commaIdx = -1;
-        let endIdx = -1;
-        let inString = false;
-        let inRawString = false;
-        for (let i = openParen; i < code.length; i++) {
-            if (!inString && !inRawString) {
-                if (code.substring(i, i + 3) === 'r#"') {
-                    inRawString = true;
-                    i += 2;
-                    continue;
-                }
-                if (code[i] === '"') {
-                    inString = true;
-                    continue;
-                }
-                if (code[i] === '(' || code[i] === '[' || code[i] === '{') depth++;
-                if (code[i] === ')' || code[i] === ']' || code[i] === '}') depth--;
-                if (code[i] === ',' && depth === 1 && commaIdx === -1) {
-                    commaIdx = i;
-                }
-                if (depth === 0) {
-                    endIdx = i;
-                    break;
-                }
-            } else if (inRawString) {
-                if (code.substring(i, i + 2) === '"#') {
-                    inRawString = false;
-                    i += 1;
-                }
-            } else if (inString) {
-                if (code[i] === '\\') { i++; continue; }
-                if (code[i] === '"') {
-                    inString = false;
-                }
-            }
-        }
-        if (commaIdx !== -1 && endIdx !== -1) {
-            let fnName = code.substring(openParen + 1, commaIdx).trim();
-            let argStrRaw = code.substring(commaIdx + 1, endIdx).trim();
-            let argStr = argStrRaw;
-            if (argStr.startsWith('[')) argStr = argStr.substring(1);
-            if (argStr.endsWith(']')) argStr = argStr.substring(0, argStr.length - 1);
-            
-            let replaced = resolveApp(null, fnName, argStr);
-            code = code.substring(0, startIdx) + replaced + code.substring(endIdx + 1);
-        } else {
-            console.error('Parse error at', startIdx, code.substring(startIdx, startIdx + 100));
-            break;
-        }
-    }
-    return code;
+let lastCode = "";
+while (fullCode.match(/__PURUST_APP__!/) && fullCode !== lastCode) {
+    lastCode = fullCode;
+    fullCode = fullCode.replace(appRegex, resolveApp);
 }
-
-fullCode = resolveApps(fullCode);
 
 // Third pass: resolve __PURUST_VAR__!
 const varRegex = /__PURUST_VAR__!\(([\s\S]*?)\)/g;
@@ -315,4 +261,4 @@ fullCode = fullCode.replace(varRegex, (fullMatch, fnName) => {
 
 fs.mkdirSync('output-test/app/src', { recursive: true });
 fs.writeFileSync('output-test/app/src/main.rs', fullCode);
-console.log('Bundled ' + dirs.length + ' modules into output-test/app/src/main.rs with ' + fields.size + ' dynamic fields.');
+console.log(signatures); console.log('Bundled ' + dirs.length + ' modules into output-test/app/src/main.rs with ' + fields.size + ' dynamic fields.');

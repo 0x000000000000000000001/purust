@@ -15,6 +15,7 @@
             "foreign-object",
             "functions",
             "integers",
+            "lazy",
             "numbers",
             "partial",
             "prelude",
@@ -709,6 +710,9 @@
       "integers": {
         "path": "../../../purust-integers"
       },
+      "lazy": {
+        "path": "../../../purust-lazy"
+      },
       "numbers": {
         "path": "../../../purust-numbers"
       },
@@ -989,13 +993,11 @@
       ]
     },
     "lazy": {
-      "type": "registry",
-      "version": "6.0.0",
-      "integrity": "sha256-MHRC+1Pc+AjortBp4b/e1e6KpEpsDwaJBNBB7TOL+1I=",
+      "type": "local",
+      "path": "../../../purust-lazy",
       "dependencies": [
         "control",
         "foldable-traversable",
-        "invariant",
         "prelude"
       ]
     },

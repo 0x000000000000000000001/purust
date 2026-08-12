@@ -19,6 +19,7 @@ package:
     - unsafe-coerce
     - functions
     - record
+    - lazy
 workspace:
   packageSet:
     registry: 77.10.1
@@ -59,3 +60,5 @@ workspace:
       path: "../../../purust-functions"
     record:
       path: "../../../purust-record"
+    lazy:
+      path: "../../../purust-lazy"

@@ -2,6 +2,7 @@ module Main where
 
 import Prelude
 import Effect.Console (log)
+import Foreign.Object as FO
 
 x :: forall a. a -> String
 x a = y "Test"
@@ -12,3 +13,5 @@ x a = y "Test"
 main = do
   log (x 0)
   log "Done"
+  let _ = FO.empty
+  pure unit

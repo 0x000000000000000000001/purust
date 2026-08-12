@@ -1,2 +1,2 @@
 
-pub fn Data_Symbol_unsafeCoerce() -> crate::UnknownType { crate::UnknownType::new(0) }
+pub fn Data_Symbol_unsafeCoerce() -> crate::UnknownType { crate::mk_int(0) }

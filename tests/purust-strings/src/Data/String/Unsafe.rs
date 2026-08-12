@@ -1,2 +1,2 @@
 
-pub fn Data_String_Unsafe_charAt() -> crate::UnknownType { crate::UnknownType::new(0) }
+pub fn Data_String_Unsafe_charAt() -> crate::UnknownType { crate::mk_int(0) }

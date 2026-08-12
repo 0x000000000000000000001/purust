@@ -1,2 +1,717 @@
 Generating Rust code for Main
+Looking for FFI for Control.Semigroupoid path: "../../../purust-prelude/src/Control/Semigroupoid.purs" found: Nothing
+Looking for FFI for Control.Category path: "../../../purust-prelude/src/Control/Category.purs" found: Nothing
+Looking for FFI for Data.Boolean path: "../../../purust-prelude/src/Data/Boolean.purs" found: Nothing
+Looking for FFI for Type.Proxy path: "../../../purust-prelude/src/Type/Proxy.purs" found: Nothing
+Looking for FFI for Data.Symbol path: "../../../purust-prelude/src/Data/Symbol.purs" found: (Just "../../../purust-prelude/src/Data/Symbol.rs")
+Looking for FFI for Data.Unit path: "../../../purust-prelude/src/Data/Unit.purs" found: (Just "../../../purust-prelude/src/Data/Unit.rs")
+Looking for FFI for Record.Unsafe path: "../../../purust-prelude/src/Record/Unsafe.purs" found: (Just "../../../purust-prelude/src/Record/Unsafe.rs")
+Looking for FFI for Data.HeytingAlgebra path: "../../../purust-prelude/src/Data/HeytingAlgebra.purs" found: Nothing
+Looking for FFI for Data.Void path: "../../../purust-prelude/src/Data/Void.purs" found: (Just "../../../purust-prelude/src/Data/Void.rs")
+Looking for FFI for Data.Eq path: "../../../purust-prelude/src/Data/Eq.purs" found: (Just "../../../purust-prelude/src/Data/Eq.rs")
+Looking for FFI for Data.Semigroup path: "../../../purust-prelude/src/Data/Semigroup.purs" found: Nothing
+Looking for FFI for Data.Show path: "../../../purust-prelude/src/Data/Show.purs" found: (Just "../../../purust-prelude/src/Data/Show.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Ordering path: "../../../purust-prelude/src/Data/Ordering.purs" found: Nothing
+Looking for FFI for Data.Semiring path: "../../../purust-prelude/src/Data/Semiring.purs" found: Nothing
+Looking for FFI for Data.Ring path: "../../../purust-prelude/src/Data/Ring.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Ord path: "../../../purust-prelude/src/Data/Ord.purs" found: (Just "../../../purust-prelude/src/Data/Ord.rs")
+Looking for FFI for Data.Function path: "../../../purust-prelude/src/Data/Function.purs" found: Nothing
+Looking for FFI for Data.Functor path: "../../../purust-prelude/src/Data/Functor.purs" found: Nothing
+Looking for FFI for Control.Alt path: ".spago/p/control-6.0.0/src/Control/Alt.purs" found: Nothing
+Looking for FFI for Control.Apply path: "../../../purust-prelude/src/Control/Apply.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Control.Applicative path: "../../../purust-prelude/src/Control/Applicative.purs" found: Nothing
+Looking for FFI for Control.Plus path: ".spago/p/control-6.0.0/src/Control/Plus.purs" found: Nothing
+Looking for FFI for Control.Alternative path: ".spago/p/control-6.0.0/src/Control/Alternative.purs" found: Nothing
+Looking for FFI for Data.BooleanAlgebra path: "../../../purust-prelude/src/Data/BooleanAlgebra.purs" found: Nothing
+Looking for FFI for Data.Bounded path: "../../../purust-prelude/src/Data/Bounded.purs" found: Nothing
+Looking for FFI for Data.CommutativeRing path: "../../../purust-prelude/src/Data/CommutativeRing.purs" found: Nothing
+Looking for FFI for Data.EuclideanRing path: "../../../purust-prelude/src/Data/EuclideanRing.purs" found: Nothing
+Looking for FFI for Control.Bind path: "../../../purust-prelude/src/Control/Bind.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Control.Monad path: "../../../purust-prelude/src/Control/Monad.purs" found: Nothing
+Looking for FFI for Data.Monoid path: "../../../purust-prelude/src/Data/Monoid.purs" found: Nothing
+Looking for FFI for Data.DivisionRing path: "../../../purust-prelude/src/Data/DivisionRing.purs" found: Nothing
+Looking for FFI for Data.Field path: "../../../purust-prelude/src/Data/Field.purs" found: Nothing
+Looking for FFI for Data.NaturalTransformation path: "../../../purust-prelude/src/Data/NaturalTransformation.purs" found: Nothing
+Looking for FFI for Prelude path: "../../../purust-prelude/src/Prelude.purs" found: Nothing
+Looking for FFI for Data.Monoid.Additive path: "../../../purust-prelude/src/Data/Monoid/Additive.purs" found: Nothing
+Looking for FFI for Control.Extend path: ".spago/p/control-6.0.0/src/Control/Extend.purs" found: Nothing
+Looking for FFI for Control.Comonad path: ".spago/p/control-6.0.0/src/Control/Comonad.purs" found: Nothing
+Looking for FFI for Data.Monoid.Conj path: "../../../purust-prelude/src/Data/Monoid/Conj.purs" found: Nothing
+Looking for FFI for Data.Monoid.Disj path: "../../../purust-prelude/src/Data/Monoid/Disj.purs" found: Nothing
+Looking for FFI for Data.Monoid.Dual path: "../../../purust-prelude/src/Data/Monoid/Dual.purs" found: Nothing
+Looking for FFI for Data.Monoid.Endo path: "../../../purust-prelude/src/Data/Monoid/Endo.purs" found: Nothing
+Looking for FFI for Data.Monoid.Multiplicative path: "../../../purust-prelude/src/Data/Monoid/Multiplicative.purs" found: Nothing
+Looking for FFI for Data.Semigroup.First path: "../../../purust-prelude/src/Data/Semigroup/First.purs" found: Nothing
+Looking for FFI for Data.Semigroup.Last path: "../../../purust-prelude/src/Data/Semigroup/Last.purs" found: Nothing
+Looking for FFI for Unsafe.Coerce path: "../../../purust-unsafe-coerce/src/Unsafe/Coerce.purs" found: (Just "../../../purust-unsafe-coerce/src/Unsafe/Coerce.rs")
+Looking for FFI for Safe.Coerce path: ".spago/p/safe-coerce-2.0.0/src/Safe/Coerce.purs" found: Nothing
+Looking for FFI for Data.Newtype path: ".spago/p/newtype-5.0.0/src/Data/Newtype.purs" found: Nothing
+Looking for FFI for Data.Monoid.Alternate path: ".spago/p/control-6.0.0/src/Data/Monoid/Alternate.purs" found: Nothing
+Looking for FFI for Data.Functor.Invariant path: ".spago/p/invariant-6.0.0/src/Data/Functor/Invariant.purs" found: Nothing
+Looking for FFI for Data.Const path: ".spago/p/const-6.0.0/src/Data/Const.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Generic.Rep path: "../../../purust-prelude/src/Data/Generic/Rep.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Maybe path: ".spago/p/maybe-6.0.0/src/Data/Maybe.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Either path: ".spago/p/either-6.1.0/src/Data/Either.purs" found: Nothing
+Looking for FFI for Control.Lazy path: ".spago/p/control-6.0.0/src/Control/Lazy.purs" found: Nothing
+Looking for FFI for Data.Tuple path: ".spago/p/tuples-7.0.0/src/Data/Tuple.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Bifunctor path: ".spago/p/bifunctors-6.1.0/src/Data/Bifunctor.purs" found: Nothing
+Looking for FFI for Control.Biapply path: ".spago/p/bifunctors-6.1.0/src/Control/Biapply.purs" found: Nothing
+Looking for FFI for Control.Biapplicative path: ".spago/p/bifunctors-6.1.0/src/Control/Biapplicative.purs" found: Nothing
+Looking for FFI for Control.Monad.Gen.Class path: ".spago/p/gen-4.0.0/src/Control/Monad/Gen/Class.purs" found: Nothing
+Looking for FFI for Data.Identity path: ".spago/p/identity-6.0.0/src/Data/Identity.purs" found: Nothing
+Looking for FFI for Effect path: "../../../purust-effect/src/Effect.purs" found: (Just "../../../purust-effect/src/Effect.rs")
+Looking for FFI for Effect.Ref path: "../../../purust-refs/src/Effect/Ref.purs" found: (Just "../../../purust-refs/src/Effect/Ref.rs")
+Looking for FFI for Partial path: "../../../purust-partial/src/Partial.purs" found: (Just "../../../purust-partial/src/Partial.rs")
+Looking for FFI for Partial.Unsafe path: "../../../purust-partial/src/Partial/Unsafe.purs" found: (Just "../../../purust-partial/src/Partial/Unsafe.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Control.Monad.Rec.Class path: ".spago/p/tailrec-6.1.0/src/Control/Monad/Rec/Class.purs" found: Nothing
+Looking for FFI for Control.MonadPlus path: ".spago/p/control-6.0.0/src/Control/MonadPlus.purs" found: Nothing
+Looking for FFI for Data.Functor.App path: ".spago/p/functors-5.0.0/src/Data/Functor/App.purs" found: Nothing
+Looking for FFI for Data.Functor.Compose path: ".spago/p/functors-5.0.0/src/Data/Functor/Compose.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Functor.Coproduct path: ".spago/p/functors-5.0.0/src/Data/Functor/Coproduct.purs" found: Nothing
+Looking for FFI for Data.Functor.Product path: ".spago/p/functors-5.0.0/src/Data/Functor/Product.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Maybe.First path: ".spago/p/maybe-6.0.0/src/Data/Maybe/First.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Maybe.Last path: ".spago/p/maybe-6.0.0/src/Data/Maybe/Last.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Foldable path: "../../../purust-foldable-traversable/src/Data/Foldable.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Ord.Max path: ".spago/p/orders-6.0.0/src/Data/Ord/Max.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Ord.Min path: ".spago/p/orders-6.0.0/src/Data/Ord/Min.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Semigroup.Foldable path: "../../../purust-foldable-traversable/src/Data/Semigroup/Foldable.purs" found: Nothing
+Looking for FFI for Data.Traversable.Accum path: "../../../purust-foldable-traversable/src/Data/Traversable/Accum.purs" found: Nothing
+Looking for FFI for Data.Traversable.Accum.Internal path: "../../../purust-foldable-traversable/src/Data/Traversable/Accum/Internal.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Traversable path: "../../../purust-foldable-traversable/src/Data/Traversable.purs" found: Nothing
+Looking for FFI for Data.Semigroup.Traversable path: "../../../purust-foldable-traversable/src/Data/Semigroup/Traversable.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Unfoldable1 path: ".spago/p/unfoldable-6.0.0/src/Data/Unfoldable1.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Unfoldable path: ".spago/p/unfoldable-6.0.0/src/Data/Unfoldable.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Control.Monad.Gen path: ".spago/p/gen-4.0.0/src/Control/Monad/Gen.purs" found: Nothing
+Looking for FFI for Data.FunctorWithIndex path: "../../../purust-foldable-traversable/src/Data/FunctorWithIndex.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.FoldableWithIndex path: "../../../purust-foldable-traversable/src/Data/FoldableWithIndex.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.TraversableWithIndex path: "../../../purust-foldable-traversable/src/Data/TraversableWithIndex.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.NonEmpty path: ".spago/p/nonempty-7.0.0/src/Data/NonEmpty.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Control.Monad.Gen.Common path: ".spago/p/gen-4.0.0/src/Control/Monad/Gen/Common.purs" found: Nothing
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: PrimEffect(...)
+Looking for FFI for Control.Monad.ST.Internal path: "../../../purust-st/src/Control/Monad/ST/Internal.purs" found: (Just "../../../purust-st/src/Control/Monad/ST/Internal.rs")
+Looking for FFI for Control.Monad.ST path: "../../../purust-st/src/Control/Monad/ST.purs" found: Nothing
+Looking for FFI for Control.Monad.ST.Global path: "../../../purust-st/src/Control/Monad/ST/Global.purs" found: Nothing
+Looking for FFI for Control.Monad.ST.Class path: "../../../purust-st/src/Control/Monad/ST/Class.purs" found: Nothing
+Looking for FFI for Control.Monad.ST.Ref path: "../../../purust-st/src/Control/Monad/ST/Ref.purs" found: (Just "../../../purust-st/src/Control/Monad/ST/Ref.rs")
+Looking for FFI for Control.Monad.ST.Uncurried path: "../../../purust-st/src/Control/Monad/ST/Uncurried.purs" found: (Just "../../../purust-st/src/Control/Monad/ST/Uncurried.rs")
+Looking for FFI for Data.Function.Uncurried path: "../../../purust-functions/src/Data/Function/Uncurried.purs" found: Nothing
+Looking for FFI for Data.Array.NonEmpty.Internal path: "../../../purust-arrays/src/Data/Array/NonEmpty/Internal.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Array.ST path: "../../../purust-arrays/src/Data/Array/ST.purs" found: (Just "../../../purust-arrays/src/Data/Array/ST.rs")
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: PrimEffect(...)
+Looking for FFI for Data.Array.ST.Iterator path: "../../../purust-arrays/src/Data/Array/ST/Iterator.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: PrimEffect(...)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Accessor(Local(...))
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Array path: "../../../purust-arrays/src/Data/Array.purs" found: (Just "../../../purust-arrays/src/Data/Array.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Array.NonEmpty path: "../../../purust-arrays/src/Data/Array/NonEmpty.purs" found: Nothing
+FALLBACK HIT FOR: Accessor(Local(...))
+Looking for FFI for Data.Array.Partial path: "../../../purust-arrays/src/Data/Array/Partial.purs" found: Nothing
+Looking for FFI for Data.Array.ST.Partial path: "../../../purust-arrays/src/Data/Array/ST/Partial.purs" found: Nothing
+Looking for FFI for Data.Functor.Contravariant path: ".spago/p/contravariant-6.0.0/src/Data/Functor/Contravariant.purs" found: Nothing
+Looking for FFI for Data.Profunctor path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor.purs" found: Nothing
+Looking for FFI for Data.Functor.Clown path: ".spago/p/functors-5.0.0/src/Data/Functor/Clown.purs" found: Nothing
+Looking for FFI for Data.Functor.Flip path: ".spago/p/functors-5.0.0/src/Data/Functor/Flip.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Profunctor.Choice path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Choice.purs" found: Nothing
+Looking for FFI for Data.Functor.Joker path: ".spago/p/functors-5.0.0/src/Data/Functor/Joker.purs" found: Nothing
+Looking for FFI for Data.Functor.Product2 path: ".spago/p/functors-5.0.0/src/Data/Functor/Product2.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Bifoldable path: "../../../purust-foldable-traversable/src/Data/Bifoldable.purs" found: Nothing
+Looking for FFI for Data.Bifunctor.Join path: ".spago/p/bifunctors-6.1.0/src/Data/Bifunctor/Join.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Bitraversable path: "../../../purust-foldable-traversable/src/Data/Bitraversable.purs" found: Nothing
+Looking for FFI for Data.Bounded.Generic path: "../../../purust-prelude/src/Data/Bounded/Generic.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Enum path: "../../../purust-enums/src/Data/Enum.purs" found: (Just "../../../purust-enums/src/Data/Enum.rs")
+Looking for FFI for Data.Char path: "../../../purust-strings/src/Data/Char.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Char.Gen path: "../../../purust-strings/src/Data/Char/Gen.purs" found: Nothing
+Looking for FFI for Data.Comparison path: ".spago/p/contravariant-6.0.0/src/Data/Comparison.purs" found: Nothing
+Looking for FFI for Data.Equivalence path: ".spago/p/contravariant-6.0.0/src/Data/Equivalence.purs" found: Nothing
+Looking for FFI for Data.Op path: ".spago/p/contravariant-6.0.0/src/Data/Op.purs" found: Nothing
+Looking for FFI for Data.Predicate path: ".spago/p/contravariant-6.0.0/src/Data/Predicate.purs" found: Nothing
+Looking for FFI for Data.Divide path: ".spago/p/contravariant-6.0.0/src/Data/Divide.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Decide path: ".spago/p/contravariant-6.0.0/src/Data/Decide.purs" found: Nothing
+Looking for FFI for Data.Divisible path: ".spago/p/contravariant-6.0.0/src/Data/Divisible.purs" found: Nothing
+Looking for FFI for Data.Decidable path: ".spago/p/contravariant-6.0.0/src/Data/Decidable.purs" found: Nothing
+Looking for FFI for Type.Equality path: ".spago/p/type-equality-4.0.1/src/Type/Equality.purs" found: Nothing
+Looking for FFI for Data.Distributive path: ".spago/p/distributive-6.0.0/src/Data/Distributive.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Either.Inject path: ".spago/p/either-6.1.0/src/Data/Either/Inject.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Either.Nested path: ".spago/p/either-6.1.0/src/Data/Either/Nested.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Enum.Gen path: "../../../purust-enums/src/Data/Enum/Gen.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Enum.Generic path: "../../../purust-enums/src/Data/Enum/Generic.purs" found: Nothing
+Looking for FFI for Data.Eq.Generic path: "../../../purust-prelude/src/Data/Eq/Generic.purs" found: Nothing
+Looking for FFI for Data.Exists path: ".spago/p/exists-6.0.0/src/Data/Exists.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Functor.Coproduct.Inject path: ".spago/p/functors-5.0.0/src/Data/Functor/Coproduct/Inject.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Functor.Coproduct.Nested path: ".spago/p/functors-5.0.0/src/Data/Functor/Coproduct/Nested.purs" found: Nothing
+Looking for FFI for Data.Profunctor.Closed path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Closed.purs" found: Nothing
+Looking for FFI for Data.Profunctor.Strong path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Strong.purs" found: Nothing
+Looking for FFI for Data.Functor.Costar path: ".spago/p/functors-5.0.0/src/Data/Functor/Costar.purs" found: Nothing
+Looking for FFI for Data.Functor.Product.Nested path: ".spago/p/functors-5.0.0/src/Data/Functor/Product/Nested.purs" found: Nothing
+Looking for FFI for Data.HeytingAlgebra.Generic path: "../../../purust-prelude/src/Data/HeytingAlgebra/Generic.purs" found: Nothing
+Looking for FFI for Data.Int.Bits path: "../../../purust-integers/src/Data/Int/Bits.purs" found: Nothing
+Looking for FFI for Data.Number path: "../../../purust-numbers/src/Data/Number.purs" found: (Just "../../../purust-numbers/src/Data/Number.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Int path: "../../../purust-integers/src/Data/Int.purs" found: (Just "../../../purust-integers/src/Data/Int.rs")
+Looking for FFI for Data.Lazy path: ".spago/p/lazy-6.0.0/src/Data/Lazy.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.Types path: ".spago/p/lists-7.0.0/src/Data/List/Types.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.Internal path: ".spago/p/lists-7.0.0/src/Data/List/Internal.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List path: ".spago/p/lists-7.0.0/src/Data/List.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.Lazy.Types path: ".spago/p/lists-7.0.0/src/Data/List/Lazy/Types.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.Lazy path: ".spago/p/lists-7.0.0/src/Data/List/Lazy.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.Lazy.NonEmpty path: ".spago/p/lists-7.0.0/src/Data/List/Lazy/NonEmpty.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.NonEmpty path: ".spago/p/lists-7.0.0/src/Data/List/NonEmpty.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.List.Partial path: ".spago/p/lists-7.0.0/src/Data/List/Partial.purs" found: Nothing
+Looking for FFI for Data.List.ZipList path: ".spago/p/lists-7.0.0/src/Data/List/ZipList.purs" found: Nothing
+Looking for FFI for Data.Monoid.Generic path: "../../../purust-prelude/src/Data/Monoid/Generic.purs" found: Nothing
+Looking for FFI for Data.Number.Approximate path: "../../../purust-numbers/src/Data/Number/Approximate.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Number.Format path: "../../../purust-numbers/src/Data/Number/Format.purs" found: (Just "../../../purust-numbers/src/Data/Number/Format.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Ord.Down path: ".spago/p/orders-6.0.0/src/Data/Ord/Down.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Ord.Generic path: "../../../purust-prelude/src/Data/Ord/Generic.purs" found: Nothing
+Looking for FFI for Data.Profunctor.Cochoice path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Cochoice.purs" found: Nothing
+Looking for FFI for Data.Profunctor.Costrong path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Costrong.purs" found: Nothing
+Looking for FFI for Data.Profunctor.Join path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Join.purs" found: Nothing
+Looking for FFI for Data.Profunctor.Split path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Split.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Profunctor.Star path: ".spago/p/profunctor-6.0.1/src/Data/Profunctor/Star.purs" found: Nothing
+Looking for FFI for Data.Reflectable path: "../../../purust-prelude/src/Data/Reflectable.purs" found: (Just "../../../purust-prelude/src/Data/Reflectable.rs")
+Looking for FFI for Data.Ring.Generic path: "../../../purust-prelude/src/Data/Ring/Generic.purs" found: Nothing
+Looking for FFI for Data.Semigroup.Generic path: "../../../purust-prelude/src/Data/Semigroup/Generic.purs" found: Nothing
+Looking for FFI for Data.Semiring.Generic path: "../../../purust-prelude/src/Data/Semiring/Generic.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.Show.Generic path: "../../../purust-prelude/src/Data/Show/Generic.purs" found: Nothing
+Looking for FFI for Data.String.Pattern path: "../../../purust-strings/src/Data/String/Pattern.purs" found: Nothing
+Looking for FFI for Data.String.Unsafe path: "../../../purust-strings/src/Data/String/Unsafe.purs" found: (Just "../../../purust-strings/src/Data/String/Unsafe.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.CodeUnits path: "../../../purust-strings/src/Data/String/CodeUnits.purs" found: (Just "../../../purust-strings/src/Data/String/CodeUnits.rs")
+Looking for FFI for Data.String.Common path: "../../../purust-strings/src/Data/String/Common.purs" found: (Just "../../../purust-strings/src/Data/String/Common.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.CodePoints path: "../../../purust-strings/src/Data/String/CodePoints.purs" found: (Just "../../../purust-strings/src/Data/String/CodePoints.rs")
+Looking for FFI for Data.String path: "../../../purust-strings/src/Data/String.purs" found: Nothing
+Looking for FFI for Data.String.CaseInsensitive path: "../../../purust-strings/src/Data/String/CaseInsensitive.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.Gen path: "../../../purust-strings/src/Data/String/Gen.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.NonEmpty.Internal path: "../../../purust-strings/src/Data/String/NonEmpty/Internal.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.NonEmpty.CodePoints path: "../../../purust-strings/src/Data/String/NonEmpty/CodePoints.purs" found: Nothing
+Looking for FFI for Data.String.NonEmpty path: "../../../purust-strings/src/Data/String/NonEmpty.purs" found: Nothing
+Looking for FFI for Data.String.NonEmpty.CaseInsensitive path: "../../../purust-strings/src/Data/String/NonEmpty/CaseInsensitive.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.NonEmpty.CodeUnits path: "../../../purust-strings/src/Data/String/NonEmpty/CodeUnits.purs" found: Nothing
+Looking for FFI for Data.String.Regex.Flags path: "../../../purust-strings/src/Data/String/Regex/Flags.purs" found: Nothing
+Looking for FFI for Data.String.Regex path: "../../../purust-strings/src/Data/String/Regex.purs" found: (Just "../../../purust-strings/src/Data/String/Regex.rs")
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Data.String.Regex.Unsafe path: "../../../purust-strings/src/Data/String/Regex/Unsafe.purs" found: Nothing
+Looking for FFI for Data.Tuple.Nested path: ".spago/p/tuples-7.0.0/src/Data/Tuple/Nested.purs" found: Nothing
+Looking for FFI for Effect.Class path: "../../../purust-effect/src/Effect/Class.purs" found: Nothing
+Looking for FFI for Effect.Console path: "../../../purust-console/src/Effect/Console.purs" found: (Just "../../../purust-console/src/Effect/Console.rs")
+Looking for FFI for Effect.Class.Console path: "../../../purust-console/src/Effect/Class/Console.purs" found: Nothing
+Looking for FFI for Effect.Exception path: "../../../purust-exceptions/src/Effect/Exception.purs" found: (Just "../../../purust-exceptions/src/Effect/Exception.rs")
+Looking for FFI for Effect.Unsafe path: "../../../purust-effect/src/Effect/Unsafe.purs" found: (Just "../../../purust-effect/src/Effect/Unsafe.rs")
+Looking for FFI for Effect.Exception.Unsafe path: "../../../purust-exceptions/src/Effect/Exception/Unsafe.purs" found: Nothing
+Looking for FFI for Effect.Uncurried path: "../../../purust-effect/src/Effect/Uncurried.purs" found: Nothing
+Looking for FFI for Foreign.Object.ST path: "../../../purust-foreign-object/src/Foreign/Object/ST.purs" found: (Just "../../../purust-foreign-object/src/Foreign/Object/ST.rs")
+Looking for FFI for Type.Data.Boolean path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Data/Boolean.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Type.Data.Ordering path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Data/Ordering.purs" found: Nothing
+Looking for FFI for Type.Data.Symbol path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Data/Symbol.purs" found: Nothing
+Looking for FFI for Type.RowList path: ".spago/p/typelevel-prelude-7.0.0/src/Type/RowList.purs" found: Nothing
+Looking for FFI for Type.Row.Homogeneous path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Row/Homogeneous.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Foreign.Object path: "../../../purust-foreign-object/src/Foreign/Object.purs" found: (Just "../../../purust-foreign-object/src/Foreign/Object.rs")
+Looking for FFI for Foreign.Object.Gen path: "../../../purust-foreign-object/src/Foreign/Object/Gen.purs" found: Nothing
+Looking for FFI for Foreign.Object.ST.Unsafe path: "../../../purust-foreign-object/src/Foreign/Object/ST/Unsafe.purs" found: Nothing
+Looking for FFI for Foreign.Object.Unsafe path: "../../../purust-foreign-object/src/Foreign/Object/Unsafe.purs" found: Nothing
+Looking for FFI for Main path: "src/Main.purs" found: Nothing
+Looking for FFI for Record.Unsafe.Union path: "../../../purust-record/src/Record/Unsafe/Union.purs" found: (Just "../../../purust-record/src/Record/Unsafe/Union.rs")
+Looking for FFI for Record path: "../../../purust-record/src/Record.purs" found: Nothing
+Looking for FFI for Record.Builder path: "../../../purust-record/src/Record/Builder.purs" found: (Just "../../../purust-record/src/Record/Builder.rs")
+Looking for FFI for Spago.Generated.BuildInfo path: ".spago/BuildInfo.purs" found: Nothing
+FALLBACK HIT FOR: Fail(Failed pattern match)
+Looking for FFI for Test.Assert path: "../../../purust-assert/src/Test/Assert.purs" found: (Just "../../../purust-assert/src/Test/Assert.rs")
+Looking for FFI for Type.Function path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Function.purs" found: Nothing
+Looking for FFI for Type.Row path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Row.purs" found: Nothing
+Looking for FFI for Type.Prelude path: ".spago/p/typelevel-prelude-7.0.0/src/Type/Prelude.purs" found: Nothing
 Successfully generated Rust code.
