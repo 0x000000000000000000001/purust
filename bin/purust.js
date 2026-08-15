@@ -3348,6 +3348,7 @@ var ordQualified = (dictOrd) => {
     Eq0: () => eqQualified1
   };
 };
+var eq9 = /* @__PURE__ */ eqArrayImpl(eqStringImpl);
 var eqReExport = { eq: (x) => (y) => x._1 === y._1 && x._2 === y._2 };
 var ordReExport = {
   compare: (x) => (y) => {
@@ -3413,6 +3414,26 @@ var eqExprType = {
       return y.tag === "ForAll" && eqArray.eq(x._1)(y._1) && eqExprType.eq(x._2)(y._2);
     }
     return x.tag === "ConstrainedType" && y.tag === "ConstrainedType" && eqArrayImpl(eqTuple1({ eq: eqArrayImpl(eqExprType.eq) }).eq)(x._1)(y._1) && eqExprType.eq(x._2)(y._2);
+  }
+};
+var eqMeta = {
+  eq: (x) => (y) => {
+    if (x.tag === "IsConstructor") {
+      return y.tag === "IsConstructor" && (x._1 === "ProductType" ? y._1 === "ProductType" : x._1 === "SumType" && y._1 === "SumType") && eq9(x._2)(y._2);
+    }
+    if (x.tag === "IsNewtype") {
+      return y.tag === "IsNewtype";
+    }
+    if (x.tag === "IsTypeClassConstructor") {
+      return y.tag === "IsTypeClassConstructor";
+    }
+    if (x.tag === "IsForeign") {
+      return y.tag === "IsForeign";
+    }
+    if (x.tag === "IsWhere") {
+      return y.tag === "IsWhere";
+    }
+    return x.tag === "IsSyntheticApp" && y.tag === "IsSyntheticApp";
   }
 };
 var emptySpan = { path: "<internal>", start: zero, end: zero };
@@ -4898,11 +4919,20 @@ var decodeModule$p = (decodeAnn$p) => (json) => {
                 return $Either("Left", $6._1);
               }
               if ($6.tag === "Right") {
-                const $7 = getField(decodeArray2(decodeDataDecl))($0._1)("dataDecls");
+                const $7 = getFieldOptional$p(decodeArray2(decodeDataDecl))($0._1)("dataDecls");
                 if ($7.tag === "Left") {
                   return $Either("Left", $7._1);
                 }
                 if ($7.tag === "Right") {
+                  const dataDecls = (() => {
+                    if ($7._1.tag === "Nothing") {
+                      return [];
+                    }
+                    if ($7._1.tag === "Just") {
+                      return $7._1._1;
+                    }
+                    fail();
+                  })();
                   const $8 = getFieldOptional$p(decodeArray2(decodeClassDecl))($0._1)("classDecls");
                   if ($8.tag === "Left") {
                     return $Either("Left", $8._1);
@@ -4977,7 +5007,7 @@ var decodeModule$p = (decodeAnn$p) => (json) => {
                                   imports: $4._1,
                                   exports: $5._1,
                                   reExports: $6._1,
-                                  dataDecls: $7._1,
+                                  dataDecls,
                                   classDecls,
                                   decls: $9._1,
                                   foreign: foreignMap,
@@ -7347,6 +7377,32 @@ var eqBackendExpr = {
     return v.tag === "ExprRewrite" && v1.tag === "ExprRewrite" && v._1.size === v1._1.size && eqBackendRewrite(eqBackendExpr).eq(v._2)(v1._2);
   }
 };
+var unwrapSemTyped = (unwrapSemTyped$a0$copy) => {
+  let unwrapSemTyped$a0 = unwrapSemTyped$a0$copy, unwrapSemTyped$c = true, unwrapSemTyped$r;
+  while (unwrapSemTyped$c) {
+    const v = unwrapSemTyped$a0;
+    if (v.tag === "SemTyped") {
+      unwrapSemTyped$a0 = v._2;
+      continue;
+    }
+    unwrapSemTyped$c = false;
+    unwrapSemTyped$r = v;
+  }
+  return unwrapSemTyped$r;
+};
+var untypedExpr = (untypedExpr$a0$copy) => {
+  let untypedExpr$a0 = untypedExpr$a0$copy, untypedExpr$c = true, untypedExpr$r;
+  while (untypedExpr$c) {
+    const v = untypedExpr$a0;
+    if (v.tag === "ExprSyntax" && v._2.tag === "Typed") {
+      untypedExpr$a0 = v._2._2;
+      continue;
+    }
+    untypedExpr$c = false;
+    untypedExpr$r = v;
+  }
+  return untypedExpr$r;
+};
 var snocApp = (prev) => (next) => {
   const $0 = prev.length - 1 | 0;
   if ($0 >= 0 && $0 < prev.length && prev[$0].tag === "ExternApp") {
@@ -7360,9 +7416,16 @@ var snocApp = (prev) => (next) => {
   }
   return snoc(prev)($ExternSpine("ExternApp", [next]));
 };
-var simplifyCondIsTag = (v) => (v1) => (v2) => {
-  if (v1._1.tag === "ExprSyntax" && v1._1._2.tag === "PrimOp" && v1._1._2._1.tag === "Op1" && v1._1._2._1._1.tag === "OpIsTag" && v1._2.tag === "ExprSyntax" && v1._2._2.tag === "Lit" && v1._2._2._1.tag === "LitBoolean" && !v1._2._2._1._1 && v2.tag === "ExprSyntax" && v2._2.tag === "PrimOp" && v2._2._1.tag === "Op1" && v2._2._1._1.tag === "OpIsTag" && eqBackendExpr.eq(v1._1._2._1._2)(v2._2._1._2)) {
-    return $Maybe("Just", v2);
+var simplifyCondIsTag = (v) => (v1) => (def) => {
+  const $0 = v1._1.tag === "ExprSyntax" && v1._1._2.tag === "Typed" ? untypedExpr(v1._1._2._2) : v1._1;
+  if ($0.tag === "ExprSyntax" && $0._2.tag === "PrimOp" && $0._2._1.tag === "Op1" && $0._2._1._1.tag === "OpIsTag") {
+    const $1 = v1._2.tag === "ExprSyntax" && v1._2._2.tag === "Typed" ? untypedExpr(v1._2._2._2) : v1._2;
+    if ($1.tag === "ExprSyntax" && $1._2.tag === "Lit" && $1._2._1.tag === "LitBoolean" && !$1._2._1._1) {
+      const $2 = def.tag === "ExprSyntax" && def._2.tag === "Typed" ? untypedExpr(def._2._2) : def;
+      if ($2.tag === "ExprSyntax" && $2._2.tag === "PrimOp" && $2._2._1.tag === "Op1" && $2._2._1._1.tag === "OpIsTag" && eqBackendExpr.eq($0._2._1._2)($2._2._1._2)) {
+        return $Maybe("Just", def);
+      }
+    }
   }
   return Nothing;
 };
@@ -7727,7 +7790,8 @@ var shouldDistributeBranches = (ident) => (level) => (a) => (body) => {
     }
     fail();
   })();
-  if (a.tag === "ExprSyntax" && a._2.tag === "Branch" && $0.size <= 128 && a._1.result === "KnownNeutral") {
+  const v1 = a.tag === "ExprSyntax" && a._2.tag === "Typed" ? untypedExpr(a._2._2) : a;
+  if (v1.tag === "ExprSyntax" && v1._2.tag === "Branch" && $0.size <= 128 && v1._1.result === "KnownNeutral") {
     const $1 = lookup3(level)($0.usages);
     if ($1.tag === "Just" && $1._1.total === ($1._1.access + $1._1.case | 0)) {
       return $Maybe(
@@ -7757,7 +7821,7 @@ var shouldDistributeBranches = (ident) => (level) => (a) => (body) => {
             })()),
             rewrite: true
           },
-          $BackendRewrite("RewriteDistBranchesLet", ident, level, a._2._1, a._2._2, body)
+          $BackendRewrite("RewriteDistBranchesLet", ident, level, v1._2._1, v1._2._2, body)
         )
       );
     }
@@ -7962,6 +8026,10 @@ var neutralSpine = /* @__PURE__ */ foldlArray((hd) => (v) => {
   }
   fail();
 });
+var isSimplePredicate = (e) => {
+  const v = e.tag === "ExprSyntax" && e._2.tag === "Typed" ? untypedExpr(e._2._2) : e;
+  return v.tag === "ExprSyntax" && (v._2.tag === "Lit" || v._2.tag === "Var" || v._2.tag === "Local" || v._2.tag === "PrimOp");
+};
 var shouldInlineLet = (level) => (a) => (b) => {
   const $0 = (() => {
     if (a.tag === "ExprSyntax") {
@@ -8284,6 +8352,12 @@ var makeLet$lazy = /* @__PURE__ */ binding(() => floatLetWith$lazy()((ident) => 
     return k(binding2);
   }
   if (binding2.tag === "NeutVar") {
+    return k(binding2);
+  }
+  if (binding2.tag === "NeutLit") {
+    return k(binding2);
+  }
+  if (binding2.tag === "NeutData") {
     return k(binding2);
   }
   return $BackendSemantics("SemLet", ident, binding2, k);
@@ -8790,11 +8864,13 @@ var evalPrimOp = (env) => (v) => {
           const v9 = (v10) => {
             const v11 = (v12) => {
               const v13 = (v14) => {
-                if ($1.tag === "SemRef") {
-                  return evalRef(env)($1._1)($1._2)($ExternSpine("ExternPrimOp", $0))($1._3);
+                const v15 = $1.tag === "SemTyped" ? unwrapSemTyped($1._2) : $1;
+                if (v15.tag === "SemRef") {
+                  return evalRef(env)(v15._1)(v15._2)($ExternSpine("ExternPrimOp", $0))(v15._3);
                 }
-                if ($1.tag === "NeutFail") {
-                  return $BackendSemantics("NeutFail", $1._1);
+                const v16 = $1.tag === "SemTyped" ? unwrapSemTyped($1._2) : $1;
+                if (v16.tag === "NeutFail") {
+                  return $BackendSemantics("NeutFail", v16._1);
                 }
                 return floatLet($1)((() => {
                   const $2 = Op1($0);
@@ -9444,92 +9520,166 @@ var build = (ctx) => (v) => {
                 const v13 = (v14) => {
                   const v15 = (v16) => {
                     const v17 = (v18) => {
-                      if (v.tag === "Accessor" && v._1.tag === "ExprSyntax" && v._1._2.tag === "Branch") {
-                        return $BackendExpr(
-                          "ExprRewrite",
-                          { ...v._1._1, rewrite: true, size: v._1._1.size + 1 | 0 },
-                          $BackendRewrite("RewriteDistBranchesOp", v._1._2._1, v._1._2._2, $DistOp("DistAccessor", v._2))
-                        );
-                      }
-                      if (v.tag === "PrimOp" && v._1.tag === "Op1" && v._1._2.tag === "ExprSyntax" && v._1._2._2.tag === "Branch") {
-                        return $BackendExpr(
-                          "ExprRewrite",
-                          { ...v._1._2._1, rewrite: true, size: v._1._2._1.size + 1 | 0 },
-                          $BackendRewrite("RewriteDistBranchesOp", v._1._2._2._1, v._1._2._2._2, $DistOp("DistPrimOp1", v._1._1))
-                        );
-                      }
-                      const v23 = (v24) => {
-                        const v25 = (v26) => {
-                          if (v.tag === "EffectBind") {
-                            if (v._3.tag === "ExprSyntax") {
-                              if (v._3._2.tag === "EffectPure") {
-                                return build(ctx)($BackendSyntax(
-                                  "EffectDefer",
-                                  build(ctx)($BackendSyntax("Let", v._1, v._2, v._3._2._1, v._4))
-                                ));
-                              }
-                              if (v._3._2.tag === "EffectDefer") {
-                                return build(ctx)($BackendSyntax("EffectBind", v._1, v._2, v._3._2._1, v._4));
-                              }
-                              if (v._4.tag === "ExprSyntax") {
-                                if (v._4._2.tag === "EffectDefer") {
-                                  return build(ctx)($BackendSyntax("EffectBind", v._1, v._2, v._3, v._4._2._1));
+                      const v19 = (v20) => {
+                        const v21 = (v22) => {
+                          const v23 = (v24) => {
+                            const v25 = (v26) => {
+                              if (v.tag === "EffectBind") {
+                                if (v._3.tag === "ExprSyntax") {
+                                  if (v._3._2.tag === "EffectPure") {
+                                    return build(ctx)($BackendSyntax(
+                                      "EffectDefer",
+                                      build(ctx)($BackendSyntax("Let", v._1, v._2, v._3._2._1, v._4))
+                                    ));
+                                  }
+                                  if (v._3._2.tag === "EffectDefer") {
+                                    return build(ctx)($BackendSyntax("EffectBind", v._1, v._2, v._3._2._1, v._4));
+                                  }
+                                  if (v._4.tag === "ExprSyntax") {
+                                    if (v._4._2.tag === "EffectDefer") {
+                                      return build(ctx)($BackendSyntax("EffectBind", v._1, v._2, v._3, v._4._2._1));
+                                    }
+                                    if (v._4._2.tag === "EffectPure" && v._4._2._1.tag === "ExprSyntax" && v._4._2._1._2.tag === "Local" && v._2 === v._4._2._1._2._2) {
+                                      return v._3;
+                                    }
+                                  }
+                                  return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
                                 }
-                                if (v._4._2.tag === "EffectPure" && v._4._2._1.tag === "ExprSyntax" && v._4._2._1._2.tag === "Local" && v._2 === v._4._2._1._2._2) {
-                                  return v._3;
+                                if (v._4.tag === "ExprSyntax") {
+                                  if (v._4._2.tag === "EffectDefer") {
+                                    return build(ctx)($BackendSyntax("EffectBind", v._1, v._2, v._3, v._4._2._1));
+                                  }
+                                  if (v._4._2.tag === "EffectPure" && v._4._2._1.tag === "ExprSyntax" && v._4._2._1._2.tag === "Local" && v._2 === v._4._2._1._2._2) {
+                                    return v._3;
+                                  }
                                 }
+                                return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
+                              }
+                              if (v.tag === "EffectDefer") {
+                                if (v._1.tag === "ExprSyntax" && v._1._2.tag === "EffectDefer") {
+                                  return v._1;
+                                }
+                                return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
+                              }
+                              if (v.tag === "PrimOp" && v._1.tag === "Op1" && v._1._1.tag === "OpBooleanNot" && v._1._2.tag === "ExprSyntax" && v._1._2._2.tag === "PrimOp" && v._1._2._2._1.tag === "Op1" && v._1._2._2._1._1.tag === "OpBooleanNot") {
+                                return v._1._2._2._1._2;
                               }
                               return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
-                            }
-                            if (v._4.tag === "ExprSyntax") {
-                              if (v._4._2.tag === "EffectDefer") {
-                                return build(ctx)($BackendSyntax("EffectBind", v._1, v._2, v._3, v._4._2._1));
+                            };
+                            if (v.tag === "PrimOp" && v._1.tag === "Op2") {
+                              const $02 = v._1._3.tag === "ExprSyntax" && v._1._3._2.tag === "Typed" ? untypedExpr(v._1._3._2._2) : v._1._3;
+                              if ($02.tag === "ExprSyntax" && $02._2.tag === "Branch") {
+                                const $1 = shouldDistributeBranchPrimOp2R((() => {
+                                  if (v._1._3.tag === "ExprSyntax") {
+                                    return v._1._3._1;
+                                  }
+                                  if (v._1._3.tag === "ExprRewrite") {
+                                    return v._1._3._1;
+                                  }
+                                  fail();
+                                })())($02._2._1)($02._2._2)(v._1._2)(v._1._1);
+                                if ($1.tag === "Just") {
+                                  return $1._1;
+                                }
                               }
-                              if (v._4._2.tag === "EffectPure" && v._4._2._1.tag === "ExprSyntax" && v._4._2._1._2.tag === "Local" && v._2 === v._4._2._1._2._2) {
-                                return v._3;
+                            }
+                            return v25(true);
+                          };
+                          if (v.tag === "PrimOp" && v._1.tag === "Op2") {
+                            const $02 = v._1._2.tag === "ExprSyntax" && v._1._2._2.tag === "Typed" ? untypedExpr(v._1._2._2._2) : v._1._2;
+                            if ($02.tag === "ExprSyntax" && $02._2.tag === "Branch") {
+                              const $1 = shouldDistributeBranchPrimOp2L((() => {
+                                if (v._1._2.tag === "ExprSyntax") {
+                                  return v._1._2._1;
+                                }
+                                if (v._1._2.tag === "ExprRewrite") {
+                                  return v._1._2._1;
+                                }
+                                fail();
+                              })())($02._2._1)($02._2._2)(v._1._1)(v._1._3);
+                              if ($1.tag === "Just") {
+                                return $1._1;
                               }
                             }
-                            return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
                           }
-                          if (v.tag === "EffectDefer") {
-                            if (v._1.tag === "ExprSyntax" && v._1._2.tag === "EffectDefer") {
-                              return v._1;
-                            }
-                            return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
-                          }
-                          if (v.tag === "PrimOp" && v._1.tag === "Op1" && v._1._1.tag === "OpBooleanNot" && v._1._2.tag === "ExprSyntax" && v._1._2._2.tag === "PrimOp" && v._1._2._2._1.tag === "Op1" && v._1._2._2._1._1.tag === "OpBooleanNot") {
-                            return v._1._2._2._1._2;
-                          }
-                          return $BackendExpr("ExprSyntax", ctx.analyze(ctx)(v), v);
+                          return v23(true);
                         };
-                        if (v.tag === "PrimOp" && v._1.tag === "Op2" && v._1._3.tag === "ExprSyntax" && v._1._3._2.tag === "Branch") {
-                          const $02 = shouldDistributeBranchPrimOp2R(v._1._3._1)(v._1._3._2._1)(v._1._3._2._2)(v._1._2)(v._1._1);
-                          if ($02.tag === "Just") {
-                            return $02._1;
+                        if (v.tag === "PrimOp" && v._1.tag === "Op1") {
+                          const $02 = v._1._2.tag === "ExprSyntax" && v._1._2._2.tag === "Typed" ? untypedExpr(v._1._2._2._2) : v._1._2;
+                          if ($02.tag === "ExprSyntax" && $02._2.tag === "Branch") {
+                            const $1 = (() => {
+                              if (v._1._2.tag === "ExprSyntax") {
+                                return v._1._2._1;
+                              }
+                              if (v._1._2.tag === "ExprRewrite") {
+                                return v._1._2._1;
+                              }
+                              fail();
+                            })();
+                            return $BackendExpr(
+                              "ExprRewrite",
+                              { ...$1, rewrite: true, size: $1.size + 1 | 0 },
+                              $BackendRewrite("RewriteDistBranchesOp", $02._2._1, $02._2._2, $DistOp("DistPrimOp1", v._1._1))
+                            );
                           }
                         }
-                        return v25(true);
+                        return v21(true);
                       };
-                      if (v.tag === "PrimOp" && v._1.tag === "Op2" && v._1._2.tag === "ExprSyntax" && v._1._2._2.tag === "Branch") {
-                        const $02 = shouldDistributeBranchPrimOp2L(v._1._2._1)(v._1._2._2._1)(v._1._2._2._2)(v._1._1)(v._1._3);
-                        if ($02.tag === "Just") {
-                          return $02._1;
+                      if (v.tag === "Accessor") {
+                        const $02 = v._1.tag === "ExprSyntax" && v._1._2.tag === "Typed" ? untypedExpr(v._1._2._2) : v._1;
+                        if ($02.tag === "ExprSyntax" && $02._2.tag === "Branch") {
+                          const $1 = (() => {
+                            if (v._1.tag === "ExprSyntax") {
+                              return v._1._1;
+                            }
+                            if (v._1.tag === "ExprRewrite") {
+                              return v._1._1;
+                            }
+                            fail();
+                          })();
+                          return $BackendExpr(
+                            "ExprRewrite",
+                            { ...$1, rewrite: true, size: $1.size + 1 | 0 },
+                            $BackendRewrite("RewriteDistBranchesOp", $02._2._1, $02._2._2, $DistOp("DistAccessor", v._2))
+                          );
                         }
                       }
-                      return v23(true);
+                      return v19(true);
                     };
-                    if (v.tag === "UncurriedApp" && v._1.tag === "ExprSyntax" && v._1._2.tag === "Branch") {
-                      const $02 = shouldDistributeBranchUncurriedApps(v._1._1)(v._1._2._1)(v._1._2._2)(v._2);
-                      if ($02.tag === "Just") {
-                        return $02._1;
+                    if (v.tag === "UncurriedApp") {
+                      const $02 = v._1.tag === "ExprSyntax" && v._1._2.tag === "Typed" ? untypedExpr(v._1._2._2) : v._1;
+                      if ($02.tag === "ExprSyntax" && $02._2.tag === "Branch") {
+                        const $1 = shouldDistributeBranchUncurriedApps((() => {
+                          if (v._1.tag === "ExprSyntax") {
+                            return v._1._1;
+                          }
+                          if (v._1.tag === "ExprRewrite") {
+                            return v._1._1;
+                          }
+                          fail();
+                        })())($02._2._1)($02._2._2)(v._2);
+                        if ($1.tag === "Just") {
+                          return $1._1;
+                        }
                       }
                     }
                     return v17(true);
                   };
-                  if (v.tag === "App" && v._1.tag === "ExprSyntax" && v._1._2.tag === "Branch") {
-                    const $02 = shouldDistributeBranchApps(v._1._1)(v._1._2._1)(v._1._2._2)(v._2);
-                    if ($02.tag === "Just") {
-                      return $02._1;
+                  if (v.tag === "App") {
+                    const $02 = v._1.tag === "ExprSyntax" && v._1._2.tag === "Typed" ? untypedExpr(v._1._2._2) : v._1;
+                    if ($02.tag === "ExprSyntax" && $02._2.tag === "Branch") {
+                      const $1 = shouldDistributeBranchApps((() => {
+                        if (v._1.tag === "ExprSyntax") {
+                          return v._1._1;
+                        }
+                        if (v._1.tag === "ExprRewrite") {
+                          return v._1._1;
+                        }
+                        fail();
+                      })())($02._2._1)($02._2._2)(v._2);
+                      if ($1.tag === "Just") {
+                        return $1._1;
+                      }
                     }
                   }
                   return v15(true);
@@ -9607,16 +9757,18 @@ var build = (ctx) => (v) => {
   }
   return $0();
 };
-var simplifyCondBoolean = (ctx) => (v) => (v1) => {
-  if (v._2.tag === "ExprSyntax" && v._2._2.tag === "Lit" && v._2._2._1.tag === "LitBoolean") {
+var simplifyCondBoolean = (ctx) => (v) => (other) => {
+  const v1 = other.tag === "ExprSyntax" && other._2.tag === "Typed" ? untypedExpr(other._2._2) : other;
+  const v2 = v._2.tag === "ExprSyntax" && v._2._2.tag === "Typed" ? untypedExpr(v._2._2._2) : v._2;
+  if (v2.tag === "ExprSyntax" && v2._2.tag === "Lit" && v2._2._1.tag === "LitBoolean") {
     if (v1.tag === "ExprSyntax" && v1._2.tag === "Lit" && v1._2._1.tag === "LitBoolean") {
-      if (v._2._2._1._1 === v1._2._1._1) {
+      if (v2._2._1._1 === v1._2._1._1) {
         return $Maybe("Just", v._2);
       }
-      if (v._2._2._1._1 && !v1._2._1._1) {
+      if (v2._2._1._1 && !v1._2._1._1) {
         return $Maybe("Just", v._1);
       }
-      if (!v._2._2._1._1 && v1._2._1._1) {
+      if (!v2._2._1._1 && v1._2._1._1) {
         return $Maybe(
           "Just",
           build(ctx)($BackendSyntax(
@@ -9625,12 +9777,12 @@ var simplifyCondBoolean = (ctx) => (v) => (v1) => {
           ))
         );
       }
-      if (v._2._2._1._1 && v1.tag === "ExprSyntax" && (v1._2.tag === "Lit" || v1._2.tag === "Var" || v1._2.tag === "Local" || v1._2.tag === "PrimOp")) {
+      if (v2._2._1._1 && isSimplePredicate(other)) {
         return $Maybe(
           "Just",
           build(ctx)($BackendSyntax(
             "PrimOp",
-            $BackendOperator("Op2", OpBooleanOr, v._1, v1)
+            $BackendOperator("Op2", OpBooleanOr, v._1, other)
           ))
         );
       }
@@ -9645,12 +9797,12 @@ var simplifyCondBoolean = (ctx) => (v) => (v1) => {
       }
       return Nothing;
     }
-    if (v._2._2._1._1 && v1.tag === "ExprSyntax" && (v1._2.tag === "Lit" || v1._2.tag === "Var" || v1._2.tag === "Local" || v1._2.tag === "PrimOp")) {
+    if (v2._2._1._1 && isSimplePredicate(other)) {
       return $Maybe(
         "Just",
         build(ctx)($BackendSyntax(
           "PrimOp",
-          $BackendOperator("Op2", OpBooleanOr, v._1, v1)
+          $BackendOperator("Op2", OpBooleanOr, v._1, other)
         ))
       );
     }
@@ -9667,30 +9819,33 @@ var simplifyCondBoolean = (ctx) => (v) => (v1) => {
   }
   return Nothing;
 };
-var simplifyCondRedundantElse = (ctx) => (v) => (v1) => {
-  if (v1.tag === "ExprSyntax" && v1._2.tag === "Branch") {
-    const $0 = (() => {
-      if (0 < v1._2._1.length) {
-        return v1._2._1[0];
+var simplifyCondRedundantElse = (ctx) => (v) => (def) => {
+  const $0 = def.tag === "ExprSyntax" && def._2.tag === "Typed" ? untypedExpr(def._2._2) : def;
+  if ($0.tag === "ExprSyntax" && $0._2.tag === "Branch") {
+    const $1 = (() => {
+      if (0 < $0._2._1.length) {
+        return $0._2._1[0];
       }
       fail();
     })();
-    if ($0._1.tag === "ExprSyntax" && $0._1._2.tag === "PrimOp" && $0._1._2._1.tag === "Op1" && $0._1._2._1._1.tag === "OpBooleanNot" && eqBackendExpr.eq(v._1)($0._1._2._1._2)) {
-      return $Maybe("Just", buildBranchCond(ctx)($Pair(v._1, v._2))($0._2));
+    const $2 = $1._1.tag === "ExprSyntax" && $1._1._2.tag === "Typed" ? untypedExpr($1._1._2._2) : $1._1;
+    if ($2.tag === "ExprSyntax" && $2._2.tag === "PrimOp" && $2._2._1.tag === "Op1" && $2._2._1._1.tag === "OpBooleanNot" && eqBackendExpr.eq(v._1)($2._2._1._2)) {
+      return $Maybe("Just", buildBranchCond(ctx)($Pair(v._1, v._2))($1._2));
     }
   }
   return Nothing;
 };
-var simplifyCondLiftAnd = (ctx) => (pair) => (def1) => {
-  if (pair._2.tag === "ExprSyntax" && pair._2._2.tag === "Branch" && pair._2._2._1.length === 1 && eqBackendExpr.eq(def1)(pair._2._2._2)) {
+var simplifyCondLiftAnd = (ctx) => (v) => (def1) => {
+  const $0 = v._2.tag === "ExprSyntax" && v._2._2.tag === "Typed" ? untypedExpr(v._2._2._2) : v._2;
+  if ($0.tag === "ExprSyntax" && $0._2.tag === "Branch" && $0._2._1.length === 1 && eqBackendExpr.eq(def1)($0._2._2)) {
     return $Maybe(
       "Just",
       buildBranchCond(ctx)($Pair(
         build(ctx)($BackendSyntax(
           "PrimOp",
-          $BackendOperator("Op2", OpBooleanAnd, pair._1, pair._2._2._1[0]._1)
+          $BackendOperator("Op2", OpBooleanAnd, v._1, $0._2._1[0]._1)
         )),
-        pair._2._2._1[0]._2
+        $0._2._1[0]._2
       ))(def1)
     );
   }
@@ -9988,12 +10143,12 @@ var quote$lazy = /* @__PURE__ */ binding(() => {
 });
 var quote = /* @__PURE__ */ quote$lazy();
 var evalApp = (env) => (hd) => (spine) => {
-  const go = (env$p) => (v) => (v1) => {
+  const go = (mbTy) => (env$p) => (v) => (v1) => {
     const $0 = (args, ident, k, val) => $BackendSemantics(
       "SemLet",
       ident,
       val,
-      (nextVal) => makeLet(Nothing)(k(nextVal))((nextFn) => go({
+      (nextVal) => makeLet(Nothing)(k(nextVal))((nextFn) => go(mbTy)({
         ...env$p,
         locals: snoc(snoc(env$p.locals)($LocalBinding("One", nextVal)))($LocalBinding("One", nextFn))
       })(nextFn)(args))
@@ -10001,18 +10156,28 @@ var evalApp = (env) => (hd) => (spine) => {
     const $1 = (args, k, vals) => $BackendSemantics(
       "SemLetRec",
       vals,
-      (nextVals) => makeLet(Nothing)(k(nextVals))((nextFn) => go({
+      (nextVals) => makeLet(Nothing)(k(nextVals))((nextFn) => go(mbTy)({
         ...env$p,
         locals: snoc(snoc(env$p.locals)($LocalBinding("Group", nextVals)))($LocalBinding("One", nextFn))
       })(nextFn)(args))
     );
+    const $2 = (args, fn) => $BackendSemantics(
+      "NeutApp",
+      (() => {
+        if (mbTy.tag === "Just") {
+          return $BackendSemantics("SemTyped", mbTy._1, fn);
+        }
+        if (mbTy.tag === "Nothing") {
+          return fn;
+        }
+        fail();
+      })(),
+      toUnfoldable1(args)
+    );
     if (v.tag === "SemTyped") {
-      return go(env$p)(v._2)(v1);
+      return go($Maybe("Just", v._1))(env$p)(v._2)(v1);
     }
     if (v1.tag === "Cons") {
-      if (v1._1.tag === "SemTyped") {
-        return go(env$p)(v)($List("Cons", v1._1._2, v1._2));
-      }
       if (v1._1.tag === "NeutFail") {
         return $BackendSemantics("NeutFail", v1._1._1);
       }
@@ -10020,11 +10185,11 @@ var evalApp = (env) => (hd) => (spine) => {
         return $BackendSemantics("NeutFail", v._1);
       }
       if (v.tag === "SemLam") {
-        const $2 = v1._2;
-        return makeLet(Nothing)(v1._1)((nextArg) => go(env$p)(v._2(nextArg))($2));
+        const $3 = v1._2;
+        return makeLet(Nothing)(v1._1)((nextArg) => go(Nothing)(env$p)(v._2(nextArg))($3));
       }
       if (v.tag === "SemRef") {
-        return go(env$p)(evalRef(env$p)(v._1)(v._2)($ExternSpine("ExternApp", [v1._1]))(v._3))(v1._2);
+        return go(Nothing)(env$p)(evalRef(env$p)(v._1)(v._2)($ExternSpine("ExternApp", [v1._1]))(v._3))(v1._2);
       }
       if (v.tag === "SemLet") {
         return $0(v1, v._1, v._3, v._2);
@@ -10055,7 +10220,7 @@ var evalApp = (env) => (hd) => (spine) => {
       })()) {
         return _crashWith("CRASH CtorDef");
       }
-      return $BackendSemantics("NeutApp", v, toUnfoldable1(v1));
+      return $2(v1, v);
     }
     if (v.tag === "NeutFail") {
       return $BackendSemantics("NeutFail", v._1);
@@ -10090,11 +10255,17 @@ var evalApp = (env) => (hd) => (spine) => {
       return _crashWith("CRASH CtorDef");
     }
     if (v1.tag === "Nil") {
-      return v;
+      if (mbTy.tag === "Just") {
+        return $BackendSemantics("SemTyped", mbTy._1, v);
+      }
+      if (mbTy.tag === "Nothing") {
+        return v;
+      }
+      fail();
     }
-    return $BackendSemantics("NeutApp", v, toUnfoldable1(v1));
+    return $2(v1, v);
   };
-  return go(env)(hd)(fromFoldable3(spine));
+  return go(Nothing)(env)(hd)(fromFoldable3(spine));
 };
 var evalMkFn = (env) => (n) => (sem) => {
   if (n === 0) {
@@ -10120,33 +10291,60 @@ var evalMkFn = (env) => (n) => (sem) => {
   );
 };
 var evalUncurriedApp = (env) => (hd) => (spine) => {
-  if (hd.tag === "SemTyped") {
-    return evalUncurriedApp(env)(hd._2)(spine);
-  }
-  if (hd.tag === "SemMkFn") {
-    return evalUncurriedBeta(NeutUncurriedApp)(hd._1)(spine);
-  }
-  if (hd.tag === "SemRef") {
-    const $0 = hd._1;
-    const $1 = hd._3;
-    const $2 = hd._2;
-    return guardFailOver1(identity7)(spine)((spine$p) => evalRef(env)($0)($2)($ExternSpine("ExternUncurriedApp", spine$p))($1));
-  }
-  if (hd.tag === "SemLet") {
-    return $BackendSemantics(
-      "SemLet",
-      hd._1,
-      hd._2,
-      (nextVal) => makeLet(Nothing)(hd._3(nextVal))((nextFn) => evalUncurriedApp({
-        ...env,
-        locals: snoc(snoc(env.locals)($LocalBinding("One", nextVal)))($LocalBinding("One", nextFn))
-      })(nextFn)(spine))
-    );
-  }
-  if (hd.tag === "NeutFail") {
-    return $BackendSemantics("NeutFail", hd._1);
-  }
-  return guardFailOver1(identity7)(spine)(NeutUncurriedApp(hd));
+  const go = (go$a0$copy) => (go$a1$copy) => {
+    let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
+    while (go$c) {
+      const mbTy = go$a0, v = go$a1;
+      if (v.tag === "SemTyped") {
+        go$a0 = $Maybe("Just", v._1);
+        go$a1 = v._2;
+        continue;
+      }
+      if (v.tag === "SemMkFn") {
+        go$c = false;
+        go$r = evalUncurriedBeta(NeutUncurriedApp)(v._1)(spine);
+        continue;
+      }
+      if (v.tag === "SemRef") {
+        const $0 = v._1;
+        const $1 = v._3;
+        const $2 = v._2;
+        go$c = false;
+        go$r = guardFailOver1(identity7)(spine)((spine$p) => evalRef(env)($0)($2)($ExternSpine("ExternUncurriedApp", spine$p))($1));
+        continue;
+      }
+      if (v.tag === "SemLet") {
+        go$c = false;
+        go$r = $BackendSemantics(
+          "SemLet",
+          v._1,
+          v._2,
+          (nextVal) => makeLet(Nothing)(v._3(nextVal))((nextFn) => evalUncurriedApp({
+            ...env,
+            locals: snoc(snoc(env.locals)($LocalBinding("One", nextVal)))($LocalBinding("One", nextFn))
+          })(nextFn)(spine))
+        );
+        continue;
+      }
+      if (v.tag === "NeutFail") {
+        go$c = false;
+        go$r = $BackendSemantics("NeutFail", v._1);
+        continue;
+      }
+      go$c = false;
+      go$r = guardFailOver1(identity7)(spine)(NeutUncurriedApp((() => {
+        if (mbTy.tag === "Just") {
+          return $BackendSemantics("SemTyped", mbTy._1, v);
+        }
+        if (mbTy.tag === "Nothing") {
+          return v;
+        }
+        fail();
+      })()));
+    }
+    return go$r;
+  };
+  return go(Nothing)(hd);
 };
 var evalSpine = (env) => foldlArray((hd) => (v) => {
   if (v.tag === "ExternApp") {
@@ -10173,27 +10371,52 @@ var mkUncurriedAppRewrite = (env) => (hd) => {
   return go([]);
 };
 var evalUncurriedEffectApp = (env) => (hd) => (spine) => {
-  if (hd.tag === "SemTyped") {
-    return evalUncurriedEffectApp(env)(hd._2)(spine);
-  }
-  if (hd.tag === "SemMkEffectFn") {
-    return evalUncurriedBeta(NeutUncurriedEffectApp)(hd._1)(spine);
-  }
-  if (hd.tag === "SemLet") {
-    return $BackendSemantics(
-      "SemLet",
-      hd._1,
-      hd._2,
-      (nextVal) => makeLet(Nothing)(hd._3(nextVal))((nextFn) => evalUncurriedEffectApp({
-        ...env,
-        locals: snoc(snoc(env.locals)($LocalBinding("One", nextVal)))($LocalBinding("One", nextFn))
-      })(nextFn)(spine))
-    );
-  }
-  if (hd.tag === "NeutFail") {
-    return $BackendSemantics("NeutFail", hd._1);
-  }
-  return guardFailOver1(identity7)(spine)(NeutUncurriedEffectApp(hd));
+  const go = (go$a0$copy) => (go$a1$copy) => {
+    let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
+    while (go$c) {
+      const mbTy = go$a0, v = go$a1;
+      if (v.tag === "SemTyped") {
+        go$a0 = $Maybe("Just", v._1);
+        go$a1 = v._2;
+        continue;
+      }
+      if (v.tag === "SemMkEffectFn") {
+        go$c = false;
+        go$r = evalUncurriedBeta(NeutUncurriedEffectApp)(v._1)(spine);
+        continue;
+      }
+      if (v.tag === "SemLet") {
+        go$c = false;
+        go$r = $BackendSemantics(
+          "SemLet",
+          v._1,
+          v._2,
+          (nextVal) => makeLet(Nothing)(v._3(nextVal))((nextFn) => evalUncurriedEffectApp({
+            ...env,
+            locals: snoc(snoc(env.locals)($LocalBinding("One", nextVal)))($LocalBinding("One", nextFn))
+          })(nextFn)(spine))
+        );
+        continue;
+      }
+      if (v.tag === "NeutFail") {
+        go$c = false;
+        go$r = $BackendSemantics("NeutFail", v._1);
+        continue;
+      }
+      go$c = false;
+      go$r = guardFailOver1(identity7)(spine)(NeutUncurriedEffectApp((() => {
+        if (mbTy.tag === "Just") {
+          return $BackendSemantics("SemTyped", mbTy._1, v);
+        }
+        if (mbTy.tag === "Nothing") {
+          return v;
+        }
+        fail();
+      })()));
+    }
+    return go$r;
+  };
+  return go(Nothing)(hd);
 };
 var mkFnFromArgs = (dictEval) => (env) => (args) => (body) => $BackendSemantics(
   "SemMkFn",
@@ -10694,27 +10917,138 @@ var addStop = (v) => (ref) => (acc) => ({
   })(ref)(v.directives)
 });
 var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
-  if (spine.length === 0) {
-    if (v1._2.tag === "ExternExpr") {
-      const $0 = v1._2._2;
-      const $1 = v1._2._1;
-      const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-      const $3 = lookup22(InlineRef);
-      const v2 = (() => {
-        if ($2.tag === "Just") {
-          return $3($2._1);
+  const $0 = v1._2;
+  const $1 = () => {
+    const $12 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), spine);
+    if ($12.tag === "Just" && $12._1.head.tag === "ExternAccessor" && $12._1.head._1.tag === "GetProp") {
+      const $22 = $12._1.head._1._1;
+      if ($0.tag === "ExternExpr") {
+        const $3 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+        const $4 = lookup22($InlineAccessor("InlineProp", $22));
+        const v3 = (() => {
+          if ($3.tag === "Just") {
+            return $4($3._1);
+          }
+          if ($3.tag === "Nothing") {
+            return Nothing;
+          }
+          fail();
+        })();
+        if (v3.tag === "Just" && v3._1.tag === "InlineAlways") {
+          return $Maybe(
+            "Just",
+            evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", $22)))($0._2))(spine)
+          );
         }
-        if ($2.tag === "Nothing") {
+        return Nothing;
+      }
+      if ($0.tag === "ExternDict") {
+        const $3 = findMapImpl(
+          Nothing,
+          isJust,
+          (v$1) => {
+            if ($22 === v$1._1) {
+              return $Maybe("Just", v$1._2);
+            }
+            return Nothing;
+          },
+          $0._2
+        );
+        if ($3.tag === "Just") {
+          const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+          const $5 = lookup22($InlineAccessor("InlineProp", $22));
+          const v42 = (() => {
+            if ($4.tag === "Just") {
+              return $5($4._1);
+            }
+            if ($4.tag === "Nothing") {
+              return Nothing;
+            }
+            fail();
+          })();
+          if (v42.tag === "Just" && v42._1.tag === "InlineAlways") {
+            return $Maybe(
+              "Just",
+              evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", $22)))($3._1._2))($12._1.tail)
+            );
+          }
+        }
+      }
+      return Nothing;
+    }
+    const v4 = (v5) => {
+      const $22 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), spine);
+      if ($22.tag === "Just" && $22._1.head.tag === "ExternApp" && $0.tag === "ExternExpr") {
+        const $3 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+        const $4 = lookup22(InlineRef);
+        const v7 = (() => {
+          if ($3.tag === "Just") {
+            return $4($3._1);
+          }
+          if ($3.tag === "Nothing") {
+            return Nothing;
+          }
+          fail();
+        })();
+        if (v7.tag === "Just" && v7._1.tag === "InlineAlways") {
+          return $Maybe(
+            "Just",
+            evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0._2))(spine)
+          );
+        }
+      }
+      return Nothing;
+    };
+    const $2 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), spine);
+    if ($2.tag === "Just" && $2._1.head.tag === "ExternApp") {
+      const $3 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), $2._1.tail);
+      if ($3.tag === "Just" && $3._1.head.tag === "ExternAccessor" && $3._1.head._1.tag === "GetProp") {
+        const $4 = $3._1.head._1._1;
+        if ($0.tag === "ExternExpr") {
+          const $5 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+          const $6 = lookup22($InlineAccessor("InlineSpineProp", $4));
+          const v5 = (() => {
+            if ($5.tag === "Just") {
+              return $6($5._1);
+            }
+            if ($5.tag === "Nothing") {
+              return Nothing;
+            }
+            fail();
+          })();
+          if (v5.tag === "Just" && v5._1.tag === "InlineAlways") {
+            return $Maybe(
+              "Just",
+              evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", $4)))($0._2))(spine)
+            );
+          }
+        }
+        return Nothing;
+      }
+    }
+    return v4(true);
+  };
+  if (spine.length === 0) {
+    if ($0.tag === "ExternExpr") {
+      const $2 = $0._2;
+      const $3 = $0._1;
+      const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+      const $5 = lookup22(InlineRef);
+      const v2 = (() => {
+        if ($4.tag === "Just") {
+          return $5($4._1);
+        }
+        if ($4.tag === "Nothing") {
           return Nothing;
         }
         fail();
       })();
-      const $4 = () => {
-        if ($0.tag === "Lit" && shouldInlineExternLiteral($0._1)) {
-          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0));
+      const $6 = () => {
+        if ($2.tag === "Lit" && shouldInlineExternLiteral($2._1)) {
+          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2));
         }
         if ((v1._1.complexity === "Trivial" || v1._1.complexity === "Deref") && v1._1.size < 16) {
-          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0));
+          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2));
         }
         return Nothing;
       };
@@ -10723,30 +11057,30 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           return $Maybe("Just", $BackendSemantics("NeutStop", qual));
         }
         if (v2._1.tag === "InlineAlways") {
-          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0));
+          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2));
         }
         if (v2._1.tag === "InlineArity") {
           return Nothing;
         }
       }
-      return $4();
+      return $6();
     }
-    if (v1._2.tag === "ExternCtor" && v1._2._5.length === 0) {
-      return $Maybe("Just", $BackendSemantics("NeutData", qual, v1._2._2, v1._2._3, v1._2._4, []));
+    if ($0.tag === "ExternCtor" && $0._5.length === 0) {
+      return $Maybe("Just", $BackendSemantics("NeutData", qual, $0._2, $0._3, $0._4, []));
     }
     return Nothing;
   }
   if (spine.length === 1) {
     if (spine[0].tag === "ExternAccessor") {
       if (spine[0]._1.tag === "GetProp") {
-        if (v1._2.tag === "ExternExpr") {
-          const $0 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-          const $1 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+        if ($0.tag === "ExternExpr") {
+          const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+          const $3 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
           const v2 = (() => {
-            if ($0.tag === "Just") {
-              return $1($0._1);
+            if ($2.tag === "Just") {
+              return $3($2._1);
             }
-            if ($0.tag === "Nothing") {
+            if ($2.tag === "Nothing") {
               return Nothing;
             }
             fail();
@@ -10758,14 +11092,14 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
             if (v2._1.tag === "InlineAlways") {
               return $Maybe(
                 "Just",
-                evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))(v1._2._2))(spine)
+                evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($0._2))(spine)
               );
             }
           }
           return Nothing;
         }
-        if (v1._2.tag === "ExternDict") {
-          const $0 = findMapImpl(
+        if ($0.tag === "ExternDict") {
+          const $2 = findMapImpl(
             Nothing,
             isJust,
             (v$1) => {
@@ -10774,24 +11108,24 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
               }
               return Nothing;
             },
-            v1._2._2
+            $0._2
           );
-          if ($0.tag === "Just") {
-            const $1 = $0._1._2;
-            const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-            const $3 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+          if ($2.tag === "Just") {
+            const $3 = $2._1._2;
+            const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+            const $5 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
             const v3 = (() => {
-              if ($2.tag === "Just") {
-                return $3($2._1);
+              if ($4.tag === "Just") {
+                return $5($4._1);
               }
-              if ($2.tag === "Nothing") {
+              if ($4.tag === "Nothing") {
                 return Nothing;
               }
               fail();
             })();
-            const $4 = () => $Maybe(
+            const $6 = () => $Maybe(
               "Just",
-              evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($1)
+              evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3)
             );
             if (v3.tag === "Just") {
               if (v3._1.tag === "InlineNever") {
@@ -10800,27 +11134,169 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
               if (v3._1.tag === "InlineAlways") {
                 return $Maybe(
                   "Just",
-                  evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($1)
+                  evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3)
                 );
               }
               if (v3._1.tag === "InlineArity") {
                 return Nothing;
               }
             }
-            if (($0._1._1.complexity === "Trivial" || $0._1._1.complexity === "Deref") && $0._1._1.size < 16) {
-              return $4();
+            if (($2._1._1.complexity === "Trivial" || $2._1._1.complexity === "Deref") && $2._1._1.size < 16) {
+              return $6();
             }
           }
         }
+        return Nothing;
+      }
+      return $1();
+    }
+    if (spine[0].tag === "ExternApp") {
+      if ($0.tag === "ExternExpr") {
+        const $2 = $0._2;
+        const $3 = $0._1;
+        const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+        const $5 = lookup22(InlineRef);
+        const v2 = (() => {
+          if ($4.tag === "Just") {
+            return $5($4._1);
+          }
+          if ($4.tag === "Nothing") {
+            return Nothing;
+          }
+          fail();
+        })();
+        const $6 = () => $Maybe(
+          "Just",
+          evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2))(spine[0]._1)
+        );
+        if (v2.tag === "Just") {
+          if (v2._1.tag === "InlineNever") {
+            return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
+          }
+          if (v2._1.tag === "InlineAlways") {
+            return $Maybe(
+              "Just",
+              evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2))(spine[0]._1)
+            );
+          }
+          if (v2._1.tag === "InlineArity") {
+            if (spine[0]._1.length >= v2._1._1) {
+              return $Maybe(
+                "Just",
+                evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2))(spine[0]._1)
+              );
+            }
+            return Nothing;
+          }
+        }
+        if (shouldInlineExternApp(qual)(v1._1)($2)(spine[0]._1)) {
+          return $6();
+        }
+        return Nothing;
+      }
+      if ($0.tag === "ExternCtor" && $0._5.length === spine[0]._1.length) {
+        return $Maybe("Just", $BackendSemantics("NeutData", qual, $0._2, $0._3, $0._4, zipWithImpl(Tuple, $0._5, spine[0]._1)));
       }
       return Nothing;
     }
-    if (spine[0].tag === "ExternApp") {
-      if (v1._2.tag === "ExternExpr") {
-        const $0 = v1._2._2;
-        const $1 = v1._2._1;
+    return $1();
+  }
+  if (spine.length === 2) {
+    if (spine[0].tag === "ExternAccessor") {
+      if (spine[0]._1.tag === "GetProp" && spine[1].tag === "ExternApp") {
+        if ($0.tag === "ExternExpr") {
+          const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+          const $3 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+          const v2 = (() => {
+            if ($2.tag === "Just") {
+              return $3($2._1);
+            }
+            if ($2.tag === "Nothing") {
+              return Nothing;
+            }
+            fail();
+          })();
+          if (v2.tag === "Just") {
+            if (v2._1.tag === "InlineNever") {
+              return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
+            }
+            if (v2._1.tag === "InlineAlways") {
+              return $Maybe(
+                "Just",
+                evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($0._2))(spine)
+              );
+            }
+            if (v2._1.tag === "InlineArity" && spine[1]._1.length >= v2._1._1) {
+              return $Maybe(
+                "Just",
+                evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($0._2))(spine)
+              );
+            }
+          }
+          return Nothing;
+        }
+        if ($0.tag === "ExternDict") {
+          const $2 = findMapImpl(
+            Nothing,
+            isJust,
+            (v$1) => {
+              if (spine[0]._1._1 === v$1._1) {
+                return $Maybe("Just", v$1._2);
+              }
+              return Nothing;
+            },
+            $0._2
+          );
+          if ($2.tag === "Just") {
+            const $3 = $2._1._2;
+            const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+            const $5 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+            const v3 = (() => {
+              if ($4.tag === "Just") {
+                return $5($4._1);
+              }
+              if ($4.tag === "Nothing") {
+                return Nothing;
+              }
+              fail();
+            })();
+            const $6 = () => $Maybe(
+              "Just",
+              evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3))(spine[1]._1)
+            );
+            if (v3.tag === "Just") {
+              if (v3._1.tag === "InlineNever") {
+                return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
+              }
+              if (v3._1.tag === "InlineAlways") {
+                return $Maybe(
+                  "Just",
+                  evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3))(spine[1]._1)
+                );
+              }
+              if (v3._1.tag === "InlineArity") {
+                if (spine[1]._1.length >= v3._1._1) {
+                  return $Maybe(
+                    "Just",
+                    evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3))(spine[1]._1)
+                  );
+                }
+                return Nothing;
+              }
+            }
+            if (shouldInlineExternApp(qual)($2._1._1)($3)(spine[1]._1)) {
+              return $6();
+            }
+          }
+        }
+        return Nothing;
+      }
+      return $1();
+    }
+    if (spine[0].tag === "ExternApp" && spine[1].tag === "ExternAccessor" && spine[1]._1.tag === "GetProp") {
+      if ($0.tag === "ExternExpr") {
         const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-        const $3 = lookup22(InlineRef);
+        const $3 = lookup22($InlineAccessor("InlineSpineProp", spine[1]._1._1));
         const v2 = (() => {
           if ($2.tag === "Just") {
             return $3($2._1);
@@ -10830,10 +11306,6 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           }
           fail();
         })();
-        const $4 = () => $Maybe(
-          "Just",
-          evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0))(spine[0]._1)
-        );
         if (v2.tag === "Just") {
           if (v2._1.tag === "InlineNever") {
             return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
@@ -10841,129 +11313,24 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           if (v2._1.tag === "InlineAlways") {
             return $Maybe(
               "Just",
-              evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0))(spine[0]._1)
+              evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", spine[1]._1._1)))($0._2))(spine)
             );
-          }
-          if (v2._1.tag === "InlineArity") {
-            if (spine[0]._1.length >= v2._1._1) {
-              return $Maybe(
-                "Just",
-                evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($0))(spine[0]._1)
-              );
-            }
-            return Nothing;
-          }
-        }
-        if (shouldInlineExternApp(qual)(v1._1)($0)(spine[0]._1)) {
-          return $4();
-        }
-        return Nothing;
-      }
-      if (v1._2.tag === "ExternCtor" && v1._2._5.length === spine[0]._1.length) {
-        return $Maybe("Just", $BackendSemantics("NeutData", qual, v1._2._2, v1._2._3, v1._2._4, zipWithImpl(Tuple, v1._2._5, spine[0]._1)));
-      }
-    }
-    return Nothing;
-  }
-  if (spine.length === 2) {
-    if (spine[0].tag === "ExternAccessor") {
-      if (spine[0]._1.tag === "GetProp" && spine[1].tag === "ExternApp") {
-        if (v1._2.tag === "ExternExpr") {
-          const $0 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-          const $1 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
-          const v2 = (() => {
-            if ($0.tag === "Just") {
-              return $1($0._1);
-            }
-            if ($0.tag === "Nothing") {
-              return Nothing;
-            }
-            fail();
-          })();
-          if (v2.tag === "Just") {
-            if (v2._1.tag === "InlineNever") {
-              return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
-            }
-            if (v2._1.tag === "InlineAlways") {
-              return $Maybe(
-                "Just",
-                evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))(v1._2._2))(spine)
-              );
-            }
-            if (v2._1.tag === "InlineArity" && spine[1]._1.length >= v2._1._1) {
-              return $Maybe(
-                "Just",
-                evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))(v1._2._2))(spine)
-              );
-            }
-          }
-          return Nothing;
-        }
-        if (v1._2.tag === "ExternDict") {
-          const $0 = findMapImpl(
-            Nothing,
-            isJust,
-            (v$1) => {
-              if (spine[0]._1._1 === v$1._1) {
-                return $Maybe("Just", v$1._2);
-              }
-              return Nothing;
-            },
-            v1._2._2
-          );
-          if ($0.tag === "Just") {
-            const $1 = $0._1._2;
-            const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-            const $3 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
-            const v3 = (() => {
-              if ($2.tag === "Just") {
-                return $3($2._1);
-              }
-              if ($2.tag === "Nothing") {
-                return Nothing;
-              }
-              fail();
-            })();
-            const $4 = () => $Maybe(
-              "Just",
-              evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($1))(spine[1]._1)
-            );
-            if (v3.tag === "Just") {
-              if (v3._1.tag === "InlineNever") {
-                return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
-              }
-              if (v3._1.tag === "InlineAlways") {
-                return $Maybe(
-                  "Just",
-                  evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($1))(spine[1]._1)
-                );
-              }
-              if (v3._1.tag === "InlineArity") {
-                if (spine[1]._1.length >= v3._1._1) {
-                  return $Maybe(
-                    "Just",
-                    evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($1))(spine[1]._1)
-                  );
-                }
-                return Nothing;
-              }
-            }
-            if (shouldInlineExternApp(qual)($0._1._1)($1)(spine[1]._1)) {
-              return $4();
-            }
           }
         }
       }
       return Nothing;
     }
-    if (spine[0].tag === "ExternApp" && spine[1].tag === "ExternAccessor" && spine[1]._1.tag === "GetProp" && v1._2.tag === "ExternExpr") {
-      const $0 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-      const $1 = lookup22($InlineAccessor("InlineSpineProp", spine[1]._1._1));
+    return $1();
+  }
+  if (spine.length === 3 && spine[0].tag === "ExternApp" && spine[1].tag === "ExternAccessor" && spine[1]._1.tag === "GetProp" && spine[2].tag === "ExternApp") {
+    if ($0.tag === "ExternExpr") {
+      const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
+      const $3 = lookup22($InlineAccessor("InlineSpineProp", spine[1]._1._1));
       const v2 = (() => {
-        if ($0.tag === "Just") {
-          return $1($0._1);
+        if ($2.tag === "Just") {
+          return $3($2._1);
         }
-        if ($0.tag === "Nothing") {
+        if ($2.tag === "Nothing") {
           return Nothing;
         }
         fail();
@@ -10975,44 +11342,20 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
         if (v2._1.tag === "InlineAlways") {
           return $Maybe(
             "Just",
-            evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", spine[1]._1._1)))(v1._2._2))(spine)
+            evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", spine[1]._1._1)))($0._2))(spine)
+          );
+        }
+        if (v2._1.tag === "InlineArity" && spine[2]._1.length >= v2._1._1) {
+          return $Maybe(
+            "Just",
+            evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", spine[1]._1._1)))($0._2))(spine)
           );
         }
       }
     }
     return Nothing;
   }
-  if (spine.length === 3 && spine[0].tag === "ExternApp" && spine[1].tag === "ExternAccessor" && spine[1]._1.tag === "GetProp" && spine[2].tag === "ExternApp" && v1._2.tag === "ExternExpr") {
-    const $0 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-    const $1 = lookup22($InlineAccessor("InlineSpineProp", spine[1]._1._1));
-    const v2 = (() => {
-      if ($0.tag === "Just") {
-        return $1($0._1);
-      }
-      if ($0.tag === "Nothing") {
-        return Nothing;
-      }
-      fail();
-    })();
-    if (v2.tag === "Just") {
-      if (v2._1.tag === "InlineNever") {
-        return $Maybe("Just", neutralSpine($BackendSemantics("NeutStop", qual))(spine));
-      }
-      if (v2._1.tag === "InlineAlways") {
-        return $Maybe(
-          "Just",
-          evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", spine[1]._1._1)))(v1._2._2))(spine)
-        );
-      }
-      if (v2._1.tag === "InlineArity" && spine[2]._1.length >= v2._1._1) {
-        return $Maybe(
-          "Just",
-          evalSpine(v)(evalBackendSyntax(evalNeutralExpr).eval(v1._2._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineSpineProp", spine[1]._1._1)))(v1._2._2))(spine)
-        );
-      }
-    }
-  }
-  return Nothing;
+  return $1();
 };
 var evalExternRefFromImpl = (env) => (qual) => (v) => {
   if (v._2.tag === "ExternExpr") {
@@ -13507,12 +13850,18 @@ var lookup33 = (k) => {
   };
   return go;
 };
+var fromFoldable22 = /* @__PURE__ */ fromFoldable(ordInlineAccessor)(foldableArray);
 var analyzeEffectBlock2 = /* @__PURE__ */ analyzeEffectBlock(hasAnalysisBackendExpr)(hasSyntaxBackendExpr);
 var analyze2 = /* @__PURE__ */ analyze(hasAnalysisBackendExpr)(hasSyntaxBackendExpr);
 var foldMap32 = /* @__PURE__ */ (() => foldableArray.foldMap(/* @__PURE__ */ (() => {
   const semigroupRecord1 = { append: (ra) => (rb) => ({ rowsNoMatch: [...ra.rowsNoMatch, ...rb.rowsNoMatch], rowsWithMatch: [...ra.rowsWithMatch, ...rb.rowsWithMatch] }) };
   return { mempty: { rowsNoMatch: [], rowsWithMatch: [] }, Semigroup0: () => semigroupRecord1 };
 })()))();
+var forWithIndex = /* @__PURE__ */ (() => {
+  const $0 = traversableWithIndexArray.traverseWithIndex(applicativeFn);
+  return (b) => (a) => $0(a)(b);
+})();
+var zipWithA2 = /* @__PURE__ */ zipWithA(applicativeFn);
 var lookup42 = (k) => {
   const go = (go$a0$copy) => {
     let go$a0 = go$a0$copy, go$c = true, go$r;
@@ -13545,15 +13894,10 @@ var lookup42 = (k) => {
   };
   return go;
 };
-var forWithIndex = /* @__PURE__ */ (() => {
-  const $0 = traversableWithIndexArray.traverseWithIndex(applicativeFn);
-  return (b) => (a) => $0(a)(b);
-})();
-var zipWithA2 = /* @__PURE__ */ zipWithA(applicativeFn);
 var traverse3 = /* @__PURE__ */ (() => traversableLiteral.traverse(applicativeFn))();
 var traverse1 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeFn))();
 var traverse32 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeFn))();
-var append2 = /* @__PURE__ */ (() => semigroupSemigroupMap(ordString)(semigroupFirst2).append)();
+var append3 = /* @__PURE__ */ (() => semigroupSemigroupMap(ordString)(semigroupFirst2).append)();
 var toUnfoldable12 = /* @__PURE__ */ (() => {
   const $0 = unfoldableArray.unfoldr(stepUnfoldr);
   return (x) => $0($MapIter("IterNode", x, IterLeaf));
@@ -13597,7 +13941,7 @@ var member = (k) => {
 };
 var alter3 = /* @__PURE__ */ alter(ordEvalRef);
 var mapAccumL2 = /* @__PURE__ */ mapAccumL(traversableArray);
-var fromFoldable22 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
+var fromFoldable32 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
 var member1 = (k) => {
   const go = (go$a0$copy) => {
     let go$a0 = go$a0$copy, go$c = true, go$r;
@@ -13630,12 +13974,12 @@ var member1 = (k) => {
   };
   return go;
 };
-var fromFoldable32 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var fromFoldable42 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
+var fromFoldable5 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var maximum2 = /* @__PURE__ */ maximum(ordInt)(foldable1NonEmptyArray);
 var mapAccumR2 = /* @__PURE__ */ mapAccumR(traversableArray);
 var foldMap52 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidSet(ordQualified3)))();
-var fromFoldable5 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordReExport)(a)()(m))(Leaf);
+var fromFoldable6 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordReExport)(a)()(m))(Leaf);
 var PatWild = /* @__PURE__ */ $PatternCase("PatWild");
 var eqPatternCase = {
   eq: (x) => (y) => {
@@ -13781,53 +14125,145 @@ var foldMapWithIndex = /* @__PURE__ */ (() => foldableWithIndexArray.foldMapWith
   };
   return { mempty: { aScore: 0, ctors: monoidSet2.mempty, tailRowIndices: [] }, Semigroup0: () => semigroupRecord1 };
 })()))();
-var toExternImpl = (env) => (group2) => (expr) => {
-  const $0 = () => {
-    const v = freeze(expr);
-    return $Tuple($Tuple(v._1, $ExternImpl("ExternExpr", group2, v._2)), v._2);
-  };
-  if (expr.tag === "ExprSyntax") {
-    if (expr._2.tag === "Lit") {
-      if (expr._2._1.tag === "LitRecord") {
-        const propsWithAnalysis = arrayMap((m) => $Prop(m._1, freeze(m._2)))(expr._2._1._1);
-        return $Tuple(
-          $Tuple(expr._1, $ExternImpl("ExternDict", group2, propsWithAnalysis)),
-          $BackendSyntax(
-            "Lit",
-            $Literal(
-              "LitRecord",
-              arrayMap((m) => $Prop(m._1, m._2._2))(propsWithAnalysis)
-            )
-          )
-        );
+var unwrapExternSpine = (v) => {
+  if (v.tag === "ExternApp") {
+    return $ExternSpine("ExternApp", arrayMap(unwrapSemTyped)(v._1));
+  }
+  if (v.tag === "ExternUncurriedApp") {
+    return $ExternSpine("ExternUncurriedApp", arrayMap(unwrapSemTyped)(v._1));
+  }
+  if (v.tag === "ExternAccessor") {
+    return $ExternSpine("ExternAccessor", v._1);
+  }
+  if (v.tag === "ExternPrimOp") {
+    return $ExternSpine("ExternPrimOp", v._1);
+  }
+  fail();
+};
+var toExternImpl = (env) => (group2) => (isDict) => (expr) => {
+  const unwrapTyped = (unwrapTyped$a0$copy) => {
+    let unwrapTyped$a0 = unwrapTyped$a0$copy, unwrapTyped$c = true, unwrapTyped$r;
+    while (unwrapTyped$c) {
+      const v2 = unwrapTyped$a0;
+      if (v2.tag === "ExprSyntax" && v2._2.tag === "Typed") {
+        unwrapTyped$a0 = v2._2._2;
+        continue;
       }
-      return $0();
+      unwrapTyped$c = false;
+      unwrapTyped$r = v2;
     }
-    if (expr._2.tag === "CtorDef") {
-      const v = freeze(expr);
+    return unwrapTyped$r;
+  };
+  const getLitRecord = (getLitRecord$a0$copy) => {
+    let getLitRecord$a0 = getLitRecord$a0$copy, getLitRecord$c = true, getLitRecord$r;
+    while (getLitRecord$c) {
+      const v2 = getLitRecord$a0;
+      if (v2.tag === "ExprSyntax") {
+        if (v2._2.tag === "App") {
+          getLitRecord$a0 = (() => {
+            const $0 = v2._2._2.length - 1 | 0;
+            if ($0 >= 0 && $0 < v2._2._2.length) {
+              return v2._2._2[$0];
+            }
+            fail();
+          })();
+          continue;
+        }
+        if (v2._2.tag === "Lit" && v2._2._1.tag === "LitRecord") {
+          getLitRecord$c = false;
+          getLitRecord$r = $Maybe("Just", v2._2._1._1);
+          continue;
+        }
+      }
+      getLitRecord$c = false;
+      getLitRecord$r = Nothing;
+    }
+    return getLitRecord$r;
+  };
+  const v = unwrapTyped(expr);
+  if (v.tag === "ExprSyntax" && v._2.tag === "Lit" && v._2._1.tag === "LitRecord") {
+    return $Tuple(
+      $Tuple(
+        (() => {
+          if (expr.tag === "ExprSyntax") {
+            return expr._1;
+          }
+          if (expr.tag === "ExprRewrite") {
+            return expr._1;
+          }
+          fail();
+        })(),
+        $ExternImpl(
+          "ExternDict",
+          group2,
+          arrayMap((m) => $Prop(m._1, freeze(m._2)))(v._2._1._1)
+        )
+      ),
+      freeze(expr)._2
+    );
+  }
+  const v1 = (v2) => {
+    if (v.tag === "ExprSyntax" && v._2.tag === "CtorDef") {
       return $Tuple(
         $Tuple(
-          v._1,
+          (() => {
+            if (expr.tag === "ExprSyntax") {
+              return expr._1;
+            }
+            if (expr.tag === "ExprRewrite") {
+              return expr._1;
+            }
+            fail();
+          })(),
           $ExternImpl(
             "ExternCtor",
             (() => {
-              const $1 = lookup4(expr._2._2)(env.dataTypes);
-              if ($1.tag === "Just") {
-                return $1._1;
+              const $0 = lookup4(v._2._2)(env.dataTypes);
+              if ($0.tag === "Nothing") {
+                return { constructors: Leaf, size: 0 };
+              }
+              if ($0.tag === "Just") {
+                return $0._1;
               }
               fail();
             })(),
-            expr._2._1,
-            expr._2._2,
-            expr._2._3,
-            expr._2._4
+            v._2._1,
+            v._2._2,
+            v._2._3,
+            v._2._4
           )
         ),
-        v._2
+        freeze(expr)._2
+      );
+    }
+    const v3 = freeze(expr);
+    return $Tuple($Tuple(v3._1, $ExternImpl("ExternExpr", group2, v3._2)), v3._2);
+  };
+  if (isDict) {
+    const $0 = getLitRecord(v);
+    if ($0.tag === "Just") {
+      return $Tuple(
+        $Tuple(
+          (() => {
+            if (expr.tag === "ExprSyntax") {
+              return expr._1;
+            }
+            if (expr.tag === "ExprRewrite") {
+              return expr._1;
+            }
+            fail();
+          })(),
+          $ExternImpl(
+            "ExternDict",
+            group2,
+            arrayMap((m) => $Prop(m._1, freeze(m._2)))($0._1)
+          )
+        ),
+        freeze(expr)._2
       );
     }
   }
-  return $0();
+  return v1(true);
 };
 var toCaseRowVars = (v) => {
   const $0 = v.column;
@@ -13907,10 +14343,11 @@ var normalizeCaseRows = (x) => {
   }))(x);
 };
 var makeExternEvalSpine = (conv) => (env) => (qual) => (spine) => {
+  const spine$p = arrayMap(unwrapExternSpine)(spine);
   const $0 = lookup12(qual)(conv.foreignSemantics);
   const result = (() => {
     if ($0.tag === "Just") {
-      return $0._1(env)(qual)(spine);
+      return $0._1(env)(qual)(spine$p);
     }
     if ($0.tag === "Nothing") {
       return Nothing;
@@ -13920,7 +14357,7 @@ var makeExternEvalSpine = (conv) => (env) => (qual) => (spine) => {
   if (result.tag === "Nothing") {
     const $1 = lookup12(qual)(conv.implementations);
     if ($1.tag === "Just") {
-      return evalExternFromImpl({ ...env, locals: [] })(qual)($1._1)(spine);
+      return evalExternFromImpl({ ...env, locals: [] })(qual)($1._1)(spine$p);
     }
     if ($1.tag === "Nothing") {
       return Nothing;
@@ -13935,6 +14372,48 @@ var makeExternEvalRef = (conv) => (env) => (qual) => {
     return $Maybe("Just", evalExternRefFromImpl(env)(qual)($0._1));
   }
   return Nothing;
+};
+var isConstrainedType = (v) => v.tag === "ConstrainedType" || v.tag === "ForAll" && isConstrainedType(v._2);
+var isTypeClassDictionaryWithProps = (expr) => {
+  const getConstructorMeta = (getConstructorMeta$a0$copy) => {
+    let getConstructorMeta$a0 = getConstructorMeta$a0$copy, getConstructorMeta$c = true, getConstructorMeta$r;
+    while (getConstructorMeta$c) {
+      const v = getConstructorMeta$a0;
+      if (v.tag === "ExprVar") {
+        if (v._1.meta.tag === "Just") {
+          getConstructorMeta$c = false;
+          getConstructorMeta$r = $Maybe("Just", v._1.meta._1);
+          continue;
+        }
+        getConstructorMeta$c = false;
+        getConstructorMeta$r = Nothing;
+        continue;
+      }
+      if (v.tag === "ExprApp") {
+        getConstructorMeta$a0 = v._2;
+        continue;
+      }
+      getConstructorMeta$c = false;
+      getConstructorMeta$r = Nothing;
+    }
+    return getConstructorMeta$r;
+  };
+  if (expr.tag === "ExprAbs") {
+    if (expr._1.type.tag === "Just" && (expr._1.type._1.tag === "ConstrainedType" || expr._1.type._1.tag === "ForAll" && isConstrainedType(expr._1.type._1._2))) {
+      return $Tuple(true, isTypeClassDictionaryWithProps(expr._3)._2);
+    }
+    return isTypeClassDictionaryWithProps(expr._3);
+  }
+  if (expr.tag === "ExprLet") {
+    return isTypeClassDictionaryWithProps(expr._3);
+  }
+  if (expr.tag === "ExprApp" && expr._3.tag === "ExprLit" && expr._3._2.tag === "LitRecord") {
+    const $0 = getConstructorMeta(expr._2);
+    if ($0.tag === "Just" && (eqMeta.eq($0._1)(IsTypeClassConstructor) || eqMeta.eq($0._1)(IsNewtype))) {
+      return $Tuple(true, arrayMap(propKey)(expr._3._2._1));
+    }
+  }
+  return $Tuple(false, []);
 };
 var intro = (dictFoldable) => (ident) => (lvl) => (f) => (env) => f({
   ...env,
@@ -13958,7 +14437,7 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
                   (() => {
                     const $02 = m$p._4;
                     const $12 = go(m$p._6, z$p);
-                    const $2 = (prop) => insert(ordInlineAccessor)($InlineAccessor(
+                    const $22 = (prop) => insert(ordInlineAccessor)($InlineAccessor(
                       "InlineSpineProp",
                       prop
                     ))($02)(insert(ordInlineAccessor)($InlineAccessor(
@@ -13972,7 +14451,7 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
                       ))($12);
                     }
                     if (m$p._3.tag === "InlineSpineProp") {
-                      return $2(m$p._3._1);
+                      return $22(m$p._3._1);
                     }
                     return $12;
                   })()
@@ -14019,20 +14498,33 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
     }
     return Nothing;
   })();
-  const $1 = (() => {
+  const $1 = () => {
+    const $12 = isTypeClassDictionaryWithProps(cfn);
+    if ($12._1) {
+      return $Maybe(
+        "Just",
+        fromFoldable22([
+          $Tuple(InlineRef, InlineAlways),
+          ...arrayMap((p) => $Tuple(
+            $InlineAccessor("InlineProp", p),
+            InlineAlways
+          ))($12._2)
+        ])
+      );
+    }
     if (backendExpr.tag === "ExprSyntax" && backendExpr._2.tag === "App" && backendExpr._2._1.tag === "ExprSyntax" && backendExpr._2._1._2.tag === "Var") {
-      const $12 = lookup23($EvalRef("EvalExtern", backendExpr._2._1._2._1))(directives);
-      const $2 = lookup33(InlineRef);
-      const v = (() => {
-        if ($12.tag === "Just") {
-          return $2($12._1);
+      const $22 = lookup23($EvalRef("EvalExtern", backendExpr._2._1._2._1))(directives);
+      const $3 = lookup33(InlineRef);
+      const v2 = (() => {
+        if ($22.tag === "Just") {
+          return $3($22._1);
         }
-        if ($12.tag === "Nothing") {
+        if ($22.tag === "Nothing") {
           return Nothing;
         }
         fail();
       })();
-      if (v.tag === "Just" && v._1.tag === "InlineArity" && cfn.tag === "ExprApp" && cfn._1.meta.tag === "Just" && cfn._1.meta._1.tag === "IsSyntheticApp" && backendExpr._2._2.length >= v._1._1) {
+      if (v2.tag === "Just" && v2._1.tag === "InlineArity" && backendExpr._2._2.length >= v2._1._1) {
         return $Maybe(
           "Just",
           $$$Map(
@@ -14048,9 +14540,43 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
       }
     }
     return Nothing;
+  };
+  const $2 = (() => {
+    if (cfn.tag === "ExprApp") {
+      if (cfn._1.meta.tag === "Just" && cfn._1.meta._1.tag === "IsSyntheticApp") {
+        return $Maybe(
+          "Just",
+          $$$Map(
+            "Node",
+            1,
+            1,
+            InlineRef,
+            InlineAlways,
+            Leaf,
+            Leaf
+          )
+        );
+      }
+      return $1();
+    }
+    if (cfn.tag === "ExprAbs" && cfn._1.meta.tag === "Just" && (eqMeta.eq(cfn._1.meta._1)(IsTypeClassConstructor) || eqMeta.eq(cfn._1.meta._1)(IsNewtype))) {
+      return $Maybe(
+        "Just",
+        $$$Map(
+          "Node",
+          1,
+          1,
+          InlineRef,
+          InlineAlways,
+          Leaf,
+          Leaf
+        )
+      );
+    }
+    return $1();
   })();
   if ($0.tag === "Nothing") {
-    return $1;
+    return $2;
   }
   return $0;
 };
@@ -14566,100 +15092,40 @@ var binderToPattern = (v) => {
       }
       if (v._1.meta._1.tag === "IsConstructor") {
         if (v._1.meta._1._1 === "ProductType") {
-          return (x) => {
-            const v$1 = lookup12(v._3)(x.implementations);
-            return {
-              vars: Leaf,
-              patternCase: $PatternCase("PatProduct", v._2, v._3),
-              subterms: forWithIndex(zipWithImpl(
-                Tuple,
-                v._4,
-                (() => {
-                  if (v$1.tag === "Just" && v$1._1._2.tag === "ExternCtor") {
-                    const $02 = lookup4(v._2._2)(x.dataTypes);
-                    if ($02.tag === "Just") {
-                      return v$1._1._2._5;
-                    }
-                    return v$1._1._2._5;
-                  }
-                  const $0 = lookup4(v._2._2)(x.dataTypes);
-                  if ($0.tag === "Just") {
-                    const $1 = lookup42(v._3._2)($0._1.constructors);
-                    if ($1.tag === "Just") {
-                      return $1._1.fields;
-                    }
-                    return _crashWith("Invariant broken: could not determine pattern matched constructor's fields during conversion.")(x);
-                  }
-                  if ($0.tag === "Nothing") {
-                    return _crashWith("Invariant broken: could not determine pattern matched constructor's fields during conversion.")(x);
-                  }
-                  fail();
-                })()
-              ))((idx) => (nextArg) => {
-                const $0 = binderToPattern(nextArg._1);
-                return (x$1) => ({
-                  accessor: $BackendAccessor(
-                    "GetCtorField",
-                    v._3,
-                    ProductType,
-                    v._2._2,
-                    v._3._2,
-                    nextArg._2,
-                    idx
-                  ),
-                  pattern: $0(x$1)
-                });
-              })(x)
-            };
-          };
+          const $0 = forWithIndex(v._4)((idx) => (nextArg) => {
+            const $02 = binderToPattern(nextArg);
+            return (x) => ({
+              accessor: $BackendAccessor(
+                "GetCtorField",
+                v._3,
+                ProductType,
+                v._2._2,
+                v._3._2,
+                "value" + showIntImpl(idx),
+                idx
+              ),
+              pattern: $02(x)
+            });
+          });
+          return (x) => ({ vars: Leaf, patternCase: $PatternCase("PatProduct", v._2, v._3), subterms: $0(x) });
         }
         if (v._1.meta._1._1 === "SumType") {
-          return (x) => {
-            const v$1 = lookup12(v._3)(x.implementations);
-            return {
-              vars: Leaf,
-              patternCase: $PatternCase("PatSum", v._2, v._3),
-              subterms: forWithIndex(zipWithImpl(
-                Tuple,
-                v._4,
-                (() => {
-                  if (v$1.tag === "Just" && v$1._1._2.tag === "ExternCtor") {
-                    const $02 = lookup4(v._2._2)(x.dataTypes);
-                    if ($02.tag === "Just") {
-                      return v$1._1._2._5;
-                    }
-                    return v$1._1._2._5;
-                  }
-                  const $0 = lookup4(v._2._2)(x.dataTypes);
-                  if ($0.tag === "Just") {
-                    const $1 = lookup42(v._3._2)($0._1.constructors);
-                    if ($1.tag === "Just") {
-                      return $1._1.fields;
-                    }
-                    return _crashWith("Invariant broken: could not determine pattern matched constructor's fields during conversion.")(x);
-                  }
-                  if ($0.tag === "Nothing") {
-                    return _crashWith("Invariant broken: could not determine pattern matched constructor's fields during conversion.")(x);
-                  }
-                  fail();
-                })()
-              ))((idx) => (nextArg) => {
-                const $0 = binderToPattern(nextArg._1);
-                return (x$1) => ({
-                  accessor: $BackendAccessor(
-                    "GetCtorField",
-                    v._3,
-                    SumType,
-                    v._2._2,
-                    v._3._2,
-                    nextArg._2,
-                    idx
-                  ),
-                  pattern: $0(x$1)
-                });
-              })(x)
-            };
-          };
+          const $0 = forWithIndex(v._4)((idx) => (nextArg) => {
+            const $02 = binderToPattern(nextArg);
+            return (x) => ({
+              accessor: $BackendAccessor(
+                "GetCtorField",
+                v._3,
+                SumType,
+                v._2._2,
+                v._3._2,
+                "value" + showIntImpl(idx),
+                idx
+              ),
+              pattern: $02(x)
+            });
+          });
+          return (x) => ({ vars: Leaf, patternCase: $PatternCase("PatSum", v._2, v._3), subterms: $0(x) });
         }
       }
     }
@@ -14924,7 +15390,7 @@ var buildCasePattern = (chosenColumn) => (rows) => {
     const inlineWildSubterms = arrayMap((column) => ({ column, pattern: { vars: Leaf, patternCase: PatWild, subterms: [] } }))(idents);
     return arrayMap((v) => ({
       guardFn: v.guardFn,
-      vars: append2(v.vars)(toCaseRowVars(v.match)),
+      vars: append3(v.vars)(toCaseRowVars(v.match)),
       patterns: [
         ...v.nonMatchesBefore,
         ...v.match.pattern.patternCase.tag === "PatWild" ? inlineWildSubterms : zipWithImpl((column) => (v$1) => ({ column, pattern: v$1.pattern }), idents, v.match.pattern.subterms),
@@ -14939,7 +15405,7 @@ var buildCasePattern = (chosenColumn) => (rows) => {
       const inlineWildSubterms = arrayMap((column) => ({ column, pattern: { vars: Leaf, patternCase: PatWild, subterms: [] } }))(idents);
       return arrayMap((v$1) => ({
         guardFn: v$1.guardFn,
-        vars: append2(v$1.vars)(toCaseRowVars(v$1.match)),
+        vars: append3(v$1.vars)(toCaseRowVars(v$1.match)),
         patterns: [
           ...v$1.nonMatchesBefore,
           ...v$1.match.pattern.patternCase.tag === "PatWild" ? inlineWildSubterms : zipWithImpl((column) => (v$2) => ({ column, pattern: v$2.pattern }), idents, v$1.match.pattern.subterms),
@@ -14985,7 +15451,7 @@ var buildCasePattern = (chosenColumn) => (rows) => {
   fail();
 };
 var buildCaseLeaf = (row0) => (tailRows) => {
-  const orderedArgs = toUnfoldable12(append2(row0.vars)(foldMap42(toCaseRowVars)(row0.patterns)));
+  const orderedArgs = toUnfoldable12(append3(row0.vars)(foldMap42(toCaseRowVars)(row0.patterns)));
   if (row0.guardFn.tag === "UnconditionalFn") {
     return make($BackendSyntax(
       "UncurriedApp",
@@ -15032,7 +15498,7 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
     locals: [],
     directives: env.directives
   })(qualifiedIdent)(env.rewriteLimit)(backendExpr);
-  const v2 = toExternImpl(env)(group2)((() => {
+  const v2 = toExternImpl(env)(group2)(isTypeClassDictionaryWithProps(v._3)._1)((() => {
     if (mbType.tag === "Just") {
       return $BackendExpr(
         "ExprSyntax",
@@ -15124,10 +15590,13 @@ var toBackendTopLevelBindingGroups = (binds) => (env) => {
   };
 };
 var toBackendModule = (v) => (env) => {
-  const localExports = fromFoldable22(v.exports);
-  const isBindingUsed = (deps) => (v1) => member1(v1._1)(localExports) || member($Qualified($Maybe("Just", v.name), v1._1))(deps);
+  const localExports = fromFoldable32(v.exports);
+  const isBindingUsed = (deps) => (v1) => {
+    const res = member1(v1._1)(localExports) || member($Qualified($Maybe("Just", v.name), v1._1))(deps);
+    return res;
+  };
   const directives = parseDirectiveHeader(v.name)(v.comments);
-  const dataTypes = fromFoldable32(arrayMap((group2) => $Tuple(
+  const dataTypes = fromFoldable42(arrayMap((group2) => $Tuple(
     (() => {
       if (0 < group2.length) {
         return group2[0]._1;
@@ -15135,23 +15604,12 @@ var toBackendModule = (v) => (env) => {
       fail();
     })(),
     {
-      constructors: fromFoldable42(mapWithIndexArray((tag) => (v1) => $Tuple(v1._2._1, { fields: v1._2._2, tag }))(group2)),
+      constructors: fromFoldable5(mapWithIndexArray((tag) => (v1) => $Tuple(v1._2._1, { fields: v1._2._2, tag }))(group2)),
       size: maximum2(arrayMap((x) => x._2._2.length)(group2))
     }
-  ))(groupAllBy((x) => (y) => ordString.compare(x._1)(y._1))(arrayBind(arrayBind(v.decls)((v1) => {
-    if (v1.tag === "Rec") {
-      return v1._1;
-    }
-    if (v1.tag === "NonRec") {
-      return [v1._1];
-    }
-    fail();
-  }))((v1) => {
-    if (v1._3.tag === "ExprConstructor") {
-      return [$Tuple(v1._3._2, $Tuple(v1._3._3, v1._3._4))];
-    }
-    return [];
-  }))));
+  ))(groupAllBy((x) => (y) => ordString.compare(x._1)(y._1))(arrayBind(v.dataDecls)((decl) => arrayBind(decl.constructors)((ctor) => [
+    $Tuple(decl.name, $Tuple(ctor.name, mapWithIndexArray((i) => (v1) => "value" + showIntImpl(i))(ctor.fields)))
+  ])))));
   const moduleBindings = toBackendTopLevelBindingGroups(v.decls)({
     ...env,
     dataTypes,
@@ -15245,9 +15703,9 @@ var toBackendModule = (v) => (env) => {
       })(),
       bindings: usedBindings.value,
       exports: localExports,
-      reExports: fromFoldable5(v.reExports),
+      reExports: fromFoldable6(v.reExports),
       implementations: moduleBindings.accum.moduleImplementations,
-      directives: directives.exports,
+      directives: filterWithKey(ordEvalRef)((k) => (v1) => k.tag === "EvalExtern" && k._1._1.tag === "Just" && k._1._1._1 === v.name)(moduleBindings.accum.directives),
       foreign: v.foreign
     }
   );
@@ -15497,7 +15955,7 @@ var findFfiFile = (extension) => (extraSpagoDirs) => (mbFfiDir) => (modName) => 
 };
 
 // output-es/PureScript.Backend.Optimizer.Semantics.Foreign/index.js
-var fromFoldable6 = /* @__PURE__ */ foldrArray(Cons)(Nil);
+var fromFoldable7 = /* @__PURE__ */ foldrArray(Cons)(Nil);
 var record_builder_copyRecord = /* @__PURE__ */ $Tuple(
   /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Record.Builder"), "copyRecord"),
   (v) => (v1) => (v2) => {
@@ -15760,7 +16218,7 @@ var runEffectFn = (mod) => (name2) => (n) => {
       if (v1.length === 1 && v1[0].tag === "ExternApp") {
         const $0 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), v1[0]._1);
         if ($0.tag === "Just" && $0._1.tail.length === n) {
-          return $Maybe("Just", goRunEffectFn(env)([])($0._1.head)(fromFoldable6($0._1.tail)));
+          return $Maybe("Just", goRunEffectFn(env)([])($0._1.head)(fromFoldable7($0._1.tail)));
         }
       }
       return Nothing;
@@ -16362,7 +16820,7 @@ var member2 = (k) => {
   };
   return go;
 };
-var fromFoldable7 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
+var fromFoldable8 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
 var member12 = (k) => {
   const go = (go$a0$copy) => {
     let go$a0 = go$a0$copy, go$c = true, go$r;
@@ -16875,7 +17333,7 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   code: codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeDifference(
     ordString.compare,
     freeVariables(body),
-    fromFoldable7(paramsArr)
+    fromFoldable8(paramsArr)
   ))(body)
 })(paramsArr).code;
 var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (v) => {
