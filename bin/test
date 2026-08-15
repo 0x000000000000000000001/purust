@@ -103,9 +103,9 @@ for test_file in "${TEST_FILES[@]}"; do
     # Generate Rust code
     node ../../bin/purust.js --main Main
     
-    if [ -d "output/app" ] && [ -f "output/app/src/main.rs" ]; then
+    if [ -d "output/purust_output" ] && [ -f "output/purust_output/src/main.rs" ]; then
       # Compile and Run Rust code
-      cd output/app
+      cd output/purust_output
       
       if cargo run -q; then
           echo -e "   \033[0;32m[OK]\033[0m"

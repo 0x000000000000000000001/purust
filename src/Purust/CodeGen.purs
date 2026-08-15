@@ -1,5 +1,4 @@
-
-module Purust.CodeGen where
+module Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity) where
 import Debug as Debug
 
 
@@ -23,6 +22,11 @@ import Data.Map as Map
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafeCrashWith)
+
+chunkArray :: forall a. Int -> Array a -> Array (Array a)
+chunkArray size arr =
+  if Array.length arr <= 0 then []
+  else [Array.take size arr] <> chunkArray size (Array.drop size arr)
 
 codegenModule :: Map.Map String ExprType -> Module Ann -> BackendModule -> String
 codegenModule globalAritiesMap (Module coreFnMod) backendMod =
@@ -76,7 +80,7 @@ unwrapType t = t
 debugUnwrap :: String -> ExprType -> ExprType
 debugUnwrap name t = 
   let unwrapped = unwrapType t
-  in if name == "bifoldrDefault" then Debug.trace ("unwrapType for " <> name <> ": " <> printType t <> " -> " <> printType unwrapped) (\_ -> unwrapped) else unwrapped
+  in unwrapped
 
 printType :: ExprType -> String
 printType (Func _ _) = "Func"
@@ -90,7 +94,7 @@ codegenExprType isRet ty = "UnknownType"
 
 codegenBindingGroup :: ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
 codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap group =
-  if Array.null group.bindings then { code: "", arities: Map.empty } else
+  if Array.null group.bindings then { code: "", arities: aritiesMap } else
   let
     isSelfRecursive = group.recursive && Array.length group.bindings == 1
     
@@ -219,7 +223,7 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
           
         m = Array.length argsArray
         
-        resultCode = Debug.trace ("genApp fn AST: " <> printAST fn) \_ -> case getInner fn of
+        resultCode = case getInner fn of
                  NeutralExpr (Var (Qualified mbMod (Ident name))) -> 
                    let sName = sanitizeIdent name
                    in if Map.member sName bound then
@@ -520,7 +524,12 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
                 aliveForA = Set.union alive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
             in codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForA a
           ) arr
-      in "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
+      in if Array.length arrCode > 200 then
+           let chunks = chunkArray 200 arrCode
+               chunkStmts = map (\chunk -> "    __arr.extend(vec![" <> String.joinWith ", " chunk <> "]);\n") chunks
+           in "({\n    let mut __arr = Vec::with_capacity(" <> show (Array.length arrCode) <> ");\n" <> String.joinWith "" chunkStmts <> "    crate::mk_array(__arr)\n})"
+         else
+           "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
     LitRecord props ->
       let arrProps = props
           fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
@@ -584,7 +593,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       bodyCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive body
     in "{\n    " <> declCode <> "\n    " <> evalCode <> "\n    " <> mutCode <> "\n    " <> bodyCode <> "\n}"
 
-  _ -> Debug.trace ("FALLBACK HIT FOR: " <> printAST (NeutralExpr expr)) \_ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
+  _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
 
 printAST :: NeutralExpr -> String
 printAST (NeutralExpr expr) = case expr of
@@ -727,20 +736,22 @@ sanitizeIdent :: String -> String
 sanitizeIdent s = 
   let s1 = String.replaceAll (Pattern "'") (Replacement "_prime") s
       s2 = String.replaceAll (Pattern "$") (Replacement "_dollar_") s1
-  in if s2 == "type" then "type_kw" 
-     else if s2 == "fn" then "fn_kw" 
-     else if s2 == "break" then "break_kw"
-     else if s2 == "mod" then "mod_kw"
-     else if s2 == "as" then "as_kw"
-     else if s2 == "gen" then "gen_kw"
-     else if s2 == "use" then "use_kw"
-     else if s2 == "pub" then "pub_kw"
-     else if s2 == "ref" then "ref_kw"
-     else if s2 == "mut" then "mut_kw"
-     else if s2 == "move" then "move_kw"
-     else if s2 == "match" then "match_kw"
-     else if s2 == "loop" then "loop_kw"
-     else s2
+      s3 = String.replaceAll (Pattern "-") (Replacement "_minus_") s2
+      s4 = String.replaceAll (Pattern ".") (Replacement "_dot_") s3
+  in if s4 == "type" then "type_kw" 
+     else if s4 == "fn" then "fn_kw" 
+     else if s4 == "break" then "break_kw"
+     else if s4 == "mod" then "mod_kw"
+     else if s4 == "as" then "as_kw"
+     else if s4 == "gen" then "gen_kw"
+     else if s4 == "use" then "use_kw"
+     else if s4 == "pub" then "pub_kw"
+     else if s4 == "ref" then "ref_kw"
+     else if s4 == "mut" then "mut_kw"
+     else if s4 == "move" then "move_kw"
+     else if s4 == "let" then "let_kw"
+     else if s4 == "if" then "if_kw"
+     else s4
 
 dedupArgs :: Array String -> Array String
 dedupArgs arr =

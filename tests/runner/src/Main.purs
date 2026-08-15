@@ -1,17 +1,12 @@
 module Main where
 
 import Prelude
+import A (foo)
+import B (Foo(..))
+import Effect (Effect)
 import Effect.Console (log)
-import Foreign.Object as FO
 
-x :: forall a. a -> String
-x a = y "Test"
-  where
-  y :: forall a. Show a => a -> String
-  y a = show (a :: a)
-
+main :: Effect Unit
 main = do
-  log (x 0)
+  let tmp = foo X
   log "Done"
-  let _ = FO.empty
-  pure unit

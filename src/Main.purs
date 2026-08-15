@@ -15,9 +15,9 @@ import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent)
+import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity)
 import Purust.ASTCollector as Purust.ASTCollector
-import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..))
+import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
 import Data.List as List
 import Data.Set as Set
@@ -26,6 +26,7 @@ import Data.String as String
 import Data.Foldable (foldl)
 import Data.Tuple (Tuple(..))
 import Data.String.Pattern (Pattern(..), Replacement(..))
+import Debug as Debug
 import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
 import Effect.Console as Console
 import Effect.Class (liftEffect)
@@ -56,6 +57,12 @@ main = launchAff_ do
                 Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a
                 Nothing -> a
             ) acc (Map.toUnfoldable mod.foreign :: Array (Tuple Ident (Maybe ExprType)))
+            
+          acc2 = foldl (\a decl -> 
+              foldl (\a2 ctor -> 
+                Map.insert (modPrefix <> sanitizeIdent ctor.name) Any a2
+              ) a decl.constructors
+            ) acc1 mod.dataDecls
             
           getTy (Ann ann) = ann.type
           
@@ -89,14 +96,13 @@ main = launchAff_ do
                   Nothing -> a'
               ) a binds
               
-        in foldl processBind acc1 mod.decls
+        in foldl processBind acc2 mod.decls
         
   let globalArities = buildGlobalArities finalModules
   
   directives <- loadDirectives
   
-  codeRef <- liftEffect $ Ref.new ""
-  ffiRef <- liftEffect $ Ref.new ""
+  modulesRef <- liftEffect $ Ref.new (Map.empty :: Map.Map String { code :: String, imports :: Array String })
   
   buildModules
     { directives
@@ -113,10 +119,9 @@ main = launchAff_ do
         let rsFile = codegenModule globalArities (Module coreFnMod) backendMod
         
         liftEffect do
-          Ref.modify_ (\acc -> acc <> rsFile <> "\n\n") codeRef
-          
           let foreignArr = coreFnMod.foreign
-          let modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap coreFnMod.name) <> "_"
+          let modName = String.replaceAll (Pattern ".") (Replacement "_") (unwrap coreFnMod.name)
+          let modPrefix = modName <> "_"
           let allMacroBindings = Set.empty -- Placeholder
           
           ffiPathMb <- findFfiFile ".rs" [] (Just "../") modNameStr (Just coreFnMod.path)
@@ -129,8 +134,8 @@ main = launchAff_ do
             genFallback name ty =
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let arity = getArity ty
-                    args = Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": crate::UnknownType") (Array.replicate arity unit)
-                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> crate::UnknownType { crate::UnknownType::new(crate::Record_a { ..Default::default() }) }\n"
+                    args = Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": UnknownType") (Array.replicate arity unit)
+                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> UnknownType { UnknownType::new(Record_a { ..Default::default() }) }\n"
               else ""
 
           ffiContent <- case ffiPathMb of
@@ -150,7 +155,26 @@ main = launchAff_ do
                 Tuple _ Nothing -> ""
               ) (Map.toUnfoldable foreignArr)
           
-          Ref.modify_ (\acc -> acc <> ffiContent <> "\n\n") ffiRef
+          let allModNames = map (\(Module m) -> unwrap m.name) (Array.fromFoldable finalModules)
+          let allModStrs = map (\n -> String.replaceAll (Pattern ".") (Replacement "_") n) allModNames
+          let getMaskedFile str = 
+                let longerPrefixes = Array.filter (\other -> other /= str && String.indexOf (Pattern str) other == Just 0) allModStrs
+                in foldl (\acc other -> String.replaceAll (Pattern other) (Replacement "MASKED") acc) rsFile longerPrefixes
+          let extraImports = Array.mapMaybe (\modStr -> 
+                let modPrefix2 = modStr <> "_"
+                    maskedFile = getMaskedFile modStr
+                in if modStr /= modName && String.contains (Pattern modPrefix2) maskedFile then Just modStr else Nothing
+              ) allModStrs
+          
+          let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
+          let coreImports = Array.nub (Array.mapMaybe (\n -> 
+                let nStr = String.replaceAll (Pattern ".") (Replacement "_") n
+                    isSelf = nStr == modName
+                in if n == "Prim" || String.indexOf (Pattern "Prim.") n == Just 0 || isSelf then Nothing else Just nStr
+              ) (Array.concat [extraImports, rawModules]))
+          let importsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") coreImports)
+          let rustCode = "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" <> importsRust <> "\n\n" <> rsFile <> "\n\n" <> ffiContent <> "\n\n"
+          Ref.modify_ (\acc -> Map.insert modName { code: rustCode, imports: coreImports } acc) modulesRef
     }
     finalModules
     
@@ -161,15 +185,32 @@ main = launchAff_ do
       FS.mkdir outDir
       FS.mkdir (outDir <> "/src")
     
-    let cargoToml = "[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"../../../purust/tests/runtime/perceus_ptr\" }\n"
-    FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") cargoToml
-    
-    allCode <- Ref.read codeRef
-    allFfi <- Ref.read ffiRef
+    allModules <- Ref.read modulesRef
     
     let allFields = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectFieldsModule mod)) Set.empty finalModules
+    let preludeRsContent = codegenPrelude allFields
     
-    let finalOutput = codegenPrelude allFields <> allCode <> allFfi
-    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") finalOutput
+    let workspaceMembers = "\"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })))
+    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nPurs_Test_Main = { path = \"Purs_Test_Main\" }\n"
+    FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") rootCargoToml
+    
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") "fn main() {\n    Purs_Test_Main::main();\n}\n"
+    
+    let coreDir = outDir <> "/purust_core"
+    FS.mkdir coreDir
+    FS.mkdir (coreDir <> "/src")
+    FS.writeTextFile UTF8 (coreDir <> "/Cargo.toml") "[package]\nname = \"purust_core\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n"
+    FS.writeTextFile UTF8 (coreDir <> "/src/lib.rs") preludeRsContent
+    
+    _ <- foldl (\eff (Tuple k { code: v, imports: imp }) -> eff *> do
+      let modDir = outDir <> "/Purs_" <> k
+      FS.mkdir modDir
+      FS.mkdir (modDir <> "/src")
+      let modDeps = "purust_core = { path = \"../purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") imp)
+      let modCargoToml = "[package]\nname = \"Purs_" <> k <> "\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> modDeps
+      FS.writeTextFile UTF8 (modDir <> "/Cargo.toml") modCargoToml
+      FS.writeTextFile UTF8 (modDir <> "/src/lib.rs") v
+    ) (pure unit) (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String }))
+
     
     log "Successfully generated Rust code."

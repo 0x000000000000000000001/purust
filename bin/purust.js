@@ -661,6 +661,19 @@ var findMapImpl = function(nothing, isJust2, f, xs) {
 var reverse = function(l) {
   return l.slice().reverse();
 };
+var concat = function(xss) {
+  if (xss.length <= 1e4) {
+    return Array.prototype.concat.apply([], xss);
+  }
+  var result = [];
+  for (var i = 0, l = xss.length; i < l; i++) {
+    var xs = xss[i];
+    for (var j = 0, m = xs.length; j < m; j++) {
+      result.push(xs[j]);
+    }
+  }
+  return result;
+};
 var filterImpl = function(f, xs) {
   return xs.filter(f);
 };
@@ -753,6 +766,7 @@ var sortBy = (comp) => ($0) => sortByImpl2(
   },
   $0
 );
+var sortWith = (dictOrd) => (f) => sortBy((x) => (y) => dictOrd.compare(f(x))(f(y)));
 var snoc = (xs) => (x) => (() => {
   const $0 = push(x);
   return () => {
@@ -779,6 +793,28 @@ var unzip = (xs) => {
     };
   })();
   return $Tuple(fsts, snds);
+};
+var nubBy = (comp) => (xs) => {
+  const indexedAndSorted = sortBy((x) => (y) => comp(x._2)(y._2))(mapWithIndexArray(Tuple)(xs));
+  if (0 < indexedAndSorted.length) {
+    return arrayMap(snd)(sortWith(ordInt)(fst)((() => {
+      const result = [indexedAndSorted[0]];
+      for (const v1 of indexedAndSorted) {
+        const $0 = comp((() => {
+          const $02 = result.length - 1 | 0;
+          if ($02 >= 0 && $02 < result.length) {
+            return result[$02]._2;
+          }
+          fail();
+        })())(v1._2);
+        if ($0 === "LT" || $0 === "GT" || $0 !== "EQ") {
+          result.push(v1);
+        }
+      }
+      return result;
+    })()));
+  }
+  return [];
 };
 var groupBy = (op) => (xs) => {
   const result = [];
@@ -1390,6 +1426,76 @@ var power = (dictMonoid) => {
   };
 };
 
+// output-es/Data.Bounded/foreign.js
+var topChar = String.fromCharCode(65535);
+var bottomChar = String.fromCharCode(0);
+var topNumber = Number.POSITIVE_INFINITY;
+var bottomNumber = Number.NEGATIVE_INFINITY;
+
+// output-es/Data.Enum/foreign.js
+function toCharCode(c) {
+  return c.charCodeAt(0);
+}
+function fromCharCode(c) {
+  return String.fromCharCode(c);
+}
+
+// output-es/Data.Enum/index.js
+var charToEnum = (v) => {
+  if (v >= 0 && v <= 65535) {
+    return $Maybe("Just", fromCharCode(v));
+  }
+  return Nothing;
+};
+
+// output-es/Data.Number/foreign.js
+var isFiniteImpl = isFinite;
+function fromStringImpl(str, isFinite2, just, nothing) {
+  var num = parseFloat(str);
+  if (isFinite2(num)) {
+    return just(num);
+  } else {
+    return nothing;
+  }
+}
+
+// output-es/Data.Int/foreign.js
+var fromNumberImpl = function(just) {
+  return function(nothing) {
+    return function(n) {
+      return (n | 0) === n ? just(n) : nothing;
+    };
+  };
+};
+var fromStringAsImpl = function(just) {
+  return function(nothing) {
+    return function(radix) {
+      var digits;
+      if (radix < 11) {
+        digits = "[0-" + (radix - 1).toString() + "]";
+      } else if (radix === 11) {
+        digits = "[0-9a]";
+      } else {
+        digits = "[0-9a-" + String.fromCharCode(86 + radix) + "]";
+      }
+      var pattern = new RegExp("^[\\+\\-]?" + digits + "+$", "i");
+      return function(s) {
+        if (pattern.test(s)) {
+          var i = parseInt(s, radix);
+          return (i | 0) === i ? just(i) : nothing;
+        } else {
+          return nothing;
+        }
+      };
+    };
+  };
+};
+
+// output-es/Data.Int/index.js
+var fromStringAs = /* @__PURE__ */ fromStringAsImpl(Just)(Nothing);
+var fromString = /* @__PURE__ */ fromStringAs(10);
+var fromNumber = /* @__PURE__ */ fromNumberImpl(Just)(Nothing);
+
 // output-es/Data.String.Unsafe/foreign.js
 var charAt = function(i) {
   return function(s) {
@@ -1501,6 +1607,162 @@ var joinWith = function(s) {
   return function(xs) {
     return xs.join(s);
   };
+};
+
+// output-es/Data.String.CodePoints/foreign.js
+var hasArrayFrom = typeof Array.from === "function";
+var hasStringIterator = typeof Symbol !== "undefined" && Symbol != null && typeof Symbol.iterator !== "undefined" && typeof String.prototype[Symbol.iterator] === "function";
+var hasFromCodePoint = typeof String.prototype.fromCodePoint === "function";
+var hasCodePointAt = typeof String.prototype.codePointAt === "function";
+var _unsafeCodePointAt0 = function(fallback) {
+  return hasCodePointAt ? function(str) {
+    return str.codePointAt(0);
+  } : fallback;
+};
+var _fromCodePointArray = function(singleton3) {
+  return hasFromCodePoint ? function(cps) {
+    if (cps.length < 1e4) {
+      return String.fromCodePoint.apply(String, cps);
+    }
+    return cps.map(singleton3).join("");
+  } : function(cps) {
+    return cps.map(singleton3).join("");
+  };
+};
+var _singleton = function(fallback) {
+  return hasFromCodePoint ? String.fromCodePoint : fallback;
+};
+var _take = function(fallback) {
+  return function(n) {
+    if (hasStringIterator) {
+      return function(str) {
+        var accum = "";
+        var iter = str[Symbol.iterator]();
+        for (var i = 0; i < n; ++i) {
+          var o = iter.next();
+          if (o.done) return accum;
+          accum += o.value;
+        }
+        return accum;
+      };
+    }
+    return fallback(n);
+  };
+};
+var _toCodePointArray = function(fallback) {
+  return function(unsafeCodePointAt02) {
+    if (hasArrayFrom) {
+      return function(str) {
+        return Array.from(str, unsafeCodePointAt02);
+      };
+    }
+    return fallback;
+  };
+};
+
+// output-es/Data.String.CodePoints/index.js
+var uncons = (s) => {
+  const v = length2(s);
+  if (v === 0) {
+    return Nothing;
+  }
+  if (v === 1) {
+    return $Maybe("Just", { head: toCharCode(charAt(0)(s)), tail: "" });
+  }
+  const cu1 = toCharCode(charAt(1)(s));
+  const cu0 = toCharCode(charAt(0)(s));
+  if (55296 <= cu0 && cu0 <= 56319 && 56320 <= cu1 && cu1 <= 57343) {
+    return $Maybe("Just", { head: (((cu0 - 55296 | 0) * 1024 | 0) + (cu1 - 56320 | 0) | 0) + 65536 | 0, tail: drop(2)(s) });
+  }
+  return $Maybe("Just", { head: cu0, tail: drop(1)(s) });
+};
+var unconsButWithTuple = (s) => {
+  const $0 = uncons(s);
+  if ($0.tag === "Just") {
+    return $Maybe("Just", $Tuple($0._1.head, $0._1.tail));
+  }
+  return Nothing;
+};
+var toCodePointArrayFallback = (s) => unfoldableArray.unfoldr(unconsButWithTuple)(s);
+var unsafeCodePointAt0Fallback = (s) => {
+  const cu0 = toCharCode(charAt(0)(s));
+  if (55296 <= cu0 && cu0 <= 56319 && length2(s) > 1) {
+    const cu1 = toCharCode(charAt(1)(s));
+    if (56320 <= cu1 && cu1 <= 57343) {
+      return (((cu0 - 55296 | 0) * 1024 | 0) + (cu1 - 56320 | 0) | 0) + 65536 | 0;
+    }
+  }
+  return cu0;
+};
+var unsafeCodePointAt0 = /* @__PURE__ */ _unsafeCodePointAt0(unsafeCodePointAt0Fallback);
+var toCodePointArray = /* @__PURE__ */ _toCodePointArray(toCodePointArrayFallback)(unsafeCodePointAt0);
+var indexOf2 = (p) => (s) => {
+  const $0 = indexOf(p)(s);
+  if ($0.tag === "Just") {
+    return $Maybe("Just", toCodePointArray(take($0._1)(s)).length);
+  }
+  return Nothing;
+};
+var fromCharCode2 = (x) => singleton((() => {
+  if (x >= 0 && x <= 65535) {
+    return fromCharCode(x);
+  }
+  if (x < 0) {
+    return "\0";
+  }
+  return "\uFFFF";
+})());
+var singletonFallback = (v) => {
+  if (v <= 65535) {
+    return fromCharCode2(v);
+  }
+  return fromCharCode2(intDiv(v - 65536 | 0, 1024) + 55296 | 0) + fromCharCode2(intMod(v - 65536 | 0)(1024) + 56320 | 0);
+};
+var fromCodePointArray = /* @__PURE__ */ _fromCodePointArray(singletonFallback);
+var singleton2 = /* @__PURE__ */ _singleton(singletonFallback);
+var takeFallback = (v) => (v1) => {
+  if (v < 1) {
+    return "";
+  }
+  const v2 = uncons(v1);
+  if (v2.tag === "Just") {
+    return singleton2(v2._1.head) + takeFallback(v - 1 | 0)(v2._1.tail);
+  }
+  return v1;
+};
+var take2 = /* @__PURE__ */ _take(takeFallback);
+var eqCodePoint = { eq: (x) => (y) => x === y };
+var ordCodePoint = { compare: (x) => (y) => ordInt.compare(x)(y), Eq0: () => eqCodePoint };
+var codePointFromChar = (x) => toCharCode(x);
+var boundedCodePoint = { bottom: 0, top: 1114111, Ord0: () => ordCodePoint };
+var boundedEnumCodePoint = {
+  cardinality: 1114112,
+  fromEnum: (v) => v,
+  toEnum: (n) => {
+    if (n >= 0 && n <= 1114111) {
+      return $Maybe("Just", n);
+    }
+    return Nothing;
+  },
+  Bounded0: () => boundedCodePoint,
+  Enum1: () => enumCodePoint
+};
+var enumCodePoint = {
+  succ: (a) => {
+    const $0 = a + 1 | 0;
+    if ($0 >= 0 && $0 <= 1114111) {
+      return $Maybe("Just", $0);
+    }
+    return Nothing;
+  },
+  pred: (a) => {
+    const $0 = a - 1 | 0;
+    if ($0 >= 0 && $0 <= 1114111) {
+      return $Maybe("Just", $0);
+    }
+    return Nothing;
+  },
+  Ord0: () => ordCodePoint
 };
 
 // output-es/Effect.Exception/foreign.js
@@ -1619,7 +1881,7 @@ var Aff = (function() {
       }
     };
   })();
-  function Supervisor(util2) {
+  function Supervisor(util) {
     var fibers = {};
     var fiberId = 0;
     var count = 0;
@@ -1653,9 +1915,9 @@ var Aff = (function() {
               return function() {
                 delete kills[fid];
                 killCount--;
-                if (util2.isLeft(result) && util2.fromLeft(result)) {
+                if (util.isLeft(result) && util.fromLeft(result)) {
                   setTimeout(function() {
-                    throw util2.fromLeft(result);
+                    throw util.fromLeft(result);
                   }, 0);
                 }
                 if (killCount === 0) {
@@ -1693,7 +1955,7 @@ var Aff = (function() {
   var PENDING = 4;
   var RETURN = 5;
   var COMPLETED = 6;
-  function Fiber(util2, supervisor, aff) {
+  function Fiber(util, supervisor, aff) {
     var runTick = 0;
     var status = SUSPENDED;
     var step = aff;
@@ -1725,12 +1987,12 @@ var Aff = (function() {
               }
             } catch (e) {
               status = RETURN;
-              fail2 = util2.left(e);
+              fail2 = util.left(e);
               step = null;
             }
             break;
           case STEP_RESULT:
-            if (util2.isLeft(step)) {
+            if (util.isLeft(step)) {
               status = RETURN;
               fail2 = step;
               step = null;
@@ -1738,7 +2000,7 @@ var Aff = (function() {
               status = RETURN;
             } else {
               status = STEP_BIND;
-              step = util2.fromRight(step);
+              step = util.fromRight(step);
             }
             break;
           case CONTINUE:
@@ -1754,7 +2016,7 @@ var Aff = (function() {
               case PURE:
                 if (bhead === null) {
                   status = RETURN;
-                  step = util2.right(step._1);
+                  step = util.right(step._1);
                 } else {
                   status = STEP_BIND;
                   step = step._1;
@@ -1762,11 +2024,11 @@ var Aff = (function() {
                 break;
               case SYNC:
                 status = STEP_RESULT;
-                step = runSync(util2.left, util2.right, step._1);
+                step = runSync(util.left, util.right, step._1);
                 break;
               case ASYNC:
                 status = PENDING;
-                step = runAsync(util2.left, step._1, function(result2) {
+                step = runAsync(util.left, step._1, function(result2) {
                   return function() {
                     if (runTick !== localRunTick) {
                       return;
@@ -1785,7 +2047,7 @@ var Aff = (function() {
                 return;
               case THROW:
                 status = RETURN;
-                fail2 = util2.left(step._1);
+                fail2 = util.left(step._1);
                 step = null;
                 break;
               // Enqueue the Catch so that we can call the error handler later on
@@ -1817,18 +2079,18 @@ var Aff = (function() {
                 break;
               case FORK:
                 status = STEP_RESULT;
-                tmp = Fiber(util2, supervisor, step._2);
+                tmp = Fiber(util, supervisor, step._2);
                 if (supervisor) {
                   supervisor.register(tmp);
                 }
                 if (step._1) {
                   tmp.run();
                 }
-                step = util2.right(tmp);
+                step = util.right(tmp);
                 break;
               case SEQ:
                 status = CONTINUE;
-                step = sequential(util2, supervisor, step._1);
+                step = sequential(util, supervisor, step._1);
                 break;
             }
             break;
@@ -1851,7 +2113,7 @@ var Aff = (function() {
                     status = RETURN;
                   } else if (fail2) {
                     status = CONTINUE;
-                    step = attempt._2(util2.fromLeft(fail2));
+                    step = attempt._2(util.fromLeft(fail2));
                     fail2 = null;
                   }
                   break;
@@ -1863,7 +2125,7 @@ var Aff = (function() {
                     bhead = attempt._1;
                     btail = attempt._2;
                     status = STEP_BIND;
-                    step = util2.fromRight(step);
+                    step = util.fromRight(step);
                   }
                   break;
                 // If we have a bracket, we should enqueue the handlers,
@@ -1873,7 +2135,7 @@ var Aff = (function() {
                 case BRACKET:
                   bracketCount--;
                   if (fail2 === null) {
-                    result = util2.fromRight(step);
+                    result = util.fromRight(step);
                     attempts = new Aff2(CONS, new Aff2(RELEASE, attempt._2, result), attempts, tmp);
                     if (interrupt === tmp || bracketCount > 0) {
                       status = CONTINUE;
@@ -1887,11 +2149,11 @@ var Aff = (function() {
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
                   if (interrupt && interrupt !== tmp && bracketCount === 0) {
-                    step = attempt._1.killed(util2.fromLeft(interrupt))(attempt._2);
+                    step = attempt._1.killed(util.fromLeft(interrupt))(attempt._2);
                   } else if (fail2) {
-                    step = attempt._1.failed(util2.fromLeft(fail2))(attempt._2);
+                    step = attempt._1.failed(util.fromLeft(fail2))(attempt._2);
                   } else {
-                    step = attempt._1.completed(util2.fromRight(step))(attempt._2);
+                    step = attempt._1.completed(util.fromRight(step))(attempt._2);
                   }
                   fail2 = null;
                   bracketCount++;
@@ -1921,12 +2183,12 @@ var Aff = (function() {
             joins = null;
             if (interrupt && fail2) {
               setTimeout(function() {
-                throw util2.fromLeft(fail2);
+                throw util.fromLeft(fail2);
               }, 0);
-            } else if (util2.isLeft(step) && rethrow) {
+            } else if (util.isLeft(step) && rethrow) {
               setTimeout(function() {
                 if (rethrow) {
-                  throw util2.fromLeft(step);
+                  throw util.fromLeft(step);
                 }
               }, 0);
             }
@@ -1960,26 +2222,26 @@ var Aff = (function() {
     function kill(error3, cb) {
       return function() {
         if (status === COMPLETED) {
-          cb(util2.right(void 0))();
+          cb(util.right(void 0))();
           return function() {
           };
         }
         var canceler = onComplete({
           rethrow: false,
           handler: function() {
-            return cb(util2.right(void 0));
+            return cb(util.right(void 0));
           }
         })();
         switch (status) {
           case SUSPENDED:
-            interrupt = util2.left(error3);
+            interrupt = util.left(error3);
             status = COMPLETED;
             step = interrupt;
             run2(runTick);
             break;
           case PENDING:
             if (interrupt === null) {
-              interrupt = util2.left(error3);
+              interrupt = util.left(error3);
             }
             if (bracketCount === 0) {
               if (status === PENDING) {
@@ -1993,7 +2255,7 @@ var Aff = (function() {
             break;
           default:
             if (interrupt === null) {
-              interrupt = util2.left(error3);
+              interrupt = util.left(error3);
             }
             if (bracketCount === 0) {
               status = RETURN;
@@ -2036,7 +2298,7 @@ var Aff = (function() {
       }
     };
   }
-  function runPar(util2, supervisor, par, cb) {
+  function runPar(util, supervisor, par, cb) {
     var fiberId = 0;
     var fibers = {};
     var killId = 0;
@@ -2091,7 +2353,7 @@ var Aff = (function() {
         }
       }
       if (count === 0) {
-        cb2(util2.right(void 0))();
+        cb2(util.right(void 0))();
       } else {
         kid = 0;
         tmp = count;
@@ -2103,7 +2365,7 @@ var Aff = (function() {
     }
     function join(result, head2, tail) {
       var fail2, step, lhs, rhs, tmp, kid;
-      if (util2.isLeft(result)) {
+      if (util.isLeft(result)) {
         fail2 = result;
         step = null;
       } else {
@@ -2128,7 +2390,7 @@ var Aff = (function() {
         switch (head2.tag) {
           case MAP:
             if (fail2 === null) {
-              head2._3 = util2.right(head2._1(util2.fromRight(step)));
+              head2._3 = util.right(head2._1(util.fromRight(step)));
               step = head2._3;
             } else {
               head2._3 = fail2;
@@ -2160,17 +2422,17 @@ var Aff = (function() {
             } else if (lhs === EMPTY || rhs === EMPTY) {
               return;
             } else {
-              step = util2.right(util2.fromRight(lhs)(util2.fromRight(rhs)));
+              step = util.right(util.fromRight(lhs)(util.fromRight(rhs)));
               head2._3 = step;
             }
             break;
           case ALT:
             lhs = head2._1._3;
             rhs = head2._2._3;
-            if (lhs === EMPTY && util2.isLeft(rhs) || rhs === EMPTY && util2.isLeft(lhs)) {
+            if (lhs === EMPTY && util.isLeft(rhs) || rhs === EMPTY && util.isLeft(lhs)) {
               return;
             }
-            if (lhs !== EMPTY && util2.isLeft(lhs) && rhs !== EMPTY && util2.isLeft(rhs)) {
+            if (lhs !== EMPTY && util.isLeft(lhs) && rhs !== EMPTY && util.isLeft(rhs)) {
               fail2 = step === lhs ? rhs : lhs;
               step = null;
               head2._3 = fail2;
@@ -2252,7 +2514,7 @@ var Aff = (function() {
                 status = RETURN;
                 tmp = step;
                 step = new Aff2(FORKED, fid, new Aff2(CONS, head2, tail), EMPTY);
-                tmp = Fiber(util2, supervisor, tmp);
+                tmp = Fiber(util, supervisor, tmp);
                 tmp.onComplete({
                   rethrow: false,
                   handler: resolve(step)
@@ -2290,7 +2552,7 @@ var Aff = (function() {
       }
     }
     function cancel(error3, cb2) {
-      interrupt = util2.left(error3);
+      interrupt = util.left(error3);
       var innerKills;
       for (var kid in kills) {
         if (kills.hasOwnProperty(kid)) {
@@ -2326,10 +2588,10 @@ var Aff = (function() {
       });
     };
   }
-  function sequential(util2, supervisor, par) {
+  function sequential(util, supervisor, par) {
     return new Aff2(ASYNC, function(cb) {
       return function() {
-        return runPar(util2, supervisor, par, cb);
+        return runPar(util, supervisor, par, cb);
       };
     });
   }
@@ -2377,9 +2639,9 @@ function _bind(aff) {
 }
 var _liftEffect = Aff.Sync;
 var makeAff = Aff.Async;
-function _makeFiber(util2, aff) {
+function _makeFiber(util, aff) {
   return function() {
-    return Aff.Fiber(util2, null, aff);
+    return Aff.Fiber(util, null, aff);
   };
 }
 var _sequential = Aff.Seq;
@@ -2430,7 +2692,7 @@ var nonCanceler = /* @__PURE__ */ (() => {
 })();
 
 // output-es/Effect.Console/foreign.js
-var log = function(s) {
+var log2 = function(s) {
   return function() {
     console.log(s);
   };
@@ -2454,54 +2716,6 @@ function notNull(x) {
   return x;
 }
 
-// output-es/Data.Number/foreign.js
-var isFiniteImpl = isFinite;
-function fromStringImpl(str, isFinite2, just, nothing) {
-  var num = parseFloat(str);
-  if (isFinite2(num)) {
-    return just(num);
-  } else {
-    return nothing;
-  }
-}
-
-// output-es/Data.Int/foreign.js
-var fromNumberImpl = function(just) {
-  return function(nothing) {
-    return function(n) {
-      return (n | 0) === n ? just(n) : nothing;
-    };
-  };
-};
-var fromStringAsImpl = function(just) {
-  return function(nothing) {
-    return function(radix) {
-      var digits;
-      if (radix < 11) {
-        digits = "[0-" + (radix - 1).toString() + "]";
-      } else if (radix === 11) {
-        digits = "[0-9a]";
-      } else {
-        digits = "[0-9a-" + String.fromCharCode(86 + radix) + "]";
-      }
-      var pattern = new RegExp("^[\\+\\-]?" + digits + "+$", "i");
-      return function(s) {
-        if (pattern.test(s)) {
-          var i = parseInt(s, radix);
-          return (i | 0) === i ? just(i) : nothing;
-        } else {
-          return nothing;
-        }
-      };
-    };
-  };
-};
-
-// output-es/Data.Int/index.js
-var fromStringAs = /* @__PURE__ */ fromStringAsImpl(Just)(Nothing);
-var fromString = /* @__PURE__ */ fromStringAs(10);
-var fromNumber = /* @__PURE__ */ fromNumberImpl(Just)(Nothing);
-
 // output-es/Node.FS.Constants/foreign.js
 import { constants } from "node:fs";
 var f_OK = constants.F_OK;
@@ -2511,177 +2725,6 @@ var x_OK = constants.X_OK;
 var copyFile_EXCL = constants.COPYFILE_EXCL;
 var copyFile_FICLONE = constants.COPYFILE_FICLONE;
 var copyFile_FICLONE_FORCE = constants.COPYFILE_FICLONE_FORCE;
-
-// output-es/Data.Bounded/foreign.js
-var topChar = String.fromCharCode(65535);
-var bottomChar = String.fromCharCode(0);
-var topNumber = Number.POSITIVE_INFINITY;
-var bottomNumber = Number.NEGATIVE_INFINITY;
-
-// output-es/Data.Enum/foreign.js
-function toCharCode(c) {
-  return c.charCodeAt(0);
-}
-function fromCharCode(c) {
-  return String.fromCharCode(c);
-}
-
-// output-es/Data.Enum/index.js
-var charToEnum = (v) => {
-  if (v >= 0 && v <= 65535) {
-    return $Maybe("Just", fromCharCode(v));
-  }
-  return Nothing;
-};
-
-// output-es/Data.String.CodePoints/foreign.js
-var hasArrayFrom = typeof Array.from === "function";
-var hasStringIterator = typeof Symbol !== "undefined" && Symbol != null && typeof Symbol.iterator !== "undefined" && typeof String.prototype[Symbol.iterator] === "function";
-var hasFromCodePoint = typeof String.prototype.fromCodePoint === "function";
-var hasCodePointAt = typeof String.prototype.codePointAt === "function";
-var _unsafeCodePointAt0 = function(fallback) {
-  return hasCodePointAt ? function(str) {
-    return str.codePointAt(0);
-  } : fallback;
-};
-var _fromCodePointArray = function(singleton3) {
-  return hasFromCodePoint ? function(cps) {
-    if (cps.length < 1e4) {
-      return String.fromCodePoint.apply(String, cps);
-    }
-    return cps.map(singleton3).join("");
-  } : function(cps) {
-    return cps.map(singleton3).join("");
-  };
-};
-var _singleton = function(fallback) {
-  return hasFromCodePoint ? String.fromCodePoint : fallback;
-};
-var _take = function(fallback) {
-  return function(n) {
-    if (hasStringIterator) {
-      return function(str) {
-        var accum = "";
-        var iter = str[Symbol.iterator]();
-        for (var i = 0; i < n; ++i) {
-          var o = iter.next();
-          if (o.done) return accum;
-          accum += o.value;
-        }
-        return accum;
-      };
-    }
-    return fallback(n);
-  };
-};
-var _toCodePointArray = function(fallback) {
-  return function(unsafeCodePointAt02) {
-    if (hasArrayFrom) {
-      return function(str) {
-        return Array.from(str, unsafeCodePointAt02);
-      };
-    }
-    return fallback;
-  };
-};
-
-// output-es/Data.String.CodePoints/index.js
-var uncons = (s) => {
-  const v = length2(s);
-  if (v === 0) {
-    return Nothing;
-  }
-  if (v === 1) {
-    return $Maybe("Just", { head: toCharCode(charAt(0)(s)), tail: "" });
-  }
-  const cu1 = toCharCode(charAt(1)(s));
-  const cu0 = toCharCode(charAt(0)(s));
-  if (55296 <= cu0 && cu0 <= 56319 && 56320 <= cu1 && cu1 <= 57343) {
-    return $Maybe("Just", { head: (((cu0 - 55296 | 0) * 1024 | 0) + (cu1 - 56320 | 0) | 0) + 65536 | 0, tail: drop(2)(s) });
-  }
-  return $Maybe("Just", { head: cu0, tail: drop(1)(s) });
-};
-var unconsButWithTuple = (s) => {
-  const $0 = uncons(s);
-  if ($0.tag === "Just") {
-    return $Maybe("Just", $Tuple($0._1.head, $0._1.tail));
-  }
-  return Nothing;
-};
-var toCodePointArrayFallback = (s) => unfoldableArray.unfoldr(unconsButWithTuple)(s);
-var unsafeCodePointAt0Fallback = (s) => {
-  const cu0 = toCharCode(charAt(0)(s));
-  if (55296 <= cu0 && cu0 <= 56319 && length2(s) > 1) {
-    const cu1 = toCharCode(charAt(1)(s));
-    if (56320 <= cu1 && cu1 <= 57343) {
-      return (((cu0 - 55296 | 0) * 1024 | 0) + (cu1 - 56320 | 0) | 0) + 65536 | 0;
-    }
-  }
-  return cu0;
-};
-var unsafeCodePointAt0 = /* @__PURE__ */ _unsafeCodePointAt0(unsafeCodePointAt0Fallback);
-var toCodePointArray = /* @__PURE__ */ _toCodePointArray(toCodePointArrayFallback)(unsafeCodePointAt0);
-var fromCharCode2 = (x) => singleton((() => {
-  if (x >= 0 && x <= 65535) {
-    return fromCharCode(x);
-  }
-  if (x < 0) {
-    return "\0";
-  }
-  return "\uFFFF";
-})());
-var singletonFallback = (v) => {
-  if (v <= 65535) {
-    return fromCharCode2(v);
-  }
-  return fromCharCode2(intDiv(v - 65536 | 0, 1024) + 55296 | 0) + fromCharCode2(intMod(v - 65536 | 0)(1024) + 56320 | 0);
-};
-var fromCodePointArray = /* @__PURE__ */ _fromCodePointArray(singletonFallback);
-var singleton2 = /* @__PURE__ */ _singleton(singletonFallback);
-var takeFallback = (v) => (v1) => {
-  if (v < 1) {
-    return "";
-  }
-  const v2 = uncons(v1);
-  if (v2.tag === "Just") {
-    return singleton2(v2._1.head) + takeFallback(v - 1 | 0)(v2._1.tail);
-  }
-  return v1;
-};
-var take2 = /* @__PURE__ */ _take(takeFallback);
-var eqCodePoint = { eq: (x) => (y) => x === y };
-var ordCodePoint = { compare: (x) => (y) => ordInt.compare(x)(y), Eq0: () => eqCodePoint };
-var codePointFromChar = (x) => toCharCode(x);
-var boundedCodePoint = { bottom: 0, top: 1114111, Ord0: () => ordCodePoint };
-var boundedEnumCodePoint = {
-  cardinality: 1114112,
-  fromEnum: (v) => v,
-  toEnum: (n) => {
-    if (n >= 0 && n <= 1114111) {
-      return $Maybe("Just", n);
-    }
-    return Nothing;
-  },
-  Bounded0: () => boundedCodePoint,
-  Enum1: () => enumCodePoint
-};
-var enumCodePoint = {
-  succ: (a) => {
-    const $0 = a + 1 | 0;
-    if ($0 >= 0 && $0 <= 1114111) {
-      return $Maybe("Just", $0);
-    }
-    return Nothing;
-  },
-  pred: (a) => {
-    const $0 = a - 1 | 0;
-    if ($0 >= 0 && $0 <= 1114111) {
-      return $Maybe("Just", $0);
-    }
-    return Nothing;
-  },
-  Ord0: () => ordCodePoint
-};
 
 // output-es/Node.FS.Perms/index.js
 var semiringPerm = {
@@ -10196,10 +10239,28 @@ var evalApp = (env) => (hd) => (spine) => {
       }
       if (v.tag === "SemLam") {
         const $3 = v1._2;
-        return makeLet(Nothing)(v1._1)((nextArg) => go(Nothing)(env$p)(v._2(nextArg))($3));
+        return makeLet(Nothing)(v1._1)((nextArg) => go((() => {
+          if (mbTy.tag === "Just" && mbTy._1.tag === "Func") {
+            const v2 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), mbTy._1._1);
+            if (v2.tag === "Just" && v2._1.tail.length > 0) {
+              return $Maybe("Just", $ExprType("Func", v2._1.tail, mbTy._1._2));
+            }
+            return $Maybe("Just", mbTy._1._2);
+          }
+          return Nothing;
+        })())(env$p)(v._2(nextArg))($3));
       }
       if (v.tag === "SemRef") {
-        return go(Nothing)(env$p)(evalRef(env$p)(v._1)(v._2)($ExternSpine("ExternApp", [v1._1]))(v._3))(v1._2);
+        return go((() => {
+          if (mbTy.tag === "Just" && mbTy._1.tag === "Func") {
+            const v2 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), mbTy._1._1);
+            if (v2.tag === "Just" && v2._1.tail.length > 0) {
+              return $Maybe("Just", $ExprType("Func", v2._1.tail, mbTy._1._2));
+            }
+            return $Maybe("Just", mbTy._1._2);
+          }
+          return Nothing;
+        })())(env$p)(evalRef(env$p)(v._1)(v._2)($ExternSpine("ExternApp", [v1._1]))(v._3))(v1._2);
       }
       if (v.tag === "SemLet") {
         return $0(v1, v._1, v._3, v._2);
@@ -13563,7 +13624,7 @@ var readCoreFnModule = (filePath) => _bind($$try2(toAff1(stat2)(filePath)))((sta
 var loadDirectives = /* @__PURE__ */ (() => {
   const parsedDirectives = parseDirectiveFile(defaultDirectives);
   return _bind((() => {
-    const $0 = _liftEffect(log("DIRECTIVE PARSE ERRORS"));
+    const $0 = _liftEffect(log2("DIRECTIVE PARSE ERRORS"));
     if (parsedDirectives.errors.length !== 0) {
       return $0;
     }
@@ -15919,9 +15980,8 @@ function getScanDirs(mbFfiDir, extraSpagoDirs) {
   }
   if (mbFfiDir) {
     scanDirs.push(path.join(rootDir, mbFfiDir));
-  } else {
-    scanDirs.push(rootDir);
   }
+  scanDirs.push(rootDir);
   cachedScanDirs = scanDirs;
   return scanDirs;
 }
@@ -15959,7 +16019,6 @@ var findFfiFileImpl = function(extension) {
             if (mbModulePath) {
               const ffiPath = mbModulePath.replace(/\.purs$/, extension);
               if (fs.existsSync(ffiPath)) {
-                console.log("findFfiFile [" + modNameStr + "] -> " + ffiPath);
                 return ffiPath;
               }
             }
@@ -15974,12 +16033,10 @@ var findFfiFileImpl = function(extension) {
               ];
               for (const p of searchPaths) {
                 if (index.has(p)) {
-                  console.log("findFfiFile [" + modNameStr + "] -> " + p);
                   return p;
                 }
               }
             }
-            console.log("findFfiFile [" + modNameStr + "] -> null");
             return null;
           };
         };
@@ -16782,6 +16839,124 @@ var coreForeignSemantics = /* @__PURE__ */ (() => {
 })();
 
 // output-es/Purust.ASTCollector/index.js
+var collectModulesLiteral = (f) => (v) => {
+  if (v.tag === "LitArray") {
+    return foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, f(v1)))(Leaf)(v._1);
+  }
+  if (v.tag === "LitRecord") {
+    return foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, f(v1._2)))(Leaf)(v._1);
+  }
+  return Leaf;
+};
+var collectModulesBinder = (v) => {
+  if (v.tag === "BinderNull") {
+    return Leaf;
+  }
+  if (v.tag === "BinderVar") {
+    return Leaf;
+  }
+  if (v.tag === "BinderNamed") {
+    return collectModulesBinder(v._3);
+  }
+  if (v.tag === "BinderLit") {
+    return collectModulesLiteral(collectModulesBinder)(v._2);
+  }
+  if (v.tag === "BinderConstructor") {
+    if (v._2._1.tag === "Just") {
+      return unsafeUnionWith(
+        ordString.compare,
+        $$const,
+        $$$Map("Node", 1, 1, v._2._1._1, void 0, Leaf, Leaf),
+        foldlArray((acc) => (b) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesBinder(b)))(Leaf)(v._4)
+      );
+    }
+    return foldlArray((acc) => (b) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesBinder(b)))(Leaf)(v._4);
+  }
+  fail();
+};
+var collectModulesExpr = (v) => {
+  if (v.tag === "ExprVar") {
+    if (v._2._1.tag === "Just") {
+      return $$$Map("Node", 1, 1, v._2._1._1, void 0, Leaf, Leaf);
+    }
+    return Leaf;
+  }
+  if (v.tag === "ExprLit") {
+    return collectModulesLiteral(collectModulesExpr)(v._2);
+  }
+  if (v.tag === "ExprConstructor") {
+    return Leaf;
+  }
+  if (v.tag === "ExprAccessor") {
+    return collectModulesExpr(v._2);
+  }
+  if (v.tag === "ExprUpdate") {
+    return unsafeUnionWith(
+      ordString.compare,
+      $$const,
+      collectModulesExpr(v._2),
+      foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesExpr(v1._2)))(Leaf)(v._3)
+    );
+  }
+  if (v.tag === "ExprAbs") {
+    return collectModulesExpr(v._3);
+  }
+  if (v.tag === "ExprApp") {
+    return unsafeUnionWith(ordString.compare, $$const, collectModulesExpr(v._2), collectModulesExpr(v._3));
+  }
+  if (v.tag === "ExprCase") {
+    return unsafeUnionWith(
+      ordString.compare,
+      $$const,
+      foldlArray((acc) => (e) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesExpr(e)))(Leaf)(v._2),
+      foldlArray((acc) => (alt) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesCaseAlt(alt)))(Leaf)(v._3)
+    );
+  }
+  if (v.tag === "ExprLet") {
+    return unsafeUnionWith(
+      ordString.compare,
+      $$const,
+      foldlArray((acc) => (b) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesBind(b)))(Leaf)(v._2),
+      collectModulesExpr(v._3)
+    );
+  }
+  fail();
+};
+var collectModulesCaseGuard = (v) => {
+  if (v.tag === "Unconditional") {
+    return collectModulesExpr(v._1);
+  }
+  if (v.tag === "Guarded") {
+    return foldlArray((acc) => (v1) => unsafeUnionWith(
+      ordString.compare,
+      $$const,
+      acc,
+      unsafeUnionWith(ordString.compare, $$const, collectModulesExpr(v1._1), collectModulesExpr(v1._2))
+    ))(Leaf)(v._1);
+  }
+  fail();
+};
+var collectModulesCaseAlt = (v) => unsafeUnionWith(
+  ordString.compare,
+  $$const,
+  foldlArray((acc) => (b) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesBinder(b)))(Leaf)(v._1),
+  collectModulesCaseGuard(v._2)
+);
+var collectModulesBind = (v) => {
+  if (v.tag === "NonRec") {
+    return collectModulesExpr(v._1._3);
+  }
+  if (v.tag === "Rec") {
+    return foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, collectModulesExpr(v1._3)))(Leaf)(v._1);
+  }
+  fail();
+};
+var collectModulesModule = (v) => foldlArray((acc) => (b) => unsafeUnionWith(
+  ordString.compare,
+  $$const,
+  acc,
+  collectModulesBind(b)
+))(Leaf)(v.decls);
 var collectFieldsLiteral = (f) => (v) => {
   if (v.tag === "LitArray") {
     return foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, f(v1)))(Leaf)(v._1);
@@ -16899,38 +17074,6 @@ var collectFieldsModule = (v) => foldlArray((acc) => (b) => unsafeUnionWith(
   acc,
   collectFieldsBind(b)
 ))(Leaf)(v.decls);
-
-// output-es/Debug/foreign.js
-var req = typeof module === "undefined" ? void 0 : module.require;
-var util = (function() {
-  try {
-    return req === void 0 ? void 0 : req("util");
-  } catch (e) {
-    return void 0;
-  }
-})();
-function _trace(x, k) {
-  if (util !== void 0) {
-    console.log(util.inspect(x, { depth: null, colors: true }));
-  } else {
-    console.log(x);
-  }
-  return k({});
-}
-var now2 = (function() {
-  var perf;
-  if (typeof performance !== "undefined") {
-    perf = performance;
-  } else if (req) {
-    try {
-      perf = req("perf_hooks").performance;
-    } catch (e) {
-    }
-  }
-  return (function() {
-    return (perf || Date).now();
-  });
-})();
 
 // output-es/Purust.CodeGen/index.js
 var lookup5 = (k) => {
@@ -17052,62 +17195,47 @@ var unwrapType = (unwrapType$a0$copy) => {
   return unwrapType$r;
 };
 var sanitizeIdent = (s) => {
-  const s2 = replaceAll("$")("_dollar_")(replaceAll("'")("_prime")(s));
-  if (s2 === "type") {
+  const s4 = replaceAll(".")("_dot_")(replaceAll("-")("_minus_")(replaceAll("$")("_dollar_")(replaceAll("'")("_prime")(s))));
+  if (s4 === "type") {
     return "type_kw";
   }
-  if (s2 === "fn") {
+  if (s4 === "fn") {
     return "fn_kw";
   }
-  if (s2 === "break") {
+  if (s4 === "break") {
     return "break_kw";
   }
-  if (s2 === "mod") {
+  if (s4 === "mod") {
     return "mod_kw";
   }
-  if (s2 === "as") {
+  if (s4 === "as") {
     return "as_kw";
   }
-  if (s2 === "gen") {
+  if (s4 === "gen") {
     return "gen_kw";
   }
-  if (s2 === "use") {
+  if (s4 === "use") {
     return "use_kw";
   }
-  if (s2 === "pub") {
+  if (s4 === "pub") {
     return "pub_kw";
   }
-  if (s2 === "ref") {
+  if (s4 === "ref") {
     return "ref_kw";
   }
-  if (s2 === "mut") {
+  if (s4 === "mut") {
     return "mut_kw";
   }
-  if (s2 === "move") {
+  if (s4 === "move") {
     return "move_kw";
   }
-  if (s2 === "match") {
-    return "match_kw";
+  if (s4 === "let") {
+    return "let_kw";
   }
-  if (s2 === "loop") {
-    return "loop_kw";
+  if (s4 === "if") {
+    return "if_kw";
   }
-  return s2;
-};
-var printType = (v) => {
-  if (v.tag === "Func") {
-    return "Func";
-  }
-  if (v.tag === "ForAll") {
-    return "ForAll(" + printType(v._2) + ")";
-  }
-  if (v.tag === "ConstrainedType") {
-    return "ConstrainedType(" + printType(v._2) + ")";
-  }
-  if (v.tag === "Any") {
-    return "Any";
-  }
-  return "Other";
+  return s4;
 };
 var printAST = (v) => {
   if (v.tag === "App") {
@@ -17471,31 +17599,30 @@ var dedupArgs = (arr) => foldlArray((acc) => (item) => {
   }
   fail();
 })({ result: [], counts: Leaf })(arr).result;
-var debugUnwrap = (name2) => (t) => {
-  const unwrapped = unwrapType(t);
-  if (name2 === "bifoldrDefault") {
-    return _trace("unwrapType for " + name2 + ": " + printType(t) + " -> " + printType(unwrapped), (v) => unwrapped);
-  }
-  return unwrapped;
-};
 var codegenPrelude = (fields) => "#![allow(warnings)]\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_int: Some(val), ..Default::default() }) }\npub fn mk_bool(val: bool) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_bool: Some(val), ..Default::default() }) }\npub fn mk_number(val: f64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_number: Some(val), ..Default::default() }) }\npub fn mk_string(val: &str) -> UnknownType { let val = val.to_string(); perceus_ptr::PerceusPtr::new(Record_a { init_string: Some(val), ..Default::default() }) }\npub fn mk_char(val: char) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_char: Some(val), ..Default::default() }) }\npub fn mk_array(val: Vec<UnknownType>) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_array: Some(std::rc::Rc::new(val)), ..Default::default() }) }\n\n#[derive(Clone, Default)]\npub struct Record_a {\n    pub tag: &'static str,\n    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub init_int: Option<i64>,\n    pub init_number: Option<f64>,\n    pub init_bool: Option<bool>,\n    pub init_string: Option<String>,\n    pub init_char: Option<char>,\n    pub init_array: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + foldMap7((field) => {
   if (member2(field)(fromFoldable8(["unwrap", "clone", "as_ref", "call", "tag", "vals", "init_int", "init_bool", "init_number", "init_string", "init_char", "init_array"]))) {
     return "";
   }
   return "    pub " + sanitizeIdent(field) + ": Option<UnknownType>,\n";
 })(fromFoldableImpl(foldableSet.foldr, fields)) + "}\n\n";
+var chunkArray = (size4) => (arr) => {
+  if (arr.length <= 0) {
+    return [];
+  }
+  return [size4 < 1 ? [] : sliceImpl(0, size4, arr), ...chunkArray(size4)(size4 < 1 ? arr : sliceImpl(size4, arr.length, arr))];
+};
 var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (fn) => (argsArray) => {
   const m = argsArray.length;
   const getInner = (getInner$a0$copy) => {
     let getInner$a0 = getInner$a0$copy, getInner$c = true, getInner$r;
     while (getInner$c) {
-      const v = getInner$a0;
-      if (v.tag === "Typed") {
-        getInner$a0 = v._2;
+      const v2 = getInner$a0;
+      if (v2.tag === "Typed") {
+        getInner$a0 = v2._2;
         continue;
       }
       getInner$c = false;
-      getInner$r = v;
+      getInner$r = v2;
     }
     return getInner$r;
   };
@@ -17518,61 +17645,56 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     alive,
     foldlArray(union)(Leaf)(argsFree)
   ))(fn);
-  return _trace(
-    "genApp fn AST: " + printAST(fn),
-    (v) => {
-      const v1 = getInner(fn);
-      if (v1.tag === "Var") {
-        const sName = sanitizeIdent(v1._1._2);
-        if (member12(sName)(bound)) {
-          return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fnCode)(argsCodeArray);
-        }
-        const fullName = (() => {
-          if (v1._1._1.tag === "Just") {
-            return replaceAll(".")("_")(v1._1._1._1) + "_" + sName;
-          }
-          if (v1._1._1.tag === "Nothing") {
-            return replaceAll(".")("_")(currentMod) + "_" + sName;
-          }
-          fail();
-        })();
-        if (member12(fullName === "main" ? "main" : fullName)(aritiesMap)) {
-          const v$1 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
-          const n = (() => {
-            if (v$1.tag === "Just") {
-              return getArity(v$1._1);
-            }
-            if (v$1.tag === "Nothing") {
-              return 0;
-            }
-            fail();
-          })();
-          if (n > 0) {
-            if (m === n) {
-              return fullName + "(" + joinWith(", ")(argsCodeArray) + ")";
-            }
-            if (m < n) {
-              const missingCount = n - m | 0;
-              const evalArgs = mapWithIndexArray((i) => (v2) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
-              const etaArgs = mapWithIndexArray((i) => (v2) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
-              return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldrArray((etaArg) => (v3) => $Tuple(
-                v3._1 - 1 | 0,
-                "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")([
-                  ...evalArgs,
-                  ...v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs)
-                ])) + "    " + v3._2 + "\n})), ..Default::default() })"
-              ))($Tuple(
-                missingCount - 1 | 0,
-                fullName + "(" + joinWith(", ")([...evalArgs, ...arrayMap((eta) => eta + ".clone()")(etaArgs)]) + ")"
-              ))(etaArgs)._2 + "\n}";
-            }
-            return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, argsCodeArray)) + ")")(n < 1 ? argsCodeArray : sliceImpl(n, argsCodeArray.length, argsCodeArray));
-          }
-        }
-      }
+  const v = getInner(fn);
+  if (v.tag === "Var") {
+    const sName = sanitizeIdent(v._1._2);
+    if (member12(sName)(bound)) {
       return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fnCode)(argsCodeArray);
     }
-  );
+    const fullName = (() => {
+      if (v._1._1.tag === "Just") {
+        return replaceAll(".")("_")(v._1._1._1) + "_" + sName;
+      }
+      if (v._1._1.tag === "Nothing") {
+        return replaceAll(".")("_")(currentMod) + "_" + sName;
+      }
+      fail();
+    })();
+    if (member12(fullName === "main" ? "main" : fullName)(aritiesMap)) {
+      const v$1 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
+      const n = (() => {
+        if (v$1.tag === "Just") {
+          return getArity(v$1._1);
+        }
+        if (v$1.tag === "Nothing") {
+          return 0;
+        }
+        fail();
+      })();
+      if (n > 0) {
+        if (m === n) {
+          return fullName + "(" + joinWith(", ")(argsCodeArray) + ")";
+        }
+        if (m < n) {
+          const missingCount = n - m | 0;
+          const evalArgs = mapWithIndexArray((i) => (v1) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
+          const etaArgs = mapWithIndexArray((i) => (v1) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
+          return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldrArray((etaArg) => (v2) => $Tuple(
+            v2._1 - 1 | 0,
+            "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")([
+              ...evalArgs,
+              ...v2._1 < 1 ? [] : sliceImpl(0, v2._1, etaArgs)
+            ])) + "    " + v2._2 + "\n})), ..Default::default() })"
+          ))($Tuple(
+            missingCount - 1 | 0,
+            fullName + "(" + joinWith(", ")([...evalArgs, ...arrayMap((eta) => eta + ".clone()")(etaArgs)]) + ")"
+          ))(etaArgs)._2 + "\n}";
+        }
+        return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, argsCodeArray)) + ")")(n < 1 ? argsCodeArray : sliceImpl(n, argsCodeArray.length, argsCodeArray));
+      }
+    }
+  }
+  return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fnCode)(argsCodeArray);
 };
 var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (paramsArr) => (body) => {
   const finalState = foldrArray((p) => (st) => {
@@ -17608,7 +17730,6 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   return finalState.code;
 };
 var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (v) => {
-  const $0 = () => _trace("FALLBACK HIT FOR: " + printAST(v), (v1) => "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */");
   if (v.tag === "Typed") {
     return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2);
   }
@@ -17655,28 +17776,28 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1)(v._2);
   }
   if (v.tag === "Update") {
-    const $1 = v._2;
+    const $0 = v._2;
     return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
-      foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v1._2)))(Leaf)($1)
+      foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v1._2)))(Leaf)($0)
     ))(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(mapWithIndexArray((i) => (v1) => "_mut." + v1._1 + " = Some(std::rc::Rc::new(|_| " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       foldlArray((acc) => (v3) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v3._2)))(Leaf)((() => {
-        const $2 = i + 1 | 0;
-        if ($2 < 1) {
-          return $1;
+        const $1 = i + 1 | 0;
+        if ($1 < 1) {
+          return $0;
         }
-        return sliceImpl($2, $1.length, $1);
+        return sliceImpl($1, $0.length, $0);
       })())
-    ))(v1._2) + "));")($1)) + "\n    }\n    _base\n}";
+    ))(v1._2) + "));")($0)) + "\n    }\n    _base\n}";
   }
   if (v.tag === "Branch") {
-    const $1 = v._1;
-    const $2 = v._2;
+    const $0 = v._1;
+    const $1 = v._2;
     return joinWith(" else ")(mapWithIndexArray((i) => (v1) => {
       const condCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
@@ -17691,17 +17812,17 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
             $$const,
             acc,
             unsafeUnionWith(ordString.compare, $$const, freeVariables(v2._1), freeVariables(v2._2))
-          ))(freeVariables($2))((() => {
-            const $3 = i + 1 | 0;
-            if ($3 < 1) {
-              return $1;
+          ))(freeVariables($1))((() => {
+            const $2 = i + 1 | 0;
+            if ($2 < 1) {
+              return $0;
             }
-            return sliceImpl($3, $1.length, $1);
+            return sliceImpl($2, $0.length, $0);
           })())
         )
       ))(v1._1);
       return ((v1._1.tag === "Typed" ? v1._1._2.tag === "Lit" && v1._1._2._1.tag === "LitBoolean" : v1._1.tag === "Lit" && v1._1._1.tag === "LitBoolean") ? "if " + condCode + " {\n        " : "if (" + condCode + ").init_bool.unwrap() {\n        ") + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v1._2) + "\n    }";
-    })($1)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)($2) + "\n    }";
+    })($0)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)($1) + "\n    }";
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
@@ -17901,7 +18022,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
     }
-    return $0();
+    return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */";
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
@@ -17910,7 +18031,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     if (v._2.tag === "GetCtorField") {
       return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + ".vals.as_ref().unwrap()[" + showIntImpl(v._2._6) + "].clone()";
     }
-    return $0();
+    return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */";
   }
   if (v.tag === "Var") {
     const sName = sanitizeIdent(v._1._2);
@@ -18032,34 +18153,38 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return "mk_bool(false)";
     }
     if (v._1.tag === "LitArray") {
-      const $1 = v._1._1;
-      return "crate::mk_array(vec![" + joinWith(", ")(mapWithIndexArray((i) => (a) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      const $0 = v._1._1;
+      const arrCode = mapWithIndexArray((i) => (a) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
         foldlArray(union)(Leaf)(arrayMap(freeVariables)((() => {
-          const $2 = i + 1 | 0;
-          if ($2 < 1) {
-            return $1;
+          const $1 = i + 1 | 0;
+          if ($1 < 1) {
+            return $0;
           }
-          return sliceImpl($2, $1.length, $1);
+          return sliceImpl($1, $0.length, $0);
         })()))
-      ))(a))($1)) + "])";
+      ))(a))($0);
+      if (arrCode.length > 200) {
+        return "({\n    let mut __arr = Vec::with_capacity(" + showIntImpl(arrCode.length) + ");\n" + joinWith("")(arrayMap((chunk) => "    __arr.extend(vec![" + joinWith(", ")(chunk) + "]);\n")(chunkArray(200)(arrCode))) + "    crate::mk_array(__arr)\n})";
+      }
+      return "crate::mk_array(vec![" + joinWith(", ")(arrCode) + "])";
     }
     if (v._1.tag === "LitRecord") {
-      const $1 = v._1._1;
+      const $0 = v._1._1;
       return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(mapWithIndexArray((i) => (v1) => sanitizeIdent(v1._1) + ": Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
         foldlArray(union)(Leaf)(arrayMap((v3) => freeVariables(v3._2))((() => {
-          const $2 = i + 1 | 0;
-          if ($2 < 1) {
-            return $1;
+          const $1 = i + 1 | 0;
+          if ($1 < 1) {
+            return $0;
           }
-          return sliceImpl($2, $1.length, $1);
+          return sliceImpl($1, $0.length, $0);
         })()))
-      ))(v1._2) + ")")($1)) + ($1.length > 0 ? ", " : "") + "..Default::default() })";
+      ))(v1._2) + ")")($0)) + ($0.length > 0 ? ", " : "") + "..Default::default() })";
     }
     fail();
   }
@@ -18105,11 +18230,11 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       $$const,
       alive,
       foldlArray(union)(Leaf)(arrayMap((v2) => freeVariables(v2._2))((() => {
-        const $1 = i + 1 | 0;
-        if ($1 < 1) {
+        const $0 = i + 1 | 0;
+        if ($0 < 1) {
           return v._5;
         }
-        return sliceImpl($1, v._5.length, v._5);
+        return sliceImpl($0, v._5.length, v._5);
       })()))
     ))(v1._2))(v._5)) + "]))") + ", ..Default::default() })";
   }
@@ -18117,31 +18242,31 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return 'perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._3 + '", ..Default::default() })';
   }
   if (v.tag === "LetRec") {
-    const $1 = v._2;
-    const $2 = v._3;
-    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });")($1)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($1)) + "\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    const $0 = v._2;
+    const $1 = v._3;
+    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });")($0)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($0)) + "\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       unsafeUnionWith(
         ordString.compare,
         $$const,
-        freeVariables($2),
+        freeVariables($1),
         foldlArray((acc) => (v2) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v2._2)))(Leaf)((() => {
-          const $3 = i + 1 | 0;
-          if ($3 < 1) {
-            return $1;
+          const $2 = i + 1 | 0;
+          if ($2 < 1) {
+            return $0;
           }
-          return sliceImpl($3, $1.length, $1);
+          return sliceImpl($2, $0.length, $0);
         })())
       )
-    ))(v1._2) + "\n    };")($1)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "*perceus_ptr::PerceusPtr::make_mut(&mut " + sanitizeIdent(v1._1) + ") = (*val_" + sanitizeIdent(v1._1) + ").clone();")($1)) + "\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)($2) + "\n}";
+    ))(v1._2) + "\n    };")($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "*perceus_ptr::PerceusPtr::make_mut(&mut " + sanitizeIdent(v1._1) + ") = (*val_" + sanitizeIdent(v1._1) + ").clone();")($0)) + "\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)($1) + "\n}";
   }
-  return $0();
+  return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */";
 };
 var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMacroBindings) => (aritiesMap) => (group2) => {
   if (group2.bindings.length === 0) {
-    return { code: "", arities: Leaf };
+    return { code: "", arities: aritiesMap };
   }
   const isSelfRecursive = group2.recursive && group2.bindings.length === 1;
   const groupArities = fromFoldable23(arrayMap((v) => {
@@ -18154,7 +18279,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
       const innerExpr = v._2.tag === "Typed" ? v._2._2 : v._2;
       const identName = rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName;
       const $0 = lookup5(identName)(groupArities);
-      const v2 = debugUnwrap(identName)((() => {
+      const v2 = unwrapType((() => {
         if ($0.tag === "Nothing") {
           return Any;
         }
@@ -18268,10 +18393,33 @@ var member3 = (k) => {
   return go;
 };
 var foldMap8 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
+var toUnfoldable13 = /* @__PURE__ */ (() => {
+  const $0 = unfoldableArray.unfoldr((xs) => {
+    if (xs.tag === "Nil") {
+      return Nothing;
+    }
+    if (xs.tag === "Cons") {
+      return $Maybe("Just", $Tuple(xs._1, xs._2));
+    }
+    fail();
+  });
+  return (x) => $0((() => {
+    const go = (m$p, z$p) => {
+      if (m$p.tag === "Leaf") {
+        return z$p;
+      }
+      if (m$p.tag === "Node") {
+        return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
+      }
+      fail();
+    };
+    return go(x, Nil);
+  })());
+})();
 var main = /* @__PURE__ */ (() => {
   const $0 = _makeFiber(
     ffiUtil,
-    _bind(_liftEffect(argv))(() => _bind(_liftEffect(log("Generating Rust code for Main")))(() => _bind(coreFnModulesFromOutput("output"))((finalModules) => {
+    _bind(_liftEffect(argv))(() => _bind(_liftEffect(log2("Generating Rust code for Main")))(() => _bind(coreFnModulesFromOutput("output"))((finalModules) => {
       const go = (go$a0$copy) => (go$a1$copy) => {
         let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
         while (go$c) {
@@ -18376,7 +18524,7 @@ var main = /* @__PURE__ */ (() => {
                   })(a)(v1._1);
                 }
                 fail();
-              })(foldlArray((a) => (v1) => {
+              })(foldlArray((a) => (decl) => foldlArray((a2) => (ctor) => insert(ordString)(modPrefix + sanitizeIdent(ctor.name))(Any)(a2))(a)(decl.constructors))(foldlArray((a) => (v1) => {
                 if (v1._2.tag === "Just") {
                   return insert(ordString)(modPrefix + sanitizeIdent(v1._1))(v1._2._1)(a);
                 }
@@ -18384,7 +18532,7 @@ var main = /* @__PURE__ */ (() => {
                   return a;
                 }
                 fail();
-              })(b)(toUnfoldable3(v._1.foreign)))(v._1.decls);
+              })(b)(toUnfoldable3(v._1.foreign)))(v._1.dataDecls))(v._1.decls);
             })();
             go$a1 = v._2;
             continue;
@@ -18394,7 +18542,7 @@ var main = /* @__PURE__ */ (() => {
         return go$r;
       };
       const globalArities = go(Leaf)(finalModules);
-      return _bind(loadDirectives)((directives) => _bind(_liftEffect(() => ({ value: "" })))((codeRef) => _bind(_liftEffect(() => ({ value: "" })))((ffiRef) => _bind(buildModules2({
+      return _bind(loadDirectives)((directives) => _bind(_liftEffect(() => ({ value: Leaf })))((modulesRef) => _bind(buildModules2({
         directives,
         analyzeCustom: (v) => (v1) => Nothing,
         foreignSemantics: coreForeignSemantics,
@@ -18405,64 +18553,98 @@ var main = /* @__PURE__ */ (() => {
           const modNameStr = backendMod.name;
           return _bind(toAff3(writeTextFile)(UTF8)("output/" + modNameStr + "/.purust-cache.json")(stringify2("1.0.0")(backendMod)))(() => {
             const rsFile = codegenModule(globalArities)(v1)(backendMod);
-            return _liftEffect(() => {
-              const $02 = codeRef.value;
-              codeRef.value = $02 + rsFile + "\n\n";
-              const modPrefix = replaceAll(".")("_")(v1.name) + "_";
-              const ffiPathMb = findFfiFile(".rs")([])($Maybe("Just", "../"))(modNameStr)($Maybe("Just", v1.path))();
-              const getArity2 = (v3) => {
-                if (v3.tag === "ForAll") {
-                  return getArity2(v3._2);
-                }
-                if (v3.tag === "ConstrainedType") {
-                  return getArity2(v3._2);
-                }
-                if (v3.tag === "Func") {
-                  return v3._1.length + getArity2(v3._2) | 0;
-                }
-                return 0;
-              };
-              const genFallback = (name2, ty) => {
-                if (!member3(modPrefix + sanitizeIdent(name2))(Leaf)) {
-                  return "pub fn " + modPrefix + sanitizeIdent(name2) + "(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "mut a" + showIntImpl(i) + ": crate::UnknownType")(replicateImpl(
-                    getArity2(ty),
-                    void 0
-                  ))) + ") -> crate::UnknownType { crate::UnknownType::new(crate::Record_a { ..Default::default() }) }\n";
-                }
-                return "";
-              };
-              const ffiContent = (() => {
-                if (ffiPathMb.tag === "Just") {
-                  const content = readTextFile2(UTF8)(ffiPathMb._1)();
-                  return content + "\n\n" + foldMap8((tup) => {
-                    if (tup._2.tag === "Just") {
-                      if (contains("fn " + modPrefix + sanitizeIdent(tup._1))(content)) {
+            return _liftEffect((() => {
+              const foreignArr = v1.foreign;
+              const modName = replaceAll(".")("_")(v1.name);
+              const modPrefix = modName + "_";
+              const $02 = findFfiFile(".rs")([])($Maybe("Just", "../"))(modNameStr)($Maybe("Just", v1.path));
+              return () => {
+                const ffiPathMb = $02();
+                const getArity2 = (v3) => {
+                  if (v3.tag === "ForAll") {
+                    return getArity2(v3._2);
+                  }
+                  if (v3.tag === "ConstrainedType") {
+                    return getArity2(v3._2);
+                  }
+                  if (v3.tag === "Func") {
+                    return v3._1.length + getArity2(v3._2) | 0;
+                  }
+                  return 0;
+                };
+                const genFallback = (name2, ty) => {
+                  if (!member3(modPrefix + sanitizeIdent(name2))(Leaf)) {
+                    return "pub fn " + modPrefix + sanitizeIdent(name2) + "(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "mut a" + showIntImpl(i) + ": UnknownType")(replicateImpl(
+                      getArity2(ty),
+                      void 0
+                    ))) + ") -> UnknownType { UnknownType::new(Record_a { ..Default::default() }) }\n";
+                  }
+                  return "";
+                };
+                const ffiContent = (() => {
+                  if (ffiPathMb.tag === "Just") {
+                    const content = readTextFile2(UTF8)(ffiPathMb._1)();
+                    return content + "\n\n" + foldMap8((tup) => {
+                      if (tup._2.tag === "Just") {
+                        if (contains("fn " + modPrefix + sanitizeIdent(tup._1))(content)) {
+                          return "";
+                        }
+                        return genFallback(tup._1, tup._2._1);
+                      }
+                      if (tup._2.tag === "Nothing") {
                         return "";
                       }
-                      return genFallback(tup._1, tup._2._1);
+                      fail();
+                    })(toUnfoldable3(foreignArr));
+                  }
+                  if (ffiPathMb.tag === "Nothing") {
+                    return foldMap8((tup) => {
+                      if (tup._2.tag === "Just") {
+                        return genFallback(tup._1, tup._2._1);
+                      }
+                      if (tup._2.tag === "Nothing") {
+                        return "";
+                      }
+                      fail();
+                    })(toUnfoldable3(foreignArr));
+                  }
+                  fail();
+                })();
+                const allModStrs = arrayMap((n) => replaceAll(".")("_")(n))(arrayMap((v3) => v3.name)(fromFoldableImpl(
+                  foldableList.foldr,
+                  finalModules
+                )));
+                const coreImports = nubBy(ordString.compare)(mapMaybe((n) => {
+                  const nStr = replaceAll(".")("_")(n);
+                  if ((() => {
+                    const $12 = indexOf2("Prim.")(n);
+                    return n === "Prim" || ($12.tag === "Nothing" ? false : $12.tag === "Just" && $12._1 === 0) || nStr === modName;
+                  })()) {
+                    return Nothing;
+                  }
+                  return $Maybe("Just", nStr);
+                })(concat([
+                  mapMaybe((modStr) => {
+                    if (modStr !== modName && contains(modStr + "_")(foldlArray((acc) => (other) => replaceAll(other)("MASKED")(acc))(rsFile)(filterImpl(
+                      (other) => {
+                        const $12 = indexOf2(modStr)(other);
+                        return other !== modStr && ($12.tag === "Nothing" ? false : $12.tag === "Just" && $12._1 === 0);
+                      },
+                      allModStrs
+                    )))) {
+                      return $Maybe("Just", modStr);
                     }
-                    if (tup._2.tag === "Nothing") {
-                      return "";
-                    }
-                    fail();
-                  })(toUnfoldable3(v1.foreign));
-                }
-                if (ffiPathMb.tag === "Nothing") {
-                  return foldMap8((tup) => {
-                    if (tup._2.tag === "Just") {
-                      return genFallback(tup._1, tup._2._1);
-                    }
-                    if (tup._2.tag === "Nothing") {
-                      return "";
-                    }
-                    fail();
-                  })(toUnfoldable3(v1.foreign));
-                }
-                fail();
-              })();
-              const $1 = ffiRef.value;
-              ffiRef.value = $1 + ffiContent + "\n\n";
-            });
+                    return Nothing;
+                  })(allModStrs),
+                  toUnfoldable13(collectModulesModule(v1))
+                ])));
+                const $1 = modulesRef.value;
+                modulesRef.value = insert(ordString)(modName)({
+                  code: "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" + joinWith("\n")(arrayMap((i) => "use Purs_" + i + "::*;")(coreImports)) + "\n\n" + rsFile + "\n\n" + ffiContent + "\n\n",
+                  imports: coreImports
+                })($1);
+              };
+            })());
           });
         }
       })(finalModules))(() => _liftEffect(() => {
@@ -18472,10 +18654,13 @@ var main = /* @__PURE__ */ (() => {
           $02();
           mkdir3("output/purust_output/src")();
         }
-        writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "../../../purust/tests/runtime/perceus_ptr" }\n')();
-        const allCode = codeRef.value;
-        const allFfi = ffiRef.value;
-        writeTextFile2(UTF8)("output/purust_output/src/main.rs")(codegenPrelude((() => {
+        const allModules = modulesRef.value;
+        writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v) => '"Purs_' + v._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nPurs_Test_Main = { path = "Purs_Test_Main" }\n')();
+        writeTextFile2(UTF8)("output/purust_output/src/main.rs")("fn main() {\n    Purs_Test_Main::main();\n}\n")();
+        mkdir3("output/purust_output/purust_core")();
+        mkdir3("output/purust_output/purust_core/src")();
+        writeTextFile2(UTF8)("output/purust_output/purust_core/Cargo.toml")('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n')();
+        writeTextFile2(UTF8)("output/purust_output/purust_core/src/lib.rs")(codegenPrelude((() => {
           const go$1 = (go$1$a0$copy) => (go$1$a1$copy) => {
             let go$1$a0 = go$1$a0$copy, go$1$a1 = go$1$a1$copy, go$1$c = true, go$1$r;
             while (go$1$c) {
@@ -18495,9 +18680,24 @@ var main = /* @__PURE__ */ (() => {
             return go$1$r;
           };
           return go$1(Leaf)(finalModules);
-        })()) + allCode + allFfi)();
-        return log("Successfully generated Rust code.")();
-      })))));
+        })()))();
+        foldlArray((eff) => (v) => {
+          const $1 = v._2.imports;
+          const $2 = v._1;
+          const $3 = v._2.code;
+          const modDir = "output/purust_output/Purs_" + $2;
+          const $4 = mkdir3(modDir);
+          return () => {
+            eff();
+            $4();
+            mkdir3(modDir + "/src")();
+            writeTextFile2(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $2 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')($1)))();
+            return writeTextFile2(UTF8)(modDir + "/src/lib.rs")($3)();
+          };
+        })(() => {
+        })(toUnfoldable3(allModules))();
+        return log2("Successfully generated Rust code.")();
+      }))));
     })))
   );
   return () => {
