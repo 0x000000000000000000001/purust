@@ -207,8 +207,8 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
         lookupArity fname = 
           let key = if fname == "main" then "main" else fname
           in case Map.lookup key aritiesMap of
-            Just (Func expectedArgs _) -> Array.length expectedArgs
-            _ -> 0
+            Just ty -> getArity ty
+            Nothing -> 0
             
         argsCodeArray = Array.mapWithIndex (\i arg -> 
             let subsequentArgsFree = Array.drop (i + 1) argsFree
@@ -285,7 +285,13 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive pa
                        "})), ..Default::default() })"
           in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
         ) initialState paramsArr
-    in finalState.code
+      
+      toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection finalState.freeVars alive))
+      outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> v <> " = " <> v <> ".clone();\n    ") toCloneOutside)
+      wrappedCode = if Array.length toCloneOutside > 0 then
+          "{\n    " <> outsideClonesCode <> finalState.code <> "\n}"
+        else finalState.code
+    in wrappedCode
 
 codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
 codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive (NeutralExpr expr) = case expr of
@@ -354,7 +360,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpNumberNegate -> "mk_number(-(" <> aStr <> ").init_number.unwrap())"
       OpArrayLength -> "mk_int((" <> aStr <> ").init_array.as_ref().unwrap().len() as i64)"
       OpIsTag (Qualified _ (Ident ctorName)) -> "mk_bool(" <> aStr <> ".tag == \"" <> ctorName <> "\")"
-      _ -> "unimplemented!() /* Unsupported Op1 */"
+      _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
         aStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForA a
@@ -407,8 +413,8 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpNumberNum OpSubtract -> "mk_number((" <> aStr <> ").init_number.unwrap() - (" <> bStr <> ").init_number.unwrap())"
       OpNumberNum OpMultiply -> "mk_number((" <> aStr <> ").init_number.unwrap() * (" <> bStr <> ").init_number.unwrap())"
       OpNumberNum OpDivide -> "mk_number((" <> aStr <> ").init_number.unwrap() / (" <> bStr <> ").init_number.unwrap())"
-      OpStringAppend -> "mk_string(format!(\"{}{}\", (" <> aStr <> ").init_string.as_ref().unwrap(), (" <> bStr <> ").init_string.as_ref().unwrap()))"
-      _ -> "unimplemented!() /* Unsupported Op2 */"
+      OpStringAppend -> "mk_string(&format!(\"{}{}\", (" <> aStr <> ").init_string.as_ref().unwrap(), (" <> bStr <> ").init_string.as_ref().unwrap()))"
+      _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
   Accessor base (GetProp k) -> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base <> "." <> sanitizeIdent k <> ".clone().unwrap()"
   Accessor base (GetCtorField _ _ _ _ _ fieldIdx) ->
     let baseStr = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base
@@ -427,14 +433,14 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
           modPrefix = case mbMod of
             Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
             Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_"
-          fullName = sanitizeIdent (modPrefix <> name)
+          fullName = modPrefix <> sanitizeIdent name
           
           key = if fullName == "main" then "main" else fullName
           isTopLevel = true
           expectedArgsLength = case Map.lookup key aritiesMap of
-            Just (Func args _) -> Array.length args
-            _ -> 0
-            
+            Just ty -> getArity ty
+            Nothing -> 0
+
           varCode = if isTopLevel then
             if expectedArgsLength == 0 then
                fullName <> "()"
@@ -442,8 +448,12 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
                let etaArgs = Array.mapWithIndex (\i _ -> "eta_" <> show i) (Array.replicate expectedArgsLength unit)
                    innerArgs = map (\eta -> eta <> ".clone()") etaArgs
                    innerCall = fullName <> "(" <> String.joinWith ", " innerArgs <> ")"
-                   wrapClosure code etaArg = "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> code <> " })), ..Default::default() })"
-               in Array.foldl wrapClosure innerCall (Array.reverse etaArgs)
+               in (case Array.foldr (\etaArg (Tuple i code) -> 
+                   let prevEtas = Array.take i etaArgs
+                       clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
+                   in Tuple (i - 1) ("{\n        " <> clonesCode <> "\n        perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> code <> " })), ..Default::default() })\n    }")
+                 ) (Tuple (expectedArgsLength - 1) innerCall) etaArgs of
+                 Tuple _ res -> res)
           else
             fullName
             
@@ -499,7 +509,12 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
           ) arr
       in "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
     LitRecord props ->
-      let fields = String.joinWith ", " (map (\(Prop k v) -> sanitizeIdent k <> ": Some(" <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty v <> ")") props)
+      let arrProps = props
+          fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
+            let subsequent = Array.drop (i + 1) arrProps
+                aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Prop _ sv) -> freeVariables sv) subsequent))
+            in sanitizeIdent k <> ": Some(" <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForV v <> ")"
+          ) arrProps)
       in "perceus_ptr::PerceusPtr::new(Record_a { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() })"
   Abs params body -> 
     let
@@ -519,7 +534,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
     in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body
-  PrimUndefined -> "unimplemented!()"
+  PrimUndefined -> "{ let _t: crate::UnknownType = unimplemented!(); _t }"
   CtorSaturated _ _ _ (Ident ctorName) fields ->
     let fieldsCode = if Array.null fields then "None" else 
           "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
@@ -554,7 +569,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       bodyCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive body
     in "{\n    " <> declCode <> "\n    " <> evalCode <> "\n    " <> mutCode <> "\n    " <> bodyCode <> "\n}"
 
-  _ -> Debug.trace ("FALLBACK HIT FOR: " <> printAST (NeutralExpr expr)) \_ -> "unimplemented!() /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
+  _ -> Debug.trace ("FALLBACK HIT FOR: " <> printAST (NeutralExpr expr)) \_ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST (NeutralExpr expr) <> " */"
 
 printAST :: NeutralExpr -> String
 printAST (NeutralExpr expr) = case expr of
@@ -589,7 +604,7 @@ freeVariables (NeutralExpr expr) = case expr of
     let modPrefix = case mbMod of
           Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
           Nothing -> ""
-    in Set.singleton (sanitizeIdent (modPrefix <> name))
+    in Set.singleton (modPrefix <> sanitizeIdent name)
   Local mbId lvl -> Set.singleton (case mbId of
       Just (Ident nameRaw) -> sanitizeIdent nameRaw
       Nothing -> "lvl_" <> show (unwrap lvl))
@@ -684,6 +699,14 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
           Nothing -> Any
   Let (Just (Ident i)) _ val body -> inferTypeExpr currentMod aritiesMap (Map.insert (sanitizeIdent i) (inferTypeExpr currentMod aritiesMap bound val) bound) body
   _ -> Any
+
+getArity :: ExprType -> Int
+getArity (ForAll _ t) = getArity t
+getArity (ConstrainedType _ t) = getArity t
+getArity (Func args t) = Array.length args + getArity t
+getArity _ = 0
+
+
 
 sanitizeIdent :: String -> String
 sanitizeIdent s = 

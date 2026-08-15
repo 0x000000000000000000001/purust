@@ -23,9 +23,9 @@ import Data.List as List
 import Data.Set as Set
 import Data.Array as Array
 import Data.String as String
-import Data.String.Pattern (Pattern(..), Replacement(..))
+import Data.Foldable (foldl)
 import Data.Tuple (Tuple(..))
-import Data.String as String
+import Data.String.Pattern (Pattern(..), Replacement(..))
 import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
 import Effect.Console as Console
 import Effect.Class (liftEffect)
@@ -53,21 +53,39 @@ main = launchAff_ do
           
           acc1 = foldl (\a (Tuple (Ident name) mbTy) -> 
               case mbTy of
-                Just ty -> Map.insert (sanitizeIdent (modPrefix <> name)) ty a
+                Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a
                 Nothing -> a
             ) acc (Map.toUnfoldable mod.foreign :: Array (Tuple Ident (Maybe ExprType)))
             
           getTy (Ann ann) = ann.type
           
+          extractAnn :: Expr Ann -> Ann
+          extractAnn = case _ of
+            ExprVar ann _ -> ann
+            ExprLit ann _ -> ann
+            ExprAbs ann _ _ -> ann
+            ExprApp ann _ _ -> ann
+            ExprLet ann _ _ -> ann
+            ExprCase ann _ _ -> ann
+            ExprConstructor ann _ _ _ -> ann
+            ExprAccessor ann _ _ -> ann
+            ExprUpdate ann _ _ -> ann
+
           processBind a = case _ of
-            NonRec (Binding ann (Ident name) _) ->
-              case getTy ann of
-                Just ty -> Map.insert (sanitizeIdent (modPrefix <> name)) ty a
+            NonRec (Binding ann (Ident name) val) ->
+              let tyMb = case getTy ann of
+                           Just t -> Just t
+                           Nothing -> getTy (extractAnn val)
+              in case tyMb of
+                Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a
                 Nothing -> a
             Rec binds ->
-              foldl (\a' (Binding ann (Ident name) _) ->
-                case getTy ann of
-                  Just ty -> Map.insert (sanitizeIdent (modPrefix <> name)) ty a'
+              foldl (\a' (Binding ann (Ident name) val) ->
+                let tyMb = case getTy ann of
+                             Just t -> Just t
+                             Nothing -> getTy (extractAnn val)
+                in case tyMb of
+                  Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a'
                   Nothing -> a'
               ) a binds
               
@@ -97,25 +115,39 @@ main = launchAff_ do
         liftEffect do
           Ref.modify_ (\acc -> acc <> rsFile <> "\n\n") codeRef
           
-          let Module (Module { name, foreign: foreignArr }) = Module coreFnMod
-          let modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap name) <> "_"
+          let foreignArr = coreFnMod.foreign
+          let modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap coreFnMod.name) <> "_"
           let allMacroBindings = Set.empty -- Placeholder
           
           ffiPathMb <- findFfiFile ".rs" [] (Just "../") modNameStr (Just coreFnMod.path)
           let
             getArity (ForAll _ t) = getArity t
             getArity (ConstrainedType _ t) = getArity t
-            getArity (Func _ t) = 1 + getArity t
+            getArity (Func args t) = Array.length args + getArity t
             getArity _ = 0
             
-          ffiContent <- case ffiPathMb of
-            Just ffiPath -> FS.readTextFile UTF8 ffiPath
-            Nothing -> pure $ Array.foldMap (\(Tuple name (Just ty)) -> 
-              if not (Set.member (sanitizeIdent (modPrefix <> unwrap name)) allMacroBindings) then
+            genFallback name ty =
+              if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let arity = getArity ty
                     args = Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": crate::UnknownType") (Array.replicate arity unit)
-                in "pub fn " <> sanitizeIdent (modPrefix <> unwrap name) <> "(" <> String.joinWith ", " args <> ") -> crate::UnknownType { crate::UnknownType::new(crate::Record_a { ..Default::default() }) }\n"
+                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> crate::UnknownType { crate::UnknownType::new(crate::Record_a { ..Default::default() }) }\n"
               else ""
+
+          ffiContent <- case ffiPathMb of
+            Just ffiPath -> do
+              content <- FS.readTextFile UTF8 ffiPath
+              let missingStubs = Array.foldMap (\tup -> case tup of
+                    Tuple name (Just ty) ->
+                      if String.contains (Pattern ("fn " <> modPrefix <> sanitizeIdent (unwrap name))) content then
+                        ""
+                      else
+                        genFallback name ty
+                    Tuple _ Nothing -> ""
+                  ) (Map.toUnfoldable foreignArr)
+              pure $ content <> "\n\n" <> missingStubs
+            Nothing -> pure $ Array.foldMap (\tup -> case tup of
+                Tuple name (Just ty) -> genFallback name ty
+                Tuple _ Nothing -> ""
               ) (Map.toUnfoldable foreignArr)
           
           Ref.modify_ (\acc -> acc <> ffiContent <> "\n\n") ffiRef

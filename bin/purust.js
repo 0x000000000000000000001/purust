@@ -54,6 +54,29 @@ var functorArray = { map: arrayMap };
 // output-es/Control.Apply/index.js
 var applyFn = { apply: (f) => (g) => (x) => f(x)(g(x)), Functor0: () => functorFn };
 
+// output-es/Control.Bind/foreign.js
+var arrayBind = typeof Array.prototype.flatMap === "function" ? function(arr) {
+  return function(f) {
+    return arr.flatMap(f);
+  };
+} : function(arr) {
+  return function(f) {
+    var result = [];
+    var l = arr.length;
+    for (var i = 0; i < l; i++) {
+      var xs = f(arr[i]);
+      var k = xs.length;
+      for (var j = 0; j < k; j++) {
+        result.push(xs[j]);
+      }
+    }
+    return result;
+  };
+};
+
+// output-es/Control.Applicative/index.js
+var applicativeFn = { pure: (x) => (v) => x, Apply0: () => applyFn };
+
 // output-es/Record.Unsafe/foreign.js
 var unsafeGet = function(label2) {
   return function(rec) {
@@ -134,6 +157,125 @@ var isJust = (v2) => {
     return true;
   }
   fail();
+};
+
+// output-es/Data.Either/index.js
+var $Either = (tag, _1) => ({ tag, _1 });
+var Left = (value0) => $Either("Left", value0);
+var Right = (value0) => $Either("Right", value0);
+var functorEither = {
+  map: (f) => (m) => {
+    if (m.tag === "Left") {
+      return $Either("Left", m._1);
+    }
+    if (m.tag === "Right") {
+      return $Either("Right", f(m._1));
+    }
+    fail();
+  }
+};
+var applyEither = {
+  apply: (v) => (v1) => {
+    if (v.tag === "Left") {
+      return $Either("Left", v._1);
+    }
+    if (v.tag === "Right") {
+      if (v1.tag === "Left") {
+        return $Either("Left", v1._1);
+      }
+      if (v1.tag === "Right") {
+        return $Either("Right", v._1(v1._1));
+      }
+    }
+    fail();
+  },
+  Functor0: () => functorEither
+};
+var applicativeEither = { pure: Right, Apply0: () => applyEither };
+
+// output-es/Control.Monad.ST.Internal/foreign.js
+function newSTRef(val) {
+  return function() {
+    return { value: val };
+  };
+}
+
+// output-es/Control.Monad.ST.Uncurried/foreign.js
+var runSTFn2 = function runSTFn22(fn) {
+  return function(a) {
+    return function(b) {
+      return function() {
+        return fn(a, b);
+      };
+    };
+  };
+};
+
+// output-es/Data.Array.ST/foreign.js
+var pushImpl = function(a, xs) {
+  return xs.push(a);
+};
+
+// output-es/Data.Array.ST/index.js
+var push = /* @__PURE__ */ runSTFn2(pushImpl);
+
+// output-es/Data.Array.ST.Iterator/index.js
+var $Iterator = (_1, _2) => ({ tag: "Iterator", _1, _2 });
+var Iterator = (value0) => (value1) => $Iterator(value0, value1);
+var pushWhile = (p) => (iter) => (array) => {
+  const $0 = newSTRef(false);
+  return () => {
+    const $$break = $0();
+    const $1 = iter._2;
+    while ((() => {
+      const $2 = $$break.value;
+      return !$2;
+    })()) {
+      const i = $1.value;
+      const mx = iter._1(i);
+      if (mx.tag === "Just" && p(mx._1)) {
+        array.push(mx._1);
+        iter._2.value;
+        const $2 = iter._2.value;
+        iter._2.value = $2 + 1 | 0;
+        continue;
+      }
+      $$break.value = true;
+    }
+  };
+};
+var iterator = (f) => {
+  const $0 = Iterator(f);
+  const $1 = newSTRef(0);
+  return () => {
+    const $2 = $1();
+    return $0($2);
+  };
+};
+var iterate = (iter) => (f) => {
+  const $0 = newSTRef(false);
+  return () => {
+    const $$break = $0();
+    const $1 = iter._2;
+    while ((() => {
+      const $2 = $$break.value;
+      return !$2;
+    })()) {
+      const i = $1.value;
+      const $2 = $1.value;
+      $1.value = $2 + 1 | 0;
+      const mx = iter._1(i);
+      if (mx.tag === "Just") {
+        f(mx._1)();
+        continue;
+      }
+      if (mx.tag === "Nothing") {
+        $$break.value = true;
+        continue;
+      }
+      fail();
+    }
+  };
 };
 
 // output-es/Data.Maybe.First/index.js
@@ -225,6 +367,465 @@ var Tuple = (value0) => (value1) => $Tuple(value0, value1);
 var snd = (v) => v._2;
 var functorTuple = { map: (f) => (m) => $Tuple(m._1, f(m._2)) };
 var fst = (v) => v._1;
+
+// output-es/Data.FunctorWithIndex/foreign.js
+var mapWithIndexArray = function(f) {
+  return function(xs) {
+    var l = xs.length;
+    var result = Array(l);
+    for (var i = 0; i < l; i++) {
+      result[i] = f(i)(xs[i]);
+    }
+    return result;
+  };
+};
+
+// output-es/Data.FunctorWithIndex/index.js
+var functorWithIndexArray = { mapWithIndex: mapWithIndexArray, Functor0: () => functorArray };
+
+// output-es/Data.Eq/foreign.js
+var refEq = function(r1) {
+  return function(r2) {
+    return r1 === r2;
+  };
+};
+var eqBooleanImpl = refEq;
+var eqIntImpl = refEq;
+var eqNumberImpl = refEq;
+var eqCharImpl = refEq;
+var eqStringImpl = refEq;
+var eqArrayImpl = function(f) {
+  return function(xs) {
+    return function(ys) {
+      if (xs.length !== ys.length) return false;
+      for (var i = 0; i < xs.length; i++) {
+        if (!f(xs[i])(ys[i])) return false;
+      }
+      return true;
+    };
+  };
+};
+
+// output-es/Data.Eq/index.js
+var eqString = { eq: eqStringImpl };
+var eqNumber = { eq: eqNumberImpl };
+var eqInt = { eq: eqIntImpl };
+var eqChar = { eq: eqCharImpl };
+var eqBoolean = { eq: eqBooleanImpl };
+
+// output-es/Data.Ord/foreign.js
+var unsafeCompareImpl = function(lt) {
+  return function(eq2) {
+    return function(gt) {
+      return function(x) {
+        return function(y) {
+          return x < y ? lt : x === y ? eq2 : gt;
+        };
+      };
+    };
+  };
+};
+var ordBooleanImpl = unsafeCompareImpl;
+var ordIntImpl = unsafeCompareImpl;
+var ordNumberImpl = unsafeCompareImpl;
+var ordStringImpl = unsafeCompareImpl;
+var ordCharImpl = unsafeCompareImpl;
+var ordArrayImpl = function(f) {
+  return function(xs) {
+    return function(ys) {
+      var i = 0;
+      var xlen = xs.length;
+      var ylen = ys.length;
+      while (i < xlen && i < ylen) {
+        var x = xs[i];
+        var y = ys[i];
+        var o = f(x)(y);
+        if (o !== 0) {
+          return o;
+        }
+        i++;
+      }
+      if (xlen === ylen) {
+        return 0;
+      } else if (xlen > ylen) {
+        return -1;
+      } else {
+        return 1;
+      }
+    };
+  };
+};
+
+// output-es/Data.Ord/index.js
+var ordString = { compare: /* @__PURE__ */ ordStringImpl(LT)(EQ)(GT), Eq0: () => eqString };
+var ordNumber = { compare: /* @__PURE__ */ ordNumberImpl(LT)(EQ)(GT), Eq0: () => eqNumber };
+var ordInt = { compare: /* @__PURE__ */ ordIntImpl(LT)(EQ)(GT), Eq0: () => eqInt };
+var ordChar = { compare: /* @__PURE__ */ ordCharImpl(LT)(EQ)(GT), Eq0: () => eqChar };
+var ordBoolean = { compare: /* @__PURE__ */ ordBooleanImpl(LT)(EQ)(GT), Eq0: () => eqBoolean };
+var ordArray = (dictOrd) => {
+  const eqArray2 = { eq: eqArrayImpl(dictOrd.Eq0().eq) };
+  return {
+    compare: (xs) => (ys) => ordInt.compare(0)(ordArrayImpl((x) => (y) => {
+      const v = dictOrd.compare(x)(y);
+      if (v === "EQ") {
+        return 0;
+      }
+      if (v === "LT") {
+        return 1;
+      }
+      if (v === "GT") {
+        return -1;
+      }
+      fail();
+    })(xs)(ys)),
+    Eq0: () => eqArray2
+  };
+};
+
+// output-es/Unsafe.Coerce/foreign.js
+var unsafeCoerce = function(x) {
+  return x;
+};
+
+// output-es/Data.Traversable.Accum.Internal/index.js
+var functorStateR = {
+  map: (f) => (k) => (s) => {
+    const v = k(s);
+    return { accum: v.accum, value: f(v.value) };
+  }
+};
+var functorStateL = {
+  map: (f) => (k) => (s) => {
+    const v = k(s);
+    return { accum: v.accum, value: f(v.value) };
+  }
+};
+var applyStateR = {
+  apply: (f) => (x) => (s) => {
+    const v = x(s);
+    const v1 = f(v.accum);
+    return { accum: v1.accum, value: v1.value(v.value) };
+  },
+  Functor0: () => functorStateR
+};
+var applyStateL = {
+  apply: (f) => (x) => (s) => {
+    const v = f(s);
+    const v1 = x(v.accum);
+    return { accum: v1.accum, value: v.value(v1.value) };
+  },
+  Functor0: () => functorStateL
+};
+var applicativeStateR = { pure: (a) => (s) => ({ accum: s, value: a }), Apply0: () => applyStateR };
+var applicativeStateL = { pure: (a) => (s) => ({ accum: s, value: a }), Apply0: () => applyStateL };
+
+// output-es/Data.Traversable/foreign.js
+var traverseArrayImpl = /* @__PURE__ */ (function() {
+  function array1(a) {
+    return [a];
+  }
+  function array2(a) {
+    return function(b) {
+      return [a, b];
+    };
+  }
+  function array3(a) {
+    return function(b) {
+      return function(c) {
+        return [a, b, c];
+      };
+    };
+  }
+  function concat22(xs) {
+    return function(ys) {
+      return xs.concat(ys);
+    };
+  }
+  return function(apply) {
+    return function(map) {
+      return function(pure) {
+        return function(f) {
+          return function(array) {
+            function go(bot, top) {
+              switch (top - bot) {
+                case 0:
+                  return pure([]);
+                case 1:
+                  return map(array1)(f(array[bot]));
+                case 2:
+                  return apply(map(array2)(f(array[bot])))(f(array[bot + 1]));
+                case 3:
+                  return apply(apply(map(array3)(f(array[bot])))(f(array[bot + 1])))(f(array[bot + 2]));
+                default:
+                  var pivot = bot + Math.floor((top - bot) / 4) * 2;
+                  return apply(map(concat22)(go(bot, pivot)))(go(pivot, top));
+              }
+            }
+            return go(0, array.length);
+          };
+        };
+      };
+    };
+  };
+})();
+
+// output-es/Data.Traversable/index.js
+var identity3 = (x) => x;
+var traversableTuple = {
+  traverse: (dictApplicative) => (f) => (v) => dictApplicative.Apply0().Functor0().map(Tuple(v._1))(f(v._2)),
+  sequence: (dictApplicative) => (v) => dictApplicative.Apply0().Functor0().map(Tuple(v._1))(v._2),
+  Functor0: () => functorTuple,
+  Foldable1: () => foldableTuple
+};
+var traversableArray = {
+  traverse: (dictApplicative) => {
+    const Apply0 = dictApplicative.Apply0();
+    return traverseArrayImpl(Apply0.apply)(Apply0.Functor0().map)(dictApplicative.pure);
+  },
+  sequence: (dictApplicative) => traversableArray.traverse(dictApplicative)(identity3),
+  Functor0: () => functorArray,
+  Foldable1: () => foldableArray
+};
+var mapAccumR = (dictTraversable) => {
+  const traverse22 = dictTraversable.traverse(applicativeStateR);
+  return (f) => (s0) => (xs) => traverse22((a) => (s) => f(s)(a))(xs)(s0);
+};
+var mapAccumL = (dictTraversable) => {
+  const traverse22 = dictTraversable.traverse(applicativeStateL);
+  return (f) => (s0) => (xs) => traverse22((a) => (s) => f(s)(a))(xs)(s0);
+};
+
+// output-es/Data.Array/foreign.js
+var rangeImpl = function(start, end) {
+  var step = start > end ? -1 : 1;
+  var result = new Array(step * (end - start) + 1);
+  var i = start, n = 0;
+  while (i !== end) {
+    result[n++] = i;
+    i += step;
+  }
+  result[n] = i;
+  return result;
+};
+var replicateFill = function(count, value) {
+  if (count < 1) {
+    return [];
+  }
+  var result = new Array(count);
+  return result.fill(value);
+};
+var replicatePolyfill = function(count, value) {
+  var result = [];
+  var n = 0;
+  for (var i = 0; i < count; i++) {
+    result[n++] = value;
+  }
+  return result;
+};
+var replicateImpl = typeof Array.prototype.fill === "function" ? replicateFill : replicatePolyfill;
+var fromFoldableImpl = /* @__PURE__ */ (function() {
+  function Cons2(head2, tail) {
+    this.head = head2;
+    this.tail = tail;
+  }
+  var emptyList = {};
+  function curryCons(head2) {
+    return function(tail) {
+      return new Cons2(head2, tail);
+    };
+  }
+  function listToArray(list) {
+    var result = [];
+    var count = 0;
+    var xs = list;
+    while (xs !== emptyList) {
+      result[count++] = xs.head;
+      xs = xs.tail;
+    }
+    return result;
+  }
+  return function(foldr, xs) {
+    return listToArray(foldr(curryCons)(emptyList)(xs));
+  };
+})();
+var unconsImpl = function(empty2, next, xs) {
+  return xs.length === 0 ? empty2({}) : next(xs[0])(xs.slice(1));
+};
+var findMapImpl = function(nothing, isJust2, f, xs) {
+  for (var i = 0; i < xs.length; i++) {
+    var result = f(xs[i]);
+    if (isJust2(result)) return result;
+  }
+  return nothing;
+};
+var reverse = function(l) {
+  return l.slice().reverse();
+};
+var filterImpl = function(f, xs) {
+  return xs.filter(f);
+};
+var sortByImpl2 = /* @__PURE__ */ (function() {
+  function mergeFromTo(compare3, fromOrdering, xs1, xs2, from, to) {
+    var mid;
+    var i;
+    var j;
+    var k;
+    var x;
+    var y;
+    var c;
+    mid = from + (to - from >> 1);
+    if (mid - from > 1) mergeFromTo(compare3, fromOrdering, xs2, xs1, from, mid);
+    if (to - mid > 1) mergeFromTo(compare3, fromOrdering, xs2, xs1, mid, to);
+    i = from;
+    j = mid;
+    k = from;
+    while (i < mid && j < to) {
+      x = xs2[i];
+      y = xs2[j];
+      c = fromOrdering(compare3(x)(y));
+      if (c > 0) {
+        xs1[k++] = y;
+        ++j;
+      } else {
+        xs1[k++] = x;
+        ++i;
+      }
+    }
+    while (i < mid) {
+      xs1[k++] = xs2[i++];
+    }
+    while (j < to) {
+      xs1[k++] = xs2[j++];
+    }
+  }
+  return function(compare3, fromOrdering, xs) {
+    var out;
+    if (xs.length < 2) return xs;
+    out = xs.slice(0);
+    mergeFromTo(compare3, fromOrdering, out, xs.slice(0), 0, xs.length);
+    return out;
+  };
+})();
+var sliceImpl = function(s, e, l) {
+  return l.slice(s, e);
+};
+var zipWithImpl = function(f, xs, ys) {
+  var l = xs.length < ys.length ? xs.length : ys.length;
+  var result = new Array(l);
+  for (var i = 0; i < l; i++) {
+    result[i] = f(xs[i])(ys[i]);
+  }
+  return result;
+};
+var anyImpl = function(p, xs) {
+  var len = xs.length;
+  for (var i = 0; i < len; i++) {
+    if (p(xs[i])) return true;
+  }
+  return false;
+};
+var allImpl = function(p, xs) {
+  var len = xs.length;
+  for (var i = 0; i < len; i++) {
+    if (!p(xs[i])) return false;
+  }
+  return true;
+};
+
+// output-es/Data.Array/index.js
+var zipWithA = (dictApplicative) => {
+  const sequence1 = traversableArray.traverse(dictApplicative)(identity3);
+  return (f) => (xs) => (ys) => sequence1(zipWithImpl(f, xs, ys));
+};
+var sortBy = (comp) => ($0) => sortByImpl2(
+  comp,
+  (v) => {
+    if (v === "GT") {
+      return 1;
+    }
+    if (v === "EQ") {
+      return 0;
+    }
+    if (v === "LT") {
+      return -1;
+    }
+    fail();
+  },
+  $0
+);
+var snoc = (xs) => (x) => (() => {
+  const $0 = push(x);
+  return () => {
+    const result = [...xs];
+    $0(result)();
+    return result;
+  };
+})()();
+var unzip = (xs) => {
+  const fsts = [];
+  const snds = [];
+  const iter = iterator((v) => {
+    if (v >= 0 && v < xs.length) {
+      return $Maybe("Just", xs[v]);
+    }
+    return Nothing;
+  })();
+  iterate(iter)((v) => {
+    const $0 = v._1;
+    const $1 = v._2;
+    return () => {
+      fsts.push($0);
+      snds.push($1);
+    };
+  })();
+  return $Tuple(fsts, snds);
+};
+var groupBy = (op) => (xs) => {
+  const result = [];
+  const iter = iterator((v) => {
+    if (v >= 0 && v < xs.length) {
+      return $Maybe("Just", xs[v]);
+    }
+    return Nothing;
+  })();
+  iterate(iter)((x) => () => {
+    const sub1 = [];
+    sub1.push(x);
+    pushWhile(op(x))(iter)(sub1)();
+    result.push(sub1);
+  })();
+  return result;
+};
+var groupAllBy = (cmp) => {
+  const $0 = groupBy((x) => (y) => cmp(x)(y) === "EQ");
+  return (x) => $0(sortBy(cmp)(x));
+};
+var concatMap = (b) => (a) => arrayBind(a)(b);
+var mapMaybe = (f) => concatMap((x) => {
+  const $0 = f(x);
+  if ($0.tag === "Nothing") {
+    return [];
+  }
+  if ($0.tag === "Just") {
+    return [$0._1];
+  }
+  fail();
+});
+var filterA = (dictApplicative) => {
+  const traverse12 = traversableArray.traverse(dictApplicative);
+  const $0 = dictApplicative.Apply0().Functor0();
+  return (p) => {
+    const $1 = traverse12((x) => $0.map(Tuple(x))(p(x)));
+    const $2 = $0.map(mapMaybe((v) => {
+      if (v._2) {
+        return $Maybe("Just", v._1);
+      }
+      return Nothing;
+    }));
+    return (x) => $2($1(x));
+  };
+};
+var any = ($0) => ($1) => anyImpl($0, $1);
 
 // output-es/Data.List.Types/index.js
 var $List = (tag, _1, _2) => ({ tag, _1, _2 });
@@ -502,6 +1103,26 @@ var unsafeDifference = (comp, l, r) => {
   }
   fail();
 };
+var unsafeIntersectionWith = (comp, app, l, r) => {
+  if (l.tag === "Leaf") {
+    return Leaf;
+  }
+  if (r.tag === "Leaf") {
+    return Leaf;
+  }
+  if (r.tag === "Node") {
+    const v = unsafeSplit(comp, r._3, l);
+    const l$p = unsafeIntersectionWith(comp, app, v._2, r._5);
+    const r$p = unsafeIntersectionWith(comp, app, v._3, r._6);
+    if (v._1.tag === "Just") {
+      return unsafeBalancedNode(r._3, app(v._1._1)(r._4), l$p, r$p);
+    }
+    if (v._1.tag === "Nothing") {
+      return unsafeJoinNodes(l$p, r$p);
+    }
+  }
+  fail();
+};
 var unsafeUnionWith = (comp, app, l, r) => {
   if (l.tag === "Leaf") {
     return r;
@@ -683,104 +1304,182 @@ var alter = (dictOrd) => {
   };
 };
 
-// output-es/Data.Eq/foreign.js
-var refEq = function(r1) {
-  return function(r2) {
-    return r1 === r2;
+// output-es/Data.Semiring/foreign.js
+var intAdd = function(x) {
+  return function(y) {
+    return x + y | 0;
   };
 };
-var eqBooleanImpl = refEq;
-var eqIntImpl = refEq;
-var eqNumberImpl = refEq;
-var eqCharImpl = refEq;
-var eqStringImpl = refEq;
-var eqArrayImpl = function(f) {
-  return function(xs) {
-    return function(ys) {
-      if (xs.length !== ys.length) return false;
-      for (var i = 0; i < xs.length; i++) {
-        if (!f(xs[i])(ys[i])) return false;
+var intMul = function(x) {
+  return function(y) {
+    return x * y | 0;
+  };
+};
+
+// output-es/Data.Semiring/index.js
+var semiringRecordNil = { addRecord: (v) => (v1) => (v2) => ({}), mulRecord: (v) => (v1) => (v2) => ({}), oneRecord: (v) => (v1) => ({}), zeroRecord: (v) => (v1) => ({}) };
+var semiringInt = { add: intAdd, zero: 0, mul: intMul, one: 1 };
+var semiringRecordCons = (dictIsSymbol) => () => (dictSemiringRecord) => (dictSemiring) => {
+  const one1 = dictSemiring.one;
+  const zero1 = dictSemiring.zero;
+  return {
+    addRecord: (v) => (ra) => (rb) => {
+      const key = dictIsSymbol.reflectSymbol($$Proxy);
+      const $$get = unsafeGet(key);
+      return unsafeSet(key)(dictSemiring.add($$get(ra))($$get(rb)))(dictSemiringRecord.addRecord($$Proxy)(ra)(rb));
+    },
+    mulRecord: (v) => (ra) => (rb) => {
+      const key = dictIsSymbol.reflectSymbol($$Proxy);
+      const $$get = unsafeGet(key);
+      return unsafeSet(key)(dictSemiring.mul($$get(ra))($$get(rb)))(dictSemiringRecord.mulRecord($$Proxy)(ra)(rb));
+    },
+    oneRecord: (v) => (v1) => unsafeSet(dictIsSymbol.reflectSymbol($$Proxy))(one1)(dictSemiringRecord.oneRecord($$Proxy)($$Proxy)),
+    zeroRecord: (v) => (v1) => unsafeSet(dictIsSymbol.reflectSymbol($$Proxy))(zero1)(dictSemiringRecord.zeroRecord($$Proxy)($$Proxy))
+  };
+};
+
+// output-es/Data.EuclideanRing/foreign.js
+var intMod = function(x) {
+  return function(y) {
+    if (y === 0) return 0;
+    var yy = Math.abs(y);
+    return (x % yy + yy) % yy;
+  };
+};
+
+// output-es/Data.Semigroup/foreign.js
+var concatString = function(s1) {
+  return function(s2) {
+    return s1 + s2;
+  };
+};
+var concatArray = function(xs) {
+  return function(ys) {
+    if (xs.length === 0) return ys;
+    if (ys.length === 0) return xs;
+    return xs.concat(ys);
+  };
+};
+
+// output-es/Data.Semigroup/index.js
+var semigroupString = { append: concatString };
+var semigroupArray = { append: concatArray };
+
+// output-es/Data.Monoid/index.js
+var monoidString = { mempty: "", Semigroup0: () => semigroupString };
+var monoidArray = { mempty: [], Semigroup0: () => semigroupArray };
+var power = (dictMonoid) => {
+  const mempty1 = dictMonoid.mempty;
+  const $0 = dictMonoid.Semigroup0();
+  return (x) => {
+    const go = (p) => {
+      if (p <= 0) {
+        return mempty1;
       }
-      return true;
+      if (p === 1) {
+        return x;
+      }
+      if (intMod(p)(2) === 0) {
+        const x$p2 = go(intDiv(p, 2));
+        return $0.append(x$p2)(x$p2);
+      }
+      const x$p = go(intDiv(p, 2));
+      return $0.append(x$p)($0.append(x$p)(x));
+    };
+    return go;
+  };
+};
+
+// output-es/Data.String.Unsafe/foreign.js
+var charAt = function(i) {
+  return function(s) {
+    if (i >= 0 && i < s.length) return s.charAt(i);
+    throw new Error("Data.String.Unsafe.charAt: Invalid index.");
+  };
+};
+
+// output-es/Data.String.CodeUnits/foreign.js
+var toCharArray = function(s) {
+  return s.split("");
+};
+var singleton = function(c) {
+  return c;
+};
+var _charAt = function(just) {
+  return function(nothing) {
+    return function(i) {
+      return function(s) {
+        return i >= 0 && i < s.length ? just(s.charAt(i)) : nothing;
+      };
     };
   };
 };
-
-// output-es/Data.Eq/index.js
-var eqString = { eq: eqStringImpl };
-var eqNumber = { eq: eqNumberImpl };
-var eqInt = { eq: eqIntImpl };
-var eqChar = { eq: eqCharImpl };
-var eqBoolean = { eq: eqBooleanImpl };
-
-// output-es/Data.Ord/foreign.js
-var unsafeCompareImpl = function(lt) {
-  return function(eq2) {
-    return function(gt) {
-      return function(x) {
-        return function(y) {
-          return x < y ? lt : x === y ? eq2 : gt;
+var length2 = function(s) {
+  return s.length;
+};
+var _indexOf = function(just) {
+  return function(nothing) {
+    return function(x) {
+      return function(s) {
+        var i = s.indexOf(x);
+        return i === -1 ? nothing : just(i);
+      };
+    };
+  };
+};
+var _indexOfStartingAt = function(just) {
+  return function(nothing) {
+    return function(x) {
+      return function(startAt) {
+        return function(s) {
+          if (startAt < 0 || startAt > s.length) return nothing;
+          var i = s.indexOf(x, startAt);
+          return i === -1 ? nothing : just(i);
         };
       };
     };
   };
 };
-var ordBooleanImpl = unsafeCompareImpl;
-var ordIntImpl = unsafeCompareImpl;
-var ordNumberImpl = unsafeCompareImpl;
-var ordStringImpl = unsafeCompareImpl;
-var ordCharImpl = unsafeCompareImpl;
-var ordArrayImpl = function(f) {
-  return function(xs) {
-    return function(ys) {
-      var i = 0;
-      var xlen = xs.length;
-      var ylen = ys.length;
-      while (i < xlen && i < ylen) {
-        var x = xs[i];
-        var y = ys[i];
-        var o = f(x)(y);
-        if (o !== 0) {
-          return o;
-        }
-        i++;
-      }
-      if (xlen === ylen) {
-        return 0;
-      } else if (xlen > ylen) {
-        return -1;
-      } else {
-        return 1;
-      }
-    };
+var take = function(n) {
+  return function(s) {
+    return s.substr(0, n);
+  };
+};
+var drop = function(n) {
+  return function(s) {
+    return s.substring(n);
+  };
+};
+var splitAt = function(i) {
+  return function(s) {
+    return { before: s.substring(0, i), after: s.substring(i) };
   };
 };
 
-// output-es/Data.Ord/index.js
-var ordString = { compare: /* @__PURE__ */ ordStringImpl(LT)(EQ)(GT), Eq0: () => eqString };
-var ordNumber = { compare: /* @__PURE__ */ ordNumberImpl(LT)(EQ)(GT), Eq0: () => eqNumber };
-var ordInt = { compare: /* @__PURE__ */ ordIntImpl(LT)(EQ)(GT), Eq0: () => eqInt };
-var ordChar = { compare: /* @__PURE__ */ ordCharImpl(LT)(EQ)(GT), Eq0: () => eqChar };
-var ordBoolean = { compare: /* @__PURE__ */ ordBooleanImpl(LT)(EQ)(GT), Eq0: () => eqBoolean };
-var ordArray = (dictOrd) => {
-  const eqArray2 = { eq: eqArrayImpl(dictOrd.Eq0().eq) };
-  return {
-    compare: (xs) => (ys) => ordInt.compare(0)(ordArrayImpl((x) => (y) => {
-      const v = dictOrd.compare(x)(y);
-      if (v === "EQ") {
-        return 0;
-      }
-      if (v === "LT") {
-        return 1;
-      }
-      if (v === "GT") {
-        return -1;
-      }
-      fail();
-    })(xs)(ys)),
-    Eq0: () => eqArray2
+// output-es/Data.String.CodeUnits/index.js
+var stripPrefix = (v) => (str) => {
+  const v1 = splitAt(length2(v))(str);
+  if (v1.before === v) {
+    return $Maybe("Just", v1.after);
+  }
+  return Nothing;
+};
+var indexOf$p = /* @__PURE__ */ _indexOfStartingAt(Just)(Nothing);
+var indexOf = /* @__PURE__ */ _indexOf(Just)(Nothing);
+var contains = (pat) => {
+  const $0 = indexOf(pat);
+  return (x) => {
+    const $1 = $0(x);
+    if ($1.tag === "Nothing") {
+      return false;
+    }
+    if ($1.tag === "Just") {
+      return true;
+    }
+    fail();
   };
 };
+var charAt2 = /* @__PURE__ */ _charAt(Just)(Nothing);
 
 // output-es/Data.String.Common/foreign.js
 var replaceAll = function(s1) {
@@ -804,40 +1503,6 @@ var joinWith = function(s) {
   };
 };
 
-// output-es/Data.Either/index.js
-var $Either = (tag, _1) => ({ tag, _1 });
-var Left = (value0) => $Either("Left", value0);
-var Right = (value0) => $Either("Right", value0);
-var functorEither = {
-  map: (f) => (m) => {
-    if (m.tag === "Left") {
-      return $Either("Left", m._1);
-    }
-    if (m.tag === "Right") {
-      return $Either("Right", f(m._1));
-    }
-    fail();
-  }
-};
-var applyEither = {
-  apply: (v) => (v1) => {
-    if (v.tag === "Left") {
-      return $Either("Left", v._1);
-    }
-    if (v.tag === "Right") {
-      if (v1.tag === "Left") {
-        return $Either("Left", v1._1);
-      }
-      if (v1.tag === "Right") {
-        return $Either("Right", v._1(v1._1));
-      }
-    }
-    fail();
-  },
-  Functor0: () => functorEither
-};
-var applicativeEither = { pure: Right, Apply0: () => applyEither };
-
 // output-es/Effect.Exception/foreign.js
 function showErrorImpl(err) {
   return err.stack || err.toString();
@@ -852,11 +1517,6 @@ var $$try = (dictMonadError) => {
 // output-es/Partial/foreign.js
 var _crashWith = function(msg) {
   throw new Error(msg);
-};
-
-// output-es/Unsafe.Coerce/foreign.js
-var unsafeCoerce = function(x) {
-  return x;
 };
 
 // output-es/Effect.Aff/foreign.js
@@ -1794,49 +2454,6 @@ function notNull(x) {
   return x;
 }
 
-// output-es/Data.Semiring/foreign.js
-var intAdd = function(x) {
-  return function(y) {
-    return x + y | 0;
-  };
-};
-var intMul = function(x) {
-  return function(y) {
-    return x * y | 0;
-  };
-};
-
-// output-es/Data.Semiring/index.js
-var semiringRecordNil = { addRecord: (v) => (v1) => (v2) => ({}), mulRecord: (v) => (v1) => (v2) => ({}), oneRecord: (v) => (v1) => ({}), zeroRecord: (v) => (v1) => ({}) };
-var semiringInt = { add: intAdd, zero: 0, mul: intMul, one: 1 };
-var semiringRecordCons = (dictIsSymbol) => () => (dictSemiringRecord) => (dictSemiring) => {
-  const one1 = dictSemiring.one;
-  const zero1 = dictSemiring.zero;
-  return {
-    addRecord: (v) => (ra) => (rb) => {
-      const key = dictIsSymbol.reflectSymbol($$Proxy);
-      const $$get = unsafeGet(key);
-      return unsafeSet(key)(dictSemiring.add($$get(ra))($$get(rb)))(dictSemiringRecord.addRecord($$Proxy)(ra)(rb));
-    },
-    mulRecord: (v) => (ra) => (rb) => {
-      const key = dictIsSymbol.reflectSymbol($$Proxy);
-      const $$get = unsafeGet(key);
-      return unsafeSet(key)(dictSemiring.mul($$get(ra))($$get(rb)))(dictSemiringRecord.mulRecord($$Proxy)(ra)(rb));
-    },
-    oneRecord: (v) => (v1) => unsafeSet(dictIsSymbol.reflectSymbol($$Proxy))(one1)(dictSemiringRecord.oneRecord($$Proxy)($$Proxy)),
-    zeroRecord: (v) => (v1) => unsafeSet(dictIsSymbol.reflectSymbol($$Proxy))(zero1)(dictSemiringRecord.zeroRecord($$Proxy)($$Proxy))
-  };
-};
-
-// output-es/Data.EuclideanRing/foreign.js
-var intMod = function(x) {
-  return function(y) {
-    if (y === 0) return 0;
-    var yy = Math.abs(y);
-    return (x % yy + yy) % yy;
-  };
-};
-
 // output-es/Data.Number/foreign.js
 var isFiniteImpl = isFinite;
 function fromStringImpl(str, isFinite2, just, nothing) {
@@ -1917,97 +2534,6 @@ var charToEnum = (v) => {
   return Nothing;
 };
 
-// output-es/Data.String.Unsafe/foreign.js
-var charAt = function(i) {
-  return function(s) {
-    if (i >= 0 && i < s.length) return s.charAt(i);
-    throw new Error("Data.String.Unsafe.charAt: Invalid index.");
-  };
-};
-
-// output-es/Data.String.CodeUnits/foreign.js
-var toCharArray = function(s) {
-  return s.split("");
-};
-var singleton = function(c) {
-  return c;
-};
-var _charAt = function(just) {
-  return function(nothing) {
-    return function(i) {
-      return function(s) {
-        return i >= 0 && i < s.length ? just(s.charAt(i)) : nothing;
-      };
-    };
-  };
-};
-var length = function(s) {
-  return s.length;
-};
-var _indexOf = function(just) {
-  return function(nothing) {
-    return function(x) {
-      return function(s) {
-        var i = s.indexOf(x);
-        return i === -1 ? nothing : just(i);
-      };
-    };
-  };
-};
-var _indexOfStartingAt = function(just) {
-  return function(nothing) {
-    return function(x) {
-      return function(startAt) {
-        return function(s) {
-          if (startAt < 0 || startAt > s.length) return nothing;
-          var i = s.indexOf(x, startAt);
-          return i === -1 ? nothing : just(i);
-        };
-      };
-    };
-  };
-};
-var take = function(n) {
-  return function(s) {
-    return s.substr(0, n);
-  };
-};
-var drop = function(n) {
-  return function(s) {
-    return s.substring(n);
-  };
-};
-var splitAt = function(i) {
-  return function(s) {
-    return { before: s.substring(0, i), after: s.substring(i) };
-  };
-};
-
-// output-es/Data.String.CodeUnits/index.js
-var stripPrefix = (v) => (str) => {
-  const v1 = splitAt(length(v))(str);
-  if (v1.before === v) {
-    return $Maybe("Just", v1.after);
-  }
-  return Nothing;
-};
-var indexOf$p = /* @__PURE__ */ _indexOfStartingAt(Just)(Nothing);
-var indexOf = /* @__PURE__ */ _indexOf(Just)(Nothing);
-var contains = (pat) => {
-  const $0 = indexOf(pat);
-  return (x) => {
-    const $1 = $0(x);
-    if ($1.tag === "Nothing") {
-      return false;
-    }
-    if ($1.tag === "Just") {
-      return true;
-    }
-    fail();
-  };
-};
-var charAt2 = /* @__PURE__ */ _charAt(Just)(Nothing);
-
 // output-es/Data.String.CodePoints/foreign.js
 var hasArrayFrom = typeof Array.from === "function";
 var hasStringIterator = typeof Symbol !== "undefined" && Symbol != null && typeof Symbol.iterator !== "undefined" && typeof String.prototype[Symbol.iterator] === "function";
@@ -2061,7 +2587,7 @@ var _toCodePointArray = function(fallback) {
 
 // output-es/Data.String.CodePoints/index.js
 var uncons = (s) => {
-  const v = length(s);
+  const v = length2(s);
   if (v === 0) {
     return Nothing;
   }
@@ -2085,7 +2611,7 @@ var unconsButWithTuple = (s) => {
 var toCodePointArrayFallback = (s) => unfoldableArray.unfoldr(unconsButWithTuple)(s);
 var unsafeCodePointAt0Fallback = (s) => {
   const cu0 = toCharCode(charAt(0)(s));
-  if (55296 <= cu0 && cu0 <= 56319 && length(s) > 1) {
+  if (55296 <= cu0 && cu0 <= 56319 && length2(s) > 1) {
     const cu1 = toCharCode(charAt(1)(s));
     if (56320 <= cu1 && cu1 <= 57343) {
       return (((cu0 - 55296 | 0) * 1024 | 0) + (cu1 - 56320 | 0) | 0) + 65536 | 0;
@@ -2192,8 +2718,8 @@ import {
   writeFile,
   appendFile,
   open,
-  read,
-  write,
+  read as read2,
+  write as write2,
   close
 } from "node:fs";
 
@@ -2423,469 +2949,6 @@ var mkdir3 = (path2) => {
   };
   return () => mkdirSync(path2, $0);
 };
-
-// output-es/Control.Monad.ST.Internal/foreign.js
-function newSTRef(val) {
-  return function() {
-    return { value: val };
-  };
-}
-
-// output-es/Control.Bind/foreign.js
-var arrayBind = typeof Array.prototype.flatMap === "function" ? function(arr) {
-  return function(f) {
-    return arr.flatMap(f);
-  };
-} : function(arr) {
-  return function(f) {
-    var result = [];
-    var l = arr.length;
-    for (var i = 0; i < l; i++) {
-      var xs = f(arr[i]);
-      var k = xs.length;
-      for (var j = 0; j < k; j++) {
-        result.push(xs[j]);
-      }
-    }
-    return result;
-  };
-};
-
-// output-es/Control.Applicative/index.js
-var applicativeFn = { pure: (x) => (v) => x, Apply0: () => applyFn };
-
-// output-es/Control.Monad.ST.Uncurried/foreign.js
-var runSTFn2 = function runSTFn22(fn) {
-  return function(a) {
-    return function(b) {
-      return function() {
-        return fn(a, b);
-      };
-    };
-  };
-};
-
-// output-es/Data.Array.ST/foreign.js
-var pushImpl = function(a, xs) {
-  return xs.push(a);
-};
-
-// output-es/Data.Array.ST/index.js
-var push = /* @__PURE__ */ runSTFn2(pushImpl);
-
-// output-es/Data.Array.ST.Iterator/index.js
-var $Iterator = (_1, _2) => ({ tag: "Iterator", _1, _2 });
-var Iterator = (value0) => (value1) => $Iterator(value0, value1);
-var pushWhile = (p) => (iter) => (array) => {
-  const $0 = newSTRef(false);
-  return () => {
-    const $$break = $0();
-    const $1 = iter._2;
-    while ((() => {
-      const $2 = $$break.value;
-      return !$2;
-    })()) {
-      const i = $1.value;
-      const mx = iter._1(i);
-      if (mx.tag === "Just" && p(mx._1)) {
-        array.push(mx._1);
-        iter._2.value;
-        const $2 = iter._2.value;
-        iter._2.value = $2 + 1 | 0;
-        continue;
-      }
-      $$break.value = true;
-    }
-  };
-};
-var iterator = (f) => {
-  const $0 = Iterator(f);
-  const $1 = newSTRef(0);
-  return () => {
-    const $2 = $1();
-    return $0($2);
-  };
-};
-var iterate = (iter) => (f) => {
-  const $0 = newSTRef(false);
-  return () => {
-    const $$break = $0();
-    const $1 = iter._2;
-    while ((() => {
-      const $2 = $$break.value;
-      return !$2;
-    })()) {
-      const i = $1.value;
-      const $2 = $1.value;
-      $1.value = $2 + 1 | 0;
-      const mx = iter._1(i);
-      if (mx.tag === "Just") {
-        f(mx._1)();
-        continue;
-      }
-      if (mx.tag === "Nothing") {
-        $$break.value = true;
-        continue;
-      }
-      fail();
-    }
-  };
-};
-
-// output-es/Data.FunctorWithIndex/foreign.js
-var mapWithIndexArray = function(f) {
-  return function(xs) {
-    var l = xs.length;
-    var result = Array(l);
-    for (var i = 0; i < l; i++) {
-      result[i] = f(i)(xs[i]);
-    }
-    return result;
-  };
-};
-
-// output-es/Data.FunctorWithIndex/index.js
-var functorWithIndexArray = { mapWithIndex: mapWithIndexArray, Functor0: () => functorArray };
-
-// output-es/Data.Traversable.Accum.Internal/index.js
-var functorStateR = {
-  map: (f) => (k) => (s) => {
-    const v = k(s);
-    return { accum: v.accum, value: f(v.value) };
-  }
-};
-var functorStateL = {
-  map: (f) => (k) => (s) => {
-    const v = k(s);
-    return { accum: v.accum, value: f(v.value) };
-  }
-};
-var applyStateR = {
-  apply: (f) => (x) => (s) => {
-    const v = x(s);
-    const v1 = f(v.accum);
-    return { accum: v1.accum, value: v1.value(v.value) };
-  },
-  Functor0: () => functorStateR
-};
-var applyStateL = {
-  apply: (f) => (x) => (s) => {
-    const v = f(s);
-    const v1 = x(v.accum);
-    return { accum: v1.accum, value: v.value(v1.value) };
-  },
-  Functor0: () => functorStateL
-};
-var applicativeStateR = { pure: (a) => (s) => ({ accum: s, value: a }), Apply0: () => applyStateR };
-var applicativeStateL = { pure: (a) => (s) => ({ accum: s, value: a }), Apply0: () => applyStateL };
-
-// output-es/Data.Traversable/foreign.js
-var traverseArrayImpl = /* @__PURE__ */ (function() {
-  function array1(a) {
-    return [a];
-  }
-  function array2(a) {
-    return function(b) {
-      return [a, b];
-    };
-  }
-  function array3(a) {
-    return function(b) {
-      return function(c) {
-        return [a, b, c];
-      };
-    };
-  }
-  function concat22(xs) {
-    return function(ys) {
-      return xs.concat(ys);
-    };
-  }
-  return function(apply) {
-    return function(map) {
-      return function(pure) {
-        return function(f) {
-          return function(array) {
-            function go(bot, top) {
-              switch (top - bot) {
-                case 0:
-                  return pure([]);
-                case 1:
-                  return map(array1)(f(array[bot]));
-                case 2:
-                  return apply(map(array2)(f(array[bot])))(f(array[bot + 1]));
-                case 3:
-                  return apply(apply(map(array3)(f(array[bot])))(f(array[bot + 1])))(f(array[bot + 2]));
-                default:
-                  var pivot = bot + Math.floor((top - bot) / 4) * 2;
-                  return apply(map(concat22)(go(bot, pivot)))(go(pivot, top));
-              }
-            }
-            return go(0, array.length);
-          };
-        };
-      };
-    };
-  };
-})();
-
-// output-es/Data.Traversable/index.js
-var identity4 = (x) => x;
-var traversableTuple = {
-  traverse: (dictApplicative) => (f) => (v) => dictApplicative.Apply0().Functor0().map(Tuple(v._1))(f(v._2)),
-  sequence: (dictApplicative) => (v) => dictApplicative.Apply0().Functor0().map(Tuple(v._1))(v._2),
-  Functor0: () => functorTuple,
-  Foldable1: () => foldableTuple
-};
-var traversableArray = {
-  traverse: (dictApplicative) => {
-    const Apply0 = dictApplicative.Apply0();
-    return traverseArrayImpl(Apply0.apply)(Apply0.Functor0().map)(dictApplicative.pure);
-  },
-  sequence: (dictApplicative) => traversableArray.traverse(dictApplicative)(identity4),
-  Functor0: () => functorArray,
-  Foldable1: () => foldableArray
-};
-var mapAccumR = (dictTraversable) => {
-  const traverse22 = dictTraversable.traverse(applicativeStateR);
-  return (f) => (s0) => (xs) => traverse22((a) => (s) => f(s)(a))(xs)(s0);
-};
-var mapAccumL = (dictTraversable) => {
-  const traverse22 = dictTraversable.traverse(applicativeStateL);
-  return (f) => (s0) => (xs) => traverse22((a) => (s) => f(s)(a))(xs)(s0);
-};
-
-// output-es/Data.Array/foreign.js
-var rangeImpl = function(start, end) {
-  var step = start > end ? -1 : 1;
-  var result = new Array(step * (end - start) + 1);
-  var i = start, n = 0;
-  while (i !== end) {
-    result[n++] = i;
-    i += step;
-  }
-  result[n] = i;
-  return result;
-};
-var replicateFill = function(count, value) {
-  if (count < 1) {
-    return [];
-  }
-  var result = new Array(count);
-  return result.fill(value);
-};
-var replicatePolyfill = function(count, value) {
-  var result = [];
-  var n = 0;
-  for (var i = 0; i < count; i++) {
-    result[n++] = value;
-  }
-  return result;
-};
-var replicateImpl = typeof Array.prototype.fill === "function" ? replicateFill : replicatePolyfill;
-var fromFoldableImpl = /* @__PURE__ */ (function() {
-  function Cons2(head2, tail) {
-    this.head = head2;
-    this.tail = tail;
-  }
-  var emptyList = {};
-  function curryCons(head2) {
-    return function(tail) {
-      return new Cons2(head2, tail);
-    };
-  }
-  function listToArray(list) {
-    var result = [];
-    var count = 0;
-    var xs = list;
-    while (xs !== emptyList) {
-      result[count++] = xs.head;
-      xs = xs.tail;
-    }
-    return result;
-  }
-  return function(foldr, xs) {
-    return listToArray(foldr(curryCons)(emptyList)(xs));
-  };
-})();
-var unconsImpl = function(empty2, next, xs) {
-  return xs.length === 0 ? empty2({}) : next(xs[0])(xs.slice(1));
-};
-var findMapImpl = function(nothing, isJust2, f, xs) {
-  for (var i = 0; i < xs.length; i++) {
-    var result = f(xs[i]);
-    if (isJust2(result)) return result;
-  }
-  return nothing;
-};
-var reverse = function(l) {
-  return l.slice().reverse();
-};
-var filterImpl = function(f, xs) {
-  return xs.filter(f);
-};
-var sortByImpl2 = /* @__PURE__ */ (function() {
-  function mergeFromTo(compare3, fromOrdering, xs1, xs2, from, to) {
-    var mid;
-    var i;
-    var j;
-    var k;
-    var x;
-    var y;
-    var c;
-    mid = from + (to - from >> 1);
-    if (mid - from > 1) mergeFromTo(compare3, fromOrdering, xs2, xs1, from, mid);
-    if (to - mid > 1) mergeFromTo(compare3, fromOrdering, xs2, xs1, mid, to);
-    i = from;
-    j = mid;
-    k = from;
-    while (i < mid && j < to) {
-      x = xs2[i];
-      y = xs2[j];
-      c = fromOrdering(compare3(x)(y));
-      if (c > 0) {
-        xs1[k++] = y;
-        ++j;
-      } else {
-        xs1[k++] = x;
-        ++i;
-      }
-    }
-    while (i < mid) {
-      xs1[k++] = xs2[i++];
-    }
-    while (j < to) {
-      xs1[k++] = xs2[j++];
-    }
-  }
-  return function(compare3, fromOrdering, xs) {
-    var out;
-    if (xs.length < 2) return xs;
-    out = xs.slice(0);
-    mergeFromTo(compare3, fromOrdering, out, xs.slice(0), 0, xs.length);
-    return out;
-  };
-})();
-var sliceImpl2 = function(s, e, l) {
-  return l.slice(s, e);
-};
-var zipWithImpl = function(f, xs, ys) {
-  var l = xs.length < ys.length ? xs.length : ys.length;
-  var result = new Array(l);
-  for (var i = 0; i < l; i++) {
-    result[i] = f(xs[i])(ys[i]);
-  }
-  return result;
-};
-var anyImpl = function(p, xs) {
-  var len = xs.length;
-  for (var i = 0; i < len; i++) {
-    if (p(xs[i])) return true;
-  }
-  return false;
-};
-var allImpl = function(p, xs) {
-  var len = xs.length;
-  for (var i = 0; i < len; i++) {
-    if (!p(xs[i])) return false;
-  }
-  return true;
-};
-
-// output-es/Data.Array/index.js
-var zipWithA = (dictApplicative) => {
-  const sequence1 = traversableArray.traverse(dictApplicative)(identity4);
-  return (f) => (xs) => (ys) => sequence1(zipWithImpl(f, xs, ys));
-};
-var sortBy = (comp) => ($0) => sortByImpl2(
-  comp,
-  (v) => {
-    if (v === "GT") {
-      return 1;
-    }
-    if (v === "EQ") {
-      return 0;
-    }
-    if (v === "LT") {
-      return -1;
-    }
-    fail();
-  },
-  $0
-);
-var snoc = (xs) => (x) => (() => {
-  const $0 = push(x);
-  return () => {
-    const result = [...xs];
-    $0(result)();
-    return result;
-  };
-})()();
-var unzip = (xs) => {
-  const fsts = [];
-  const snds = [];
-  const iter = iterator((v) => {
-    if (v >= 0 && v < xs.length) {
-      return $Maybe("Just", xs[v]);
-    }
-    return Nothing;
-  })();
-  iterate(iter)((v) => {
-    const $0 = v._1;
-    const $1 = v._2;
-    return () => {
-      fsts.push($0);
-      snds.push($1);
-    };
-  })();
-  return $Tuple(fsts, snds);
-};
-var groupBy = (op) => (xs) => {
-  const result = [];
-  const iter = iterator((v) => {
-    if (v >= 0 && v < xs.length) {
-      return $Maybe("Just", xs[v]);
-    }
-    return Nothing;
-  })();
-  iterate(iter)((x) => () => {
-    const sub1 = [];
-    sub1.push(x);
-    pushWhile(op(x))(iter)(sub1)();
-    result.push(sub1);
-  })();
-  return result;
-};
-var groupAllBy = (cmp) => {
-  const $0 = groupBy((x) => (y) => cmp(x)(y) === "EQ");
-  return (x) => $0(sortBy(cmp)(x));
-};
-var concatMap = (b) => (a) => arrayBind(a)(b);
-var mapMaybe = (f) => concatMap((x) => {
-  const $0 = f(x);
-  if ($0.tag === "Nothing") {
-    return [];
-  }
-  if ($0.tag === "Just") {
-    return [$0._1];
-  }
-  fail();
-});
-var filterA = (dictApplicative) => {
-  const traverse12 = traversableArray.traverse(dictApplicative);
-  const $0 = dictApplicative.Apply0().Functor0();
-  return (p) => {
-    const $1 = traverse12((x) => $0.map(Tuple(x))(p(x)));
-    const $2 = $0.map(mapMaybe((v) => {
-      if (v._2) {
-        return $Maybe("Just", v._1);
-      }
-      return Nothing;
-    }));
-    return (x) => $2($1(x));
-  };
-};
-var any = ($0) => ($1) => anyImpl($0, $1);
 
 // output-es/Data.FoldableWithIndex/index.js
 var foldableWithIndexArray = {
@@ -3296,7 +3359,7 @@ var traversableLiteral = {
       fail();
     };
   },
-  sequence: (dictApplicative) => (a) => traversableLiteral.traverse(dictApplicative)(identity4)(a),
+  sequence: (dictApplicative) => (a) => traversableLiteral.traverse(dictApplicative)(identity3)(a),
   Functor0: () => functorLiteral,
   Foldable1: () => foldableLiteral
 };
@@ -4400,7 +4463,7 @@ var decodeLiteral = (dec) => (json) => {
           return $Either("Left", $2._1);
         }
         if ($2.tag === "Right") {
-          if (length($2._1) === 1) {
+          if (length2($2._1) === 1) {
             const $3 = toCharArray($2._1);
             if (0 < $3.length) {
               return $Either("Right", $Literal("LitChar", $3[0]));
@@ -5114,24 +5177,6 @@ var sortModules = (dictFoldable) => (init) => runSort(dictFoldable.foldr((m) => 
   x.name
 )))(Nil)(init));
 
-// output-es/Data.Semigroup/foreign.js
-var concatString = function(s1) {
-  return function(s2) {
-    return s1 + s2;
-  };
-};
-var concatArray = function(xs) {
-  return function(ys) {
-    if (xs.length === 0) return ys;
-    if (ys.length === 0) return xs;
-    return xs.concat(ys);
-  };
-};
-
-// output-es/Data.Semigroup/index.js
-var semigroupString = { append: concatString };
-var semigroupArray = { append: concatArray };
-
 // output-es/Data.Semigroup.Foldable/index.js
 var maximum = (dictOrd) => {
   const semigroupMax = {
@@ -5216,31 +5261,6 @@ var boolNot = function(b) {
 
 // output-es/Data.HeytingAlgebra/index.js
 var heytingAlgebraBoolean = { ff: false, tt: true, implies: (a) => (b) => heytingAlgebraBoolean.disj(heytingAlgebraBoolean.not(a))(b), conj: boolConj, disj: boolDisj, not: boolNot };
-
-// output-es/Data.Monoid/index.js
-var monoidString = { mempty: "", Semigroup0: () => semigroupString };
-var monoidArray = { mempty: [], Semigroup0: () => semigroupArray };
-var power = (dictMonoid) => {
-  const mempty1 = dictMonoid.mempty;
-  const $0 = dictMonoid.Semigroup0();
-  return (x) => {
-    const go = (p) => {
-      if (p <= 0) {
-        return mempty1;
-      }
-      if (p === 1) {
-        return x;
-      }
-      if (intMod(p)(2) === 0) {
-        const x$p2 = go(intDiv(p, 2));
-        return $0.append(x$p2)(x$p2);
-      }
-      const x$p = go(intDiv(p, 2));
-      return $0.append(x$p)($0.append(x$p)(x));
-    };
-    return go;
-  };
-};
 
 // output-es/PureScript.Backend.Optimizer.Syntax/index.js
 var $BackendAccessor = (tag, _1, _2, _3, _4, _5, _6) => ({ tag, _1, _2, _3, _4, _5, _6 });
@@ -5441,7 +5461,7 @@ var foldablePair = {
   foldMap: (dictMonoid) => (f) => (v) => dictMonoid.Semigroup0().append(f(v._1))(f(v._2))
 };
 var traversablePair = {
-  sequence: (dictApplicative) => (a) => traversablePair.traverse(dictApplicative)(identity4)(a),
+  sequence: (dictApplicative) => (a) => traversablePair.traverse(dictApplicative)(identity3)(a),
   traverse: (dictApplicative) => {
     const Apply0 = dictApplicative.Apply0();
     return (f) => (v) => Apply0.apply(Apply0.Functor0().map(Pair)(f(v._1)))(f(v._2));
@@ -5463,7 +5483,7 @@ var foldableBackendOperator = {
   }
 };
 var traversableBackendOperato = {
-  sequence: (dictApplicative) => (a) => traversableBackendOperato.traverse(dictApplicative)(identity4)(a),
+  sequence: (dictApplicative) => (a) => traversableBackendOperato.traverse(dictApplicative)(identity3)(a),
   traverse: (dictApplicative) => {
     const Apply0 = dictApplicative.Apply0();
     const $0 = Apply0.Functor0();
@@ -5603,7 +5623,7 @@ var foldableBackendSyntax = {
   }
 };
 var traversableBackendEffect = {
-  sequence: (dictApplicative) => (a) => traversableBackendEffect.traverse(dictApplicative)(identity4)(a),
+  sequence: (dictApplicative) => (a) => traversableBackendEffect.traverse(dictApplicative)(identity3)(a),
   traverse: (dictApplicative) => {
     const Apply0 = dictApplicative.Apply0();
     const $0 = Apply0.Functor0();
@@ -5624,7 +5644,7 @@ var traversableBackendEffect = {
   Foldable1: () => foldableBackendEffect
 };
 var traversableBackendSyntax = {
-  sequence: (dictApplicative) => (a) => traversableBackendSyntax.traverse(dictApplicative)(identity4)(a),
+  sequence: (dictApplicative) => (a) => traversableBackendSyntax.traverse(dictApplicative)(identity3)(a),
   traverse: (dictApplicative) => {
     const Apply0 = dictApplicative.Apply0();
     const $0 = Apply0.Functor0();
@@ -6475,7 +6495,7 @@ var analyze = (dictHasAnalysis) => {
     if (expr.tag === "App") {
       const $0 = analysisOf1(expr._1).args;
       const $1 = expr._2.length;
-      const remainingArgs = $1 < 1 ? $0 : sliceImpl2($1, $0.length, $0);
+      const remainingArgs = $1 < 1 ? $0 : sliceImpl($1, $0.length, $0);
       const analysis = (() => {
         if (remainingArgs.length === 0) {
           const $2 = analyzeDefault1(expr);
@@ -6799,7 +6819,7 @@ var analyze = (dictHasAnalysis) => {
         }
         return analysis;
       }
-      if (expr._1.tag === "LitString" && length(expr._1._1) > 128) {
+      if (expr._1.tag === "LitString" && length2(expr._1._1) > 128) {
         return {
           ...analysis,
           complexity: (() => {
@@ -7393,7 +7413,7 @@ var snocApp = (prev) => (next) => {
       if ($1 < 1) {
         return [];
       }
-      return sliceImpl2(0, $1, prev);
+      return sliceImpl(0, $1, prev);
     })())($ExternSpine("ExternApp", snoc(prev[$0]._1)(next)));
   }
   return snoc(prev)($ExternSpine("ExternApp", [next]));
@@ -9315,7 +9335,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
               if (v._2.length === 0) {
                 fail();
               }
-              return sliceImpl2(0, v._2.length - 1 | 0, v._2);
+              return sliceImpl(0, v._2.length - 1 | 0, v._2);
             })(),
             ...v3._2,
             ...(() => {
@@ -9338,7 +9358,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
             if (v._2.length === 0) {
               fail();
             }
-            return sliceImpl2(0, v._2.length - 1 | 0, v._2);
+            return sliceImpl(0, v._2.length - 1 | 0, v._2);
           })(),
           v3,
           ...(() => {
@@ -9368,7 +9388,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
             if (as.length === 0) {
               fail();
             }
-            return sliceImpl2(0, as.length - 1 | 0, as);
+            return sliceImpl(0, as.length - 1 | 0, as);
           })(),
           ...v4._2
         ]
@@ -9381,7 +9401,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
         if (as.length === 0) {
           fail();
         }
-        return sliceImpl2(0, as.length - 1 | 0, as);
+        return sliceImpl(0, as.length - 1 | 0, as);
       })())(v4)
     );
   };
@@ -12042,12 +12062,12 @@ var toModuleName = (v) => {
   if (v === "") {
     return Nothing;
   }
-  return $Maybe("Just", take(length(v) - 1 | 0)(v));
+  return $Maybe("Just", take(length2(v) - 1 | 0)(v));
 };
 var optional = (v) => (str) => {
   const v1 = v(str);
   if (v1.tag === "LexFail") {
-    if (length(str) === length(v1._2)) {
+    if (length2(str) === length2(v1._2)) {
       return $LexResult("LexSucc", Nothing, str);
     }
     return $LexResult("LexFail", v1._1, v1._2);
@@ -12080,7 +12100,7 @@ var regex2 = (mkErr) => (regexStr) => {
         fail();
       })();
       if ($0.tag === "Just") {
-        return $LexResult("LexSucc", $0._1, drop(length($0._1))(str));
+        return $LexResult("LexSucc", $0._1, drop(length2($0._1))(str));
       }
     }
     return $LexResult("LexFail", (v3) => mkErr(mkUnexpected(str)), str);
@@ -12094,8 +12114,8 @@ var satisfy = (mkErr) => (p) => (str) => {
   return $LexResult("LexFail", (v1) => mkErr(mkUnexpected(str)), str);
 };
 var string = (mkErr) => (match2) => (str) => {
-  if (take(length(match2))(str) === match2) {
-    return $LexResult("LexSucc", match2, drop(length(match2))(str));
+  if (take(length2(match2))(str) === match2) {
+    return $LexResult("LexSucc", match2, drop(length2(match2))(str));
   }
   return $LexResult("LexFail", (v) => mkErr(mkUnexpected(str)), str);
 };
@@ -12108,7 +12128,7 @@ var many = (v) => (str) => {
     const str$p = strRef.value;
     const v1 = v(str$p);
     if (v1.tag === "LexFail") {
-      if (length(str$p) === length(v1._2)) {
+      if (length2(str$p) === length2(v1._2)) {
         resRef.value = $LexResult("LexSucc", valuesRef, v1._2);
         contRef.value = false;
         continue;
@@ -12146,7 +12166,7 @@ var spaceComment = /* @__PURE__ */ (() => {
       return $LexResult("LexFail", v1._1, v1._2);
     }
     if (v1.tag === "LexSucc") {
-      return $LexResult("LexSucc", length(v1._1), v1._2);
+      return $LexResult("LexSucc", length2(v1._1), v1._2);
     }
     fail();
   };
@@ -12398,7 +12418,7 @@ var altLex = {
   alt: (v) => (v1) => (str) => {
     const v2 = v(str);
     if (v2.tag === "LexFail") {
-      if (length(str) === length(v2._2)) {
+      if (length2(str) === length2(v2._2)) {
         return v1(str);
       }
       return $LexResult("LexFail", v2._1, v2._2);
@@ -12759,7 +12779,7 @@ var token = /* @__PURE__ */ (() => {
             "TokRawString",
             (() => {
               const $1 = drop(3)(v1._1);
-              return take(length($1) - 3 | 0)($1);
+              return take(length2($1) - 3 | 0)($1);
             })()
           ),
           v1._2
@@ -13016,7 +13036,7 @@ var lexWithState$p = (lexLeadingComments) => {
     if (v1.tag === "LexFail") {
       return $TokenStep(
         "TokenError",
-        bumpText(startPos)(0)(take(length(str) - length(v1._2) | 0)(str)),
+        bumpText(startPos)(0)(take(length2(str) - length2(v1._2) | 0)(str)),
         v1._1(),
         Nothing,
         stack
@@ -13027,7 +13047,7 @@ var lexWithState$p = (lexLeadingComments) => {
       if (v3.tag === "LexFail") {
         return $TokenStep(
           "TokenError",
-          bumpText(startPos)(0)(take(length(str) - length(v3._2) | 0)(str)),
+          bumpText(startPos)(0)(take(length2(str) - length2(v3._2) | 0)(str)),
           v3._1(),
           Nothing,
           stack
@@ -13038,7 +13058,7 @@ var lexWithState$p = (lexLeadingComments) => {
         if (v3$1.tag === "LexFail") {
           return $TokenStep(
             "TokenError",
-            bumpText(startPos)(0)(take(length(str) - length(v3$1._2) | 0)(str)),
+            bumpText(startPos)(0)(take(length2(str) - length2(v3$1._2) | 0)(str)),
             v3$1._1(),
             Nothing,
             stack
@@ -14941,7 +14961,7 @@ var chooseNextPattern = (row0Patterns) => (tailRows) => {
 };
 var buildM = (a) => (env) => build(getCtx(env))(a);
 var make = (a) => {
-  const $0 = traversableBackendSyntax.traverse(applicativeFn)(identity4)(a);
+  const $0 = traversableBackendSyntax.traverse(applicativeFn)(identity3)(a);
   return (x) => build(getCtx(x))($0(x));
 };
 var guardBoolean = (n) => (lhs) => $BackendSyntax(
@@ -15899,6 +15919,7 @@ var findFfiFileImpl = function(extension) {
             if (mbModulePath) {
               const ffiPath = mbModulePath.replace(/\.purs$/, extension);
               if (fs.existsSync(ffiPath)) {
+                console.log("findFfiFile [" + modNameStr + "] -> " + ffiPath);
                 return ffiPath;
               }
             }
@@ -15913,10 +15934,12 @@ var findFfiFileImpl = function(extension) {
               ];
               for (const p of searchPaths) {
                 if (index.has(p)) {
+                  console.log("findFfiFile [" + modNameStr + "] -> " + p);
                   return p;
                 }
               }
             }
+            console.log("findFfiFile [" + modNameStr + "] -> null");
             return null;
           };
         };
@@ -17127,7 +17150,7 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     if (v1.tag === "Func") {
       const providedCount = v._2.length;
       if (v1._1.length > providedCount) {
-        return $ExprType("Func", providedCount < 1 ? v1._1 : sliceImpl2(providedCount, v1._1.length, v1._1), v1._2);
+        return $ExprType("Func", providedCount < 1 ? v1._1 : sliceImpl(providedCount, v1._1.length, v1._1), v1._2);
       }
       return v1._2;
     }
@@ -17195,21 +17218,33 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
   }
   return Any;
 };
+var getArity = (v) => {
+  if (v.tag === "ForAll") {
+    return getArity(v._2);
+  }
+  if (v.tag === "ConstrainedType") {
+    return getArity(v._2);
+  }
+  if (v.tag === "Func") {
+    return v._1.length + getArity(v._2) | 0;
+  }
+  return 0;
+};
 var freeVariables = (v) => {
   if (v.tag === "Var") {
     return $$$Map(
       "Node",
       1,
       1,
-      sanitizeIdent((() => {
+      (() => {
         if (v._1._1.tag === "Just") {
-          return replaceAll(".")("_")(v._1._1._1) + "_" + v._1._2;
+          return replaceAll(".")("_")(v._1._1._1) + "_";
         }
         if (v._1._1.tag === "Nothing") {
-          return "" + v._1._2;
+          return "";
         }
         fail();
-      })()),
+      })() + sanitizeIdent(v._1._2),
       void 0,
       Leaf,
       Leaf
@@ -17434,7 +17469,7 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       if ($0 < 1) {
         return argsFree;
       }
-      return sliceImpl2($0, argsFree.length, argsFree);
+      return sliceImpl($0, argsFree.length, argsFree);
     })())
   ))(arg))(argsArray);
   const fnCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
@@ -17463,7 +17498,15 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         })();
         if (member12(fullName === "main" ? "main" : fullName)(aritiesMap)) {
           const v$1 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
-          const n = v$1.tag === "Just" && v$1._1.tag === "Func" ? v$1._1._1.length : 0;
+          const n = (() => {
+            if (v$1.tag === "Just") {
+              return getArity(v$1._1);
+            }
+            if (v$1.tag === "Nothing") {
+              return 0;
+            }
+            fail();
+          })();
           if (n > 0) {
             if (m === n) {
               return fullName + "(" + joinWith(", ")(argsCodeArray) + ")";
@@ -17476,7 +17519,7 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
                 ...arrayMap((eta) => eta + ".clone()")(etaArgs)
               ]) + ")")(reverse(etaArgs)) + "\n}";
             }
-            return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl2(0, n, argsCodeArray)) + ")")(n < 1 ? argsCodeArray : sliceImpl2(n, argsCodeArray.length, argsCodeArray));
+            return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, argsCodeArray)) + ")")(n < 1 ? argsCodeArray : sliceImpl(n, argsCodeArray.length, argsCodeArray));
           }
         }
       }
@@ -17484,27 +17527,41 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     }
   );
 };
-var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (paramsArr) => (body) => foldrArray((p) => (st) => {
-  const thisClosureCaptures = $$delete(ordString)(p)(st.freeVars);
-  return {
-    freeVars: thisClosureCaptures,
-    isInnermost: false,
-    code: (p === "_" ? "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" + p + ": UnknownType| -> UnknownType {\n" : "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + p + ": UnknownType| -> UnknownType {\n") + joinWith("")(arrayMap((v) => "    let mut " + v + " = " + v + ".clone();\n")(filterImpl(
-      (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
-      fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
-    ))) + (p !== "_" && !member2(p)(st.freeVars) ? "    " + p + ".drop_explicit();\n" : "") + "    " + st.code + "\n})), ..Default::default() })"
-  };
-})({
-  freeVars: freeVariables(body),
-  isInnermost: true,
-  code: codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeDifference(
-    ordString.compare,
-    freeVariables(body),
-    fromFoldable8(paramsArr)
-  ))(body)
-})(paramsArr).code;
+var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (paramsArr) => (body) => {
+  const finalState = foldrArray((p) => (st) => {
+    const thisClosureCaptures = $$delete(ordString)(p)(st.freeVars);
+    return {
+      freeVars: thisClosureCaptures,
+      isInnermost: false,
+      code: (p === "_" ? "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" + p + ": UnknownType| -> UnknownType {\n" : "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + p + ": UnknownType| -> UnknownType {\n") + joinWith("")(arrayMap((v) => "    let mut " + v + " = " + v + ".clone();\n")(filterImpl(
+        (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
+        fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
+      ))) + (p !== "_" && !member2(p)(st.freeVars) ? "    " + p + ".drop_explicit();\n" : "") + "    " + st.code + "\n})), ..Default::default() })"
+    };
+  })({
+    freeVars: freeVariables(body),
+    isInnermost: true,
+    code: codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeDifference(
+      ordString.compare,
+      freeVariables(body),
+      fromFoldable8(paramsArr)
+    ))(body)
+  })(paramsArr);
+  const toCloneOutside = filterImpl(
+    (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
+    fromFoldableImpl(
+      foldableSet.foldr,
+      unsafeIntersectionWith(ordString.compare, $$const, finalState.freeVars, alive)
+    )
+  );
+  const outsideClonesCode = joinWith("")(arrayMap((v) => "let mut " + v + " = " + v + ".clone();\n    ")(toCloneOutside));
+  if (toCloneOutside.length > 0) {
+    return "{\n    " + outsideClonesCode + finalState.code + "\n}";
+  }
+  return finalState.code;
+};
 var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (v) => {
-  const $0 = () => _trace("FALLBACK HIT FOR: " + printAST(v), (v1) => "unimplemented!() /* Unsupported Expr: " + printAST(v) + " */");
+  const $0 = () => _trace("FALLBACK HIT FOR: " + printAST(v), (v1) => "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */");
   if (v.tag === "Typed") {
     return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2);
   }
@@ -17585,7 +17642,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       if (v._1._1.tag === "OpIsTag") {
         return "mk_bool(" + aStr + '.tag == "' + v._1._1._1._2 + '")';
       }
-      return "unimplemented!() /* Unsupported Op1 */";
+      return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */";
     }
     if (v._1.tag === "Op2") {
       const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1._3);
@@ -17608,7 +17665,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpDivide") {
           return "mk_int((" + aStr + ").init_int.unwrap() / (" + bStr + ").init_int.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpIntBitAnd") {
         return "mk_int((" + aStr + ").init_int.unwrap() & (" + bStr + ").init_int.unwrap())";
@@ -17647,7 +17704,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpLte") {
           return "mk_bool((" + aStr + ").init_int.unwrap() <= (" + bStr + ").init_int.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpNumberOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -17668,7 +17725,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpGte") {
           return "mk_bool((" + aStr + ").init_number.unwrap() >= (" + bStr + ").init_number.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpStringOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -17689,7 +17746,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpLte") {
           return "mk_bool((" + aStr + ").init_string.unwrap() <= (" + bStr + ").init_string.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpCharOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -17710,7 +17767,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpLte") {
           return "mk_bool((" + aStr + ").init_char.unwrap() <= (" + bStr + ").init_char.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpBooleanOrd") {
         if (v._1._1._1 === "OpEq") {
@@ -17731,7 +17788,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpLte") {
           return "mk_bool((" + aStr + ").init_bool.unwrap() <= (" + bStr + ").init_bool.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpBooleanAnd") {
         return "mk_bool((" + aStr + ").init_bool.unwrap() && (" + bStr + ").init_bool.unwrap())";
@@ -17755,12 +17812,12 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if (v._1._1._1 === "OpDivide") {
           return "mk_number((" + aStr + ").init_number.unwrap() / (" + bStr + ").init_number.unwrap())";
         }
-        return "unimplemented!() /* Unsupported Op2 */";
+        return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
       if (v._1._1.tag === "OpStringAppend") {
-        return 'mk_string(format!("{}{}", (' + aStr + ").init_string.as_ref().unwrap(), (" + bStr + ").init_string.as_ref().unwrap()))";
+        return 'mk_string(&format!("{}{}", (' + aStr + ").init_string.as_ref().unwrap(), (" + bStr + ").init_string.as_ref().unwrap()))";
       }
-      return "unimplemented!() /* Unsupported Op2 */";
+      return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
     }
     return $0();
   }
@@ -17784,23 +17841,34 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return varCode;
     }
     if (v1.tag === "Nothing") {
-      const fullName = sanitizeIdent((() => {
+      const fullName = (() => {
         if (v._1._1.tag === "Just") {
-          return replaceAll(".")("_")(v._1._1._1) + "_" + v._1._2;
+          return replaceAll(".")("_")(v._1._1._1) + "_";
         }
         if (v._1._1.tag === "Nothing") {
-          return replaceAll(".")("_")(currentMod) + "_" + v._1._2;
+          return replaceAll(".")("_")(currentMod) + "_";
         }
         fail();
-      })());
+      })() + sanitizeIdent(v._1._2);
       const v2 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
-      const expectedArgsLength = v2.tag === "Just" && v2._1.tag === "Func" ? v2._1._1.length : 0;
+      const expectedArgsLength = (() => {
+        if (v2.tag === "Just") {
+          return getArity(v2._1);
+        }
+        if (v2.tag === "Nothing") {
+          return 0;
+        }
+        fail();
+      })();
       const varCode = (() => {
         if (expectedArgsLength === 0) {
           return fullName + "()";
         }
         const etaArgs = mapWithIndexArray((i) => (v2$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
-        return foldlArray((code) => (etaArg) => "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + code + " })), ..Default::default() })")(fullName + "(" + joinWith(", ")(arrayMap((eta) => eta + ".clone()")(etaArgs)) + ")")(reverse(etaArgs));
+        return foldrArray((etaArg) => (v3) => $Tuple(
+          v3._1 - 1 | 0,
+          "{\n        " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs))) + "\n        perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + v3._2 + " })), ..Default::default() })\n    }"
+        ))($Tuple(expectedArgsLength - 1 | 0, fullName + "(" + joinWith(", ")(arrayMap((eta) => eta + ".clone()")(etaArgs)) + ")"))(etaArgs)._2;
       })();
       if (member2(fullName)(alive)) {
         return varCode + ".clone()";
@@ -17892,12 +17960,24 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
           if ($2 < 1) {
             return $1;
           }
-          return sliceImpl2($2, $1.length, $1);
+          return sliceImpl($2, $1.length, $1);
         })()))
       ))(a))($1)) + "])";
     }
     if (v._1.tag === "LitRecord") {
-      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(arrayMap((v1) => sanitizeIdent(v1._1) + ": Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(v1._2) + ")")(v._1._1)) + (v._1._1.length > 0 ? ", " : "") + "..Default::default() })";
+      const $1 = v._1._1;
+      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(mapWithIndexArray((i) => (v1) => sanitizeIdent(v1._1) + ": Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+        ordString.compare,
+        $$const,
+        alive,
+        foldlArray(union)(Leaf)(arrayMap((v3) => freeVariables(v3._2))((() => {
+          const $2 = i + 1 | 0;
+          if ($2 < 1) {
+            return $1;
+          }
+          return sliceImpl($2, $1.length, $1);
+        })()))
+      ))(v1._2) + ")")($1)) + ($1.length > 0 ? ", " : "") + "..Default::default() })";
     }
     fail();
   }
@@ -17935,7 +18015,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     })(v._1))(v._2);
   }
   if (v.tag === "PrimUndefined") {
-    return "unimplemented!()";
+    return "{ let _t: crate::UnknownType = unimplemented!(); _t }";
   }
   if (v.tag === "CtorSaturated") {
     return 'perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._4 + '", vals: ' + (v._5.length === 0 ? "None" : "Some(std::rc::Rc::new(vec![" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
@@ -17947,7 +18027,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         if ($1 < 1) {
           return v._5;
         }
-        return sliceImpl2($1, v._5.length, v._5);
+        return sliceImpl($1, v._5.length, v._5);
       })()))
     ))(v1._2))(v._5)) + "]))") + ", ..Default::default() })";
   }
@@ -18061,6 +18141,39 @@ var toUnfoldable3 = /* @__PURE__ */ (() => {
   return (x) => $0($MapIter("IterNode", x, IterLeaf));
 })();
 var buildModules2 = /* @__PURE__ */ buildModules(monadAff);
+var member3 = (k) => {
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = false;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordString.compare(k)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = true;
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  return go;
+};
+var foldMap8 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
 var main = /* @__PURE__ */ (() => {
   const $0 = _makeFiber(
     ffiUtil,
@@ -18079,20 +18192,90 @@ var main = /* @__PURE__ */ (() => {
               const modPrefix = replaceAll(".")("_")(v._1.name) + "_";
               return foldlArray((a) => (v1) => {
                 if (v1.tag === "NonRec") {
-                  if (v1._1._1.type.tag === "Just") {
-                    return insert(ordString)(sanitizeIdent(modPrefix + v1._1._2))(v1._1._1.type._1)(a);
+                  const tyMb = (() => {
+                    if (v1._1._1.type.tag === "Just") {
+                      return $Maybe("Just", v1._1._1.type._1);
+                    }
+                    if (v1._1._1.type.tag === "Nothing") {
+                      if (v1._1._3.tag === "ExprVar") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprLit") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprAbs") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprApp") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprLet") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprCase") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprConstructor") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprAccessor") {
+                        return v1._1._3._1.type;
+                      }
+                      if (v1._1._3.tag === "ExprUpdate") {
+                        return v1._1._3._1.type;
+                      }
+                    }
+                    fail();
+                  })();
+                  if (tyMb.tag === "Just") {
+                    return insert(ordString)(modPrefix + sanitizeIdent(v1._1._2))(tyMb._1)(a);
                   }
-                  if (v1._1._1.type.tag === "Nothing") {
+                  if (tyMb.tag === "Nothing") {
                     return a;
                   }
                   fail();
                 }
                 if (v1.tag === "Rec") {
                   return foldlArray((a$p) => (v2) => {
-                    if (v2._1.type.tag === "Just") {
-                      return insert(ordString)(sanitizeIdent(modPrefix + v2._2))(v2._1.type._1)(a$p);
+                    const tyMb = (() => {
+                      if (v2._1.type.tag === "Just") {
+                        return $Maybe("Just", v2._1.type._1);
+                      }
+                      if (v2._1.type.tag === "Nothing") {
+                        if (v2._3.tag === "ExprVar") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprLit") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprAbs") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprApp") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprLet") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprCase") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprConstructor") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprAccessor") {
+                          return v2._3._1.type;
+                        }
+                        if (v2._3.tag === "ExprUpdate") {
+                          return v2._3._1.type;
+                        }
+                      }
+                      fail();
+                    })();
+                    if (tyMb.tag === "Just") {
+                      return insert(ordString)(modPrefix + sanitizeIdent(v2._2))(tyMb._1)(a$p);
                     }
-                    if (v2._1.type.tag === "Nothing") {
+                    if (tyMb.tag === "Nothing") {
                       return a$p;
                     }
                     fail();
@@ -18101,7 +18284,7 @@ var main = /* @__PURE__ */ (() => {
                 fail();
               })(foldlArray((a) => (v1) => {
                 if (v1._2.tag === "Just") {
-                  return insert(ordString)(sanitizeIdent(modPrefix + v1._1))(v1._2._1)(a);
+                  return insert(ordString)(modPrefix + sanitizeIdent(v1._1))(v1._2._1)(a);
                 }
                 if (v1._2.tag === "Nothing") {
                   return a;
@@ -18131,13 +18314,55 @@ var main = /* @__PURE__ */ (() => {
             return _liftEffect(() => {
               const $02 = codeRef.value;
               codeRef.value = $02 + rsFile + "\n\n";
+              const modPrefix = replaceAll(".")("_")(v1.name) + "_";
               const ffiPathMb = findFfiFile(".rs")([])($Maybe("Just", "../"))(modNameStr)($Maybe("Just", v1.path))();
+              const getArity2 = (v3) => {
+                if (v3.tag === "ForAll") {
+                  return getArity2(v3._2);
+                }
+                if (v3.tag === "ConstrainedType") {
+                  return getArity2(v3._2);
+                }
+                if (v3.tag === "Func") {
+                  return v3._1.length + getArity2(v3._2) | 0;
+                }
+                return 0;
+              };
+              const genFallback = (name2, ty) => {
+                if (!member3(modPrefix + sanitizeIdent(name2))(Leaf)) {
+                  return "pub fn " + modPrefix + sanitizeIdent(name2) + "(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "mut a" + showIntImpl(i) + ": crate::UnknownType")(replicateImpl(
+                    getArity2(ty),
+                    void 0
+                  ))) + ") -> crate::UnknownType { crate::UnknownType::new(crate::Record_a { ..Default::default() }) }\n";
+                }
+                return "";
+              };
               const ffiContent = (() => {
                 if (ffiPathMb.tag === "Just") {
-                  return readTextFile2(UTF8)(ffiPathMb._1)();
+                  const content = readTextFile2(UTF8)(ffiPathMb._1)();
+                  return content + "\n\n" + foldMap8((tup) => {
+                    if (tup._2.tag === "Just") {
+                      if (contains("fn " + modPrefix + sanitizeIdent(tup._1))(content)) {
+                        return "";
+                      }
+                      return genFallback(tup._1, tup._2._1);
+                    }
+                    if (tup._2.tag === "Nothing") {
+                      return "";
+                    }
+                    fail();
+                  })(toUnfoldable3(v1.foreign));
                 }
                 if (ffiPathMb.tag === "Nothing") {
-                  return "";
+                  return foldMap8((tup) => {
+                    if (tup._2.tag === "Just") {
+                      return genFallback(tup._1, tup._2._1);
+                    }
+                    if (tup._2.tag === "Nothing") {
+                      return "";
+                    }
+                    fail();
+                  })(toUnfoldable3(v1.foreign));
                 }
                 fail();
               })();
