@@ -42,6 +42,7 @@ codegenModule globalAritiesMap (Module coreFnMod) backendMod =
 
 codegenPrelude :: Set.Set String -> String
 codegenPrelude fields =
+  "#![allow(warnings)]\n\n" <>
   "use perceus_ptr::PerceusPtr;\n\n" <>
   "pub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_int: Some(val), ..Default::default() }) }\n" <>
@@ -242,10 +243,12 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
                                      letArgsCode = Array.mapWithIndex (\i argCode -> "        let mut eval_arg_" <> show i <> " = " <> argCode <> ";\n") argsCodeArray
                                      innerArgs = evalArgs <> map (\eta -> eta <> ".clone()") etaArgs
                                      innerCall = fullName <> "(" <> String.joinWith ", " innerArgs <> ")"
-                                     wrapClosure accCode etaArg =
-                                         let clonesCode = String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") evalArgs)
-                                         in "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType {\n" <> clonesCode <> "    " <> accCode <> "\n})), ..Default::default() })"
-                                     closuresCode = Array.foldl wrapClosure innerCall (Array.reverse etaArgs)
+                                     closuresCode = case Array.foldr (\etaArg (Tuple i accCode) ->
+                                         let prevEtas = Array.take i etaArgs
+                                             clonesCode = String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") (evalArgs <> prevEtas))
+                                         in Tuple (i - 1) ("perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType {\n" <> clonesCode <> "    " <> accCode <> "\n})), ..Default::default() })")
+                                       ) (Tuple (missingCount - 1) innerCall) etaArgs of
+                                       Tuple _ res -> res
                                  in "{\n" <> String.joinWith "" letArgsCode <> "    " <> closuresCode <> "\n}"
                                else
                                  -- Over-applied
@@ -327,10 +330,16 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
 
   Update base props ->
     let
-      propsCode = map (\(Prop k v) -> "_mut." <> k <> " = Some(std::rc::Rc::new(|_| " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive v <> "));") props
+      propsArr = props
+      propsCode = Array.mapWithIndex (\i (Prop k v) -> 
+        let subsequentProps = Array.drop (i + 1) propsArr
+            aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
+        in "_mut." <> k <> " = Some(std::rc::Rc::new(|_| " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForProp v <> "));"
+      ) propsArr
+      aliveForBase = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty propsArr)
     in
       "{\n" <>
-      "    let mut _base = " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive base <> ";\n" <>
+      "    let mut _base = " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForBase base <> ";\n" <>
       "    {\n" <>
       "        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n" <>
       "        " <> String.joinWith "\n        " propsCode <> "\n" <>
@@ -339,15 +348,19 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       "}"
   Branch branches def ->
     let
-      branchCode = map (\(Pair cond body) -> 
-        let aliveForCond = Set.union alive (freeVariables body)
+      branchesArr = NonEmptyArray.toArray branches
+      branchCode = Array.mapWithIndex (\i (Pair cond body) -> 
+        let 
+            subsequentBranches = Array.drop (i + 1) branchesArr
+            varsSubsequent = Array.foldl (\acc (Pair c b) -> Set.union acc (Set.union (freeVariables c) (freeVariables b))) (freeVariables def) subsequentBranches
+            aliveForCond = Set.union alive (Set.union (freeVariables body) varsSubsequent)
             condCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForCond cond
             isLit = case cond of
               NeutralExpr (Typed _ (NeutralExpr (Lit (LitBoolean _)))) -> true
               NeutralExpr (Lit (LitBoolean _)) -> true
               _ -> false
             condFinal = if isLit then condCode else "(" <> condCode <> ").init_bool.unwrap()"
-        in "if " <> condFinal <> " {\n        " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive body <> "\n    }") (NonEmptyArray.toArray branches)
+        in "if " <> condFinal <> " {\n        " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive body <> "\n    }") branchesArr
       defCode = "{\n        " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive def <> "\n    }"
     in
       String.joinWith " else " branchCode <> " else " <> defCode
@@ -388,12 +401,12 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpNumberOrd OpLte -> "mk_bool((" <> aStr <> ").init_number.unwrap() <= (" <> bStr <> ").init_number.unwrap())"
       OpNumberOrd OpGt -> "mk_bool((" <> aStr <> ").init_number.unwrap() > (" <> bStr <> ").init_number.unwrap())"
       OpNumberOrd OpGte -> "mk_bool((" <> aStr <> ").init_number.unwrap() >= (" <> bStr <> ").init_number.unwrap())"
-      OpStringOrd OpEq -> "mk_bool((" <> aStr <> ").init_string.unwrap() == (" <> bStr <> ").init_string.unwrap())"
-      OpStringOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_string.unwrap() != (" <> bStr <> ").init_string.unwrap())"
-      OpStringOrd OpGt -> "mk_bool((" <> aStr <> ").init_string.unwrap() > (" <> bStr <> ").init_string.unwrap())"
-      OpStringOrd OpGte -> "mk_bool((" <> aStr <> ").init_string.unwrap() >= (" <> bStr <> ").init_string.unwrap())"
-      OpStringOrd OpLt -> "mk_bool((" <> aStr <> ").init_string.unwrap() < (" <> bStr <> ").init_string.unwrap())"
-      OpStringOrd OpLte -> "mk_bool((" <> aStr <> ").init_string.unwrap() <= (" <> bStr <> ").init_string.unwrap())"
+      OpStringOrd OpEq -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() == (" <> bStr <> ").init_string.as_ref().unwrap())"
+      OpStringOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() != (" <> bStr <> ").init_string.as_ref().unwrap())"
+      OpStringOrd OpGt -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() > (" <> bStr <> ").init_string.as_ref().unwrap())"
+      OpStringOrd OpGte -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() >= (" <> bStr <> ").init_string.as_ref().unwrap())"
+      OpStringOrd OpLt -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() < (" <> bStr <> ").init_string.as_ref().unwrap())"
+      OpStringOrd OpLte -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() <= (" <> bStr <> ").init_string.as_ref().unwrap())"
       OpCharOrd OpEq -> "mk_bool((" <> aStr <> ").init_char.unwrap() == (" <> bStr <> ").init_char.unwrap())"
       OpCharOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_char.unwrap() != (" <> bStr <> ").init_char.unwrap())"
       OpCharOrd OpGt -> "mk_bool((" <> aStr <> ").init_char.unwrap() > (" <> bStr <> ").init_char.unwrap())"
@@ -408,7 +421,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       OpBooleanOrd OpLte -> "mk_bool((" <> aStr <> ").init_bool.unwrap() <= (" <> bStr <> ").init_bool.unwrap())"
       OpBooleanAnd -> "mk_bool((" <> aStr <> ").init_bool.unwrap() && (" <> bStr <> ").init_bool.unwrap())"
       OpBooleanOr -> "mk_bool((" <> aStr <> ").init_bool.unwrap() || (" <> bStr <> ").init_bool.unwrap())"
-      OpArrayIndex -> "(" <> aStr <> ").init_array.as_ref().unwrap()[((" <> bStr <> ").init_int.unwrap() as usize)].clone()"
+      OpArrayIndex -> "(" <> aStr <> ").init_array.as_ref().unwrap()[(" <> bStr <> ").init_int.unwrap() as usize].clone()"
       OpNumberNum OpAdd -> "mk_number((" <> aStr <> ").init_number.unwrap() + (" <> bStr <> ").init_number.unwrap())"
       OpNumberNum OpSubtract -> "mk_number((" <> aStr <> ").init_number.unwrap() - (" <> bStr <> ").init_number.unwrap())"
       OpNumberNum OpMultiply -> "mk_number((" <> aStr <> ").init_number.unwrap() * (" <> bStr <> ").init_number.unwrap())"
@@ -451,7 +464,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
                in (case Array.foldr (\etaArg (Tuple i code) -> 
                    let prevEtas = Array.take i etaArgs
                        clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
-                   in Tuple (i - 1) ("{\n        " <> clonesCode <> "\n        perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> code <> " })), ..Default::default() })\n    }")
+                   in Tuple (i - 1) ("perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " })), ..Default::default() })")
                  ) (Tuple (expectedArgsLength - 1) innerCall) etaArgs of
                  Tuple _ res -> res)
           else
@@ -553,11 +566,13 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
           "let mut " <> sanitizeIdent n <> " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });"
         ) bindsArray)
       
-      evalCode = String.joinWith "\n    " (map (\(Tuple (Ident n) val) -> 
+      evalCode = String.joinWith "\n    " (Array.mapWithIndex (\i (Tuple (Ident n) val) -> 
           let clonesCode = String.joinWith "\n        " (map (\(Tuple (Ident cn) _) -> 
                   "let mut " <> sanitizeIdent cn <> " = " <> sanitizeIdent cn <> ".clone();"
                 ) bindsArray)
-              aliveForVal = Set.union alive (Array.foldl (\acc (Tuple (Ident bn) _) -> Set.insert (sanitizeIdent bn) acc) Set.empty bindsArray)
+              subsequentVals = Array.drop (i + 1) bindsArray
+              varsSubsequent = Array.foldl (\acc (Tuple _ v) -> Set.union acc (freeVariables v)) Set.empty subsequentVals
+              aliveForVal = Set.union alive (Set.union (freeVariables body) varsSubsequent)
               valCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForVal val
           in "let val_" <> sanitizeIdent n <> " = {\n        " <> clonesCode <> "\n        " <> valCode <> "\n    };"
         ) bindsArray)

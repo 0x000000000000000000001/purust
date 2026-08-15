@@ -15149,7 +15149,7 @@ var binderToPattern = (v) => {
   }
   fail();
 };
-var toBackendExpr = (expr) => {
+var toBackendExprWithType = (mbTy) => (expr) => {
   const $0 = (() => {
     if (expr.tag === "ExprVar") {
       return expr._1;
@@ -15303,7 +15303,41 @@ var toBackendExpr = (expr) => {
     }
     if (expr.tag === "ExprCase") {
       const $12 = expr._3;
-      return foldrArray((expr1) => (next) => (idents) => makeLet2(Nothing)(toBackendExpr(expr1))((tmp) => next(snoc(idents)(tmp))))((idents) => foldrArray((v) => {
+      const v3 = 0 < $12.length ? $Maybe("Just", $12[0]) : Nothing;
+      const firstBinders = (() => {
+        if (v3.tag === "Just") {
+          return v3._1._1;
+        }
+        if (v3.tag === "Nothing") {
+          return [];
+        }
+        fail();
+      })();
+      return foldrArray((v3$1) => {
+        const $2 = v3$1._2;
+        const $3 = v3$1._1;
+        return (next) => (idents) => makeLet2(Nothing)(toBackendExprWithType((() => {
+          if ($3 >= 0 && $3 < firstBinders.length) {
+            if (firstBinders[$3].tag === "BinderNull") {
+              return firstBinders[$3]._1.type;
+            }
+            if (firstBinders[$3].tag === "BinderVar") {
+              return firstBinders[$3]._1.type;
+            }
+            if (firstBinders[$3].tag === "BinderNamed") {
+              return firstBinders[$3]._1.type;
+            }
+            if (firstBinders[$3].tag === "BinderLit") {
+              return firstBinders[$3]._1.type;
+            }
+            if (firstBinders[$3].tag === "BinderConstructor") {
+              return firstBinders[$3]._1.type;
+            }
+            fail();
+          }
+          return Nothing;
+        })())($2))((tmp) => next(snoc(idents)(tmp)));
+      })((idents) => foldrArray((v) => {
         const $2 = v._1;
         const $3 = v._2;
         return (mainCb) => (caseRows) => {
@@ -15337,7 +15371,7 @@ var toBackendExpr = (expr) => {
             fail();
           };
         };
-      })((caseRows) => buildCaseTreeFromRows(caseRows))($12)([]))(expr._2)([]);
+      })((caseRows) => buildCaseTreeFromRows(caseRows))($12)([]))(mapWithIndexArray(Tuple)(expr._2))([]);
     }
     fail();
   })();
@@ -15348,7 +15382,12 @@ var toBackendExpr = (expr) => {
         return $Maybe("Just", $0.type._1);
       }
       if ($0.type.tag === "Nothing") {
-        return inferExprType(expr);
+        if (mbTy.tag === "Just") {
+          return $Maybe("Just", mbTy._1);
+        }
+        if (mbTy.tag === "Nothing") {
+          return inferExprType(expr);
+        }
       }
       fail();
     })();
@@ -15373,9 +15412,10 @@ var toBackendExpr = (expr) => {
     fail();
   };
 };
+var toBackendExpr = (expr) => toBackendExprWithType(Nothing)(expr);
 var toBackendBinding = (v) => {
   const $0 = Tuple(v._2);
-  const $1 = toBackendExpr(v._3);
+  const $1 = toBackendExprWithType(Nothing)(v._3);
   return (x) => $0($1(x));
 };
 var buildCaseTreeFromRows = (denormalizedRows) => {
@@ -15486,7 +15526,7 @@ var buildCaseLeaf = (row0) => (tailRows) => {
       ))));
     })((args) => {
       const $1 = $$for($0)((v) => {
-        const $12 = toBackendExpr(v._1);
+        const $12 = toBackendExprWithType(Nothing)(v._1);
         const $2 = make($BackendSyntax(
           "UncurriedApp",
           make($BackendSyntax("Local", Nothing, v._2)),
@@ -15505,7 +15545,7 @@ var buildCaseLeaf = (row0) => (tailRows) => {
 };
 var toTopLevelBackendBinding = (group2) => (env) => (v) => {
   const qualifiedIdent = $Qualified($Maybe("Just", env.currentModule), v._2);
-  const backendExpr = toBackendExpr(v._3)(env);
+  const backendExpr = toBackendExprWithType(Nothing)(v._3)(env);
   const mbType = backendExpr.tag === "ExprSyntax" && backendExpr._2.tag === "Typed" ? $Maybe("Just", backendExpr._2._1) : Nothing;
   const v1 = optimize(member(qualifiedIdent)(env.traceIdents))(getCtx(env))({
     currentModule: env.currentModule,
@@ -17438,7 +17478,7 @@ var debugUnwrap = (name2) => (t) => {
   }
   return unwrapped;
 };
-var codegenPrelude = (fields) => "use perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_int: Some(val), ..Default::default() }) }\npub fn mk_bool(val: bool) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_bool: Some(val), ..Default::default() }) }\npub fn mk_number(val: f64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_number: Some(val), ..Default::default() }) }\npub fn mk_string(val: &str) -> UnknownType { let val = val.to_string(); perceus_ptr::PerceusPtr::new(Record_a { init_string: Some(val), ..Default::default() }) }\npub fn mk_char(val: char) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_char: Some(val), ..Default::default() }) }\npub fn mk_array(val: Vec<UnknownType>) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_array: Some(std::rc::Rc::new(val)), ..Default::default() }) }\n\n#[derive(Clone, Default)]\npub struct Record_a {\n    pub tag: &'static str,\n    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub init_int: Option<i64>,\n    pub init_number: Option<f64>,\n    pub init_bool: Option<bool>,\n    pub init_string: Option<String>,\n    pub init_char: Option<char>,\n    pub init_array: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + foldMap7((field) => {
+var codegenPrelude = (fields) => "#![allow(warnings)]\n\nuse perceus_ptr::PerceusPtr;\n\npub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\npub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_int: Some(val), ..Default::default() }) }\npub fn mk_bool(val: bool) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_bool: Some(val), ..Default::default() }) }\npub fn mk_number(val: f64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_number: Some(val), ..Default::default() }) }\npub fn mk_string(val: &str) -> UnknownType { let val = val.to_string(); perceus_ptr::PerceusPtr::new(Record_a { init_string: Some(val), ..Default::default() }) }\npub fn mk_char(val: char) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_char: Some(val), ..Default::default() }) }\npub fn mk_array(val: Vec<UnknownType>) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_array: Some(std::rc::Rc::new(val)), ..Default::default() }) }\n\n#[derive(Clone, Default)]\npub struct Record_a {\n    pub tag: &'static str,\n    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n    pub init_int: Option<i64>,\n    pub init_number: Option<f64>,\n    pub init_bool: Option<bool>,\n    pub init_string: Option<String>,\n    pub init_char: Option<char>,\n    pub init_array: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + foldMap7((field) => {
   if (member2(field)(fromFoldable8(["unwrap", "clone", "as_ref", "call", "tag", "vals", "init_int", "init_bool", "init_number", "init_string", "init_char", "init_array"]))) {
     return "";
   }
@@ -17512,12 +17552,19 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
               return fullName + "(" + joinWith(", ")(argsCodeArray) + ")";
             }
             if (m < n) {
+              const missingCount = n - m | 0;
               const evalArgs = mapWithIndexArray((i) => (v2) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
-              const etaArgs = mapWithIndexArray((i) => (v2) => "eta_" + showIntImpl(i))(replicateImpl(n - m | 0, void 0));
-              return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldlArray((accCode) => (etaArg) => "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")(evalArgs)) + "    " + accCode + "\n})), ..Default::default() })")(fullName + "(" + joinWith(", ")([
-                ...evalArgs,
-                ...arrayMap((eta) => eta + ".clone()")(etaArgs)
-              ]) + ")")(reverse(etaArgs)) + "\n}";
+              const etaArgs = mapWithIndexArray((i) => (v2) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
+              return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldrArray((etaArg) => (v3) => $Tuple(
+                v3._1 - 1 | 0,
+                "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")([
+                  ...evalArgs,
+                  ...v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs)
+                ])) + "    " + v3._2 + "\n})), ..Default::default() })"
+              ))($Tuple(
+                missingCount - 1 | 0,
+                fullName + "(" + joinWith(", ")([...evalArgs, ...arrayMap((eta) => eta + ".clone()")(etaArgs)]) + ")"
+              ))(etaArgs)._2 + "\n}";
             }
             return foldlArray((acc) => (arg) => "(" + acc + ").call.clone().unwrap()(" + arg + ")")(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, argsCodeArray)) + ")")(n < 1 ? argsCodeArray : sliceImpl(n, argsCodeArray.length, argsCodeArray));
           }
@@ -17608,18 +17655,53 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1)(v._2);
   }
   if (v.tag === "Update") {
-    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(arrayMap((v1) => "_mut." + v1._1 + " = Some(std::rc::Rc::new(|_| " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v1._2) + "));")(v._2)) + "\n    }\n    _base\n}";
+    const $1 = v._2;
+    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      ordString.compare,
+      $$const,
+      alive,
+      foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v1._2)))(Leaf)($1)
+    ))(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(mapWithIndexArray((i) => (v1) => "_mut." + v1._1 + " = Some(std::rc::Rc::new(|_| " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      ordString.compare,
+      $$const,
+      alive,
+      foldlArray((acc) => (v3) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v3._2)))(Leaf)((() => {
+        const $2 = i + 1 | 0;
+        if ($2 < 1) {
+          return $1;
+        }
+        return sliceImpl($2, $1.length, $1);
+      })())
+    ))(v1._2) + "));")($1)) + "\n    }\n    _base\n}";
   }
   if (v.tag === "Branch") {
-    return joinWith(" else ")(arrayMap((v1) => {
+    const $1 = v._1;
+    const $2 = v._2;
+    return joinWith(" else ")(mapWithIndexArray((i) => (v1) => {
       const condCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
-        freeVariables(v1._2)
+        unsafeUnionWith(
+          ordString.compare,
+          $$const,
+          freeVariables(v1._2),
+          foldlArray((acc) => (v2) => unsafeUnionWith(
+            ordString.compare,
+            $$const,
+            acc,
+            unsafeUnionWith(ordString.compare, $$const, freeVariables(v2._1), freeVariables(v2._2))
+          ))(freeVariables($2))((() => {
+            const $3 = i + 1 | 0;
+            if ($3 < 1) {
+              return $1;
+            }
+            return sliceImpl($3, $1.length, $1);
+          })())
+        )
       ))(v1._1);
       return ((v1._1.tag === "Typed" ? v1._1._2.tag === "Lit" && v1._1._2._1.tag === "LitBoolean" : v1._1.tag === "Lit" && v1._1._1.tag === "LitBoolean") ? "if " + condCode + " {\n        " : "if (" + condCode + ").init_bool.unwrap() {\n        ") + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v1._2) + "\n    }";
-    })(v._1)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2) + "\n    }";
+    })($1)) + " else {\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)($2) + "\n    }";
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
@@ -17729,22 +17811,22 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       if (v._1._1.tag === "OpStringOrd") {
         if (v._1._1._1 === "OpEq") {
-          return "mk_bool((" + aStr + ").init_string.unwrap() == (" + bStr + ").init_string.unwrap())";
+          return "mk_bool((" + aStr + ").init_string.as_ref().unwrap() == (" + bStr + ").init_string.as_ref().unwrap())";
         }
         if (v._1._1._1 === "OpNotEq") {
-          return "mk_bool((" + aStr + ").init_string.unwrap() != (" + bStr + ").init_string.unwrap())";
+          return "mk_bool((" + aStr + ").init_string.as_ref().unwrap() != (" + bStr + ").init_string.as_ref().unwrap())";
         }
         if (v._1._1._1 === "OpGt") {
-          return "mk_bool((" + aStr + ").init_string.unwrap() > (" + bStr + ").init_string.unwrap())";
+          return "mk_bool((" + aStr + ").init_string.as_ref().unwrap() > (" + bStr + ").init_string.as_ref().unwrap())";
         }
         if (v._1._1._1 === "OpGte") {
-          return "mk_bool((" + aStr + ").init_string.unwrap() >= (" + bStr + ").init_string.unwrap())";
+          return "mk_bool((" + aStr + ").init_string.as_ref().unwrap() >= (" + bStr + ").init_string.as_ref().unwrap())";
         }
         if (v._1._1._1 === "OpLt") {
-          return "mk_bool((" + aStr + ").init_string.unwrap() < (" + bStr + ").init_string.unwrap())";
+          return "mk_bool((" + aStr + ").init_string.as_ref().unwrap() < (" + bStr + ").init_string.as_ref().unwrap())";
         }
         if (v._1._1._1 === "OpLte") {
-          return "mk_bool((" + aStr + ").init_string.unwrap() <= (" + bStr + ").init_string.unwrap())";
+          return "mk_bool((" + aStr + ").init_string.as_ref().unwrap() <= (" + bStr + ").init_string.as_ref().unwrap())";
         }
         return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */";
       }
@@ -17797,7 +17879,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         return "mk_bool((" + aStr + ").init_bool.unwrap() || (" + bStr + ").init_bool.unwrap())";
       }
       if (v._1._1.tag === "OpArrayIndex") {
-        return "(" + aStr + ").init_array.as_ref().unwrap()[((" + bStr + ").init_int.unwrap() as usize)].clone()";
+        return "(" + aStr + ").init_array.as_ref().unwrap()[(" + bStr + ").init_int.unwrap() as usize].clone()";
       }
       if (v._1._1.tag === "OpNumberNum") {
         if (v._1._1._1 === "OpAdd") {
@@ -17867,7 +17949,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
         const etaArgs = mapWithIndexArray((i) => (v2$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
         return foldrArray((etaArg) => (v3) => $Tuple(
           v3._1 - 1 | 0,
-          "{\n        " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs))) + "\n        perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + v3._2 + " })), ..Default::default() })\n    }"
+          "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs))) + " " + v3._2 + " })), ..Default::default() })"
         ))($Tuple(expectedArgsLength - 1 | 0, fullName + "(" + joinWith(", ")(arrayMap((eta) => eta + ".clone()")(etaArgs)) + ")"))(etaArgs)._2;
       })();
       if (member2(fullName)(alive)) {
@@ -18036,12 +18118,24 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "LetRec") {
     const $1 = v._2;
-    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });")($1)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($1)) + "\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    const $2 = v._3;
+    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });")($1)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($1)) + "\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
-      foldlArray((acc) => (v2) => insert(ordString)(sanitizeIdent(v2._1))()(acc))(Leaf)($1)
-    ))(v1._2) + "\n    };")($1)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "*perceus_ptr::PerceusPtr::make_mut(&mut " + sanitizeIdent(v1._1) + ") = (*val_" + sanitizeIdent(v1._1) + ").clone();")($1)) + "\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._3) + "\n}";
+      unsafeUnionWith(
+        ordString.compare,
+        $$const,
+        freeVariables($2),
+        foldlArray((acc) => (v2) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v2._2)))(Leaf)((() => {
+          const $3 = i + 1 | 0;
+          if ($3 < 1) {
+            return $1;
+          }
+          return sliceImpl($3, $1.length, $1);
+        })())
+      )
+    ))(v1._2) + "\n    };")($1)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "*perceus_ptr::PerceusPtr::make_mut(&mut " + sanitizeIdent(v1._1) + ") = (*val_" + sanitizeIdent(v1._1) + ").clone();")($1)) + "\n    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)($2) + "\n}";
   }
   return $0();
 };
