@@ -2,6 +2,7 @@ const fs = require('fs');
 const dirs = fs.readdirSync('output');
 
 let fullContent = "";
+let cargoContent = `[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "../../../purust/tests/runtime/perceus_ptr" }\n`;
 
 for (const dir of dirs) {
     const p = 'output/' + dir + '/src/main.rs';

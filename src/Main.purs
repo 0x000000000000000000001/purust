@@ -14,12 +14,22 @@ import Data.Newtype (unwrap)
 import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
-import PureScript.Backend.Optimizer.CoreFn (Module(..))
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModule)
+import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent)
+import Purust.ASTCollector as Purust.ASTCollector
+import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..))
+import Data.Map as Map
+import Data.List as List
+import Data.Set as Set
+import Data.Array as Array
+import Data.String as String
+import Data.String.Pattern (Pattern(..), Replacement(..))
+import Data.Tuple (Tuple(..))
+import Data.String as String
 import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
 import Effect.Console as Console
 import Effect.Class (liftEffect)
+import Effect.Ref as Ref
 
 cacheVersion :: String
 cacheVersion = "1.0.0"
@@ -33,7 +43,42 @@ main = launchAff_ do
   
   finalModules <- coreFnModulesFromOutput "output"
   
+  let
+    buildGlobalArities :: List.List (Module Ann) -> Map.Map String ExprType
+    buildGlobalArities modules = foldl processModule Map.empty modules
+      where
+      processModule acc (Module mod) =
+        let 
+          modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap mod.name) <> "_"
+          
+          acc1 = foldl (\a (Tuple (Ident name) mbTy) -> 
+              case mbTy of
+                Just ty -> Map.insert (sanitizeIdent (modPrefix <> name)) ty a
+                Nothing -> a
+            ) acc (Map.toUnfoldable mod.foreign :: Array (Tuple Ident (Maybe ExprType)))
+            
+          getTy (Ann ann) = ann.type
+          
+          processBind a = case _ of
+            NonRec (Binding ann (Ident name) _) ->
+              case getTy ann of
+                Just ty -> Map.insert (sanitizeIdent (modPrefix <> name)) ty a
+                Nothing -> a
+            Rec binds ->
+              foldl (\a' (Binding ann (Ident name) _) ->
+                case getTy ann of
+                  Just ty -> Map.insert (sanitizeIdent (modPrefix <> name)) ty a'
+                  Nothing -> a'
+              ) a binds
+              
+        in foldl processBind acc1 mod.decls
+        
+  let globalArities = buildGlobalArities finalModules
+  
   directives <- loadDirectives
+  
+  codeRef <- liftEffect $ Ref.new ""
+  ffiRef <- liftEffect $ Ref.new ""
   
   buildModules
     { directives
@@ -47,26 +92,52 @@ main = launchAff_ do
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
         writeCache cacheVersion ("output/" <> modNameStr <> "/.purust-cache.json") backendMod
-        let rsFile = codegenModule (Module coreFnMod) backendMod
+        let rsFile = codegenModule globalArities (Module coreFnMod) backendMod
         
         liftEffect do
-          let outDir = "output/" <> modNameStr
+          Ref.modify_ (\acc -> acc <> rsFile <> "\n\n") codeRef
           
-          srcExists <- FS.exists (outDir <> "/src")
-          when (not srcExists) do
-            FS.mkdir (outDir <> "/src")
-          
-          let cargoToml = "[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"../../../runtime/perceus_ptr\" }\n"
-          FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") cargoToml
+          let Module (Module { name, foreign: foreignArr }) = Module coreFnMod
+          let modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap name) <> "_"
+          let allMacroBindings = Set.empty -- Placeholder
           
           ffiPathMb <- findFfiFile ".rs" [] (Just "../") modNameStr (Just coreFnMod.path)
-          Console.log ("Looking for FFI for " <> modNameStr <> " path: " <> show coreFnMod.path <> " found: " <> show ffiPathMb)
+          let
+            getArity (ForAll _ t) = getArity t
+            getArity (ConstrainedType _ t) = getArity t
+            getArity (Func _ t) = 1 + getArity t
+            getArity _ = 0
+            
           ffiContent <- case ffiPathMb of
             Just ffiPath -> FS.readTextFile UTF8 ffiPath
-            Nothing -> pure ""
-
-          FS.writeTextFile UTF8 (outDir <> "/src/main.rs") (rsFile <> "\n\n" <> ffiContent)
+            Nothing -> pure $ Array.foldMap (\(Tuple name (Just ty)) -> 
+              if not (Set.member (sanitizeIdent (modPrefix <> unwrap name)) allMacroBindings) then
+                let arity = getArity ty
+                    args = Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": crate::UnknownType") (Array.replicate arity unit)
+                in "pub fn " <> sanitizeIdent (modPrefix <> unwrap name) <> "(" <> String.joinWith ", " args <> ") -> crate::UnknownType { crate::UnknownType::new(crate::Record_a { ..Default::default() }) }\n"
+              else ""
+              ) (Map.toUnfoldable foreignArr)
+          
+          Ref.modify_ (\acc -> acc <> ffiContent <> "\n\n") ffiRef
     }
     finalModules
     
-  liftEffect $ log "Successfully generated Rust code."
+  liftEffect do
+    let outDir = "output/purust_output"
+    srcExists <- FS.exists (outDir <> "/src")
+    when (not srcExists) do
+      FS.mkdir outDir
+      FS.mkdir (outDir <> "/src")
+    
+    let cargoToml = "[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"../../../purust/tests/runtime/perceus_ptr\" }\n"
+    FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") cargoToml
+    
+    allCode <- Ref.read codeRef
+    allFfi <- Ref.read ffiRef
+    
+    let allFields = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectFieldsModule mod)) Set.empty finalModules
+    
+    let finalOutput = codegenPrelude allFields <> allCode <> allFfi
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") finalOutput
+    
+    log "Successfully generated Rust code."

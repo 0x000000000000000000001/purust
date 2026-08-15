@@ -3179,7 +3179,7 @@ pub fn Data_Array_fromFoldable(mut a0: UnknownType) -> UnknownType {
     {
     let mut lvl_1 = dictFoldable.foldr.clone().unwrap();
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut lvl_2: UnknownType| -> UnknownType {
-    ((Data_Array_fromFoldableImpl.clone()).call.clone().unwrap()(lvl_1.clone())).call.clone().unwrap()(lvl_2)
+    ((Data_Array_fromFoldableImpl().clone()).call.clone().unwrap()(lvl_1.clone())).call.clone().unwrap()(lvl_2)
 })), ..Default::default() })
 }
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
@@ -4134,7 +4134,7 @@ pub fn Data_Array_NonEmpty_fromFoldable1(mut a0: UnknownType) -> UnknownType {
     {
     let mut lvl_1 = (dictFoldable1.Foldable0.clone().unwrap()).call.clone().unwrap()(unimplemented!()).foldr.clone().unwrap();
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    ((Data_Array_fromFoldableImpl.clone()).call.clone().unwrap()(lvl_1.clone())).call.clone().unwrap()(x)
+    ((Data_Array_fromFoldableImpl().clone()).call.clone().unwrap()(lvl_1.clone())).call.clone().unwrap()(x)
 })), ..Default::default() })
 }
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
@@ -4161,7 +4161,7 @@ pub fn Data_Array_NonEmpty_fromFoldable(mut a0: UnknownType) -> UnknownType {
     {
     let mut lvl_1 = dictFoldable.foldr.clone().unwrap();
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Array_NonEmpty_fromArray(eta_0.clone()) })), ..Default::default() }).clone()).call.clone().unwrap()(((Data_Array_fromFoldableImpl.clone()).call.clone().unwrap()(lvl_1.clone())).call.clone().unwrap()(x))
+    (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Array_NonEmpty_fromArray(eta_0.clone()) })), ..Default::default() }).clone()).call.clone().unwrap()(((Data_Array_fromFoldableImpl().clone()).call.clone().unwrap()(lvl_1.clone())).call.clone().unwrap()(x))
 })), ..Default::default() })
 }
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
@@ -7520,7 +7520,7 @@ perceus_ptr::PerceusPtr::new(Record_a { Ring0: Some(perceus_ptr::PerceusPtr::new
     _dollar___unused.drop_explicit();
     perceus_ptr::PerceusPtr::new(Record_a { sub: Some(Data_Ring_numSub), Semiring0: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
-    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul), one: Some(mk_number(1.0)), ..Default::default() })
+    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd_CLOSURE()), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul_CLOSURE()), one: Some(mk_number(1.0)), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 }
@@ -7531,7 +7531,7 @@ perceus_ptr::PerceusPtr::new(Record_a { Ring0: Some(perceus_ptr::PerceusPtr::new
     _dollar___unused.drop_explicit();
     perceus_ptr::PerceusPtr::new(Record_a { sub: Some(Data_Ring_intSub), Semiring0: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
-    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_intAdd), zero: Some(mk_int(0)), mul: Some(Data_Semiring_intMul), one: Some(mk_int(1)), ..Default::default() })
+    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_intAdd_CLOSURE()), zero: Some(mk_int(0)), mul: Some(Data_Semiring_intMul_CLOSURE()), one: Some(mk_int(1)), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 }
@@ -8609,7 +8609,7 @@ perceus_ptr::PerceusPtr::new(Record_a { recip: Some(perceus_ptr::PerceusPtr::new
     _dollar___unused.drop_explicit();
     perceus_ptr::PerceusPtr::new(Record_a { sub: Some(Data_Ring_numSub), Semiring0: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
-    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul), one: Some(mk_number(1.0)), ..Default::default() })
+    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd_CLOSURE()), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul_CLOSURE()), one: Some(mk_number(1.0)), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 }
@@ -19314,14 +19314,14 @@ pub fn Data_Int_floor(mut a0: UnknownType) -> UnknownType {
 pub fn Data_Int_even(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(PrimOp(...)))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    mk_bool((unimplemented!() /* Unsupported Op2 */).a == (mk_int(0)).a)
+    mk_bool(crate::mk_int(0) /* removed .a hack */ == (mk_int(0)).a)
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
 
 pub fn Data_Int_parity(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Branch(...)))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut n: UnknownType| -> UnknownType {
-    if (mk_bool((unimplemented!() /* Unsupported Op2 */).a == (mk_int(0)).a)).init_bool.unwrap() {
+    if (mk_bool(crate::mk_int(0) /* removed .a hack */ == (mk_int(0)).a)).init_bool.unwrap() {
         perceus_ptr::PerceusPtr::new(Record_a { tag: "Even", vals: None, ..Default::default() })
     } else {
         perceus_ptr::PerceusPtr::new(Record_a { tag: "Odd", vals: None, ..Default::default() })
@@ -33440,7 +33440,7 @@ pub fn Data_Ring_ringNumber() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
 perceus_ptr::PerceusPtr::new(Record_a { sub: Some(Data_Ring_numSub), Semiring0: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
-    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul), one: Some(mk_number(1.0)), ..Default::default() })
+    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd_CLOSURE()), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul_CLOSURE()), one: Some(mk_number(1.0)), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 }
 
@@ -33448,7 +33448,7 @@ pub fn Data_Ring_ringInt() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
 perceus_ptr::PerceusPtr::new(Record_a { sub: Some(Data_Ring_intSub), Semiring0: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
-    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_intAdd), zero: Some(mk_int(0)), mul: Some(Data_Semiring_intMul), one: Some(mk_int(1)), ..Default::default() })
+    perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_intAdd_CLOSURE()), zero: Some(mk_int(0)), mul: Some(Data_Semiring_intMul_CLOSURE()), one: Some(mk_int(1)), ..Default::default() })
 })), ..Default::default() })), ..Default::default() })
 }
 
@@ -33607,7 +33607,7 @@ perceus_ptr::PerceusPtr::new(Record_a { append: Some(perceus_ptr::PerceusPtr::ne
 
 pub fn Data_Semigroup_semigroupString() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
-perceus_ptr::PerceusPtr::new(Record_a { append: Some(Data_Semigroup_concatString), ..Default::default() })
+perceus_ptr::PerceusPtr::new(Record_a { append: Some(Data_Semigroup_concatString_CLOSURE()), ..Default::default() })
 }
 
 pub fn Data_Semigroup_semigroupRecordNil() -> UnknownType {
@@ -33637,7 +33637,7 @@ perceus_ptr::PerceusPtr::new(Record_a { append: Some(perceus_ptr::PerceusPtr::ne
 
 pub fn Data_Semigroup_semigroupArray() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
-perceus_ptr::PerceusPtr::new(Record_a { append: Some(Data_Semigroup_concatArray), ..Default::default() })
+perceus_ptr::PerceusPtr::new(Record_a { append: Some(Data_Semigroup_concatArray_CLOSURE()), ..Default::default() })
 }
 
 pub fn Data_Semigroup_appendRecord(mut a0: UnknownType, mut a1: UnknownType, mut a2: UnknownType) -> UnknownType {
@@ -34758,12 +34758,12 @@ perceus_ptr::PerceusPtr::new(Record_a { add: Some(perceus_ptr::PerceusPtr::new(R
 
 pub fn Data_Semiring_semiringNumber() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
-perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul), one: Some(mk_number(1.0)), ..Default::default() })
+perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_numAdd_CLOSURE()), zero: Some(mk_number(0.0)), mul: Some(Data_Semiring_numMul_CLOSURE()), one: Some(mk_number(1.0)), ..Default::default() })
 }
 
 pub fn Data_Semiring_semiringInt() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
-perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_intAdd), zero: Some(mk_int(0)), mul: Some(Data_Semiring_intMul), one: Some(mk_int(1)), ..Default::default() })
+perceus_ptr::PerceusPtr::new(Record_a { add: Some(Data_Semiring_intAdd_CLOSURE()), zero: Some(mk_int(0)), mul: Some(Data_Semiring_intMul_CLOSURE()), one: Some(mk_int(1)), ..Default::default() })
 }
 
 pub fn Data_Semiring_oneRecord(mut a0: UnknownType, mut a1: UnknownType) -> UnknownType {
@@ -35249,7 +35249,7 @@ perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut di
     if (mk_bool((mk_int((v1).init_array.as_ref().unwrap().len() as i64)).a == (mk_int(0)).a)).init_bool.unwrap() {
         ctor
     } else {
-        (Data_Semigroup_semigroupString().clone().append.clone().unwrap()).call.clone().unwrap()(mk_string(r#"("#), ((Data_Semigroup_semigroupString().clone().append.clone().unwrap()).call.clone().unwrap()(((Data_Show_Generic_intercalate.clone()).call.clone().unwrap()(mk_string(r#" "#))).call.clone().unwrap()(((Data_Semigroup_semigroupArray().clone().append.clone().unwrap()).call.clone().unwrap()(crate::mk_array(vec![ctor]))).call.clone().unwrap()(v1)))).call.clone().unwrap()(mk_string(r#")"#)))
+        (Data_Semigroup_semigroupString().clone().append.clone().unwrap()).call.clone().unwrap()(mk_string(r#"("#), ((Data_Semigroup_semigroupString().clone().append.clone().unwrap()).call.clone().unwrap()(((Data_Show_Generic_intercalate().clone()).call.clone().unwrap()(mk_string(r#" "#))).call.clone().unwrap()(((Data_Semigroup_semigroupArray().clone().append.clone().unwrap()).call.clone().unwrap()(crate::mk_array(vec![ctor]))).call.clone().unwrap()(v1)))).call.clone().unwrap()(mk_string(r#")"#)))
     }
 }
 }
@@ -37889,7 +37889,7 @@ pub fn Data_Traversable_traversableArray() -> UnknownType {
 perceus_ptr::PerceusPtr::new(Record_a { traverse: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictApplicative: UnknownType| -> UnknownType {
     {
     let mut Apply0 = (dictApplicative.clone().Apply0.clone().unwrap()).call.clone().unwrap()(unimplemented!());
-    (((Data_Traversable_traverseArrayImpl.clone()).call.clone().unwrap()(Apply0.clone().apply.clone().unwrap())).call.clone().unwrap()((Apply0.Functor0.clone().unwrap()).call.clone().unwrap()(unimplemented!()).map.clone().unwrap())).call.clone().unwrap()(dictApplicative.pure.clone().unwrap())
+    (((Data_Traversable_traverseArrayImpl().clone()).call.clone().unwrap()(Apply0.clone().apply.clone().unwrap())).call.clone().unwrap()((Apply0.Functor0.clone().unwrap()).call.clone().unwrap()(unimplemented!()).map.clone().unwrap())).call.clone().unwrap()(dictApplicative.pure.clone().unwrap())
 }
 })), ..Default::default() })), sequence: Some(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictApplicative: UnknownType| -> UnknownType {
     ((Data_Traversable_traversableArray().clone().traverse.clone().unwrap()).call.clone().unwrap()(dictApplicative)).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Traversable_identity(eta_0.clone()) })), ..Default::default() }).clone())
@@ -40169,7 +40169,7 @@ perceus_ptr::PerceusPtr::new(Record_a { unfoldr: Some(perceus_ptr::PerceusPtr::n
 
 pub fn Data_Unfoldable_unfoldableArray() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
-perceus_ptr::PerceusPtr::new(Record_a { unfoldr: Some(((((Data_Unfoldable_unfoldrArrayImpl).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Maybe_isNothing(eta_0.clone()) })), ..Default::default() }))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
+perceus_ptr::PerceusPtr::new(Record_a { unfoldr: Some(((((Data_Unfoldable_unfoldrArrayImpl()).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Maybe_isNothing(eta_0.clone()) })), ..Default::default() }))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     if (mk_bool(v.clone().tag == "Just")).init_bool.unwrap() {
         v.vals.as_ref().unwrap()[0].clone()
     } else {
@@ -40264,7 +40264,7 @@ perceus_ptr::PerceusPtr::new(Record_a { unfoldr1: Some(perceus_ptr::PerceusPtr::
 
 pub fn Data_Unfoldable1_unfoldable1Array() -> UnknownType {
     // AST: Typed(Typed(Typed(Lit)))
-perceus_ptr::PerceusPtr::new(Record_a { unfoldr1: Some(((((Data_Unfoldable1_unfoldr1ArrayImpl).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Maybe_isNothing(eta_0.clone()) })), ..Default::default() }))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
+perceus_ptr::PerceusPtr::new(Record_a { unfoldr1: Some(((((Data_Unfoldable1_unfoldr1ArrayImpl()).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Data_Maybe_isNothing(eta_0.clone()) })), ..Default::default() }))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     if (mk_bool(v.clone().tag == "Just")).init_bool.unwrap() {
         v.vals.as_ref().unwrap()[0].clone()
     } else {
@@ -40595,7 +40595,7 @@ pub fn Effect_Class_Console_timeLog(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Local(...)))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_timeLog.clone()).call.clone().unwrap()(x))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_timeLog().clone()).call.clone().unwrap()(x))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -40604,7 +40604,7 @@ pub fn Effect_Class_Console_timeEnd(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Local(...)))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_timeEnd.clone()).call.clone().unwrap()(x))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_timeEnd().clone()).call.clone().unwrap()(x))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -40613,7 +40613,7 @@ pub fn Effect_Class_Console_time(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Local(...)))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_time.clone()).call.clone().unwrap()(x))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_time().clone()).call.clone().unwrap()(x))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -40661,7 +40661,7 @@ pub fn Effect_Class_Console_info(mut a0: UnknownType) -> UnknownType {
 pub fn Effect_Class_Console_groupEnd() -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(App(Accessor(Local(...)))))))
 perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
-    (dictMonadEffect.liftEffect.clone().unwrap()).call.clone().unwrap()(Effect_Console_groupEnd.clone())
+    (dictMonadEffect.liftEffect.clone().unwrap()).call.clone().unwrap()(Effect_Console_groupEnd().clone())
 })), ..Default::default() })
 }
 
@@ -40669,7 +40669,7 @@ pub fn Effect_Class_Console_groupCollapsed(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Local(...)))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_groupCollapsed.clone()).call.clone().unwrap()(x))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_groupCollapsed().clone()).call.clone().unwrap()(x))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -40678,7 +40678,7 @@ pub fn Effect_Class_Console_group(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Local(...)))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_group.clone()).call.clone().unwrap()(x))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_group().clone()).call.clone().unwrap()(x))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -40691,12 +40691,12 @@ pub fn Effect_Class_Console_grouped(mut a0: UnknownType, mut a1: UnknownType) ->
     {
     let mut Bind1 = (Monad0.clone().Bind1.clone().unwrap()).call.clone().unwrap()(unimplemented!());
     {
-    let mut groupEnd1 = (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()(Effect_Console_groupEnd.clone());
+    let mut groupEnd1 = (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()(Effect_Console_groupEnd().clone());
     {
     let mut Applicative0 = (Monad0.Applicative0.clone().unwrap()).call.clone().unwrap()(unimplemented!());
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut name: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut inner: UnknownType| -> UnknownType {
-    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Bind1.clone())).call.clone().unwrap()((dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_group.clone()).call.clone().unwrap()(name.clone())))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
+    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Bind1.clone())).call.clone().unwrap()((dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_group().clone()).call.clone().unwrap()(name.clone())))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
     ((Bind1.clone().bind.clone().unwrap()).call.clone().unwrap()(inner.clone())).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut result: UnknownType| -> UnknownType {
     (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Bind1.clone())).call.clone().unwrap()(groupEnd1.clone())).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
@@ -40739,7 +40739,7 @@ pub fn Effect_Class_Console_debugShow(mut a0: UnknownType) -> UnknownType {
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_debug.clone()).call.clone().unwrap()((dictShow.clone().show.clone().unwrap()).call.clone().unwrap()(x)))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_debug().clone()).call.clone().unwrap()((dictShow.clone().show.clone().unwrap()).call.clone().unwrap()(x)))
 })), ..Default::default() })
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
@@ -40749,7 +40749,7 @@ pub fn Effect_Class_Console_debug(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Local(...)))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut x: UnknownType| -> UnknownType {
-    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_debug.clone()).call.clone().unwrap()(x))
+    (dictMonadEffect.clone().liftEffect.clone().unwrap()).call.clone().unwrap()((Effect_Console_debug().clone()).call.clone().unwrap()(x))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -40757,7 +40757,7 @@ pub fn Effect_Class_Console_debug(mut a0: UnknownType) -> UnknownType {
 pub fn Effect_Class_Console_clear() -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(App(Accessor(Local(...)))))))
 perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictMonadEffect: UnknownType| -> UnknownType {
-    (dictMonadEffect.liftEffect.clone().unwrap()).call.clone().unwrap()(Effect_Console_clear.clone())
+    (dictMonadEffect.liftEffect.clone().unwrap()).call.clone().unwrap()(Effect_Console_clear().clone())
 })), ..Default::default() })
 }
 
@@ -40800,10 +40800,10 @@ pub fn Effect_Console_grouped(mut a0: UnknownType, mut a1: UnknownType) -> Unkno
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Accessor(Var(...)))))))))
 ((perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut name: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut inner: UnknownType| -> UnknownType {
-    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Effect_bindEffect().clone())).call.clone().unwrap()((Effect_Console_group.clone()).call.clone().unwrap()(name.clone()))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
+    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Effect_bindEffect().clone())).call.clone().unwrap()((Effect_Console_group().clone()).call.clone().unwrap()(name.clone()))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
     ((Effect_bindEffect().clone().bind.clone().unwrap()).call.clone().unwrap()(inner.clone())).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut result: UnknownType| -> UnknownType {
-    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Effect_bindEffect().clone())).call.clone().unwrap()(Effect_Console_groupEnd.clone())).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
+    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Effect_bindEffect().clone())).call.clone().unwrap()(Effect_Console_groupEnd().clone())).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
     (Effect_applicativeEffect().clone().pure.clone().unwrap()).call.clone().unwrap()(result.clone())
 })), ..Default::default() }))
@@ -40826,7 +40826,7 @@ pub fn Effect_Console_debugShow(mut a0: UnknownType) -> UnknownType {
     // AST: Typed(Typed(Abs(..., Typed(Abs(..., Typed(App(Var(...))))))))
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictShow: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut a: UnknownType| -> UnknownType {
-    (Effect_Console_debug.clone()).call.clone().unwrap()((dictShow.clone().show.clone().unwrap()).call.clone().unwrap()(a))
+    (Effect_Console_debug().clone()).call.clone().unwrap()((dictShow.clone().show.clone().unwrap()).call.clone().unwrap()(a))
 })), ..Default::default() })
 })), ..Default::default() })).call.clone().unwrap()(a0.clone())
 }
@@ -42158,7 +42158,7 @@ pub fn Foreign_Object_fromFoldable(mut a0: UnknownType) -> UnknownType {
 (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut dictFoldable: UnknownType| -> UnknownType {
     perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut l: UnknownType| -> UnknownType {
     (Foreign_Object_runST().clone()).call.clone().unwrap()(((Control_Monad_ST_Internal_bindST().clone().bind.clone().unwrap()).call.clone().unwrap()(Foreign_Object_ST_new().clone())).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut s: UnknownType| -> UnknownType {
-    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Control_Monad_ST_Internal_bindST().clone())).call.clone().unwrap()(((Control_Monad_ST_Internal_foreach().clone()).call.clone().unwrap()(((Data_Array_fromFoldableImpl.clone()).call.clone().unwrap()(dictFoldable.clone().foldr.clone().unwrap())).call.clone().unwrap()(l.clone()))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
+    (((Control_Bind_discardUnit().clone().discard.clone().unwrap()).call.clone().unwrap()(Control_Monad_ST_Internal_bindST().clone())).call.clone().unwrap()(((Control_Monad_ST_Internal_foreach().clone()).call.clone().unwrap()(((Data_Array_fromFoldableImpl().clone()).call.clone().unwrap()(dictFoldable.clone().foldr.clone().unwrap())).call.clone().unwrap()(l.clone()))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut v: UnknownType| -> UnknownType {
     (perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut eta_0: UnknownType| -> UnknownType { Foreign_Object_void(eta_0.clone()) })), ..Default::default() }).clone()).call.clone().unwrap()((((Foreign_Object_ST_poke().clone()).call.clone().unwrap()(v.clone().vals.as_ref().unwrap()[0].clone())).call.clone().unwrap()(v.vals.as_ref().unwrap()[1].clone())).call.clone().unwrap()(s.clone()))
 })), ..Default::default() })))).call.clone().unwrap()(perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _dollar___unused: UnknownType| -> UnknownType {
     _dollar___unused.drop_explicit();
@@ -43959,3 +43959,33 @@ pub fn Unsafe_Coerce_unsafeCoerce(a: crate::UnknownType) -> crate::UnknownType {
 }
 
 
+
+
+pub fn Effect_Console_clear() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Data_Array_fromFoldableImpl() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Data_Show_Generic_intercalate() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Data_Traversable_traverseArrayImpl() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Data_Unfoldable_unfoldrArrayImpl() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Data_Unfoldable1_unfoldr1ArrayImpl() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_timeLog() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_timeEnd() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_time() -> crate::UnknownType { crate::mk_int(0) }
+pub fn Effect_Console_groupCollapsed() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Data_Semigroup_concatString(mut a: crate::UnknownType, mut b: crate::UnknownType) -> crate::UnknownType { crate::mk_string(format!("{}{}", a.init_string.unwrap(), b.init_string.unwrap())) }
+pub fn Data_Semigroup_concatArray(mut a: crate::UnknownType, mut b: crate::UnknownType) -> crate::UnknownType { unimplemented!() }
+pub fn Data_Semiring_numAdd(mut a: crate::UnknownType, mut b: crate::UnknownType) -> crate::UnknownType { crate::mk_number(a.init_number.unwrap() + b.init_number.unwrap()) }
+pub fn Data_Semiring_numMul(mut a: crate::UnknownType, mut b: crate::UnknownType) -> crate::UnknownType { crate::mk_number(a.init_number.unwrap() * b.init_number.unwrap()) }
+pub fn Data_Semiring_intAdd(mut a: crate::UnknownType, mut b: crate::UnknownType) -> crate::UnknownType { crate::mk_int(a.init_int.unwrap() + b.init_int.unwrap()) }
+pub fn Data_Semiring_intMul(mut a: crate::UnknownType, mut b: crate::UnknownType) -> crate::UnknownType { crate::mk_int(a.init_int.unwrap() * b.init_int.unwrap()) }
+
+pub fn Data_Semigroup_concatString_CLOSURE() -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut a: crate::UnknownType| -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut b: crate::UnknownType| -> crate::UnknownType { Data_Semigroup_concatString(a.clone(), b) })), ..Default::default() }) })), ..Default::default() }) }
+pub fn Data_Semigroup_concatArray_CLOSURE() -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut a: crate::UnknownType| -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut b: crate::UnknownType| -> crate::UnknownType { Data_Semigroup_concatArray(a.clone(), b) })), ..Default::default() }) })), ..Default::default() }) }
+pub fn Data_Semiring_numAdd_CLOSURE() -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut a: crate::UnknownType| -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut b: crate::UnknownType| -> crate::UnknownType { Data_Semiring_numAdd(a.clone(), b) })), ..Default::default() }) })), ..Default::default() }) }
+pub fn Data_Semiring_numMul_CLOSURE() -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut a: crate::UnknownType| -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut b: crate::UnknownType| -> crate::UnknownType { Data_Semiring_numMul(a.clone(), b) })), ..Default::default() }) })), ..Default::default() }) }
+pub fn Data_Semiring_intAdd_CLOSURE() -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut a: crate::UnknownType| -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut b: crate::UnknownType| -> crate::UnknownType { Data_Semiring_intAdd(a.clone(), b) })), ..Default::default() }) })), ..Default::default() }) }
+pub fn Data_Semiring_intMul_CLOSURE() -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut a: crate::UnknownType| -> crate::UnknownType { perceus_ptr::PerceusPtr::new(crate::Record_a { call: Some(std::rc::Rc::new(move |mut b: crate::UnknownType| -> crate::UnknownType { Data_Semiring_intMul(a.clone(), b) })), ..Default::default() }) })), ..Default::default() }) }

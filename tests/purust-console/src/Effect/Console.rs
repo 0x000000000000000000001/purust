@@ -15,3 +15,141 @@ pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
 pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
 
 pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_error() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_group() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_groupEnd() -> crate::UnknownType { crate::mk_int(0) }
+
+pub fn Effect_Console_debug() -> crate::UnknownType { crate::mk_int(0) }
