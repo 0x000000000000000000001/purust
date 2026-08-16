@@ -92,18 +92,6 @@ printType _ = "Other"
 codegenExprType :: Boolean -> ExprType -> String
 codegenExprType isRet ty = "UnknownType"
 
-extractAllArgTypes :: ExprType -> Array ExprType
-extractAllArgTypes (ForAll _ t) = extractAllArgTypes t
-extractAllArgTypes (ConstrainedType _ t) = extractAllArgTypes t
-extractAllArgTypes (Func args t) = args <> extractAllArgTypes t
-extractAllArgTypes _ = []
-
-extractFinalRetType :: ExprType -> ExprType
-extractFinalRetType (ForAll _ t) = extractFinalRetType t
-extractFinalRetType (ConstrainedType _ t) = extractFinalRetType t
-extractFinalRetType (Func _ t) = extractFinalRetType t
-extractFinalRetType t = t
-
 codegenBindingGroup :: ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
 codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap group =
   if Array.null group.bindings then { code: "", arities: aritiesMap } else
@@ -132,17 +120,11 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
            NeutralExpr (Typed _ inner) -> inner
            NeutralExpr inner -> NeutralExpr inner
            _ -> expr
-        { paramsCode, retCode, bodyCode, isFunc } =
-          let allArgTypes = extractAllArgTypes inferredType
-          in if Array.length allArgTypes > 0 then
+        { paramsCode, retCode, bodyCode, isFunc } = case debugUnwrap identName inferredType of
+          Func argTypes retType ->
             let
-              retType = extractFinalRetType inferredType
-              argTypes = allArgTypes
-              isMatchingAbs = case innerExpr of
-                NeutralExpr (Abs params _) -> Array.length (NonEmptyArray.toArray params) == Array.length argTypes
-                _ -> false
               paramsArr = case innerExpr of
-                NeutralExpr (Abs params _) | isMatchingAbs -> map (\(Tuple mbId _) -> case mbId of
+                NeutralExpr (Abs params _) -> map (\(Tuple mbId _) -> case mbId of
                   Just (Ident n) -> n
                   _ -> "_") (NonEmptyArray.toArray params)
                 _ -> Array.mapWithIndex (\i _ -> "a" <> show i) argTypes
@@ -154,13 +136,13 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                 (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType true ty) paramPairs
               bound = Map.fromFoldable (map (\(Tuple k v) -> Tuple (if k == "_" then "_" else k) v) paramPairs)
               bodyCodeRaw = case innerExpr of
-                NeutralExpr (Abs _ body) | isMatchingAbs -> codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty body
+                NeutralExpr (Abs _ body) -> codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty body
                 _ -> 
                    let fnCode = codegenExpr modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty innerExpr
                        argsCodeArray = map (\p -> sanitizeIdent p <> ".clone()") deduped
                    in Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
             in { paramsCode: pCode, retCode: codegenExprType true retType, bodyCode: bodyCodeRaw, isFunc: true }
-          else 
+          _ -> 
             let isAbs = case innerExpr of
                   NeutralExpr (Abs _ _) -> true
                   _ -> false
@@ -356,7 +338,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
       propsCode = Array.mapWithIndex (\i (Prop k v) -> 
         let subsequentProps = Array.drop (i + 1) propsArr
             aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
-        in "_mut." <> sanitizeIdent k <> " = Some(" <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForProp v <> ");"
+        in "_mut." <> k <> " = Some(std::rc::Rc::new(|_| " <> codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForProp v <> "));"
       ) propsArr
       aliveForBase = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty propsArr)
     in
@@ -574,7 +556,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
     in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body
-  PrimUndefined -> "crate::UnknownType::new(crate::Record_a { ..Default::default() })"
+  PrimUndefined -> "{ let _t: crate::UnknownType = unimplemented!(); _t }"
   CtorSaturated _ _ _ (Ident ctorName) fields ->
     let fieldsCode = if Array.null fields then "None" else 
           "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
@@ -605,7 +587,7 @@ codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound ali
         ) bindsArray)
         
       mutCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "*(unsafe { perceus_ptr::PerceusPtr::force_mut(&mut " <> sanitizeIdent n <> ") }) = (*val_" <> sanitizeIdent n <> ").clone();"
+          "*unsafe { perceus_ptr::PerceusPtr::force_mut(&mut " <> sanitizeIdent n <> ") = (*val_" <> sanitizeIdent n <> ").clone() };"
         ) bindsArray)
         
       bodyCode = codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive body
@@ -769,7 +751,6 @@ sanitizeIdent s =
      else if s4 == "move" then "move_kw"
      else if s4 == "let" then "let_kw"
      else if s4 == "if" then "if_kw"
-     else if s4 == "loop" then "loop_kw"
      else s4
 
 dedupArgs :: Array String -> Array String
