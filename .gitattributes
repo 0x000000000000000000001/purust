@@ -9,3 +9,7 @@ bin/purust.js linguist-generated
 # Only include target language
 *.rs linguist-detectable=true
 *.rs linguist-vendored=false
+
+# Suppress Dhall entirely from stats
+*.dhall linguist-detectable=false
+*.dhall linguist-vendored
