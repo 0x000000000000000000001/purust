@@ -658,6 +658,12 @@ var findMapImpl = function(nothing, isJust2, f, xs) {
   }
   return nothing;
 };
+var findIndexImpl = function(just, nothing, f, xs) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    if (f(xs[i])) return just(i);
+  }
+  return nothing;
+};
 var reverse = function(l) {
   return l.slice().reverse();
 };
@@ -10214,19 +10220,16 @@ var evalApp = (env) => (hd) => (spine) => {
         locals: snoc(snoc(env$p.locals)($LocalBinding("Group", nextVals)))($LocalBinding("One", nextFn))
       })(nextFn)(args))
     );
-    const $2 = (args, fn) => $BackendSemantics(
-      "NeutApp",
-      (() => {
-        if (mbTy.tag === "Just") {
-          return $BackendSemantics("SemTyped", mbTy._1, fn);
-        }
-        if (mbTy.tag === "Nothing") {
-          return fn;
-        }
-        fail();
-      })(),
-      toUnfoldable1(args)
-    );
+    const $2 = (args, fn) => {
+      const app = $BackendSemantics("NeutApp", fn, toUnfoldable1(args));
+      if (mbTy.tag === "Just") {
+        return $BackendSemantics("SemTyped", mbTy._1, app);
+      }
+      if (mbTy.tag === "Nothing") {
+        return app;
+      }
+      fail();
+    };
     if (v.tag === "SemTyped") {
       return go($Maybe("Just", v._1))(env$p)(v._2)(v1);
     }
@@ -10403,15 +10406,15 @@ var evalUncurriedApp = (env) => (hd) => (spine) => {
         continue;
       }
       go$c = false;
-      go$r = guardFailOver1(identity7)(spine)(NeutUncurriedApp((() => {
+      go$r = guardFailOver1(identity7)(spine)((spine$p) => {
         if (mbTy.tag === "Just") {
-          return $BackendSemantics("SemTyped", mbTy._1, v);
+          return $BackendSemantics("SemTyped", mbTy._1, $BackendSemantics("NeutUncurriedApp", v, spine$p));
         }
         if (mbTy.tag === "Nothing") {
-          return v;
+          return $BackendSemantics("NeutUncurriedApp", v, spine$p);
         }
         fail();
-      })()));
+      });
     }
     return go$r;
   };
@@ -10475,15 +10478,15 @@ var evalUncurriedEffectApp = (env) => (hd) => (spine) => {
         continue;
       }
       go$c = false;
-      go$r = guardFailOver1(identity7)(spine)(NeutUncurriedEffectApp((() => {
+      go$r = guardFailOver1(identity7)(spine)((spine$p) => {
         if (mbTy.tag === "Just") {
-          return $BackendSemantics("SemTyped", mbTy._1, v);
+          return $BackendSemantics("SemTyped", mbTy._1, $BackendSemantics("NeutUncurriedEffectApp", v, spine$p));
         }
         if (mbTy.tag === "Nothing") {
-          return v;
+          return $BackendSemantics("NeutUncurriedEffectApp", v, spine$p);
         }
         fail();
-      })()));
+      });
     }
     return go$r;
   };
@@ -15615,7 +15618,7 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
     locals: [],
     directives: env.directives
   })(qualifiedIdent)(env.rewriteLimit)(backendExpr);
-  const v3 = toExternImpl(env)(group2)(isTypeClassDictionaryWithProps(v._3)._1)((() => {
+  const v2 = toExternImpl(env)(group2)(isTypeClassDictionaryWithProps(v._3)._1)((() => {
     if (mbType.tag === "Just") {
       return $BackendExpr(
         "ExprSyntax",
@@ -15639,8 +15642,8 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
   return {
     accum: {
       ...env,
-      implementations: insert(ordQualified3)(qualifiedIdent)(v3._1)(env.implementations),
-      moduleImplementations: insert(ordQualified3)(qualifiedIdent)(v3._1)(env.moduleImplementations),
+      implementations: insert(ordQualified3)(qualifiedIdent)(v2._1)(env.implementations),
+      moduleImplementations: insert(ordQualified3)(qualifiedIdent)(v2._1)(env.moduleImplementations),
       optimizationSteps: (() => {
         const $0 = Tuple(qualifiedIdent);
         if (v1._1.length > 0) {
@@ -15649,17 +15652,17 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
         return env.optimizationSteps;
       })(),
       directives: (() => {
-        const v5 = inferTransitiveDirective(env.directives)(v3._1._2)(backendExpr)(v._3);
-        if (v5.tag === "Just") {
-          const $0 = v5._1;
-          return alter3((v6) => {
-            if (v6.tag === "Just") {
+        const v4 = inferTransitiveDirective(env.directives)(v2._1._2)(backendExpr)(v._3);
+        if (v4.tag === "Just") {
+          const $0 = v4._1;
+          return alter3((v5) => {
+            if (v5.tag === "Just") {
               return $Maybe(
                 "Just",
-                unsafeUnionWith(ordInlineAccessor.compare, $$const, v6._1, $0)
+                unsafeUnionWith(ordInlineAccessor.compare, $$const, v5._1, $0)
               );
             }
-            if (v6.tag === "Nothing") {
+            if (v5.tag === "Nothing") {
               return $Maybe("Just", $0);
             }
             fail();
@@ -15668,13 +15671,13 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
             $Qualified($Maybe("Just", env.currentModule), v._2)
           ))(env.directives);
         }
-        if (v5.tag === "Nothing") {
+        if (v4.tag === "Nothing") {
           return env.directives;
         }
         fail();
       })()
     },
-    value: $Tuple(v._2, $Tuple(v3._1._1.deps, v3._2))
+    value: $Tuple(v._2, $Tuple(v2._1._1.deps, v2._2))
   };
 };
 var toBackendTopLevelBindingGroup = (env) => (v) => {
@@ -17394,7 +17397,7 @@ var getArity = (v) => {
     return getArity(v._2);
   }
   if (v.tag === "ConstrainedType") {
-    return getArity(v._2);
+    return v._1.length + getArity(v._2) | 0;
   }
   if (v.tag === "Func") {
     return v._1.length + getArity(v._2) | 0;
@@ -17594,12 +17597,54 @@ var extractAllArgTypes = (v) => {
     return extractAllArgTypes(v._2);
   }
   if (v.tag === "ConstrainedType") {
-    return extractAllArgTypes(v._2);
+    return [...replicateImpl(v._1.length, Any), ...extractAllArgTypes(v._2)];
   }
   if (v.tag === "Func") {
     return [...v._1, ...extractAllArgTypes(v._2)];
   }
   return [];
+};
+var extractAbsParams = (v) => (v1) => {
+  if (v === 0) {
+    return $Maybe("Just", $Tuple([], v1));
+  }
+  if (v1.tag === "Typed") {
+    return extractAbsParams(v)(v1._2);
+  }
+  if (v1.tag === "Abs") {
+    const pNames = arrayMap((v2) => {
+      if (v2._1.tag === "Just") {
+        return v2._1._1;
+      }
+      if (v2._1.tag === "Nothing") {
+        return "lvl_" + showIntImpl(v2._2);
+      }
+      fail();
+    })(v1._1);
+    const len = pNames.length;
+    if (v >= len) {
+      const v2 = extractAbsParams(v - len | 0)(v1._2);
+      if (v2.tag === "Just") {
+        return $Maybe("Just", $Tuple([...pNames, ...v2._1._1], v2._1._2));
+      }
+      if (v2.tag === "Nothing") {
+        return Nothing;
+      }
+      fail();
+    }
+    return Nothing;
+  }
+  if (v1.tag === "Let") {
+    const v2 = extractAbsParams(v)(v1._4);
+    if (v2.tag === "Just") {
+      return $Maybe("Just", $Tuple(v2._1._1, $BackendSyntax("Let", v1._1, v1._2, v1._3, v2._1._2)));
+    }
+    if (v2.tag === "Nothing") {
+      return Nothing;
+    }
+    fail();
+  }
+  return Nothing;
 };
 var dedupArgs = (arr) => foldlArray((acc) => (item) => {
   const count = lookup5(item)(acc.counts);
@@ -17642,7 +17687,7 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     return getInner$r;
   };
   const argsFree = arrayMap(freeVariables)(argsArray);
-  const argsCodeArray = mapWithIndexArray((i) => (arg) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+  const argsCodeArray = mapWithIndexArray((i) => (arg) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
     ordString.compare,
     $$const,
     alive,
@@ -17654,7 +17699,7 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       return sliceImpl($0, argsFree.length, argsFree);
     })())
   ))(arg))(argsArray);
-  const fnCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+  const fnCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
     ordString.compare,
     $$const,
     alive,
@@ -17675,6 +17720,12 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       }
       fail();
     })();
+    if (mbLoop.tag === "Just" && fullName === mbLoop._1.name && m === mbLoop._1.params.length) {
+      if (mbLoop.tag === "Just") {
+        return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let _tco_temp_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + joinWith("")(mapWithIndexArray((i) => (pName) => "        " + sanitizeIdent(pName) + " = _tco_temp_" + showIntImpl(i) + ";\n")(mbLoop._1.params)) + "        continue;\n    }";
+      }
+      return "";
+    }
     if (member12(fullName === "main" ? "main" : fullName)(aritiesMap)) {
       const v$1 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
       const n = (() => {
@@ -17725,7 +17776,7 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   })({
     freeVars: freeVariables(body),
     isInnermost: true,
-    code: codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeDifference(
+    code: codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeDifference(
       ordString.compare,
       freeVariables(body),
       fromFoldable8(paramsArr)
@@ -17759,7 +17810,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       if (v._1._2.tag === "Accessor") {
         if (v._1._2._2.tag === "GetProp" && v._1._2._2._1 === "logRecord") {
           if (0 < v._2.length) {
-            return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
+            return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
           }
           return "// Unsupported UncurriedEffectApp without args\n";
         }
@@ -17767,7 +17818,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       if (v._1._2.tag === "Var" && v._1._2._1._2 === "logRecord") {
         if (0 < v._2.length) {
-          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
+          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
@@ -17776,7 +17827,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     if (v._1.tag === "Accessor") {
       if (v._1._2.tag === "GetProp" && v._1._2._1 === "logRecord") {
         if (0 < v._2.length) {
-          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
+          return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
         }
         return "// Unsupported UncurriedEffectApp without args\n";
       }
@@ -17784,7 +17835,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     }
     if (v._1.tag === "Var" && v._1._1._2 === "logRecord") {
       if (0 < v._2.length) {
-        return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
+        return 'println!("{}", ' + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._2[0]) + ".a);";
       }
       return "// Unsupported UncurriedEffectApp without args\n";
     }
@@ -17792,12 +17843,12 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "Update") {
     const $0 = v._2;
-    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    return "{\n    let mut _base = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v1._2)))(Leaf)($0)
-    ))(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(mapWithIndexArray((i) => (v1) => "_mut." + sanitizeIdent(v1._1) + " = Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    ))(v._1) + ";\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n        " + joinWith("\n        ")(mapWithIndexArray((i) => (v1) => "_mut." + sanitizeIdent(v1._1) + " = Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -17814,7 +17865,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     const $0 = v._1;
     const $1 = v._2;
     return joinWith(" else ")(mapWithIndexArray((i) => (v1) => {
-      const condCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      const condCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -17841,7 +17892,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
-      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1._2);
+      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._1._2);
       if (v._1._1.tag === "OpBooleanNot") {
         return "mk_bool(!(" + aStr + ").init_bool.unwrap())";
       }
@@ -17863,8 +17914,8 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */";
     }
     if (v._1.tag === "Op2") {
-      const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1._3);
-      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      const bStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._1._3);
+      const aStr = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -18041,10 +18092,10 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
+      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._1) + "." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
     }
     if (v._2.tag === "GetCtorField") {
-      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1) + ".vals.as_ref().unwrap()[" + showIntImpl(v._2._6) + "].clone()";
+      return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._1) + ".vals.as_ref().unwrap()[" + showIntImpl(v._2._6) + "].clone()";
     }
     return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */";
   }
@@ -18106,7 +18157,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       fail();
     })();
     const bodyVars = freeVariables(v._4);
-    return "{\n    let mut " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    return "{\n    let mut " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -18114,6 +18165,28 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     ))(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._4) + "\n}";
   }
   if (v.tag === "EffectBind") {
+    const stripEffectDefer = (v1) => {
+      if (v1.tag === "EffectDefer") {
+        return stripEffectDefer(v1._1);
+      }
+      if (v1.tag === "Abs") {
+        return stripEffectDefer(v1._2);
+      }
+      if (v1.tag === "UncurriedEffectAbs") {
+        return stripEffectDefer(v1._2);
+      }
+      if (v1.tag === "Let") {
+        return $BackendSyntax("Let", v1._1, v1._2, v1._3, stripEffectDefer(v1._4));
+      }
+      if (v1.tag === "LetRec") {
+        return $BackendSyntax("LetRec", v1._1, v1._2, stripEffectDefer(v1._3));
+      }
+      if (v1.tag === "Typed") {
+        return $BackendSyntax("Typed", v1._1, stripEffectDefer(v1._2));
+      }
+      return v1;
+    };
+    const realVal = stripEffectDefer(v._3);
     const name2 = (() => {
       if (v._1.tag === "Just") {
         return sanitizeIdent(v._1._1);
@@ -18123,15 +18196,34 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
       }
       fail();
     })();
-    return "{\n    let " + name2 + " = " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    const isUncurriedApp = (v1) => {
+      if (v1.tag === "UncurriedEffectApp") {
+        return true;
+      }
+      if (v1.tag === "PrimEffect") {
+        return true;
+      }
+      if (v1.tag === "EffectBind") {
+        return true;
+      }
+      if (v1.tag === "Let") {
+        return isUncurriedApp(v1._4);
+      }
+      if (v1.tag === "LetRec") {
+        return isUncurriedApp(v1._3);
+      }
+      return v1.tag === "Typed" && isUncurriedApp(v1._2);
+    };
+    const rawValCode = codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       freeVariables(v._4)
-    ))(v._3) + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._4) + "\n}";
+    ))(realVal);
+    return "{\n    let mut " + name2 + " = " + (isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if _val_eval.call.is_some() {\n            (_val_eval.call.clone().unwrap())(crate::UnknownType::new(crate::Record_a { ..Default::default() }))\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._4) + "\n}";
   }
   if (v.tag === "EffectPure") {
-    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(v._1);
+    return codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(v._1);
   }
   if (v.tag === "Local") {
     const name2 = (() => {
@@ -18169,7 +18261,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     }
     if (v._1.tag === "LitArray") {
       const $0 = v._1._1;
-      const arrCode = mapWithIndexArray((i) => (a) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      const arrCode = mapWithIndexArray((i) => (a) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -18188,7 +18280,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     }
     if (v._1.tag === "LitRecord") {
       const $0 = v._1._1;
-      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(mapWithIndexArray((i) => (v1) => sanitizeIdent(v1._1) + ": Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+      return "perceus_ptr::PerceusPtr::new(Record_a { " + joinWith(", ")(mapWithIndexArray((i) => (v1) => sanitizeIdent(v1._1) + ": Some(" + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -18240,7 +18332,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
     return "crate::UnknownType::new(crate::Record_a { ..Default::default() })";
   }
   if (v.tag === "CtorSaturated") {
-    return 'perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._4 + '", vals: ' + (v._5.length === 0 ? "None" : "Some(std::rc::Rc::new(vec![" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    return 'perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._4 + '", vals: ' + (v._5.length === 0 ? "None" : "Some(std::rc::Rc::new(vec![" + joinWith(", ")(mapWithIndexArray((i) => (v1) => codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -18259,7 +18351,7 @@ var codegenExpr = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoo
   if (v.tag === "LetRec") {
     const $0 = v._2;
     const $1 = v._3;
-    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });")($0)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($0)) + "\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });")($0)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($0)) + "\n        " + codegenExpr(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -18304,24 +18396,36 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
         fail();
       })());
       if (allArgTypes.length > 0) {
-        const isMatchingAbs = innerExpr.tag === "Abs" && innerExpr._1.length === allArgTypes.length;
-        const deduped = dedupArgs(innerExpr.tag === "Abs" && isMatchingAbs ? arrayMap((v2) => {
-          if (v2._1.tag === "Just") {
-            return v2._1._1;
+        const extracted = extractAbsParams(allArgTypes.length)(innerExpr);
+        const deduped = dedupArgs((() => {
+          if (extracted.tag === "Just") {
+            return extracted._1._1;
           }
-          return "_";
-        })(innerExpr._1) : mapWithIndexArray((i) => (v2) => "a" + showIntImpl(i))(allArgTypes));
+          if (extracted.tag === "Nothing") {
+            return mapWithIndexArray((i) => (v2) => "a" + showIntImpl(i))(allArgTypes);
+          }
+          fail();
+        })());
         const mbLoop = isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing;
         const paramPairs = zipWithImpl(Tuple, deduped, allArgTypes);
         const bound = fromFoldable23(arrayMap((v2) => $Tuple(v2._1 === "_" ? "_" : v2._1, v2._2))(paramPairs));
         const bodyCodeWithLoop2 = (() => {
           if (isSelfRecursive) {
-            return "    let mut _tco_loop = true;\n    let mut _tco_result = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });\n    while _tco_loop {\n        _tco_loop = false;\n        _tco_result = " + (innerExpr.tag === "Abs" && isMatchingAbs ? codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(innerExpr._2) : foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(innerExpr))(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped))) + ";\n    }\n    _tco_result";
+            if (extracted.tag === "Just") {
+              return "    loop {\n        break " + codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(extracted._1._2) + ";\n    }";
+            }
+            if (extracted.tag === "Nothing") {
+              return "    loop {\n        break " + foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(innerExpr))(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped)) + ";\n    }";
+            }
+            fail();
           }
-          if (innerExpr.tag === "Abs" && isMatchingAbs) {
-            return codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(innerExpr._2);
+          if (extracted.tag === "Just") {
+            return codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(extracted._1._2);
           }
-          return foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(innerExpr))(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped));
+          if (extracted.tag === "Nothing") {
+            return foldlArray((acc) => (argCode) => "(" + acc + ").call.clone().unwrap()(" + argCode + ")")(codegenExpr(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(innerExpr))(arrayMap((p) => sanitizeIdent(p) + ".clone()")(deduped));
+          }
+          fail();
         })();
         if (identName === "main") {
           return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + ";\n}\n\n";
@@ -18341,7 +18445,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
           }
           return "_";
         })(innerExpr.tag === "Abs" ? innerExpr._1 : _crashWith("impossible")));
-        const bodyCodeWithLoop2 = isSelfRecursive ? "    let mut _tco_loop = true;\n    let mut _tco_result = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });\n    while _tco_loop {\n        _tco_loop = false;\n        _tco_result = " + genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + ";\n    }\n    _tco_result" : genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible"));
+        const bodyCodeWithLoop2 = isSelfRecursive ? "    loop {\n        break " + genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + ";\n    }" : genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible"));
         if (identName === "main") {
           return "pub fn main() {\n    // AST: " + printAST(v._2) + "\n    " + bodyCodeWithLoop2 + ";\n}\n\n";
         }
@@ -18435,286 +18539,300 @@ var toUnfoldable13 = /* @__PURE__ */ (() => {
 var main = /* @__PURE__ */ (() => {
   const $0 = _makeFiber(
     ffiUtil,
-    _bind(_liftEffect(argv))(() => _bind(_liftEffect(log2("Generating Rust code for Main")))(() => _bind(coreFnModulesFromOutput("output"))((finalModules) => {
-      const go = (go$a0$copy) => (go$a1$copy) => {
-        let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
-        while (go$c) {
-          const b = go$a0, v = go$a1;
-          if (v.tag === "Nil") {
-            go$c = false;
-            go$r = b;
-            continue;
+    _bind(_liftEffect(argv))((args) => {
+      const v = findIndexImpl(Just, Nothing, (v1) => v1 === "--main", args);
+      const mainModule = (() => {
+        if (v.tag === "Just") {
+          const $02 = v._1 + 1 | 0;
+          if ($02 >= 0 && $02 < args.length) {
+            return args[$02];
           }
-          if (v.tag === "Cons") {
-            go$a0 = (() => {
-              const modPrefix = replaceAll(".")("_")(v._1.name) + "_";
-              return foldlArray((a) => (v1) => {
-                if (v1.tag === "NonRec") {
-                  const tyMb = (() => {
-                    if (v1._1._1.type.tag === "Just") {
-                      return $Maybe("Just", v1._1._1.type._1);
-                    }
-                    if (v1._1._1.type.tag === "Nothing") {
-                      if (v1._1._3.tag === "ExprVar") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprLit") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprAbs") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprApp") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprLet") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprCase") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprConstructor") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprAccessor") {
-                        return v1._1._3._1.type;
-                      }
-                      if (v1._1._3.tag === "ExprUpdate") {
-                        return v1._1._3._1.type;
-                      }
-                    }
-                    fail();
-                  })();
-                  if (tyMb.tag === "Just") {
-                    return insert(ordString)(modPrefix + sanitizeIdent(v1._1._2))(tyMb._1)(a);
-                  }
-                  if (tyMb.tag === "Nothing") {
-                    return a;
-                  }
-                  fail();
-                }
-                if (v1.tag === "Rec") {
-                  return foldlArray((a$p) => (v2) => {
+          return "Main";
+        }
+        if (v.tag === "Nothing") {
+          return "Main";
+        }
+        fail();
+      })();
+      return _bind(_liftEffect(log2("Generating Rust code for " + mainModule)))(() => _bind(coreFnModulesFromOutput("output"))((finalModules) => {
+        const go = (go$a0$copy) => (go$a1$copy) => {
+          let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
+          while (go$c) {
+            const b = go$a0, v$1 = go$a1;
+            if (v$1.tag === "Nil") {
+              go$c = false;
+              go$r = b;
+              continue;
+            }
+            if (v$1.tag === "Cons") {
+              go$a0 = (() => {
+                const modPrefix = replaceAll(".")("_")(v$1._1.name) + "_";
+                return foldlArray((a) => (v1) => {
+                  if (v1.tag === "NonRec") {
                     const tyMb = (() => {
-                      if (v2._1.type.tag === "Just") {
-                        return $Maybe("Just", v2._1.type._1);
+                      if (v1._1._1.type.tag === "Just") {
+                        return $Maybe("Just", v1._1._1.type._1);
                       }
-                      if (v2._1.type.tag === "Nothing") {
-                        if (v2._3.tag === "ExprVar") {
-                          return v2._3._1.type;
+                      if (v1._1._1.type.tag === "Nothing") {
+                        if (v1._1._3.tag === "ExprVar") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprLit") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprLit") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprAbs") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprAbs") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprApp") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprApp") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprLet") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprLet") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprCase") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprCase") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprConstructor") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprConstructor") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprAccessor") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprAccessor") {
+                          return v1._1._3._1.type;
                         }
-                        if (v2._3.tag === "ExprUpdate") {
-                          return v2._3._1.type;
+                        if (v1._1._3.tag === "ExprUpdate") {
+                          return v1._1._3._1.type;
                         }
                       }
                       fail();
                     })();
                     if (tyMb.tag === "Just") {
-                      return insert(ordString)(modPrefix + sanitizeIdent(v2._2))(tyMb._1)(a$p);
+                      return insert(ordString)(modPrefix + sanitizeIdent(v1._1._2))(tyMb._1)(a);
                     }
                     if (tyMb.tag === "Nothing") {
-                      return a$p;
+                      return a;
                     }
                     fail();
-                  })(a)(v1._1);
-                }
-                fail();
-              })(foldlArray((a) => (decl) => foldlArray((a2) => (ctor) => insert(ordString)(modPrefix + sanitizeIdent(ctor.name))(Any)(a2))(a)(decl.constructors))(foldlArray((a) => (v1) => {
-                if (v1._2.tag === "Just") {
-                  return insert(ordString)(modPrefix + sanitizeIdent(v1._1))(v1._2._1)(a);
-                }
-                if (v1._2.tag === "Nothing") {
-                  return a;
-                }
-                fail();
-              })(b)(toUnfoldable3(v._1.foreign)))(v._1.dataDecls))(v._1.decls);
-            })();
-            go$a1 = v._2;
-            continue;
-          }
-          fail();
-        }
-        return go$r;
-      };
-      const globalArities = go(Leaf)(finalModules);
-      return _bind(loadDirectives)((directives) => _bind(_liftEffect(() => ({ value: Leaf })))((modulesRef) => _bind(buildModules2({
-        directives,
-        analyzeCustom: (v) => (v1) => Nothing,
-        foreignSemantics: coreForeignSemantics,
-        traceIdents: Leaf,
-        onPrepareModule: (v) => (v1) => _pure(v1),
-        onSkipModule: (v) => (v1) => checkCache("1.0.0")(v1.path)("output/" + v1.name + "/.purust-cache.json"),
-        onCodegenModule: (v) => (v1) => (backendMod) => (v2) => {
-          const modNameStr = backendMod.name;
-          return _bind(toAff3(writeTextFile)(UTF8)("output/" + modNameStr + "/.purust-cache.json")(stringify2("1.0.0")(backendMod)))(() => {
-            const rsFile = codegenModule(globalArities)(v1)(backendMod);
-            return _liftEffect((() => {
-              const foreignArr = v1.foreign;
-              const modName = replaceAll(".")("_")(v1.name);
-              const modPrefix = modName + "_";
-              const $02 = findFfiFile(".rs")([])($Maybe("Just", "../"))(modNameStr)($Maybe("Just", v1.path));
-              return () => {
-                const ffiPathMb = $02();
-                const getArity2 = (v3) => {
-                  if (v3.tag === "ForAll") {
-                    return getArity2(v3._2);
                   }
-                  if (v3.tag === "ConstrainedType") {
-                    return getArity2(v3._2);
-                  }
-                  if (v3.tag === "Func") {
-                    return v3._1.length + getArity2(v3._2) | 0;
-                  }
-                  return 0;
-                };
-                const genFallback = (name2, ty) => {
-                  if (!member3(modPrefix + sanitizeIdent(name2))(Leaf)) {
-                    return "pub fn " + modPrefix + sanitizeIdent(name2) + "(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "mut a" + showIntImpl(i) + ": UnknownType")(replicateImpl(
-                      getArity2(ty),
-                      void 0
-                    ))) + ") -> UnknownType { UnknownType::new(Record_a { ..Default::default() }) }\n";
-                  }
-                  return "";
-                };
-                const ffiContent = (() => {
-                  if (ffiPathMb.tag === "Just") {
-                    const content = readTextFile2(UTF8)(ffiPathMb._1)();
-                    return content + "\n\n" + foldMap8((tup) => {
-                      if (tup._2.tag === "Just") {
-                        if (contains("fn " + modPrefix + sanitizeIdent(tup._1))(content)) {
-                          return "";
+                  if (v1.tag === "Rec") {
+                    return foldlArray((a$p) => (v2) => {
+                      const tyMb = (() => {
+                        if (v2._1.type.tag === "Just") {
+                          return $Maybe("Just", v2._1.type._1);
                         }
-                        return genFallback(tup._1, tup._2._1);
+                        if (v2._1.type.tag === "Nothing") {
+                          if (v2._3.tag === "ExprVar") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprLit") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprAbs") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprApp") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprLet") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprCase") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprConstructor") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprAccessor") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprUpdate") {
+                            return v2._3._1.type;
+                          }
+                        }
+                        fail();
+                      })();
+                      if (tyMb.tag === "Just") {
+                        return insert(ordString)(modPrefix + sanitizeIdent(v2._2))(tyMb._1)(a$p);
                       }
-                      if (tup._2.tag === "Nothing") {
-                        return "";
+                      if (tyMb.tag === "Nothing") {
+                        return a$p;
                       }
                       fail();
-                    })(toUnfoldable3(foreignArr));
-                  }
-                  if (ffiPathMb.tag === "Nothing") {
-                    return foldMap8((tup) => {
-                      if (tup._2.tag === "Just") {
-                        return genFallback(tup._1, tup._2._1);
-                      }
-                      if (tup._2.tag === "Nothing") {
-                        return "";
-                      }
-                      fail();
-                    })(toUnfoldable3(foreignArr));
+                    })(a)(v1._1);
                   }
                   fail();
-                })();
-                const allModStrs = arrayMap((n) => replaceAll(".")("_")(n))(arrayMap((v3) => v3.name)(fromFoldableImpl(
-                  foldableList.foldr,
-                  finalModules
-                )));
-                const coreImports = nubBy(ordString.compare)(mapMaybe((n) => {
-                  const nStr = replaceAll(".")("_")(n);
-                  if ((() => {
-                    const $12 = indexOf2("Prim.")(n);
-                    return n === "Prim" || ($12.tag === "Nothing" ? false : $12.tag === "Just" && $12._1 === 0) || nStr === modName;
-                  })()) {
-                    return Nothing;
+                })(foldlArray((a) => (decl) => foldlArray((a2) => (ctor) => insert(ordString)(modPrefix + sanitizeIdent(ctor.name))(Any)(a2))(a)(decl.constructors))(foldlArray((a) => (v1) => {
+                  if (v1._2.tag === "Just") {
+                    return insert(ordString)(modPrefix + sanitizeIdent(v1._1))(v1._2._1)(a);
                   }
-                  return $Maybe("Just", nStr);
-                })(concat([
-                  mapMaybe((modStr) => {
-                    if (modStr !== modName && contains(modStr + "_")(foldlArray((acc) => (other) => replaceAll(other)("MASKED")(acc))(rsFile)(filterImpl(
-                      (other) => {
-                        const $12 = indexOf2(modStr)(other);
-                        return other !== modStr && ($12.tag === "Nothing" ? false : $12.tag === "Just" && $12._1 === 0);
-                      },
-                      allModStrs
-                    )))) {
-                      return $Maybe("Just", modStr);
-                    }
-                    return Nothing;
-                  })(allModStrs),
-                  toUnfoldable13(collectModulesModule(v1))
-                ])));
-                const $1 = modulesRef.value;
-                modulesRef.value = insert(ordString)(modName)({
-                  code: "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" + joinWith("\n")(arrayMap((i) => "use Purs_" + i + "::*;")(coreImports)) + "\n\n" + rsFile + "\n\n" + ffiContent + "\n\n",
-                  imports: coreImports
-                })($1);
-              };
-            })());
-          });
-        }
-      })(finalModules))(() => _liftEffect(() => {
-        const srcExists = existsSync("output/purust_output/src");
-        const $02 = mkdir3("output/purust_output");
-        if (!srcExists) {
-          $02();
-          mkdir3("output/purust_output/src")();
-        }
-        const allModules = modulesRef.value;
-        writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v) => '"Purs_' + v._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nPurs_Test_Main = { path = "Purs_Test_Main" }\n')();
-        writeTextFile2(UTF8)("output/purust_output/src/main.rs")("fn main() {\n    Purs_Test_Main::main();\n}\n")();
-        mkdir3("output/purust_output/purust_core")();
-        mkdir3("output/purust_output/purust_core/src")();
-        writeTextFile2(UTF8)("output/purust_output/purust_core/Cargo.toml")('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n')();
-        writeTextFile2(UTF8)("output/purust_output/purust_core/src/lib.rs")(codegenPrelude((() => {
-          const go$1 = (go$1$a0$copy) => (go$1$a1$copy) => {
-            let go$1$a0 = go$1$a0$copy, go$1$a1 = go$1$a1$copy, go$1$c = true, go$1$r;
-            while (go$1$c) {
-              const b = go$1$a0, v = go$1$a1;
-              if (v.tag === "Nil") {
-                go$1$c = false;
-                go$1$r = b;
-                continue;
-              }
-              if (v.tag === "Cons") {
-                go$1$a0 = unsafeUnionWith(ordString.compare, $$const, b, collectFieldsModule(v._1));
-                go$1$a1 = v._2;
-                continue;
-              }
-              fail();
+                  if (v1._2.tag === "Nothing") {
+                    return a;
+                  }
+                  fail();
+                })(b)(toUnfoldable3(v$1._1.foreign)))(v$1._1.dataDecls))(v$1._1.decls);
+              })();
+              go$a1 = v$1._2;
+              continue;
             }
-            return go$1$r;
-          };
-          return go$1(Leaf)(finalModules);
-        })()))();
-        foldlArray((eff) => (v) => {
-          const $1 = v._2.imports;
-          const $2 = v._1;
-          const $3 = v._2.code;
-          const modDir = "output/purust_output/Purs_" + $2;
-          const $4 = mkdir3(modDir);
-          return () => {
-            eff();
-            $4();
-            mkdir3(modDir + "/src")();
-            writeTextFile2(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $2 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')($1)))();
-            return writeTextFile2(UTF8)(modDir + "/src/lib.rs")($3)();
-          };
-        })(() => {
-        })(toUnfoldable3(allModules))();
-        return log2("Successfully generated Rust code.")();
-      }))));
-    })))
+            fail();
+          }
+          return go$r;
+        };
+        const globalArities = go(Leaf)(finalModules);
+        return _bind(loadDirectives)((directives) => _bind(_liftEffect(() => ({ value: Leaf })))((modulesRef) => _bind(buildModules2({
+          directives,
+          analyzeCustom: (v$1) => (v1) => Nothing,
+          foreignSemantics: coreForeignSemantics,
+          traceIdents: Leaf,
+          onPrepareModule: (v$1) => (v1) => _pure(v1),
+          onSkipModule: (v$1) => (v1) => checkCache("1.0.0")(v1.path)("output/" + v1.name + "/.purust-cache.json"),
+          onCodegenModule: (v$1) => (v1) => (backendMod) => (v2) => {
+            const modNameStr = backendMod.name;
+            return _bind(toAff3(writeTextFile)(UTF8)("output/" + modNameStr + "/.purust-cache.json")(stringify2("1.0.0")(backendMod)))(() => {
+              const rsFile = codegenModule(globalArities)(v1)(backendMod);
+              return _liftEffect((() => {
+                const foreignArr = v1.foreign;
+                const modName = replaceAll(".")("_")(v1.name);
+                const modPrefix = modName + "_";
+                const $02 = findFfiFile(".rs")([])($Maybe("Just", "../"))(modNameStr)($Maybe("Just", v1.path));
+                return () => {
+                  const ffiPathMb = $02();
+                  const getArity2 = (v3) => {
+                    if (v3.tag === "ForAll") {
+                      return getArity2(v3._2);
+                    }
+                    if (v3.tag === "ConstrainedType") {
+                      return getArity2(v3._2);
+                    }
+                    if (v3.tag === "Func") {
+                      return v3._1.length + getArity2(v3._2) | 0;
+                    }
+                    return 0;
+                  };
+                  const genFallback = (name2, ty) => {
+                    if (!member3(modPrefix + sanitizeIdent(name2))(Leaf)) {
+                      return "pub fn " + modPrefix + sanitizeIdent(name2) + "(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "mut a" + showIntImpl(i) + ": UnknownType")(replicateImpl(
+                        getArity2(ty),
+                        void 0
+                      ))) + ") -> UnknownType { UnknownType::new(Record_a { ..Default::default() }) }\n";
+                    }
+                    return "";
+                  };
+                  const ffiContent = (() => {
+                    if (ffiPathMb.tag === "Just") {
+                      const content = readTextFile2(UTF8)(ffiPathMb._1)();
+                      return content + "\n\n" + foldMap8((tup) => {
+                        if (tup._2.tag === "Just") {
+                          if (contains("fn " + modPrefix + sanitizeIdent(tup._1))(content)) {
+                            return "";
+                          }
+                          return genFallback(tup._1, tup._2._1);
+                        }
+                        if (tup._2.tag === "Nothing") {
+                          return "";
+                        }
+                        fail();
+                      })(toUnfoldable3(foreignArr));
+                    }
+                    if (ffiPathMb.tag === "Nothing") {
+                      return foldMap8((tup) => {
+                        if (tup._2.tag === "Just") {
+                          return genFallback(tup._1, tup._2._1);
+                        }
+                        if (tup._2.tag === "Nothing") {
+                          return "";
+                        }
+                        fail();
+                      })(toUnfoldable3(foreignArr));
+                    }
+                    fail();
+                  })();
+                  const allModStrs = arrayMap((n) => replaceAll(".")("_")(n))(arrayMap((v3) => v3.name)(fromFoldableImpl(
+                    foldableList.foldr,
+                    finalModules
+                  )));
+                  const coreImports = nubBy(ordString.compare)(mapMaybe((n) => {
+                    const nStr = replaceAll(".")("_")(n);
+                    if ((() => {
+                      const $12 = indexOf2("Prim.")(n);
+                      return n === "Prim" || ($12.tag === "Nothing" ? false : $12.tag === "Just" && $12._1 === 0) || nStr === modName;
+                    })()) {
+                      return Nothing;
+                    }
+                    return $Maybe("Just", nStr);
+                  })(concat([
+                    mapMaybe((modStr) => {
+                      if (modStr !== modName && contains(modStr + "_")(foldlArray((acc) => (other) => replaceAll(other)("MASKED")(acc))(rsFile)(filterImpl(
+                        (other) => other !== modStr && contains(modStr)(other),
+                        allModStrs
+                      )))) {
+                        return $Maybe("Just", modStr);
+                      }
+                      return Nothing;
+                    })(allModStrs),
+                    toUnfoldable13(collectModulesModule(v1))
+                  ])));
+                  const $1 = modulesRef.value;
+                  modulesRef.value = insert(ordString)(modName)({
+                    code: "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" + joinWith("\n")(arrayMap((i) => "use Purs_" + i + "::*;")(coreImports)) + "\n\n" + rsFile + "\n\n" + ffiContent + "\n\n",
+                    imports: coreImports
+                  })($1);
+                };
+              })());
+            });
+          }
+        })(finalModules))(() => _liftEffect(() => {
+          const srcExists = existsSync("output/purust_output/src");
+          const $02 = mkdir3("output/purust_output");
+          if (!srcExists) {
+            $02();
+            mkdir3("output/purust_output/src")();
+          }
+          const allModules = modulesRef.value;
+          const mainModuleSanitized = replaceAll(".")("_")(mainModule);
+          writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\n')();
+          writeTextFile2(UTF8)("output/purust_output/src/main.rs")("fn main() {\n    Purs_" + mainModuleSanitized + "::main();\n}\n")();
+          mkdir3("output/purust_output/purust_core")();
+          mkdir3("output/purust_output/purust_core/src")();
+          writeTextFile2(UTF8)("output/purust_output/purust_core/Cargo.toml")('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n')();
+          writeTextFile2(UTF8)("output/purust_output/purust_core/src/lib.rs")(codegenPrelude((() => {
+            const go$1 = (go$1$a0$copy) => (go$1$a1$copy) => {
+              let go$1$a0 = go$1$a0$copy, go$1$a1 = go$1$a1$copy, go$1$c = true, go$1$r;
+              while (go$1$c) {
+                const b = go$1$a0, v$1 = go$1$a1;
+                if (v$1.tag === "Nil") {
+                  go$1$c = false;
+                  go$1$r = b;
+                  continue;
+                }
+                if (v$1.tag === "Cons") {
+                  go$1$a0 = unsafeUnionWith(ordString.compare, $$const, b, collectFieldsModule(v$1._1));
+                  go$1$a1 = v$1._2;
+                  continue;
+                }
+                fail();
+              }
+              return go$1$r;
+            };
+            return go$1(Leaf)(finalModules);
+          })()))();
+          foldlArray((eff) => (v$1) => {
+            const $1 = v$1._2.imports;
+            const $2 = v$1._1;
+            const $3 = v$1._2.code;
+            const modDir = "output/purust_output/Purs_" + $2;
+            const $4 = mkdir3(modDir);
+            return () => {
+              eff();
+              $4();
+              mkdir3(modDir + "/src")();
+              writeTextFile2(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $2 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')($1)))();
+              return writeTextFile2(UTF8)(modDir + "/src/lib.rs")($3)();
+            };
+          })(() => {
+          })(toUnfoldable3(allModules))();
+          return log2("Successfully generated Rust code.")();
+        }))));
+      }));
+    })
   );
   return () => {
     const fiber = $0();

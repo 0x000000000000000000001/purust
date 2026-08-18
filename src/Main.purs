@@ -37,9 +37,12 @@ cacheVersion = "1.0.0"
 
 main :: Effect Unit
 main = launchAff_ do
-  _ <- liftEffect Process.argv
-  -- very basic parsing for --main
-  let mainModule = "Main"
+  args <- liftEffect Process.argv
+  let mainModule = case Array.findIndex (_ == "--main") args of
+                     Just idx -> case Array.index args (idx + 1) of
+                                   Just m -> m
+                                   Nothing -> "Main"
+                     Nothing -> "Main"
   liftEffect $ log $ "Generating Rust code for " <> mainModule
   
   finalModules <- coreFnModulesFromOutput "output"
@@ -158,7 +161,7 @@ main = launchAff_ do
           let allModNames = map (\(Module m) -> unwrap m.name) (Array.fromFoldable finalModules)
           let allModStrs = map (\n -> String.replaceAll (Pattern ".") (Replacement "_") n) allModNames
           let getMaskedFile str = 
-                let longerPrefixes = Array.filter (\other -> other /= str && String.indexOf (Pattern str) other == Just 0) allModStrs
+                let longerPrefixes = Array.filter (\other -> other /= str && String.contains (Pattern str) other) allModStrs
                 in foldl (\acc other -> String.replaceAll (Pattern other) (Replacement "MASKED") acc) rsFile longerPrefixes
           let extraImports = Array.mapMaybe (\modStr -> 
                 let modPrefix2 = modStr <> "_"
@@ -190,11 +193,12 @@ main = launchAff_ do
     let allFields = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectFieldsModule mod)) Set.empty finalModules
     let preludeRsContent = codegenPrelude allFields
     
+    let mainModuleSanitized = String.replaceAll (Pattern ".") (Replacement "_") mainModule
     let workspaceMembers = "\"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })))
-    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nPurs_Test_Main = { path = \"Purs_Test_Main\" }\n"
+    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\n"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") rootCargoToml
     
-    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") "fn main() {\n    Purs_Test_Main::main();\n}\n"
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("fn main() {\n    Purs_" <> mainModuleSanitized <> "::main();\n}\n")
     
     let coreDir = outDir <> "/purust_core"
     FS.mkdir coreDir
