@@ -55,10 +55,7 @@ impl<T> PerceusPtr<T> {
 impl<T: Clone> PerceusPtr<T> {
     pub fn make_mut(this: &mut Self) -> &mut T {
         if !this.is_unique() {
-            println!("FBIP: Cloning (shared)");
             *this = PerceusPtr::new((**this).clone());
-        } else {
-            println!("FBIP: Mutating in-place!");
         }
         unsafe { &mut (*this.ptr.as_ptr()).data }
     }
