@@ -106,6 +106,12 @@ codegenPrelude fields =
   "    pub fn as_record_mut(&mut self) -> &mut perceus_ptr::PerceusPtr<Record_a> {\n" <>
   "        if let Value::Record(v) = self { v } else { panic!(\"Expected Record\"); }\n" <>
   "    }\n" <>
+  "    pub fn drop_explicit(self) {\n" <>
+  "        if let Value::Record(v) = self { v.drop_explicit(); }\n" <>
+  "    }\n" <>
+  "    pub fn new(r: Record_a) -> Self {\n" <>
+  "        Value::Record(perceus_ptr::PerceusPtr::new(r))\n" <>
+  "    }\n" <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
@@ -117,9 +123,10 @@ codegenPrelude fields =
   "#[derive(Clone, Default)]\npub struct Record_a {\n" <>
   "    pub tag: &'static str,\n" <>
   "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
+  "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
   Array.foldMap (\field ->
     let
-      ignore = Set.fromFoldable ["unwrap", "clone", "as_ref", "tag", "vals"]
+      ignore = Set.fromFoldable ["unwrap", "clone", "as_ref", "tag", "vals", "call"]
     in if Set.member field ignore then "" else "    pub " <> sanitizeIdent field <> ": Option<UnknownType>,\n"
   ) (Array.fromFoldable fields) <>
   "}\n\n"
@@ -562,7 +569,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       "{\n" <>
       "    let mut _base = " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForBase false base <> ";\n" <>
       "    {\n" <>
-      "        let _mut = perceus_ptr::PerceusPtr::make_mut(&mut _base);\n" <>
+      "        let _mut = perceus_ptr::PerceusPtr::make_mut(_base.as_record_mut());\n" <>
       "        " <> String.joinWith "\n        " propsCode <> "\n" <>
       "    }\n" <>
       "    _base\n" <>
@@ -764,8 +771,14 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
-          "        if _val_eval.call.is_some() {\n" <>
-          "            (_val_eval.call.clone().unwrap())(crate::UnknownType::new(crate::Record_a { ..Default::default() }))\n" <>
+          "        if let crate::Value::Func(f) = &_val_eval {\n" <>
+          "            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
+          "        } else if let crate::Value::Record(r) = &_val_eval {\n" <>
+          "            if r.call.is_some() {\n" <>
+          "                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
+          "            } else {\n" <>
+          "                _val_eval\n" <>
+          "            }\n" <>
           "        } else {\n" <>
           "            _val_eval\n" <>
           "        }\n" <>
@@ -862,7 +875,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         ) bindsArray)
         
       mutCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" <> sanitizeIdent n <> ".as_record_mut()) }) = crate::Record_a { call: Some((*val_" <> sanitizeIdent n <> ").unwrap_func()), ..Default::default() };"
+          "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" <> sanitizeIdent n <> ".as_record_mut()) }) = crate::Record_a { call: Some((val_" <> sanitizeIdent n <> ").unwrap_func()), ..Default::default() };"
         ) bindsArray)
         
       bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock body
