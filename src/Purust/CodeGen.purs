@@ -1,4 +1,4 @@
-module Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity) where
+module Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, codegenExprType) where
 import Debug as Debug
 
 
@@ -109,7 +109,32 @@ printType Any = "Any"
 printType _ = "Other"
 
 codegenExprType :: Boolean -> ExprType -> String
-codegenExprType isRet ty = "UnknownType"
+codegenExprType isRet ty = case unwrapType ty of
+  Int -> "i64"
+  Boolean -> "bool"
+  Number -> "f64"
+  String -> "String"
+  Char -> "char"
+  _ -> "crate::UnknownType"
+
+boxUnbox :: ExprType -> ExprType -> String -> String
+boxUnbox expected actual code =
+  let
+    expStr = codegenExprType true expected
+    actStr = codegenExprType true actual
+  in
+    if expStr == actStr then code
+    else if expStr == "i64" && actStr == "crate::UnknownType" then "(" <> code <> ").init_int.unwrap()"
+    else if expStr == "crate::UnknownType" && actStr == "i64" then "crate::mk_int(" <> code <> ")"
+    else if expStr == "bool" && actStr == "crate::UnknownType" then "(" <> code <> ").init_bool.unwrap()"
+    else if expStr == "crate::UnknownType" && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
+    else if expStr == "f64" && actStr == "crate::UnknownType" then "(" <> code <> ").init_number.unwrap()"
+    else if expStr == "crate::UnknownType" && actStr == "f64" then "crate::mk_number(" <> code <> ")"
+    else if expStr == "char" && actStr == "crate::UnknownType" then "(" <> code <> ").init_char.unwrap()"
+    else if expStr == "crate::UnknownType" && actStr == "char" then "crate::mk_char(" <> code <> ")"
+    else if expStr == "String" && actStr == "crate::UnknownType" then "(" <> code <> ").init_string.clone().unwrap()"
+    else if expStr == "crate::UnknownType" && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
+    else code
 
 extractAllArgTypes :: ExprType -> Array ExprType
 extractAllArgTypes (ForAll _ t) = extractAllArgTypes t
@@ -165,7 +190,8 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
           Ident i -> sanitizeIdent (String.replaceAll (Pattern ".") (Replacement "_") i)
           _ -> "unknown"
         identName = if rawIdentName == "main" then "main" else modNameStr <> "_" <> rawIdentName
-        inferredType = fromMaybe Any (Map.lookup identName groupArities)
+        inferredType = fromMaybe Any (Map.lookup identName mergedArities)
+        _dbg = unsafePerformEffect (if identName == "Data_Symbol_reifySymbol" then log ("reifySymbol type: " <> printType inferredType) else pure unit)
         innerExpr = case expr of
            NeutralExpr (Typed _ inner) -> inner
            NeutralExpr inner -> NeutralExpr inner
@@ -194,11 +220,15 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                 (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType true ty) paramPairs
               bound = Map.fromFoldable (map (\(Tuple k v) -> Tuple (if k == "_" then "_" else k) v) paramPairs)
               bodyCodeRaw = case extracted of
-                Just (Tuple _ body) -> codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false body
+                Just (Tuple _ body) -> 
+                    let bodyRaw = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false body
+                        bodyTy = inferTypeExpr modNameStr aritiesMap bound body
+                    in boxUnbox retType bodyTy bodyRaw
                 Nothing -> 
                    let fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false innerExpr
                        argsCodeArray = map (\p -> sanitizeIdent p <> ".clone()") deduped
-                   in Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
+                       callCode = Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
+                   in boxUnbox retType Any callCode
             in { paramsCode: pCode, retCode: codegenExprType true retType, bodyCode: bodyCodeRaw, isFunc: true }
           else 
             let isAbs = case innerExpr of
@@ -271,12 +301,23 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
           
         m = Array.length argsArray
         
+        boxedClosureArgs = Array.mapWithIndex (\i argCode -> 
+            let argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray i)
+                argTy = inferTypeExpr currentMod aritiesMap bound argExpr
+            in boxUnbox Any argTy argCode
+        ) argsCodeArray
+        
         resultCode = case getInner fn of
                  NeutralExpr (Var (Qualified mbMod (Ident name))) -> 
                    let sName = sanitizeIdent name
                    in if Map.member sName bound then
                         -- Local variable
-                        Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode argsCodeArray
+                        let boxedArgs = Array.mapWithIndex (\i argCode -> 
+                              let argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray i)
+                                  argTy = inferTypeExpr currentMod aritiesMap bound argExpr
+                              in boxUnbox Any argTy argCode
+                            ) argsCodeArray
+                        in Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedArgs
                       else
                         let modPrefix = case mbMod of
                               Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
@@ -310,38 +351,53 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
                            else if Map.member (if fullName == "main" then "main" else fullName) aritiesMap then
                              -- Top-level function
                              let n = lookupArity fullName
+                                 fnTy = fromMaybe Any (Map.lookup (if fullName == "main" then "main" else fullName) aritiesMap)
+                                 expectedArgTys = extractAllArgTypes fnTy
+                                 boxedArgs = Array.mapWithIndex (\i argCode -> 
+                                    let argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray i)
+                                        argTy = inferTypeExpr currentMod aritiesMap bound argExpr
+                                        expectedTy = fromMaybe Any (Array.index expectedArgTys i)
+                                    in boxUnbox expectedTy argTy argCode
+                                 ) argsCodeArray
                              in if n > 0 then
                                if m == n then
-                                 fullName <> "(" <> String.joinWith ", " argsCodeArray <> ")"
+                                 fullName <> "(" <> String.joinWith ", " boxedArgs <> ")"
                                else if m < n then
                                  let missingCount = n - m
                                      etaArgs = Array.mapWithIndex (\i _ -> "eta_" <> show i) (Array.replicate missingCount unit)
                                      evalArgs = Array.mapWithIndex (\i _ -> "eval_arg_" <> show i) argsCodeArray
                                      letArgsCode = Array.mapWithIndex (\i argCode -> "        let mut eval_arg_" <> show i <> " = " <> argCode <> ";\n") argsCodeArray
-                                     innerArgs = evalArgs <> map (\eta -> eta <> ".clone()") etaArgs
+                                     
+                                     expectedArgTys = extractAllArgTypes fnTy
+                                     missingEtasTypes = Array.drop m expectedArgTys
+                                     retTy = extractFinalRetType fnTy
+
+                                     innerArgs = evalArgs <> Array.mapWithIndex (\i eta -> boxUnbox (fromMaybe Any (Array.index missingEtasTypes i)) Any (eta <> ".clone()")) etaArgs
                                      innerCall = fullName <> "(" <> String.joinWith ", " innerArgs <> ")"
+                                     boxedInnerCall = boxUnbox Any retTy innerCall
+
                                      closuresCode = case Array.foldr (\etaArg (Tuple i accCode) ->
                                          let prevEtas = Array.take i etaArgs
                                              clonesCode = String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") (evalArgs <> prevEtas))
                                          in Tuple (i - 1) ("perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType {\n" <> clonesCode <> "    " <> accCode <> "\n})), ..Default::default() })")
-                                       ) (Tuple (missingCount - 1) innerCall) etaArgs of
+                                       ) (Tuple (missingCount - 1) boxedInnerCall) etaArgs of
                                        Tuple _ res -> res
                                  in "{\n" <> String.joinWith "" letArgsCode <> "    " <> closuresCode <> "\n}"
                                else
                                  -- Over-applied
-                                 let firstNArgs = Array.take n argsCodeArray
+                                 let firstNArgs = Array.take n boxedArgs
                                      remainingArgs = Array.drop n argsCodeArray
                                      baseCall = fullName <> "(" <> String.joinWith ", " firstNArgs <> ")"
-                                 in Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") baseCall remainingArgs
+                                 in Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") baseCall (Array.drop n boxedClosureArgs)
                              else
                                -- Arity 0 or not a Func
-                               Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode argsCodeArray
+                               Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
                            else
                              -- Not found in aritiesMap
-                             Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode argsCodeArray
+                             Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
                  _ -> 
                    -- Not a Var
-                   Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode argsCodeArray
+                   Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
                    
     in resultCode
 
@@ -349,7 +405,14 @@ genAbs :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, 
 genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body =
     let
       capturedVars = Set.difference (freeVariables body) (Set.fromFoldable paramsArr)
-      initialState = { freeVars: freeVariables body, isInnermost: true, code: codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound capturedVars false body }
+      initialState = { 
+        freeVars: freeVariables body, 
+        isInnermost: true, 
+        code: 
+          let bodyTy = inferTypeExpr currentMod aritiesMap bound body
+              rawCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound capturedVars false body
+          in boxUnbox Any bodyTy rawCode
+      }
       
       finalState = Array.foldr (\p st -> 
           let
@@ -410,7 +473,10 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    })), ..Default::default() })\n}"
     else case syn of
-  Typed _ inner -> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+  Typed ty inner -> 
+    let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+        innerTy = inferTypeExpr currentMod aritiesMap bound inner
+    in boxUnbox ty innerTy innerCode
 
   App fn args -> 
     genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn (NonEmptyArray.toArray args)
@@ -467,78 +533,88 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
             varsSubsequent = Array.foldl (\acc (Pair c b) -> Set.union acc (Set.union (freeVariables c) (freeVariables b))) (freeVariables def) subsequentBranches
             aliveForCond = Set.union alive (Set.union (freeVariables body) varsSubsequent)
             condCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForCond false cond
-            isLit = case cond of
-              NeutralExpr (Typed _ (NeutralExpr (Lit (LitBoolean _)))) -> true
-              NeutralExpr (Lit (LitBoolean _)) -> true
-              _ -> false
-            condFinal = if isLit then condCode else "(" <> condCode <> ").init_bool.unwrap()"
+            condTy = inferTypeExpr currentMod aritiesMap bound cond
+            condFinal = boxUnbox Boolean condTy condCode
         in "if " <> condFinal <> " {\n        " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive false body <> "\n    }") branchesArr
       defCode = "{\n        " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive false def <> "\n    }"
     in
       String.joinWith " else " branchCode <> " else " <> defCode
   PrimOp (Op1 op a) ->
-    let aStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a
+    let aTy = inferTypeExpr currentMod aritiesMap bound a
+        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a
     in case op of
-      OpBooleanNot -> "mk_bool(!(" <> aStr <> ").init_bool.unwrap())"
-      OpIntBitNot -> "mk_int(!(" <> aStr <> ").init_int.unwrap())"
-      OpIntNegate -> "mk_int(-(" <> aStr <> ").init_int.unwrap())"
-      OpNumberNegate -> "mk_number(-(" <> aStr <> ").init_number.unwrap())"
-      OpArrayLength -> "mk_int((" <> aStr <> ").init_array.as_ref().unwrap().len() as i64)"
-      OpIsTag (Qualified _ (Ident ctorName)) -> "mk_bool(" <> aStr <> ".tag == \"" <> ctorName <> "\")"
+      OpBooleanNot -> "!(" <> boxUnbox Boolean aTy aStrRaw <> ")"
+      OpIntBitNot -> "!(" <> boxUnbox Int aTy aStrRaw <> ")"
+      OpIntNegate -> "-(" <> boxUnbox Int aTy aStrRaw <> ")"
+      OpNumberNegate -> "-(" <> boxUnbox Number aTy aStrRaw <> ")"
+      OpArrayLength -> "((" <> boxUnbox Any aTy aStrRaw <> ").init_array.as_ref().unwrap().len() as i64)"
+      OpIsTag (Qualified _ (Ident ctorName)) -> "(" <> boxUnbox Any aTy aStrRaw <> ".tag == \"" <> ctorName <> "\")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
-        aStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForA false a
-        bStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false b
+        aTy = inferTypeExpr currentMod aritiesMap bound a
+        bTy = inferTypeExpr currentMod aritiesMap bound b
+        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForA false a
+        bStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false b
+        aStrInt = boxUnbox Int aTy aStrRaw
+        bStrInt = boxUnbox Int bTy bStrRaw
+        aStrBool = boxUnbox Boolean aTy aStrRaw
+        bStrBool = boxUnbox Boolean bTy bStrRaw
+        aStrNum = boxUnbox Number aTy aStrRaw
+        bStrNum = boxUnbox Number bTy bStrRaw
+        aStrStr = boxUnbox String aTy aStrRaw
+        bStrStr = boxUnbox String bTy bStrRaw
     in case op of
-      OpIntNum OpAdd -> "mk_int((" <> aStr <> ").init_int.unwrap() + (" <> bStr <> ").init_int.unwrap())"
-      OpIntNum OpSubtract -> "mk_int((" <> aStr <> ").init_int.unwrap() - (" <> bStr <> ").init_int.unwrap())"
-      OpIntNum OpMultiply -> "mk_int((" <> aStr <> ").init_int.unwrap() * (" <> bStr <> ").init_int.unwrap())"
-      OpIntNum OpDivide -> "mk_int((" <> aStr <> ").init_int.unwrap() / (" <> bStr <> ").init_int.unwrap())"
-      OpIntBitAnd -> "mk_int((" <> aStr <> ").init_int.unwrap() & (" <> bStr <> ").init_int.unwrap())"
-      OpIntBitOr -> "mk_int((" <> aStr <> ").init_int.unwrap() | (" <> bStr <> ").init_int.unwrap())"
-      OpIntBitXor -> "mk_int((" <> aStr <> ").init_int.unwrap() ^ (" <> bStr <> ").init_int.unwrap())"
-      OpIntBitShiftLeft -> "mk_int((" <> aStr <> ").init_int.unwrap() << (" <> bStr <> ").init_int.unwrap())"
-      OpIntBitShiftRight -> "mk_int((" <> aStr <> ").init_int.unwrap() >> (" <> bStr <> ").init_int.unwrap())"
-      OpIntBitZeroFillShiftRight -> "mk_int(((" <> aStr <> ").init_int.unwrap() as u64 >> (" <> bStr <> ").init_int.unwrap() as u64) as i64)"
-      OpIntOrd OpEq -> "mk_bool((" <> aStr <> ").init_int.unwrap() == (" <> bStr <> ").init_int.unwrap())"
-      OpIntOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_int.unwrap() != (" <> bStr <> ").init_int.unwrap())"
-      OpIntOrd OpGt -> "mk_bool((" <> aStr <> ").init_int.unwrap() > (" <> bStr <> ").init_int.unwrap())"
-      OpIntOrd OpGte -> "mk_bool((" <> aStr <> ").init_int.unwrap() >= (" <> bStr <> ").init_int.unwrap())"
-      OpIntOrd OpLt -> "mk_bool((" <> aStr <> ").init_int.unwrap() < (" <> bStr <> ").init_int.unwrap())"
-      OpIntOrd OpLte -> "mk_bool((" <> aStr <> ").init_int.unwrap() <= (" <> bStr <> ").init_int.unwrap())"
-      OpNumberOrd OpEq -> "mk_bool((" <> aStr <> ").init_number.unwrap() == (" <> bStr <> ").init_number.unwrap())"
-      OpNumberOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_number.unwrap() != (" <> bStr <> ").init_number.unwrap())"
-      OpNumberOrd OpLt -> "mk_bool((" <> aStr <> ").init_number.unwrap() < (" <> bStr <> ").init_number.unwrap())"
-      OpNumberOrd OpLte -> "mk_bool((" <> aStr <> ").init_number.unwrap() <= (" <> bStr <> ").init_number.unwrap())"
-      OpNumberOrd OpGt -> "mk_bool((" <> aStr <> ").init_number.unwrap() > (" <> bStr <> ").init_number.unwrap())"
-      OpNumberOrd OpGte -> "mk_bool((" <> aStr <> ").init_number.unwrap() >= (" <> bStr <> ").init_number.unwrap())"
-      OpStringOrd OpEq -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() == (" <> bStr <> ").init_string.as_ref().unwrap())"
-      OpStringOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() != (" <> bStr <> ").init_string.as_ref().unwrap())"
-      OpStringOrd OpGt -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() > (" <> bStr <> ").init_string.as_ref().unwrap())"
-      OpStringOrd OpGte -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() >= (" <> bStr <> ").init_string.as_ref().unwrap())"
-      OpStringOrd OpLt -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() < (" <> bStr <> ").init_string.as_ref().unwrap())"
-      OpStringOrd OpLte -> "mk_bool((" <> aStr <> ").init_string.as_ref().unwrap() <= (" <> bStr <> ").init_string.as_ref().unwrap())"
-      OpCharOrd OpEq -> "mk_bool((" <> aStr <> ").init_char.unwrap() == (" <> bStr <> ").init_char.unwrap())"
-      OpCharOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_char.unwrap() != (" <> bStr <> ").init_char.unwrap())"
-      OpCharOrd OpGt -> "mk_bool((" <> aStr <> ").init_char.unwrap() > (" <> bStr <> ").init_char.unwrap())"
-      OpCharOrd OpGte -> "mk_bool((" <> aStr <> ").init_char.unwrap() >= (" <> bStr <> ").init_char.unwrap())"
-      OpCharOrd OpLt -> "mk_bool((" <> aStr <> ").init_char.unwrap() < (" <> bStr <> ").init_char.unwrap())"
-      OpCharOrd OpLte -> "mk_bool((" <> aStr <> ").init_char.unwrap() <= (" <> bStr <> ").init_char.unwrap())"
-      OpBooleanOrd OpEq -> "mk_bool((" <> aStr <> ").init_bool.unwrap() == (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanOrd OpNotEq -> "mk_bool((" <> aStr <> ").init_bool.unwrap() != (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanOrd OpGt -> "mk_bool((" <> aStr <> ").init_bool.unwrap() > (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanOrd OpGte -> "mk_bool((" <> aStr <> ").init_bool.unwrap() >= (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanOrd OpLt -> "mk_bool((" <> aStr <> ").init_bool.unwrap() < (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanOrd OpLte -> "mk_bool((" <> aStr <> ").init_bool.unwrap() <= (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanAnd -> "mk_bool((" <> aStr <> ").init_bool.unwrap() && (" <> bStr <> ").init_bool.unwrap())"
-      OpBooleanOr -> "mk_bool((" <> aStr <> ").init_bool.unwrap() || (" <> bStr <> ").init_bool.unwrap())"
-      OpArrayIndex -> "(" <> aStr <> ").init_array.as_ref().unwrap()[(" <> bStr <> ").init_int.unwrap() as usize].clone()"
-      OpNumberNum OpAdd -> "mk_number((" <> aStr <> ").init_number.unwrap() + (" <> bStr <> ").init_number.unwrap())"
-      OpNumberNum OpSubtract -> "mk_number((" <> aStr <> ").init_number.unwrap() - (" <> bStr <> ").init_number.unwrap())"
-      OpNumberNum OpMultiply -> "mk_number((" <> aStr <> ").init_number.unwrap() * (" <> bStr <> ").init_number.unwrap())"
-      OpNumberNum OpDivide -> "mk_number((" <> aStr <> ").init_number.unwrap() / (" <> bStr <> ").init_number.unwrap())"
-      OpStringAppend -> "mk_string(&format!(\"{}{}\", (" <> aStr <> ").init_string.as_ref().unwrap(), (" <> bStr <> ").init_string.as_ref().unwrap()))"
+      OpIntNum OpAdd -> "(" <> aStrInt <> " + " <> bStrInt <> ")"
+      OpIntNum OpSubtract -> "(" <> aStrInt <> " - " <> bStrInt <> ")"
+      OpIntNum OpMultiply -> "(" <> aStrInt <> " * " <> bStrInt <> ")"
+      OpIntNum OpDivide -> "(" <> aStrInt <> " / " <> bStrInt <> ")"
+      OpIntBitAnd -> "(" <> aStrInt <> " & " <> bStrInt <> ")"
+      OpIntBitOr -> "(" <> aStrInt <> " | " <> bStrInt <> ")"
+      OpIntBitXor -> "(" <> aStrInt <> " ^ " <> bStrInt <> ")"
+      OpIntBitShiftLeft -> "(" <> aStrInt <> " << " <> bStrInt <> ")"
+      OpIntBitShiftRight -> "(" <> aStrInt <> " >> " <> bStrInt <> ")"
+      OpIntBitZeroFillShiftRight -> "((" <> aStrInt <> " as u64 >> " <> bStrInt <> " as u64) as i64)"
+      OpIntOrd OpEq -> "(" <> aStrInt <> " == " <> bStrInt <> ")"
+      OpIntOrd OpNotEq -> "(" <> aStrInt <> " != " <> bStrInt <> ")"
+      OpIntOrd OpGt -> "(" <> aStrInt <> " > " <> bStrInt <> ")"
+      OpIntOrd OpGte -> "(" <> aStrInt <> " >= " <> bStrInt <> ")"
+      OpIntOrd OpLt -> "(" <> aStrInt <> " < " <> bStrInt <> ")"
+      OpIntOrd OpLte -> "(" <> aStrInt <> " <= " <> bStrInt <> ")"
+      OpNumberOrd OpEq -> "(" <> aStrNum <> " == " <> bStrNum <> ")"
+      OpNumberOrd OpNotEq -> "(" <> aStrNum <> " != " <> bStrNum <> ")"
+      OpNumberOrd OpGt -> "(" <> aStrNum <> " > " <> bStrNum <> ")"
+      OpNumberOrd OpGte -> "(" <> aStrNum <> " >= " <> bStrNum <> ")"
+      OpNumberOrd OpLt -> "(" <> aStrNum <> " < " <> bStrNum <> ")"
+      OpNumberOrd OpLte -> "(" <> aStrNum <> " <= " <> bStrNum <> ")"
+      OpStringOrd OpEq -> "(" <> aStrStr <> " == " <> bStrStr <> ")"
+      OpStringOrd OpNotEq -> "(" <> aStrStr <> " != " <> bStrStr <> ")"
+      OpStringOrd OpGt -> "(" <> aStrStr <> " > " <> bStrStr <> ")"
+      OpStringOrd OpGte -> "(" <> aStrStr <> " >= " <> bStrStr <> ")"
+      OpStringOrd OpLt -> "(" <> aStrStr <> " < " <> bStrStr <> ")"
+      OpStringOrd OpLte -> "(" <> aStrStr <> " <= " <> bStrStr <> ")"
+      OpCharOrd OpEq -> "(" <> boxUnbox Char aTy aStrRaw <> " == " <> boxUnbox Char bTy bStrRaw <> ")"
+      OpCharOrd OpNotEq -> "(" <> boxUnbox Char aTy aStrRaw <> " != " <> boxUnbox Char bTy bStrRaw <> ")"
+      OpCharOrd OpGt -> "(" <> boxUnbox Char aTy aStrRaw <> " > " <> boxUnbox Char bTy bStrRaw <> ")"
+      OpCharOrd OpGte -> "(" <> boxUnbox Char aTy aStrRaw <> " >= " <> boxUnbox Char bTy bStrRaw <> ")"
+      OpCharOrd OpLt -> "(" <> boxUnbox Char aTy aStrRaw <> " < " <> boxUnbox Char bTy bStrRaw <> ")"
+      OpCharOrd OpLte -> "(" <> boxUnbox Char aTy aStrRaw <> " <= " <> boxUnbox Char bTy bStrRaw <> ")"
+      OpBooleanOrd OpEq -> "(" <> aStrBool <> " == " <> bStrBool <> ")"
+      OpBooleanOrd OpNotEq -> "(" <> aStrBool <> " != " <> bStrBool <> ")"
+      OpBooleanOrd OpGt -> "(" <> aStrBool <> " > " <> bStrBool <> ")"
+      OpBooleanOrd OpGte -> "(" <> aStrBool <> " >= " <> bStrBool <> ")"
+      OpBooleanOrd OpLt -> "(" <> aStrBool <> " < " <> bStrBool <> ")"
+      OpBooleanOrd OpLte -> "(" <> aStrBool <> " <= " <> bStrBool <> ")"
+      OpBooleanAnd -> "(" <> aStrBool <> " && " <> bStrBool <> ")"
+      OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
+      OpArrayIndex -> 
+        let aStr = boxUnbox Any aTy aStrRaw
+        in "(" <> aStr <> ").init_array.as_ref().unwrap()[(" <> bStrInt <> ") as usize].clone()"
+      OpNumberNum OpAdd -> "(" <> aStrNum <> " + " <> bStrNum <> ")"
+      OpNumberNum OpSubtract -> "(" <> aStrNum <> " - " <> bStrNum <> ")"
+      OpNumberNum OpMultiply -> "(" <> aStrNum <> " * " <> bStrNum <> ")"
+      OpNumberNum OpDivide -> "(" <> aStrNum <> " / " <> bStrNum <> ")"
+      OpStringAppend -> "format!(\"{}{}\", " <> aStrStr <> ", " <> bStrStr <> ")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
   Accessor base (GetProp k) -> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false base <> "." <> sanitizeIdent k <> ".clone().unwrap()"
   Accessor base (GetCtorField _ _ _ _ _ fieldIdx) ->
@@ -571,13 +647,17 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                fullName <> "()"
             else
                let etaArgs = Array.mapWithIndex (\i _ -> "eta_" <> show i) (Array.replicate expectedArgsLength unit)
-                   innerArgs = map (\eta -> eta <> ".clone()") etaArgs
+                   fnTy = fromMaybe Any (Map.lookup key aritiesMap)
+                   expectedArgTys = extractAllArgTypes fnTy
+                   retTy = extractFinalRetType fnTy
+                   innerArgs = Array.mapWithIndex (\i eta -> boxUnbox (fromMaybe Any (Array.index expectedArgTys i)) Any (eta <> ".clone()")) etaArgs
                    innerCall = fullName <> "(" <> String.joinWith ", " innerArgs <> ")"
+                   boxedInnerCall = boxUnbox Any retTy innerCall
                in (case Array.foldr (\etaArg (Tuple i code) -> 
                    let prevEtas = Array.take i etaArgs
                        clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
                    in Tuple (i - 1) ("perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " })), ..Default::default() })")
-                 ) (Tuple (expectedArgsLength - 1) innerCall) etaArgs of
+                 ) (Tuple (expectedArgsLength - 1) boxedInnerCall) etaArgs of
                  Tuple _ res -> res)
           else
             fullName
@@ -592,13 +672,15 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       bodyVars = freeVariables body
       aliveForVal = Set.union alive bodyVars
       valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForVal false val
+      valTy = inferTypeExpr currentMod aritiesMap bound val
+      newBound = Map.insert name valTy bound
       -- if name is not in bodyVars, it's dead immediately
       deadCode = if Set.member name bodyVars then "" else "    " <> name <> ".drop_explicit();\n"
     in
       "{\n" <> 
       "    let mut " <> name <> " = " <> valCode <> ";\n" <>
       deadCode <>
-      "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock body <> "\n" <>
+      "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap newBound alive inEffectBlock body <> "\n" <>
       "}"
   EffectBind mbIdent lvl val body ->
     let name = case mbIdent of
@@ -642,11 +724,13 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         
         bodyVars = freeVariables body
         deadCode = if Set.member name bodyVars then "" else "    " <> name <> ".drop_explicit();\n"
+        valTy = inferTypeExpr currentMod aritiesMap bound val
+        newBound = Map.insert name valTy bound
     in
     "{\n" <>
     "    let mut " <> name <> " = " <> valCode <> ";\n" <>
     deadCode <>
-    "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock body <> "\n" <>
+    "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap newBound alive inEffectBlock body <> "\n" <>
     "}"
   EffectPure val -> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false val
   Local mbId lvl -> 
@@ -655,29 +739,27 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           Nothing -> "lvl_" <> show (unwrap lvl)
     in if Set.member name alive then name <> ".clone()" else name
   Lit lit -> case lit of
-    LitInt i -> "mk_int(" <> show i <> ")"
-    LitNumber n -> "mk_number(" <> show n <> ")"
-    LitString s -> "mk_string(r#\"" <> s <> "\"#)"
-    LitChar c -> "mk_char(" <> show c <> ")"
-    LitBoolean b -> if b then "mk_bool(true)" else "mk_bool(false)"
+    LitInt i -> show i
+    LitNumber n -> show n
+    LitString s -> "String::from(r#\"" <> s <> "\"#)"
+    LitChar c -> show c
+    LitBoolean b -> if b then "true" else "false"
     LitArray arr -> 
       let arrCode = Array.mapWithIndex (\i a -> 
             let subsequent = Array.drop (i + 1) arr
                 aliveForA = Set.union alive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
             in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForA false a
           ) arr
-      in if Array.length arrCode > 200 then
-           let chunks = chunkArray 200 arrCode
-               chunkStmts = map (\chunk -> "    __arr.extend(vec![" <> String.joinWith ", " chunk <> "]);\n") chunks
-           in "({\n    let mut __arr = Vec::with_capacity(" <> show (Array.length arrCode) <> ");\n" <> String.joinWith "" chunkStmts <> "    crate::mk_array(__arr)\n})"
-         else
-           "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
+      in "vec![" <> String.joinWith ", " arrCode <> "]"
     LitRecord props ->
       let arrProps = props
           fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
             let subsequent = Array.drop (i + 1) arrProps
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Prop _ sv) -> freeVariables sv) subsequent))
-            in sanitizeIdent k <> ": Some(" <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForV false v <> ")"
+                vCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForV false v
+                vTy = inferTypeExpr currentMod aritiesMap bound v
+                vFinal = boxUnbox Any vTy vCode
+            in sanitizeIdent k <> ": Some(" <> vFinal <> ")"
           ) arrProps)
       in "perceus_ptr::PerceusPtr::new(Record_a { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() })"
   Abs params body -> 
@@ -736,6 +818,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
     in "{\n    " <> declCode <> "\n    " <> evalCode <> "\n    " <> mutCode <> "\n    " <> bodyCode <> "\n}"
 
   EffectDefer inner -> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+  Fail _ -> "unimplemented!() /* Unsupported Expr: Fail */"
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
 
 printAST :: NeutralExpr -> String
@@ -830,15 +913,24 @@ freeVariables (NeutralExpr expr) = case expr of
 
 inferTypeExpr :: String -> Map.Map String ExprType -> Map.Map String ExprType -> NeutralExpr -> ExprType
 inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
+
+
   App fn args -> 
-    case unwrapType (inferTypeExpr currentMod aritiesMap bound fn) of
-      Func argTypes retTy -> 
-        let expectedCount = Array.length argTypes
-            providedCount = NonEmptyArray.length args
-        in if expectedCount > providedCount then
-             Func (Array.drop providedCount argTypes) retTy
-           else retTy
-      _ -> Any
+    let stripTyped (NeutralExpr (Typed _ i)) = stripTyped i
+        stripTyped other = other
+    in case stripTyped fn of
+      NeutralExpr (Var (Qualified _ (Ident "not"))) -> Boolean
+      NeutralExpr (Var (Qualified (Just (ModuleName "Data.HeytingAlgebra")) (Ident "not"))) -> Boolean
+      _ -> case unwrapType (inferTypeExpr currentMod aritiesMap bound fn) of
+        Func argTypes retTy -> 
+          let expectedCount = Array.length argTypes
+              providedCount = NonEmptyArray.length args
+          in if expectedCount > providedCount then
+               Func (Array.drop providedCount argTypes) retTy
+             else retTy
+        _ -> Any
+
+
   UncurriedApp fn _args -> 
     case unwrapType (inferTypeExpr currentMod aritiesMap bound fn) of
       Func _ retTy -> retTy
@@ -848,7 +940,13 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
       Func _ retTy -> retTy
       _ -> Any
   LetRec _ _ inner -> inferTypeExpr currentMod aritiesMap bound inner
-  Branch _ _ -> Any
+  Branch branches def ->
+    let defTy = inferTypeExpr currentMod aritiesMap bound def
+    in case defTy of
+      Any -> 
+        let Pair _ body = NonEmptyArray.head branches
+        in inferTypeExpr currentMod aritiesMap bound body
+      _ -> defTy
   Typed Any inner -> inferTypeExpr currentMod aritiesMap bound inner
   Typed (TypeVar _) inner -> inferTypeExpr currentMod aritiesMap bound inner
   Typed t _ -> t
@@ -865,7 +963,38 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
         in case Map.lookup fullName aritiesMap of
           Just ty -> ty
           Nothing -> Any
+  Local mbName lvl ->
+    let name = case mbName of
+          Just (Ident n) -> sanitizeIdent n
+          Nothing -> "lvl_" <> show (unwrap lvl)
+    in case Map.lookup name bound of
+      Just ty -> ty
+      Nothing -> Any
   Let (Just (Ident i)) _ val body -> inferTypeExpr currentMod aritiesMap (Map.insert (sanitizeIdent i) (inferTypeExpr currentMod aritiesMap bound val) bound) body
+
+  PrimOp (Op1 op _) -> case op of
+    OpBooleanNot -> Boolean
+    OpIntBitNot -> Int
+    OpIntNegate -> Int
+    OpNumberNegate -> Number
+    OpArrayLength -> Int
+    OpIsTag _ -> Boolean
+    _ -> Any
+  PrimOp (Op2 op _ _) -> case op of
+    OpIntNum _ -> Int
+    OpNumberNum _ -> Number
+    OpBooleanAnd -> Boolean
+    OpBooleanOr -> Boolean
+    OpBooleanOrd _ -> Boolean
+    OpStringAppend -> String
+    _ -> Any
+  Lit lit -> case lit of
+    LitInt _ -> Int
+    LitNumber _ -> Number
+    LitString _ -> String
+    LitChar _ -> Char
+    LitBoolean _ -> Boolean
+    _ -> Any
   _ -> Any
 
 getArity :: ExprType -> Int

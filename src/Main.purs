@@ -15,7 +15,7 @@ import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity)
+import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, codegenExprType)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
@@ -136,8 +136,8 @@ main = launchAff_ do
             
             genFallback name ty =
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
-                let arity = getArity ty
-                    args = Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": UnknownType") (Array.replicate arity unit)
+                let argTypes = extractAllArgTypes ty
+                    args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprType true argTy) argTypes
                 in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> UnknownType { UnknownType::new(Record_a { ..Default::default() }) }\n"
               else ""
 
