@@ -212,15 +212,19 @@ main = launchAff_ do
     FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("fn main() {\n    let mut _effect = Purs_" <> mainModuleSanitized <> "::main();\n    if _effect.call.is_some() {\n        (_effect.call.clone().unwrap())(purust_core::UnknownType::new(purust_core::Record_a { ..Default::default() }));\n    }\n}\n")
     
     let coreDir = outDir <> "/purust_core"
-    FS.mkdir coreDir
-    FS.mkdir (coreDir <> "/src")
+    coreExists <- FS.exists coreDir
+    when (not coreExists) do
+      FS.mkdir coreDir
+      FS.mkdir (coreDir <> "/src")
     FS.writeTextFile UTF8 (coreDir <> "/Cargo.toml") "[package]\nname = \"purust_core\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n"
     FS.writeTextFile UTF8 (coreDir <> "/src/lib.rs") preludeRsContent
     
     _ <- foldl (\eff (Tuple k { code: v, imports: imp }) -> eff *> do
       let modDir = outDir <> "/Purs_" <> k
-      FS.mkdir modDir
-      FS.mkdir (modDir <> "/src")
+      modExists <- FS.exists modDir
+      when (not modExists) do
+        FS.mkdir modDir
+        FS.mkdir (modDir <> "/src")
       let modDeps = "purust_core = { path = \"../purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") imp)
       let modCargoToml = "[package]\nname = \"Purs_" <> k <> "\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> modDeps
       FS.writeTextFile UTF8 (modDir <> "/Cargo.toml") modCargoToml

@@ -20398,8 +20398,12 @@ var main = /* @__PURE__ */ (() => {
           const mainModuleSanitized = replaceAll(".")("_")(mainModule);
           writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\n\n[dependencies]\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\n')();
           writeTextFile2(UTF8)("output/purust_output/src/main.rs")("fn main() {\n    let mut _effect = Purs_" + mainModuleSanitized + "::main();\n    if _effect.call.is_some() {\n        (_effect.call.clone().unwrap())(purust_core::UnknownType::new(purust_core::Record_a { ..Default::default() }));\n    }\n}\n")();
-          mkdir3("output/purust_output/purust_core")();
-          mkdir3("output/purust_output/purust_core/src")();
+          const coreExists = existsSync("output/purust_output/purust_core");
+          const $1 = mkdir3("output/purust_output/purust_core");
+          if (!coreExists) {
+            $1();
+            mkdir3("output/purust_output/purust_core/src")();
+          }
           writeTextFile2(UTF8)("output/purust_output/purust_core/Cargo.toml")('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n')();
           writeTextFile2(UTF8)("output/purust_output/purust_core/src/lib.rs")(codegenPrelude((() => {
             const go$1 = (go$1$a0$copy) => (go$1$a1$copy) => {
@@ -20423,17 +20427,20 @@ var main = /* @__PURE__ */ (() => {
             return go$1(Leaf)(finalModules);
           })()))();
           foldlArray((eff) => (v$1) => {
-            const $1 = v$1._2.imports;
-            const $2 = v$1._1;
-            const $3 = v$1._2.code;
-            const modDir = "output/purust_output/Purs_" + $2;
-            const $4 = mkdir3(modDir);
+            const $2 = v$1._2.imports;
+            const $3 = v$1._1;
+            const $4 = v$1._2.code;
+            const modDir = "output/purust_output/Purs_" + $3;
             return () => {
               eff();
-              $4();
-              mkdir3(modDir + "/src")();
-              writeTextFile2(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $2 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')($1)))();
-              return writeTextFile2(UTF8)(modDir + "/src/lib.rs")($3)();
+              const modExists = existsSync(modDir);
+              const $5 = mkdir3(modDir);
+              if (!modExists) {
+                $5();
+                mkdir3(modDir + "/src")();
+              }
+              writeTextFile2(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $3 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')($2)))();
+              return writeTextFile2(UTF8)(modDir + "/src/lib.rs")($4)();
             };
           })(() => {
           })(toUnfoldable3(allModules))();
