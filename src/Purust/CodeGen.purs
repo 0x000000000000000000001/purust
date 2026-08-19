@@ -155,6 +155,9 @@ codegenExprType isRet ty = case unwrapType ty of
   Number -> "f64"
   String -> "String"
   Char -> "char"
+  Func args ret -> 
+    let retStr = if Array.length args > 1 then codegenExprType true (Func (Array.drop 1 args) ret) else codegenExprType true ret
+    in "std::rc::Rc<dyn Fn(" <> codegenExprType false (fromMaybe Any (Array.head args)) <> ") -> " <> retStr <> ">"
   _ -> "crate::UnknownType"
 
 boxUnbox :: ExprType -> ExprType -> String -> String
@@ -164,17 +167,40 @@ boxUnbox expected actual code =
     actStr = codegenExprType true actual
   in
     if expStr == actStr then code
-    else if expStr == "i64" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_int()"
-    else if expStr == "crate::UnknownType" && actStr == "i64" then "crate::mk_int(" <> code <> ")"
-    else if expStr == "bool" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_bool()"
-    else if expStr == "crate::UnknownType" && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
-    else if expStr == "f64" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_number()"
-    else if expStr == "crate::UnknownType" && actStr == "f64" then "crate::mk_number(" <> code <> ")"
-    else if expStr == "char" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_char()"
-    else if expStr == "crate::UnknownType" && actStr == "char" then "crate::mk_char(" <> code <> ")"
-    else if expStr == "String" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_string()"
-    else if expStr == "crate::UnknownType" && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
-    else code
+    else case unwrapType expected, unwrapType actual of
+      Func expArgs expRet, Func actArgs actRet ->
+        let expArg = fromMaybe Any (Array.head expArgs)
+            actArg = fromMaybe Any (Array.head actArgs)
+            expRetRem = if Array.length expArgs > 1 then Func (Array.drop 1 expArgs) expRet else expRet
+            actRetRem = if Array.length actArgs > 1 then Func (Array.drop 1 actArgs) actRet else actRet
+        in "std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |mut _a: " <> codegenExprType false expArg <> "| -> " <> codegenExprType true expRetRem <> " { " <> boxUnbox expRetRem actRetRem ("_f(" <> boxUnbox actArg expArg "_a" <> ")") <> " } })"
+      
+      Func expArgs expRet, _ ->
+        let expArg = fromMaybe Any (Array.head expArgs)
+            expRetRem = if Array.length expArgs > 1 then Func (Array.drop 1 expArgs) expRet else expRet
+        in if actStr == "crate::UnknownType" || actStr == "crate::Value" then
+          "std::rc::Rc::new({ let _f = (" <> code <> ").unwrap_func(); move |mut _a: " <> codegenExprType false expArg <> "| -> " <> codegenExprType true expRetRem <> " { " <> boxUnbox expRetRem Any ("_f(" <> boxUnbox Any expArg "_a" <> ")") <> " } })"
+        else code
+
+      _, Func actArgs actRet ->
+        let actArg = fromMaybe Any (Array.head actArgs)
+            actRetRem = if Array.length actArgs > 1 then Func (Array.drop 1 actArgs) actRet else actRet
+        in if expStr == "crate::UnknownType" || expStr == "crate::Value" then
+          "crate::Value::Func(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " <> boxUnbox Any actRetRem ("_f(" <> boxUnbox actArg Any "_a" <> ")") <> " } }))"
+        else code
+
+      _, _ ->
+        if expStr == "i64" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_int()"
+        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "i64" then "crate::mk_int(" <> code <> ")"
+        else if expStr == "bool" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_bool()"
+        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
+        else if expStr == "f64" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_number()"
+        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "f64" then "crate::mk_number(" <> code <> ")"
+        else if expStr == "char" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_char()"
+        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "char" then "crate::mk_char(" <> code <> ")"
+        else if expStr == "String" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_string()"
+        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
+        else code
 
 extractAllArgTypes :: ExprType -> Array ExprType
 extractAllArgTypes (ForAll _ t) = extractAllArgTypes t
@@ -291,7 +317,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                 body = case innerExpr of
                   NeutralExpr (Abs _ b) -> b
                   _ -> unsafeCrashWith "impossible"
-                genResult = genAbs modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty deduped body
+                genResult = genAbs modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty deduped inferredType body
               in { paramsCode: pCode, retCode: "UnknownType", bodyCode: genResult, isFunc: true }
             else
               { paramsCode: "", retCode: codegenExprType true inferredType, bodyCode: codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing aritiesMap Map.empty Set.empty false expr, isFunc: false }
@@ -445,36 +471,46 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
                    
     in resultCode
 
-genAbs :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> Array String -> NeutralExpr -> String
-genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body =
+genAbs :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
+genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr fnTy body =
     let
       capturedVars = Set.difference (freeVariables body) (Set.fromFoldable paramsArr)
+      expectedArgTys = extractAllArgTypes fnTy
+      expectedRetTy = extractFinalRetType fnTy
+
       initialState = { 
         freeVars: freeVariables body, 
         isInnermost: true, 
         code: 
           let bodyTy = inferTypeExpr currentMod aritiesMap bound body
               rawCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound capturedVars false body
-          in boxUnbox Any bodyTy rawCode
+          in boxUnbox expectedRetTy bodyTy rawCode
       }
       
-      finalState = Array.foldr (\p st -> 
+      finalState = Array.foldr (\(Tuple i p) st -> 
           let
-             pCode = (if p == "_" then "" else "mut ") <> p <> ": UnknownType"
+             pTy = fromMaybe Any (Array.index expectedArgTys i)
+             pCode = (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType false pTy
+             
+             remainingArgTys = Array.drop (i + 1) expectedArgTys
+             thisRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys expectedRetTy else expectedRetTy
+             retTyStr = codegenExprType true thisRetTy
+             
              neededByInner = st.freeVars
              pIsUsed = Set.member p neededByInner
              dropsCode = if p /= "_" && not pIsUsed then "    " <> p <> ".drop_explicit();\n" else ""
              thisClosureCaptures = Set.delete p neededByInner
              toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
-             clonesCode = String.joinWith "" (map (\v -> "    let mut " <> v <> " = " <> v <> ".clone();\n") toClone)
-             newCode = "crate::Value::Func(std::rc::Rc::new(move |" <> pCode <> "| -> UnknownType {\n" <>
+             clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
+             
+             newCode = "std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
                        clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
-                       "}))"
+                       "})"
           in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
-        ) initialState paramsArr
+        ) initialState (Array.mapWithIndex Tuple paramsArr)
       
       toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection finalState.freeVars alive))
-      outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> v <> " = " <> v <> ".clone();\n    ") toCloneOutside)
+      outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n    ") toCloneOutside)
       wrappedCode = if Array.length toCloneOutside > 0 then
           "{\n    " <> outsideClonesCode <> finalState.code <> "\n}"
         else finalState.code
@@ -518,9 +554,29 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           "    }))\n}"
     else case syn of
   Typed ty inner -> 
-    let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
-        innerTy = inferTypeExpr currentMod aritiesMap bound inner
-    in "/* Typed " <> codegenExprType true ty <> " <- " <> codegenExprType true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox ty innerTy innerCode
+    case inner of
+      NeutralExpr (Abs params body) ->
+        let
+          paramsArr = map (\(Tuple mbId lvl) -> case mbId of
+            Just (Ident n) -> sanitizeIdent n
+            Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
+        in "/* Typed Abs */" <> boxUnbox ty ty (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr ty body)
+      NeutralExpr (UncurriedAbs params body) ->
+        let
+          paramsArr = map (\(Tuple mbId lvl) -> case mbId of
+            Just (Ident n) -> sanitizeIdent n
+            Nothing -> "lvl_" <> show (unwrap lvl)) params
+        in "/* Typed UncurriedAbs */" <> boxUnbox ty ty (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr ty body)
+      NeutralExpr (UncurriedEffectAbs params body) ->
+        let
+          paramsArr = map (\(Tuple mbId lvl) -> case mbId of
+            Just (Ident n) -> sanitizeIdent n
+            Nothing -> "lvl_" <> show (unwrap lvl)) params
+        in "/* Typed UncurriedEffectAbs */" <> boxUnbox ty ty (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr ty body)
+      _ ->
+        let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+            innerTy = inferTypeExpr currentMod aritiesMap bound inner
+        in "/* Typed " <> codegenExprType true ty <> " <- " <> codegenExprType true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox ty innerTy innerCode
 
   App fn args -> 
     let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (App fn args))
@@ -829,19 +885,19 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
-    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body
+    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr Any body
   UncurriedAbs params body ->
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
-    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body
+    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr Any body
   UncurriedEffectAbs params body ->
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
-    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body
+    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr Any body
   PrimUndefined -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
   CtorSaturated _ _ _ (Ident ctorName) fields ->
     let fieldsCode = if Array.null fields then "None" else 

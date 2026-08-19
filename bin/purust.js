@@ -17945,6 +17945,9 @@ var codegenExprType = (isRet) => (ty) => {
   if (v.tag === "Char") {
     return "char";
   }
+  if (v.tag === "Func") {
+    return "std::rc::Rc<dyn Fn(" + codegenExprType(false)(0 < v._1.length ? v._1[0] : Any) + ") -> " + (v._1.length > 1 ? codegenExprType(true)($ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2)) : codegenExprType(true)(v._2)) + ">";
+  }
   return "crate::UnknownType";
 };
 var boxUnbox = (expected) => (actual) => (code) => {
@@ -17953,34 +17956,69 @@ var boxUnbox = (expected) => (actual) => (code) => {
   if (expStr === actStr) {
     return code;
   }
-  if (expStr === "i64" && actStr === "crate::UnknownType") {
+  const v = unwrapType(actual);
+  const v1 = unwrapType(expected);
+  if (v1.tag === "Func") {
+    if (v.tag === "Func") {
+      const expRetRem2 = v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2;
+      if (0 < v1._1.length) {
+        return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(false)(v1._1[0]) + "| -> " + codegenExprType(true)(expRetRem2) + " { " + boxUnbox(expRetRem2)(v._1.length > 1 ? $ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2) : v._2)("_f(" + boxUnbox(0 < v._1.length ? v._1[0] : Any)(v1._1[0])("_a") + ")") + " } })";
+      }
+      return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(false)(Any) + "| -> " + codegenExprType(true)(expRetRem2) + " { " + boxUnbox(expRetRem2)(v._1.length > 1 ? $ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2) : v._2)("_f(" + boxUnbox(0 < v._1.length ? v._1[0] : Any)(Any)("_a") + ")") + " } })";
+    }
+    const expRetRem = v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2;
+    if (0 < v1._1.length) {
+      if (actStr === "crate::UnknownType" || actStr === "crate::Value") {
+        return "std::rc::Rc::new({ let _f = (" + code + ").unwrap_func(); move |mut _a: " + codegenExprType(false)(v1._1[0]) + "| -> " + codegenExprType(true)(expRetRem) + " { " + boxUnbox(expRetRem)(Any)("_f(" + boxUnbox(Any)(v1._1[0])("_a") + ")") + " } })";
+      }
+      return code;
+    }
+    if (actStr === "crate::UnknownType" || actStr === "crate::Value") {
+      return "std::rc::Rc::new({ let _f = (" + code + ").unwrap_func(); move |mut _a: " + codegenExprType(false)(Any) + "| -> " + codegenExprType(true)(expRetRem) + " { " + boxUnbox(expRetRem)(Any)("_f(" + boxUnbox(Any)(Any)("_a") + ")") + " } })";
+    }
+    return code;
+  }
+  if (v.tag === "Func") {
+    const actRetRem = v._1.length > 1 ? $ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2) : v._2;
+    if (0 < v._1.length) {
+      if (expStr === "crate::UnknownType" || expStr === "crate::Value") {
+        return "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(Any)(actRetRem)("_f(" + boxUnbox(v._1[0])(Any)("_a") + ")") + " } }))";
+      }
+      return code;
+    }
+    if (expStr === "crate::UnknownType" || expStr === "crate::Value") {
+      return "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(Any)(actRetRem)("_f(" + boxUnbox(Any)(Any)("_a") + ")") + " } }))";
+    }
+    return code;
+  }
+  if (expStr === "i64" && (actStr === "crate::UnknownType" || actStr === "crate::Value")) {
     return "(" + code + ").unwrap_int()";
   }
-  if (expStr === "crate::UnknownType" && actStr === "i64") {
+  if ((expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "i64") {
     return "crate::mk_int(" + code + ")";
   }
-  if (expStr === "bool" && actStr === "crate::UnknownType") {
+  if (expStr === "bool" && (actStr === "crate::UnknownType" || actStr === "crate::Value")) {
     return "(" + code + ").unwrap_bool()";
   }
-  if (expStr === "crate::UnknownType" && actStr === "bool") {
+  if ((expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "bool") {
     return "crate::mk_bool(" + code + ")";
   }
-  if (expStr === "f64" && actStr === "crate::UnknownType") {
+  if (expStr === "f64" && (actStr === "crate::UnknownType" || actStr === "crate::Value")) {
     return "(" + code + ").unwrap_number()";
   }
-  if (expStr === "crate::UnknownType" && actStr === "f64") {
+  if ((expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "f64") {
     return "crate::mk_number(" + code + ")";
   }
-  if (expStr === "char" && actStr === "crate::UnknownType") {
+  if (expStr === "char" && (actStr === "crate::UnknownType" || actStr === "crate::Value")) {
     return "(" + code + ").unwrap_char()";
   }
-  if (expStr === "crate::UnknownType" && actStr === "char") {
+  if ((expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "char") {
     return "crate::mk_char(" + code + ")";
   }
-  if (expStr === "String" && actStr === "crate::UnknownType") {
+  if (expStr === "String" && (actStr === "crate::UnknownType" || actStr === "crate::Value")) {
     return "(" + code + ").unwrap_string()";
   }
-  if (expStr === "crate::UnknownType" && actStr === "String") {
+  if ((expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "String") {
     return "crate::mk_string(&(" + code + "))";
   }
   return code;
@@ -18166,26 +18204,34 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   }
   return boxUnbox(appTy)(Any)(foldlArray((acc) => (arg) => "(" + acc + ").unwrap_func()(" + arg + ")")(fnCode)(boxedClosureArgs));
 };
-var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (paramsArr) => (body) => {
-  const finalState = foldrArray((p) => (st) => {
-    const thisClosureCaptures = $$delete(ordString)(p)(st.freeVars);
-    return {
-      freeVars: thisClosureCaptures,
-      isInnermost: false,
-      code: (p === "_" ? "crate::Value::Func(std::rc::Rc::new(move |" + p + ": UnknownType| -> UnknownType {\n" : "crate::Value::Func(std::rc::Rc::new(move |mut " + p + ": UnknownType| -> UnknownType {\n") + joinWith("")(arrayMap((v) => "    let mut " + v + " = " + v + ".clone();\n")(filterImpl(
-        (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
-        fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
-      ))) + (p !== "_" && !member2(p)(st.freeVars) ? "    " + p + ".drop_explicit();\n" : "") + "    " + st.code + "\n}))"
+var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (paramsArr) => (fnTy) => (body) => {
+  const expectedRetTy = extractFinalRetType(fnTy);
+  const expectedArgTys = extractAllArgTypes(fnTy);
+  const finalState = foldrArray((v) => {
+    const $0 = v._1;
+    const $1 = v._2;
+    return (st) => {
+      const $2 = $0 + 1 | 0;
+      const remainingArgTys = $2 < 1 ? expectedArgTys : sliceImpl($2, expectedArgTys.length, expectedArgTys);
+      const thisClosureCaptures = $$delete(ordString)($1)(st.freeVars);
+      return {
+        freeVars: thisClosureCaptures,
+        isInnermost: false,
+        code: ($1 === "_" ? "std::rc::Rc::new(move |" + $1 + ": " : "std::rc::Rc::new(move |mut " + $1 + ": ") + codegenExprType(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
+          (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
+          fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
+        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    " + $1 + ".drop_explicit();\n" : "") + "    " + st.code + "\n})"
+      };
     };
   })({
     freeVars: freeVariables(body),
     isInnermost: true,
-    code: boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(body))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeDifference(
+    code: boxUnbox(expectedRetTy)(inferTypeExpr(currentMod)(aritiesMap)(bound)(body))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeDifference(
       ordString.compare,
       freeVariables(body),
       fromFoldable8(paramsArr)
     ))(false)(body))
-  })(paramsArr);
+  })(mapWithIndexArray(Tuple)(paramsArr));
   const toCloneOutside = filterImpl(
     (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
     fromFoldableImpl(
@@ -18193,7 +18239,7 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       unsafeIntersectionWith(ordString.compare, $$const, finalState.freeVars, alive)
     )
   );
-  const outsideClonesCode = joinWith("")(arrayMap((v) => "let mut " + v + " = " + v + ".clone();\n    ")(toCloneOutside));
+  const outsideClonesCode = joinWith("")(arrayMap((v) => "let mut " + sanitizeIdent(v) + " = " + sanitizeIdent(v) + ".clone();\n    ")(toCloneOutside));
   if (toCloneOutside.length > 0) {
     return "{\n    " + outsideClonesCode + finalState.code + "\n}";
   }
@@ -18242,6 +18288,39 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
     return "{\n    crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    }))\n}";
   }
   if (v.tag === "Typed") {
+    if (v._2.tag === "Abs") {
+      return "/* Typed Abs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
+        if (v1._1.tag === "Just") {
+          return sanitizeIdent(v1._1._1);
+        }
+        if (v1._1.tag === "Nothing") {
+          return "lvl_" + showIntImpl(v1._2);
+        }
+        fail();
+      })(v._2._1))(v._1)(v._2._2));
+    }
+    if (v._2.tag === "UncurriedAbs") {
+      return "/* Typed UncurriedAbs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
+        if (v1._1.tag === "Just") {
+          return sanitizeIdent(v1._1._1);
+        }
+        if (v1._1.tag === "Nothing") {
+          return "lvl_" + showIntImpl(v1._2);
+        }
+        fail();
+      })(v._2._1))(v._1)(v._2._2));
+    }
+    if (v._2.tag === "UncurriedEffectAbs") {
+      return "/* Typed UncurriedEffectAbs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
+        if (v1._1.tag === "Just") {
+          return sanitizeIdent(v1._1._1);
+        }
+        if (v1._1.tag === "Nothing") {
+          return "lvl_" + showIntImpl(v1._2);
+        }
+        fail();
+      })(v._2._1))(v._1)(v._2._2));
+    }
     const innerTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
     return "/* Typed " + codegenExprType(true)(v._1) + " <- " + codegenExprType(true)(innerTy) + " : " + printAST(v._2) + " */" + boxUnbox(v._1)(innerTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)(v._2));
   }
@@ -18807,7 +18886,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         return "lvl_" + showIntImpl(v1._2);
       }
       fail();
-    })(v._1))(v._2);
+    })(v._1))(Any)(v._2);
   }
   if (v.tag === "UncurriedAbs") {
     return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
@@ -18818,7 +18897,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         return "lvl_" + showIntImpl(v1._2);
       }
       fail();
-    })(v._1))(v._2);
+    })(v._1))(Any)(v._2);
   }
   if (v.tag === "UncurriedEffectAbs") {
     return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
@@ -18829,7 +18908,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         return "lvl_" + showIntImpl(v1._2);
       }
       fail();
-    })(v._1))(v._2);
+    })(v._1))(Any)(v._2);
   }
   if (v.tag === "PrimUndefined") {
     return "crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))";
@@ -18960,7 +19039,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
             return "" + p + ": UnknownType";
           }
           return "mut " + p + ": UnknownType";
-        })(deduped)) + ") -> UnknownType {\n    // AST: " + printAST(v._2) + "\n" + (isSelfRecursive ? "    loop {\n        break " + genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + ";\n    }" : genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible"))) + "\n}\n\n";
+        })(deduped)) + ") -> UnknownType {\n    // AST: " + printAST(v._2) + "\n" + (isSelfRecursive ? "    loop {\n        break " + genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(inferredType)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible")) + ";\n    }" : genAbs(modNameStr)(allZeroArity)(allMacroBindings)(isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing)(aritiesMap)(Leaf)(Leaf)(deduped)(inferredType)(innerExpr.tag === "Abs" ? innerExpr._2 : _crashWith("impossible"))) + "\n}\n\n";
       }
       return "pub fn " + identName + "()" + (codegenExprType(true)(inferredType) === "" ? "" : " -> " + codegenExprType(true)(inferredType)) + " {\n    // AST: " + printAST(v._2) + "\n" + codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(Leaf)(Leaf)(false)(v._2) + "\n}\n\n";
     })(group2.bindings),
