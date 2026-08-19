@@ -2,22 +2,19 @@
 
 L'objectif de cette roadmap est de transformer `purust` d'un générateur dynamique (façon JavaScript) à un générateur typé et performant, en s'inspirant des techniques développées pour `gopurs` via le TAST (`tcorefn`).
 
-## 1. Inlining des Type Classes pour les Primitives
+## 1. Inlining des Type Classes pour les Primitives (✅ Terminé)
+*L'inlining des opérations natives pour les primitives (ex: `Data_Eq_eqInt`, `Data_Semiring_addInt`) a été implémenté dans `CodeGen.purs` avec des appels directs et `boxUnbox`.*
 
-**Objectif :** Résoudre le goulot d'étranglement du benchmark *Polymorphism* (qui prend > 7 secondes en Rust contre 17ms en Go) causé par le dispatch dynamique des dictionnaires (closures). 
-Bonne nouvelle : L'AST de l'optimiseur (`NeutralExpr`) nous transmet **déjà** les types via le constructeur `Typed ExprType inner` ou via les variables globales nommées explicitement (ex: `Data_Eq_eqInt`). `purust` l'ignorait jusqu'à présent !
+## 2. Exploiter le TAST pour un Vrai Typage (En cours)
+*Une première infrastructure (`codegenExprType` / `boxUnbox`) a été mise en place, mais le typage natif n'est appliqué qu'en surface.*
+- [x] **Step 2.1 (Traduction des Types) :** `codegenExprType` est implémenté.
+- [x] **Step 2.4 (Frontières de Boxing/Unboxing) :** `boxUnbox` est déployé dans les appels (`genApp`) et lors de la définition des variables (`Let`).
+- [ ] **Step 2.2 (Typage des Closures) :** Mettre à jour `genAbs`. Actuellement, les closures génèrent encore systématiquement `move |mut x: UnknownType| -> UnknownType`. Il faut utiliser `codegenExprType` pour les arguments et retours de closures, de la même manière que pour les fonctions top-level.
 
-### Baby steps pour la Step 1 :
-- [ ] **Step 1.1 :** Dans `Purust.CodeGen` (fonction `codegenExpr_`), identifier le pattern de l'application (`App`) lorsqu'elle cible une fonction de typeclass primitive (comme `Data_Eq_eqInt`, `Data_Ord_compareInt`, `Data_Ring_addInt`).
-- [ ] **Step 1.2 :** Émettre directement l'opération native Rust correspondante (ex: `a == b`, `a < b`, `a + b`) en extrayant la valeur primitive avec `.unwrap()`, au lieu de générer un lourd `.call` de closure.
-- [ ] **Step 1.3 :** Lancer `bin/rust/run -c` pour compiler et valider que les benchmarks (notamment `Polymorphism`) ont drastiquement réduit leur temps d'exécution.
+## 3. Éradiquer le "God Struct" (`Record_a`) et le Virtual Dispatch (NOUVEAU - Priorité Absolue)
+**Constat (Benchmarking empirique) :** L'approche actuelle utilise un énorme struct global `Record_a` (~280 champs) instancié avec `..Default::default()` pour *absolument chaque valeur*. De plus, chaque closure est enfermée dans un `Rc<dyn Fn...>`, ce qui force des allocations sur la heap et un virtual dispatch systématique (empêchant l'inlining de Rust). Notre benchmark montre une **perte de performance de ~90x** sur de la récursion simple.
 
-## 2. Exploiter le TAST pour un Vrai Typage (Unboxing)
-
-**Objectif :** Ne plus utiliser `UnknownType` (qui wrappe tout dans `Record_a`). Se servir des types (`ExprType`) pour déclarer de vraies variables `i64` ou `bool` en Rust, et économiser toutes les allocations sur le tas. C'est un prérequis strict avant de pouvoir créer des Enums ou des Structs natifs.
-
-### Baby steps pour la Step 2 :
-- [ ] **Step 2.1 (Traduction des Types) :** Créer une fonction `rustType :: ExprType -> String` dans `CodeGen.purs` qui convertit `Int` en `i64`, `Boolean` en `bool`, `Number` en `f64`, `String` en `String`, et tout le reste (dont les variables de type `a`) en `UnknownType`.
-- [ ] **Step 2.2 (Typage des Fonctions) :** Mettre à jour `genAbs` pour que les arguments de fonction (et le type de retour) utilisent `rustType` plutôt que de forcer `UnknownType` partout.
-- [ ] **Step 2.3 (Typage des Variables Locales) :** Mettre à jour `Let` et `LetRec` pour que la génération des variables (`let mut x = ...`) utilise le type réel inféré de l'expression.
-- [ ] **Step 2.4 (Frontières de Boxing/Unboxing) :** Mettre à jour `genApp` (l'appel de fonction). Si une fonction polymorphique attend un `UnknownType` mais qu'on lui passe un argument `i64`, générer automatiquement l'emballage `purust_core::mk_int(val)`. À l'inverse, générer `.init_int.unwrap()` quand on reçoit un `UnknownType` là où un `i64` est attendu.
+### Baby steps pour la Step 3 :
+- [ ] **Step 3.1 (Stop Default Initialization) :** En attendant de supprimer `Record_a`, arrêter d'appeler `..Default::default()` sur une structure aussi massive juste pour allouer un primitif. Écrire des constructeurs ciblés.
+- [ ] **Step 3.2 (Structs Natifs) :** Utiliser les métadonnées de `dataDecls` / `classDecls` (fournies par le TAST) pour générer des `structs` Rust spécifiques et isolés, au lieu d'accumuler toutes les variables du programme dans `Record_a`.
+- [ ] **Step 3.3 (Unboxing des Closures) :** Remplacer les `Rc<dyn Fn>` par des closures natives, des fonctions inlinées ou des pointeurs statiques lorsque c'est possible (ex: fonctions top-level, ou closures qui ne capturent pas l'environnement). Le recours au `Rc<dyn Fn>` (et donc à la heap) doit être l'exception, et non la règle.
