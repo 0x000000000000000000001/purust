@@ -17723,6 +17723,78 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       }
       fail();
     })();
+    if (fullName === "Data_Eq_eqInt" && m === 2) {
+      if (0 < argsCodeArray.length) {
+        if (1 < argsCodeArray.length) {
+          return "purust_core::mk_bool((" + argsCodeArray[0] + ").init_int.unwrap() == (" + argsCodeArray[1] + ").init_int.unwrap())";
+        }
+        return "purust_core::mk_bool((" + argsCodeArray[0] + ").init_int.unwrap() == ().init_int.unwrap())";
+      }
+      if (1 < argsCodeArray.length) {
+        return "purust_core::mk_bool(().init_int.unwrap() == (" + argsCodeArray[1] + ").init_int.unwrap())";
+      }
+      return "purust_core::mk_bool(().init_int.unwrap() == ().init_int.unwrap())";
+    }
+    if (fullName === "Data_Semiring_addInt" && m === 2) {
+      if (0 < argsCodeArray.length) {
+        if (1 < argsCodeArray.length) {
+          return "purust_core::mk_int((" + argsCodeArray[0] + ").init_int.unwrap() + (" + argsCodeArray[1] + ").init_int.unwrap())";
+        }
+        return "purust_core::mk_int((" + argsCodeArray[0] + ").init_int.unwrap() + ().init_int.unwrap())";
+      }
+      if (1 < argsCodeArray.length) {
+        return "purust_core::mk_int(().init_int.unwrap() + (" + argsCodeArray[1] + ").init_int.unwrap())";
+      }
+      return "purust_core::mk_int(().init_int.unwrap() + ().init_int.unwrap())";
+    }
+    if (fullName === "Data_Ring_subInt" && m === 2) {
+      if (0 < argsCodeArray.length) {
+        if (1 < argsCodeArray.length) {
+          return "purust_core::mk_int((" + argsCodeArray[0] + ").init_int.unwrap() - (" + argsCodeArray[1] + ").init_int.unwrap())";
+        }
+        return "purust_core::mk_int((" + argsCodeArray[0] + ").init_int.unwrap() - ().init_int.unwrap())";
+      }
+      if (1 < argsCodeArray.length) {
+        return "purust_core::mk_int(().init_int.unwrap() - (" + argsCodeArray[1] + ").init_int.unwrap())";
+      }
+      return "purust_core::mk_int(().init_int.unwrap() - ().init_int.unwrap())";
+    }
+    if (fullName === "Data_Semiring_mulInt" && m === 2) {
+      if (0 < argsCodeArray.length) {
+        if (1 < argsCodeArray.length) {
+          return "purust_core::mk_int((" + argsCodeArray[0] + ").init_int.unwrap() * (" + argsCodeArray[1] + ").init_int.unwrap())";
+        }
+        return "purust_core::mk_int((" + argsCodeArray[0] + ").init_int.unwrap() * ().init_int.unwrap())";
+      }
+      if (1 < argsCodeArray.length) {
+        return "purust_core::mk_int(().init_int.unwrap() * (" + argsCodeArray[1] + ").init_int.unwrap())";
+      }
+      return "purust_core::mk_int(().init_int.unwrap() * ().init_int.unwrap())";
+    }
+    if (fullName === "Data_Ord_lessThanInt" && m === 2) {
+      if (0 < argsCodeArray.length) {
+        if (1 < argsCodeArray.length) {
+          return "purust_core::mk_bool((" + argsCodeArray[0] + ").init_int.unwrap() < (" + argsCodeArray[1] + ").init_int.unwrap())";
+        }
+        return "purust_core::mk_bool((" + argsCodeArray[0] + ").init_int.unwrap() < ().init_int.unwrap())";
+      }
+      if (1 < argsCodeArray.length) {
+        return "purust_core::mk_bool(().init_int.unwrap() < (" + argsCodeArray[1] + ").init_int.unwrap())";
+      }
+      return "purust_core::mk_bool(().init_int.unwrap() < ().init_int.unwrap())";
+    }
+    if (fullName === "Data_Ord_greaterThanInt" && m === 2) {
+      if (0 < argsCodeArray.length) {
+        if (1 < argsCodeArray.length) {
+          return "purust_core::mk_bool((" + argsCodeArray[0] + ").init_int.unwrap() > (" + argsCodeArray[1] + ").init_int.unwrap())";
+        }
+        return "purust_core::mk_bool((" + argsCodeArray[0] + ").init_int.unwrap() > ().init_int.unwrap())";
+      }
+      if (1 < argsCodeArray.length) {
+        return "purust_core::mk_bool(().init_int.unwrap() > (" + argsCodeArray[1] + ").init_int.unwrap())";
+      }
+      return "purust_core::mk_bool(().init_int.unwrap() > ().init_int.unwrap())";
+    }
     if (mbLoop.tag === "Just" && fullName === mbLoop._1.name && m === mbLoop._1.params.length) {
       if (mbLoop.tag === "Just") {
         return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let _tco_temp_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + joinWith("")(mapWithIndexArray((i) => (pName) => "        " + sanitizeIdent(pName) + " = _tco_temp_" + showIntImpl(i) + ";\n")(mbLoop._1.params)) + "        continue;\n    }";
@@ -18823,7 +18895,7 @@ var main = /* @__PURE__ */ (() => {
           }
           const allModules = modulesRef.value;
           const mainModuleSanitized = replaceAll(".")("_")(mainModule);
-          writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\n')();
+          writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\n\n[dependencies]\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\n')();
           writeTextFile2(UTF8)("output/purust_output/src/main.rs")("fn main() {\n    let mut _effect = Purs_" + mainModuleSanitized + "::main();\n    if _effect.call.is_some() {\n        (_effect.call.clone().unwrap())(purust_core::UnknownType::new(purust_core::Record_a { ..Default::default() }));\n    }\n}\n")();
           mkdir3("output/purust_output/purust_core")();
           mkdir3("output/purust_output/purust_core/src")();

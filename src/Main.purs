@@ -195,7 +195,7 @@ main = launchAff_ do
     
     let mainModuleSanitized = String.replaceAll (Pattern ".") (Replacement "_") mainModule
     let workspaceMembers = "\"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })))
-    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n"
+    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\n\n[dependencies]\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") rootCargoToml
     
     FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("fn main() {\n    let mut _effect = Purs_" <> mainModuleSanitized <> "::main();\n    if _effect.call.is_some() {\n        (_effect.call.clone().unwrap())(purust_core::UnknownType::new(purust_core::Record_a { ..Default::default() }));\n    }\n}\n")

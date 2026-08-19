@@ -267,7 +267,19 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
                               Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
                               Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_"
                             fullName = modPrefix <> sName
-                        in if (case mbLoop of
+                        in if fullName == "Data_Eq_eqInt" && m == 2 then
+                             "purust_core::mk_bool((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() == (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
+                           else if fullName == "Data_Semiring_addInt" && m == 2 then
+                             "purust_core::mk_int((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() + (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
+                           else if fullName == "Data_Ring_subInt" && m == 2 then
+                             "purust_core::mk_int((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() - (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
+                           else if fullName == "Data_Semiring_mulInt" && m == 2 then
+                             "purust_core::mk_int((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() * (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
+                           else if fullName == "Data_Ord_lessThanInt" && m == 2 then
+                             "purust_core::mk_bool((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() < (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
+                           else if fullName == "Data_Ord_greaterThanInt" && m == 2 then
+                             "purust_core::mk_bool((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() > (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
+                           else if (case mbLoop of
                                  Just { name: ln, params: lp } -> fullName == ln && m == Array.length lp
                                  _ -> false) then
                              case mbLoop of
