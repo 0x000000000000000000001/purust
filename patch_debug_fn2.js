@@ -1,0 +1,9 @@
+import fs from 'fs';
+let code = fs.readFileSync('src/Purust/CodeGen.purs', 'utf8');
+
+code = code.replace(
+    '      OpBooleanNot -> "!(" <> boxUnbox Boolean aTy aStrRaw <> " /* aTy: " <> codegenExprType true aTy <> ", a is " <> printAST a <> " */)"',
+    '      OpBooleanNot -> "!(" <> boxUnbox Boolean aTy aStrRaw <> " /* aTy: " <> codegenExprType true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of App fn _ -> printType (inferTypeExpr currentMod aritiesMap bound fn); _ -> "not app") <> " */)"'
+);
+
+fs.writeFileSync('src/Purust/CodeGen.purs', code);

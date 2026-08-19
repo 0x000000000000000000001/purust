@@ -15,7 +15,7 @@ import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, codegenExprType)
+import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprType)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
@@ -138,9 +138,20 @@ main = launchAff_ do
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let argTypes = extractAllArgTypes ty
                     args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprType true argTy) argTypes
-                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> UnknownType { UnknownType::new(Record_a { ..Default::default() }) }\n"
+                    _ = Debug.trace ("genFallback " <> unwrap name <> " args: " <> show args) \_ -> unit
+                    retTyStr = codegenExprType true (extractFinalRetType ty)
+                    defaultRet = case retTyStr of
+                          "i64" -> "0"
+                          "f64" -> "0.0"
+                          "bool" -> "false"
+                          "char" -> "'\\0'"
+                          "String" -> "String::new()"
+                          _ -> "UnknownType::new(Record_a { ..Default::default() })"
+                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> " <> retTyStr <> " { " <> defaultRet <> " }\n"
               else ""
 
+          let _ = Debug.trace ("Found FFI for " <> modNameStr <> " at: " <> show ffiPathMb) \_ -> unit
+          liftEffect $ Console.log ("Found FFI for " <> modNameStr <> " at: " <> show ffiPathMb)
           ffiContent <- case ffiPathMb of
             Just ffiPath -> do
               content <- FS.readTextFile UTF8 ffiPath

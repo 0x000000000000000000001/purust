@@ -1,4 +1,4 @@
-module Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, codegenExprType) where
+module Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprType) where
 import Debug as Debug
 
 
@@ -226,7 +226,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                     in boxUnbox retType bodyTy bodyRaw
                 Nothing -> 
                    let fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false innerExpr
-                       argsCodeArray = map (\p -> sanitizeIdent p <> ".clone()") deduped
+                       argsCodeArray = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in boxUnbox Any ty (sanitizeIdent p <> ".clone()")) deduped
                        callCode = Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
                    in boxUnbox retType Any callCode
             in { paramsCode: pCode, retCode: codegenExprType true retType, bodyCode: bodyCodeRaw, isFunc: true }
@@ -279,8 +279,8 @@ getTyPrefix currentMod (Qualified mbMod _) = case mbMod of
   Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_"
 
 
-genApp :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> Array NeutralExpr -> String
-genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn argsArray =
+genApp :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
+genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn argsArray =
     let getInner :: NeutralExpr -> NeutralExpr
         getInner (NeutralExpr (Typed _ inner)) = getInner inner
         getInner e = e
@@ -388,16 +388,20 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn
                                  let firstNArgs = Array.take n boxedArgs
                                      remainingArgs = Array.drop n argsCodeArray
                                      baseCall = fullName <> "(" <> String.joinWith ", " firstNArgs <> ")"
-                                 in Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") baseCall (Array.drop n boxedClosureArgs)
+                                     callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") baseCall (Array.drop n boxedClosureArgs)
+                                 in boxUnbox appTy Any callResult
                              else
                                -- Arity 0 or not a Func
-                               Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                               let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                               in boxUnbox appTy Any callResult
                            else
                              -- Not found in aritiesMap
-                             Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                             let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                             in boxUnbox appTy Any callResult
                  _ -> 
                    -- Not a Var
-                   Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                   let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                   in boxUnbox appTy Any callResult
                    
     in resultCode
 
@@ -476,12 +480,14 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
   Typed ty inner -> 
     let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
         innerTy = inferTypeExpr currentMod aritiesMap bound inner
-    in boxUnbox ty innerTy innerCode
+    in "/* Typed " <> codegenExprType true ty <> " <- " <> codegenExprType true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox ty innerTy innerCode
 
   App fn args -> 
-    genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn (NonEmptyArray.toArray args)
+    let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (App fn args))
+    in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn (NonEmptyArray.toArray args)
   UncurriedApp fn args ->
-    genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn args
+    let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (UncurriedApp fn args))
+    in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn args
   UncurriedEffectApp fn args -> 
     case fn of
       NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
@@ -504,7 +510,9 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         in case arg0 of
              Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
-      _ -> genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive fn args
+      _ -> 
+        let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (UncurriedEffectApp fn args))
+        in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn args
 
   Update base props ->
     let
@@ -512,7 +520,9 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       propsCode = Array.mapWithIndex (\i (Prop k v) -> 
         let subsequentProps = Array.drop (i + 1) propsArr
             aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
-        in "_mut." <> sanitizeIdent k <> " = Some(" <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForProp false v <> ");"
+            valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForProp false v
+            valTy = inferTypeExpr currentMod aritiesMap bound v
+        in "_mut." <> sanitizeIdent k <> " = Some(" <> boxUnbox Any valTy valCode <> ");"
       ) propsArr
       aliveForBase = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty propsArr)
     in
@@ -543,7 +553,13 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
     let aTy = inferTypeExpr currentMod aritiesMap bound a
         aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a
     in case op of
-      OpBooleanNot -> "!(" <> boxUnbox Boolean aTy aStrRaw <> ")"
+      OpBooleanNot -> "!(" <> boxUnbox Boolean aTy aStrRaw <> " /* aTy: " <> codegenExprType true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of
+        NeutralExpr (App fn _) -> printType (inferTypeExpr currentMod aritiesMap bound fn) <> ", lvl_3 in bound: " <> (case Map.lookup "lvl_3" bound of
+          Just t -> printType t
+          Nothing -> "none") <> ", lvl_3 in arities: " <> (case Map.lookup "lvl_3" aritiesMap of
+          Just t -> printType t
+          Nothing -> "none")
+        _ -> "not app") <> " */)"
       OpIntBitNot -> "!(" <> boxUnbox Int aTy aStrRaw <> ")"
       OpIntNegate -> "-(" <> boxUnbox Int aTy aStrRaw <> ")"
       OpNumberNegate -> "-(" <> boxUnbox Number aTy aStrRaw <> ")"
@@ -750,7 +766,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                 aliveForA = Set.union alive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
             in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForA false a
           ) arr
-      in "vec![" <> String.joinWith ", " arrCode <> "]"
+      in "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
     LitRecord props ->
       let arrProps = props
           fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
@@ -786,7 +802,9 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
             let subsequent = Array.drop (i + 1) fields
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
-            in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForV false val
+                valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForV false val
+                valTy = inferTypeExpr currentMod aritiesMap bound val
+            in boxUnbox Any valTy valCode
           ) fields) <> "]))"
     in "perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() })"
   CtorDef _ _ (Ident ctorName) _ -> "perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", ..Default::default() })"
@@ -939,7 +957,11 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
     case unwrapType (inferTypeExpr currentMod aritiesMap bound fn) of
       Func _ retTy -> retTy
       _ -> Any
+  Let _ _ _ inner -> inferTypeExpr currentMod aritiesMap bound inner
   LetRec _ _ inner -> inferTypeExpr currentMod aritiesMap bound inner
+  EffectBind _ _ _ inner -> inferTypeExpr currentMod aritiesMap bound inner
+  EffectPure inner -> inferTypeExpr currentMod aritiesMap bound inner
+  EffectDefer inner -> inferTypeExpr currentMod aritiesMap bound inner
   Branch branches def ->
     let defTy = inferTypeExpr currentMod aritiesMap bound def
     in case defTy of
@@ -948,6 +970,7 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
         in inferTypeExpr currentMod aritiesMap bound body
       _ -> defTy
   Typed Any inner -> inferTypeExpr currentMod aritiesMap bound inner
+  Typed ty _ -> ty
   Typed (TypeVar _) inner -> inferTypeExpr currentMod aritiesMap bound inner
   Typed t _ -> t
   CtorSaturated _ _ (ProperName tyNameStr) _ _ -> ADT "Main" ["Main", tyNameStr] []
@@ -986,6 +1009,10 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
     OpBooleanAnd -> Boolean
     OpBooleanOr -> Boolean
     OpBooleanOrd _ -> Boolean
+    OpIntOrd _ -> Boolean
+    OpNumberOrd _ -> Boolean
+    OpStringOrd _ -> Boolean
+    OpCharOrd _ -> Boolean
     OpStringAppend -> String
     _ -> Any
   Lit lit -> case lit of
