@@ -14,14 +14,10 @@ Bonne nouvelle : L'AST de l'optimiseur (`NeutralExpr`) nous transmet **déjà** 
 
 ## 2. Exploiter le TAST pour un Vrai Typage (Unboxing)
 
-**Objectif :** Ne plus utiliser `UnknownType` (qui wrappe tout dans `Record_a`). Se servir du constructeur `Typed t inner` (déjà présent dans l'AST) pour déclarer de vraies variables `i64`, `bool`, `String` en Rust, et économiser toutes les allocations sur le tas.
+**Objectif :** Ne plus utiliser `UnknownType` (qui wrappe tout dans `Record_a`). Se servir des types (`ExprType`) pour déclarer de vraies variables `i64` ou `bool` en Rust, et économiser toutes les allocations sur le tas. C'est un prérequis strict avant de pouvoir créer des Enums ou des Structs natifs.
 
-## 3. Enums Natifs pour les ADT (Suppression du Record_a)
-
-**Objectif :** Résoudre le temps du benchmark *Red-Black Tree* (3 secondes en Rust) causé par l'allocation de mega-structures `Record_a` sur le tas (heap) via `Rc`. Utiliser `dataDecls` pour générer des `enum` Rust stricts.
-
-### Baby steps pour la Step 3 :
-- [ ] **Step 3.1 :** Dans la fonction `codegenModule`, parcourir `backendMod.dataTypes` pour générer le code source des `enum` Rust (ex: `pub enum List { Nil, Cons(UnknownType, PerceusPtr<UnknownType>) }`).
-- [ ] **Step 3.2 :** Mettre à jour `CtorSaturated` dans `codegenExpr_` pour instancier directement ces `enum` natifs au lieu d'initialiser un lourd `Record_a`.
-- [ ] **Step 3.3 :** Mettre à jour `Branch` (Pattern Matching) pour utiliser un vrai `match` Rust sur ces enums au lieu de vérifier la chaîne de caractères `val.tag == "Cons"`.
-- [ ] **Step 3.4 :** Valider via les tests (Red-Black Tree, etc.) que le temps d'exécution s'effondre grâce à la légèreté des enums natifs.
+### Baby steps pour la Step 2 :
+- [ ] **Step 2.1 (Traduction des Types) :** Créer une fonction `rustType :: ExprType -> String` dans `CodeGen.purs` qui convertit `Int` en `i64`, `Boolean` en `bool`, `Number` en `f64`, `String` en `String`, et tout le reste (dont les variables de type `a`) en `UnknownType`.
+- [ ] **Step 2.2 (Typage des Fonctions) :** Mettre à jour `genAbs` pour que les arguments de fonction (et le type de retour) utilisent `rustType` plutôt que de forcer `UnknownType` partout.
+- [ ] **Step 2.3 (Typage des Variables Locales) :** Mettre à jour `Let` et `LetRec` pour que la génération des variables (`let mut x = ...`) utilise le type réel inféré de l'expression.
+- [ ] **Step 2.4 (Frontières de Boxing/Unboxing) :** Mettre à jour `genApp` (l'appel de fonction). Si une fonction polymorphique attend un `UnknownType` mais qu'on lui passe un argument `i64`, générer automatiquement l'emballage `purust_core::mk_int(val)`. À l'inverse, générer `.init_int.unwrap()` quand on reçoit un `UnknownType` là où un `i64` est attendu.
