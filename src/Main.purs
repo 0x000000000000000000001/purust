@@ -101,7 +101,17 @@ main = launchAff_ do
               
         in foldl processBind acc2 mod.decls
         
+    buildGlobalTypes :: List.List (Module Ann) -> Set.Set String
+    buildGlobalTypes modules = foldl processModule Set.empty modules
+      where
+      processModule acc (Module mod) =
+        let modStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap mod.name)
+            accData = foldl (\acc2 decl -> Set.insert (modStr <> "_" <> sanitizeIdent decl.name <> "_enum") acc2) acc mod.dataDecls
+            accClass = foldl (\acc2 decl -> Set.insert (modStr <> "_" <> sanitizeIdent decl.name) acc2) accData mod.classDecls
+        in accClass
+
   let globalArities = buildGlobalArities finalModules
+  let globalTypes = buildGlobalTypes finalModules
   
   directives <- loadDirectives
   

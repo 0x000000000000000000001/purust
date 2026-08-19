@@ -17215,22 +17215,19 @@ var toUnfoldable3 = /* @__PURE__ */ (() => {
   const $0 = unfoldableArray.unfoldr(stepUnfoldr);
   return (x) => $0($MapIter("IterNode", x, IterLeaf));
 })();
-var unwrapType = (unwrapType$a0$copy) => {
-  let unwrapType$a0 = unwrapType$a0$copy, unwrapType$c = true, unwrapType$r;
-  while (unwrapType$c) {
-    const v = unwrapType$a0;
-    if (v.tag === "ForAll") {
-      unwrapType$a0 = v._2;
-      continue;
-    }
-    if (v.tag === "ConstrainedType") {
-      unwrapType$a0 = v._2;
-      continue;
-    }
-    unwrapType$c = false;
-    unwrapType$r = v;
+var unwrapType = (v) => {
+  if (v.tag === "ForAll") {
+    return unwrapType(v._2);
   }
-  return unwrapType$r;
+  if (v.tag === "ConstrainedType") {
+    const csArgs = replicateImpl(v._1.length, Any);
+    const v1 = unwrapType(v._2);
+    if (v1.tag === "Func") {
+      return $ExprType("Func", [...csArgs, ...v1._1], v1._2);
+    }
+    return $ExprType("Func", csArgs, v1);
+  }
+  return v;
 };
 var sanitizeIdent = (s) => {
   const s4 = replaceAll(".")("_dot_")(replaceAll("-")("_minus_")(replaceAll("$")("_dollar_")(replaceAll("'")("_prime")(s))));
@@ -17411,6 +17408,23 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     }
     return Any;
   }
+  if (v.tag === "Abs") {
+    return $ExprType("Func", [Any], Any);
+  }
+  if (v.tag === "UncurriedAbs") {
+    return $ExprType(
+      "Func",
+      arrayMap((v1) => Any)(v._1),
+      Any
+    );
+  }
+  if (v.tag === "UncurriedEffectAbs") {
+    return $ExprType(
+      "Func",
+      arrayMap((v1) => Any)(v._1),
+      Any
+    );
+  }
   if (v.tag === "Let") {
     return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._4);
   }
@@ -17439,9 +17453,6 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     return defTy;
   }
   if (v.tag === "Typed") {
-    if (v._1.tag === "Any") {
-      return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
-    }
     return v._1;
   }
   if (v.tag === "CtorSaturated") {
@@ -18051,7 +18062,43 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       return sliceImpl($0, argsFree.length, argsFree);
     })())
   ))(false)(arg))(argsArray);
-  const boxedClosureArgs = mapWithIndexArray((i) => (argCode) => boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(i >= 0 && i < argsArray.length ? argsArray[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(argsCodeArray);
+  const buildCall = (buildCall$a0$copy) => (buildCall$a1$copy) => (buildCall$a2$copy) => {
+    let buildCall$a0 = buildCall$a0$copy, buildCall$a1 = buildCall$a1$copy, buildCall$a2 = buildCall$a2$copy, buildCall$c = true, buildCall$r;
+    while (buildCall$c) {
+      const accTy = buildCall$a0, accCode = buildCall$a1, idx = buildCall$a2;
+      if (idx >= argsCodeArray.length) {
+        buildCall$c = false;
+        buildCall$r = $Tuple(accTy, accCode);
+        continue;
+      }
+      const argTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(idx >= 0 && idx < argsArray.length ? argsArray[idx] : $BackendSyntax("Var", $Qualified(Nothing, "")));
+      if (idx >= 0 && idx < argsCodeArray.length) {
+        const argCode = argsCodeArray[idx];
+        const v3 = unwrapType(accTy);
+        if (v3.tag === "Func") {
+          buildCall$a0 = v3._1.length > 1 ? $ExprType("Func", sliceImpl(1, v3._1.length, v3._1), v3._2) : v3._2;
+          buildCall$a1 = "(" + accCode + ")(" + boxUnbox(0 < v3._1.length ? v3._1[0] : Any)(argTy)(argCode) + ")";
+          buildCall$a2 = idx + 1 | 0;
+          continue;
+        }
+        buildCall$a0 = Any;
+        buildCall$a1 = "(" + accCode + ").unwrap_func()(" + boxUnbox(Any)(argTy)(argCode) + ")";
+        buildCall$a2 = idx + 1 | 0;
+        continue;
+      }
+      const v2 = unwrapType(accTy);
+      if (v2.tag === "Func") {
+        buildCall$a0 = v2._1.length > 1 ? $ExprType("Func", sliceImpl(1, v2._1.length, v2._1), v2._2) : v2._2;
+        buildCall$a1 = "(" + accCode + ")(" + boxUnbox(0 < v2._1.length ? v2._1[0] : Any)(argTy)("") + ")";
+        buildCall$a2 = idx + 1 | 0;
+        continue;
+      }
+      buildCall$a0 = Any;
+      buildCall$a1 = "(" + accCode + ").unwrap_func()(" + boxUnbox(Any)(argTy)("") + ")";
+      buildCall$a2 = idx + 1 | 0;
+    }
+    return buildCall$r;
+  };
   const fnCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
     ordString.compare,
     $$const,
@@ -18062,7 +18109,8 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   if (v.tag === "Var") {
     const sName = sanitizeIdent(v._1._2);
     if (member12(sName)(bound)) {
-      return foldlArray((acc) => (arg) => "(" + acc + ").unwrap_func()(" + arg + ")")(fnCode)(mapWithIndexArray((i) => (argCode) => boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(i >= 0 && i < argsArray.length ? argsArray[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(argsCodeArray));
+      const v12 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(fn))(fnCode)(0);
+      return boxUnbox(appTy)(v12._1)(v12._2);
     }
     const fullName = (() => {
       if (v._1._1.tag === "Just") {
@@ -18182,9 +18230,9 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
           const missingCount = n - m | 0;
           const $1 = extractAllArgTypes(fnTy);
           const missingEtasTypes = m < 1 ? $1 : sliceImpl(m, $1.length, $1);
-          const evalArgs = mapWithIndexArray((i) => (v1) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
-          const etaArgs = mapWithIndexArray((i) => (v1) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
-          return "{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldrArray((etaArg) => (v2) => $Tuple(
+          const evalArgs = mapWithIndexArray((i) => (v13) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
+          const etaArgs = mapWithIndexArray((i) => (v13) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
+          return boxUnbox(appTy)(Any)("{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldrArray((etaArg) => (v2) => $Tuple(
             v2._1 - 1 | 0,
             "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")([
               ...evalArgs,
@@ -18196,17 +18244,40 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
               ...evalArgs,
               ...mapWithIndexArray((i) => (eta) => boxUnbox(i >= 0 && i < missingEtasTypes.length ? missingEtasTypes[i] : Any)(Any)(eta + ".clone()"))(etaArgs)
             ]) + ")")
-          ))(etaArgs)._2 + "\n}";
+          ))(etaArgs)._2 + "\n}");
         }
-        return boxUnbox(appTy)(Any)(foldlArray((acc) => (arg) => "(" + acc + ").unwrap_func()(" + arg + ")")(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, boxedArgs)) + ")")(n < 1 ? boxedClosureArgs : sliceImpl(n, boxedClosureArgs.length, boxedClosureArgs)));
+        const v12 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(foldlArray((acc) => (v13) => $BackendSyntax(
+          "App",
+          acc,
+          [$BackendSyntax("Var", $Qualified(Nothing, ""))]
+        ))(fn)(n < 1 ? [] : sliceImpl(0, n, argsArray))))(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, boxedArgs)) + ")")(n);
+        return boxUnbox(appTy)(v12._1)(v12._2);
       }
     }
   }
-  return boxUnbox(appTy)(Any)(foldlArray((acc) => (arg) => "(" + acc + ").unwrap_func()(" + arg + ")")(fnCode)(boxedClosureArgs));
+  const v1 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(fn))(fnCode)(0);
+  return boxUnbox(appTy)(v1._1)(v1._2);
 };
 var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (bound) => (alive) => (paramsArr) => (fnTy) => (body) => {
   const expectedRetTy = extractFinalRetType(fnTy);
   const expectedArgTys = extractAllArgTypes(fnTy);
+  const newBound = foldrArray((v) => {
+    const $0 = v._1;
+    const $1 = v._2;
+    return (b) => {
+      if ($0 >= 0 && $0 < expectedArgTys.length) {
+        const pTy = expectedArgTys[$0];
+        if ($1 === "_") {
+          return b;
+        }
+        return insert(ordString)(sanitizeIdent($1))(pTy)(b);
+      }
+      if ($1 === "_") {
+        return b;
+      }
+      return insert(ordString)(sanitizeIdent($1))(Any)(b);
+    };
+  })(bound)(mapWithIndexArray(Tuple)(paramsArr));
   const finalState = foldrArray((v) => {
     const $0 = v._1;
     const $1 = v._2;
@@ -18220,17 +18291,21 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         code: ($1 === "_" ? "std::rc::Rc::new(move |" + $1 + ": " : "std::rc::Rc::new(move |mut " + $1 + ": ") + codegenExprType(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
           (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
           fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
-        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    " + $1 + ".drop_explicit();\n" : "") + "    " + st.code + "\n})"
+        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    drop(" + $1 + ");\n" : "") + "    " + st.code + "\n})"
       };
     };
   })({
     freeVars: freeVariables(body),
     isInnermost: true,
-    code: boxUnbox(expectedRetTy)(inferTypeExpr(currentMod)(aritiesMap)(bound)(body))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeDifference(
-      ordString.compare,
-      freeVariables(body),
-      fromFoldable8(paramsArr)
-    ))(false)(body))
+    code: (() => {
+      const $0 = paramsArr.length;
+      const remainingArgs = $0 < 1 ? expectedArgTys : sliceImpl($0, expectedArgTys.length, expectedArgTys);
+      return boxUnbox(remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy)(inferTypeExpr(currentMod)(aritiesMap)(newBound)(body))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(newBound)(unsafeDifference(
+        ordString.compare,
+        freeVariables(body),
+        fromFoldable8(paramsArr)
+      ))(false)(body));
+    })()
   })(mapWithIndexArray(Tuple)(paramsArr));
   const toCloneOutside = filterImpl(
     (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
@@ -18288,7 +18363,21 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
     return "{\n    crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    }))\n}";
   }
   if (v.tag === "Typed") {
-    if (v._2.tag === "Abs") {
+    const stripTyped = (stripTyped$a0$copy) => {
+      let stripTyped$a0 = stripTyped$a0$copy, stripTyped$c = true, stripTyped$r;
+      while (stripTyped$c) {
+        const v1 = stripTyped$a0;
+        if (v1.tag === "Typed") {
+          stripTyped$a0 = v1._2;
+          continue;
+        }
+        stripTyped$c = false;
+        stripTyped$r = v1;
+      }
+      return stripTyped$r;
+    };
+    const inner = stripTyped(v._2);
+    if (inner.tag === "Abs") {
       return "/* Typed Abs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
         if (v1._1.tag === "Just") {
           return sanitizeIdent(v1._1._1);
@@ -18297,9 +18386,9 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return "lvl_" + showIntImpl(v1._2);
         }
         fail();
-      })(v._2._1))(v._1)(v._2._2));
+      })(inner._1))(v._1)(inner._2));
     }
-    if (v._2.tag === "UncurriedAbs") {
+    if (inner.tag === "UncurriedAbs") {
       return "/* Typed UncurriedAbs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
         if (v1._1.tag === "Just") {
           return sanitizeIdent(v1._1._1);
@@ -18308,9 +18397,9 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return "lvl_" + showIntImpl(v1._2);
         }
         fail();
-      })(v._2._1))(v._1)(v._2._2));
+      })(inner._1))(v._1)(inner._2));
     }
-    if (v._2.tag === "UncurriedEffectAbs") {
+    if (inner.tag === "UncurriedEffectAbs") {
       return "/* Typed UncurriedEffectAbs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
         if (v1._1.tag === "Just") {
           return sanitizeIdent(v1._1._1);
@@ -18319,10 +18408,10 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return "lvl_" + showIntImpl(v1._2);
         }
         fail();
-      })(v._2._1))(v._1)(v._2._2));
+      })(inner._1))(v._1)(inner._2));
     }
-    const innerTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
-    return "/* Typed " + codegenExprType(true)(v._1) + " <- " + codegenExprType(true)(innerTy) + " : " + printAST(v._2) + " */" + boxUnbox(v._1)(innerTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)(v._2));
+    const innerTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(inner);
+    return "/* Typed " + codegenExprType(true)(v._1) + " <- " + codegenExprType(true)(innerTy) + " : " + printAST(inner) + " */" + boxUnbox(v._1)(innerTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)(inner));
   }
   if (v.tag === "App") {
     return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inferTypeExpr(currentMod)(aritiesMap)(bound)($BackendSyntax(
@@ -18663,7 +18752,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1) + ".unwrap_record()." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
+      return boxUnbox(inferTypeExpr(currentMod)(aritiesMap)(bound)(v))(Any)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1) + ".unwrap_record()." + sanitizeIdent(v._2._1) + ".clone().unwrap()");
     }
     if (v._2.tag === "GetCtorField") {
       return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1) + ".unwrap_record().vals.as_ref().unwrap()[" + showIntImpl(v._2._6) + "].clone()";
@@ -18717,13 +18806,13 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         })();
         const expectedArgTys = extractAllArgTypes(fnTy);
         const etaArgs = mapWithIndexArray((i) => (v2$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
-        return foldrArray((etaArg) => (v3) => $Tuple(
+        return boxUnbox(fnTy)(Any)(foldrArray((etaArg) => (v3) => $Tuple(
           v3._1 - 1 | 0,
           "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs))) + " " + v3._2 + " }))"
         ))($Tuple(
           expectedArgsLength - 1 | 0,
           boxUnbox(Any)(extractFinalRetType(fnTy))(fullName + "(" + joinWith(", ")(mapWithIndexArray((i) => (eta) => boxUnbox(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any)(Any)(eta + ".clone()"))(etaArgs)) + ")")
-        ))(etaArgs)._2;
+        ))(etaArgs)._2);
       })();
       if (member2(fullName)(alive)) {
         return varCode + ".clone()";
@@ -18748,7 +18837,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       $$const,
       alive,
       bodyVars
-    ))(false)(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
+    ))(false)(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
   }
   if (v.tag === "EffectBind") {
     const stripEffectDefer = (v1) => {
@@ -18806,7 +18895,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       alive,
       freeVariables(v._4)
     ))(true)(realVal);
-    return "{\n    let mut " + name2 + " = " + (isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func(f) = &_val_eval {\n            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    " + name2 + ".drop_explicit();\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
+    return "{\n    let mut " + name2 + " = " + (isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func(f) = &_val_eval {\n            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
   }
   if (v.tag === "EffectPure") {
     return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1);
@@ -18933,7 +19022,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   if (v.tag === "LetRec") {
     const $0 = v._2;
     const $1 = v._3;
-    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }));")($0)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($0)) + "\n        " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
+    return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }));")($0)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "let val_" + sanitizeIdent(v1._1) + " = {\n        " + joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($0)) + "\n        " + boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v1._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -18949,7 +19038,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return sliceImpl($2, $0.length, $0);
         })())
       )
-    ))(false)(v1._2) + "\n    };")($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" + sanitizeIdent(v1._1) + ".as_record_mut()) }) = crate::Record_a { call: Some((val_" + sanitizeIdent(v1._1) + ").unwrap_func()), ..Default::default() };")($0)) + "\n    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)($1) + "\n}";
+    ))(false)(v1._2)) + "\n    };")($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" + sanitizeIdent(v1._1) + ".as_record_mut()) }) = crate::Record_a { call: Some((val_" + sanitizeIdent(v1._1) + ").unwrap_func()), ..Default::default() };")($0)) + "\n    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)($1) + "\n}";
   }
   if (v.tag === "EffectDefer") {
     return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)(v._1);
@@ -19003,7 +19092,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
         })());
         const mbLoop = isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing;
         const paramPairs = zipWithImpl(Tuple, deduped, allArgTypes);
-        const bound = fromFoldable23(arrayMap((v2) => $Tuple(v2._1 === "_" ? "_" : v2._1, v2._2))(paramPairs));
+        const bound = fromFoldable23(arrayMap((v2) => $Tuple(v2._1 === "_" ? "_" : sanitizeIdent(v2._1), v2._2))(paramPairs));
         return "pub fn " + identName + "(" + joinWith(", ")(arrayMap((v2) => {
           const p = sanitizeIdent(v2._1);
           return (p === "_" ? "" + p + ": " : "mut " + p + ": ") + codegenExprType(true)(v2._2);
@@ -19013,7 +19102,30 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
               return "    loop {\n        break " + boxUnbox(retType)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(extracted._1._2))(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(false)(extracted._1._2)) + ";\n    }";
             }
             if (extracted.tag === "Nothing") {
-              return "    loop {\n        break " + boxUnbox(retType)(Any)(foldlArray((acc) => (argCode) => "(" + acc + ").unwrap_func()(" + argCode + ")")(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(false)(innerExpr))(mapWithIndexArray((i) => (p) => boxUnbox(Any)(i >= 0 && i < allArgTypes.length ? allArgTypes[i] : Any)(sanitizeIdent(p) + ".clone()"))(deduped))) + ";\n    }";
+              const v2 = foldlArray((v3) => {
+                const $1 = v3._2;
+                const $2 = v3._1;
+                return (v4) => {
+                  const v5 = unwrapType($2);
+                  if (v5.tag === "Func") {
+                    return $Tuple(
+                      v5._1.length > 1 ? $ExprType("Func", sliceImpl(1, v5._1.length, v5._1), v5._2) : v5._2,
+                      "(" + $1 + ")(" + boxUnbox(0 < v5._1.length ? v5._1[0] : Any)(v4._1)(v4._2) + ")"
+                    );
+                  }
+                  return $Tuple(
+                    Any,
+                    "(" + $1 + ").unwrap_func()(" + boxUnbox(Any)(v4._1)(v4._2) + ")"
+                  );
+                };
+              })($Tuple(
+                inferTypeExpr(modNameStr)(aritiesMap)(bound)(innerExpr),
+                codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(false)(innerExpr)
+              ))(mapWithIndexArray((i) => (p) => $Tuple(
+                i >= 0 && i < allArgTypes.length ? allArgTypes[i] : Any,
+                sanitizeIdent(p) + ".clone()"
+              ))(deduped));
+              return "    loop {\n        break " + boxUnbox(retType)(v2._1)(v2._2) + ";\n    }";
             }
             fail();
           }
@@ -19021,7 +19133,30 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
             return boxUnbox(retType)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(extracted._1._2))(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(false)(extracted._1._2));
           }
           if (extracted.tag === "Nothing") {
-            return boxUnbox(retType)(Any)(foldlArray((acc) => (argCode) => "(" + acc + ").unwrap_func()(" + argCode + ")")(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(false)(innerExpr))(mapWithIndexArray((i) => (p) => boxUnbox(Any)(i >= 0 && i < allArgTypes.length ? allArgTypes[i] : Any)(sanitizeIdent(p) + ".clone()"))(deduped)));
+            const v2 = foldlArray((v3) => {
+              const $1 = v3._2;
+              const $2 = v3._1;
+              return (v4) => {
+                const v5 = unwrapType($2);
+                if (v5.tag === "Func") {
+                  return $Tuple(
+                    v5._1.length > 1 ? $ExprType("Func", sliceImpl(1, v5._1.length, v5._1), v5._2) : v5._2,
+                    "(" + $1 + ")(" + boxUnbox(0 < v5._1.length ? v5._1[0] : Any)(v4._1)(v4._2) + ")"
+                  );
+                }
+                return $Tuple(
+                  Any,
+                  "(" + $1 + ").unwrap_func()(" + boxUnbox(Any)(v4._1)(v4._2) + ")"
+                );
+              };
+            })($Tuple(
+              inferTypeExpr(modNameStr)(aritiesMap)(bound)(innerExpr),
+              codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(Leaf)(false)(innerExpr)
+            ))(mapWithIndexArray((i) => (p) => $Tuple(
+              i >= 0 && i < allArgTypes.length ? allArgTypes[i] : Any,
+              sanitizeIdent(p) + ".clone()"
+            ))(deduped));
+            return boxUnbox(retType)(v2._1)(v2._2);
           }
           fail();
         })() + "\n}\n\n";
