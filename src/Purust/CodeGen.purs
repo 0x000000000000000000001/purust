@@ -67,26 +67,59 @@ codegenPrelude :: Set.Set String -> String
 codegenPrelude fields =
   "#![allow(warnings)]\n\n" <>
   "use perceus_ptr::PerceusPtr;\n\n" <>
-  "pub type UnknownType = perceus_ptr::PerceusPtr<Record_a>;\n\n" <>
-  "pub fn mk_int(val: i64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_int: Some(val), ..Default::default() }) }\n" <>
-  "pub fn mk_bool(val: bool) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_bool: Some(val), ..Default::default() }) }\n" <>
-  "pub fn mk_number(val: f64) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_number: Some(val), ..Default::default() }) }\n" <>
-  "pub fn mk_string(val: &str) -> UnknownType { let val = val.to_string(); perceus_ptr::PerceusPtr::new(Record_a { init_string: Some(val), ..Default::default() }) }\n" <>
-  "pub fn mk_char(val: char) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_char: Some(val), ..Default::default() }) }\n" <>
-  "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { perceus_ptr::PerceusPtr::new(Record_a { init_array: Some(std::rc::Rc::new(val)), ..Default::default() }) }\n\n" <>
+  "#[derive(Clone)]\n" <>
+  "pub enum Value {\n" <>
+  "    Int(i64),\n" <>
+  "    Number(f64),\n" <>
+  "    Bool(bool),\n" <>
+  "    String(String),\n" <>
+  "    Char(char),\n" <>
+  "    Array(std::rc::Rc<Vec<UnknownType>>),\n" <>
+  "    Func(std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>),\n" <>
+  "    Record(perceus_ptr::PerceusPtr<Record_a>),\n" <>
+  "}\n\n" <>
+  "impl Value {\n" <>
+  "    pub fn unwrap_int(&self) -> i64 {\n" <>
+  "        if let Value::Int(v) = self { *v } else { panic!(\"Expected Int\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_number(&self) -> f64 {\n" <>
+  "        if let Value::Number(v) = self { *v } else { panic!(\"Expected Number\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_bool(&self) -> bool {\n" <>
+  "        if let Value::Bool(v) = self { *v } else { panic!(\"Expected Bool\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_string(&self) -> String {\n" <>
+  "        if let Value::String(v) = self { v.clone() } else { panic!(\"Expected String\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_char(&self) -> char {\n" <>
+  "        if let Value::Char(v) = self { *v } else { panic!(\"Expected Char\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" <>
+  "        if let Value::Array(v) = self { v.clone() } else { panic!(\"Expected Array\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_func(&self) -> std::rc::Rc<dyn Fn(UnknownType) -> UnknownType> {\n" <>
+  "        if let Value::Func(v) = self { v.clone() } else { panic!(\"Expected Func\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_record(&self) -> perceus_ptr::PerceusPtr<Record_a> {\n" <>
+  "        if let Value::Record(v) = self { v.clone() } else { panic!(\"Expected Record\"); }\n" <>
+  "    }\n" <>
+  "    pub fn as_record_mut(&mut self) -> &mut perceus_ptr::PerceusPtr<Record_a> {\n" <>
+  "        if let Value::Record(v) = self { v } else { panic!(\"Expected Record\"); }\n" <>
+  "    }\n" <>
+  "}\n\n" <>
+  "pub type UnknownType = Value;\n\n" <>
+  "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
+  "pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" <>
+  "pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" <>
+  "pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" <>
+  "pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" <>
+  "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" <>
   "#[derive(Clone, Default)]\npub struct Record_a {\n" <>
   "    pub tag: &'static str,\n" <>
   "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
-  "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
-  "    pub init_int: Option<i64>,\n" <>
-  "    pub init_number: Option<f64>,\n" <>
-  "    pub init_bool: Option<bool>,\n" <>
-  "    pub init_string: Option<String>,\n" <>
-  "    pub init_char: Option<char>,\n" <>
-  "    pub init_array: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
   Array.foldMap (\field ->
     let
-      ignore = Set.fromFoldable ["unwrap", "clone", "as_ref", "call", "tag", "vals", "init_int", "init_bool", "init_number", "init_string", "init_char", "init_array"]
+      ignore = Set.fromFoldable ["unwrap", "clone", "as_ref", "tag", "vals"]
     in if Set.member field ignore then "" else "    pub " <> sanitizeIdent field <> ": Option<UnknownType>,\n"
   ) (Array.fromFoldable fields) <>
   "}\n\n"
@@ -124,15 +157,15 @@ boxUnbox expected actual code =
     actStr = codegenExprType true actual
   in
     if expStr == actStr then code
-    else if expStr == "i64" && actStr == "crate::UnknownType" then "(" <> code <> ").init_int.unwrap()"
+    else if expStr == "i64" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_int()"
     else if expStr == "crate::UnknownType" && actStr == "i64" then "crate::mk_int(" <> code <> ")"
-    else if expStr == "bool" && actStr == "crate::UnknownType" then "(" <> code <> ").init_bool.unwrap()"
+    else if expStr == "bool" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_bool()"
     else if expStr == "crate::UnknownType" && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
-    else if expStr == "f64" && actStr == "crate::UnknownType" then "(" <> code <> ").init_number.unwrap()"
+    else if expStr == "f64" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_number()"
     else if expStr == "crate::UnknownType" && actStr == "f64" then "crate::mk_number(" <> code <> ")"
-    else if expStr == "char" && actStr == "crate::UnknownType" then "(" <> code <> ").init_char.unwrap()"
+    else if expStr == "char" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_char()"
     else if expStr == "crate::UnknownType" && actStr == "char" then "crate::mk_char(" <> code <> ")"
-    else if expStr == "String" && actStr == "crate::UnknownType" then "(" <> code <> ").init_string.clone().unwrap()"
+    else if expStr == "String" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_string()"
     else if expStr == "crate::UnknownType" && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
     else code
 
