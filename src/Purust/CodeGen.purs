@@ -98,7 +98,7 @@ codegenPrelude fields =
   "        if let Value::Array(v) = self { v.clone() } else { panic!(\"Expected Array\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_func(&self) -> std::rc::Rc<dyn Fn(UnknownType) -> UnknownType> {\n" <>
-  "        if let Value::Func(v) = self { v.clone() } else { panic!(\"Expected Func\"); }\n" <>
+  "        if let Value::Func(v) = self { v.clone() } else if let Value::Record(v) = self { v.call.clone().unwrap() } else { panic!(\"Expected Func\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_record(&self) -> perceus_ptr::PerceusPtr<Record_a> {\n" <>
   "        if let Value::Record(v) = self { v.clone() } else { panic!(\"Expected Record\"); }\n" <>
@@ -260,7 +260,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                 Nothing -> 
                    let fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false innerExpr
                        argsCodeArray = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in boxUnbox Any ty (sanitizeIdent p <> ".clone()")) deduped
-                       callCode = Array.foldl (\acc argCode -> "(" <> acc <> ").call.clone().unwrap()(" <> argCode <> ")") fnCode argsCodeArray
+                       callCode = Array.foldl (\acc argCode -> "(" <> acc <> ").unwrap_func()(" <> argCode <> ")") fnCode argsCodeArray
                    in boxUnbox retType Any callCode
             in { paramsCode: pCode, retCode: codegenExprType true retType, bodyCode: bodyCodeRaw, isFunc: true }
           else 
@@ -350,7 +350,7 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
                                   argTy = inferTypeExpr currentMod aritiesMap bound argExpr
                               in boxUnbox Any argTy argCode
                             ) argsCodeArray
-                        in Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedArgs
+                        in Array.foldl (\acc arg -> "(" <> acc <> ").unwrap_func()(" <> arg <> ")") fnCode boxedArgs
                       else
                         let modPrefix = case mbMod of
                               Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
@@ -412,7 +412,7 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
                                      closuresCode = case Array.foldr (\etaArg (Tuple i accCode) ->
                                          let prevEtas = Array.take i etaArgs
                                              clonesCode = String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") (evalArgs <> prevEtas))
-                                         in Tuple (i - 1) ("perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType {\n" <> clonesCode <> "    " <> accCode <> "\n})), ..Default::default() })")
+                                         in Tuple (i - 1) ("crate::Value::Func(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType {\n" <> clonesCode <> "    " <> accCode <> "\n}))")
                                        ) (Tuple (missingCount - 1) boxedInnerCall) etaArgs of
                                        Tuple _ res -> res
                                  in "{\n" <> String.joinWith "" letArgsCode <> "    " <> closuresCode <> "\n}"
@@ -421,19 +421,19 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
                                  let firstNArgs = Array.take n boxedArgs
                                      remainingArgs = Array.drop n argsCodeArray
                                      baseCall = fullName <> "(" <> String.joinWith ", " firstNArgs <> ")"
-                                     callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") baseCall (Array.drop n boxedClosureArgs)
+                                     callResult = Array.foldl (\acc arg -> "(" <> acc <> ").unwrap_func()(" <> arg <> ")") baseCall (Array.drop n boxedClosureArgs)
                                  in boxUnbox appTy Any callResult
                              else
                                -- Arity 0 or not a Func
-                               let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                               let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").unwrap_func()(" <> arg <> ")") fnCode boxedClosureArgs
                                in boxUnbox appTy Any callResult
                            else
                              -- Not found in aritiesMap
-                             let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                             let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").unwrap_func()(" <> arg <> ")") fnCode boxedClosureArgs
                              in boxUnbox appTy Any callResult
                  _ -> 
                    -- Not a Var
-                   let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").call.clone().unwrap()(" <> arg <> ")") fnCode boxedClosureArgs
+                   let callResult = Array.foldl (\acc arg -> "(" <> acc <> ").unwrap_func()(" <> arg <> ")") fnCode boxedClosureArgs
                    in boxUnbox appTy Any callResult
                    
     in resultCode
@@ -460,9 +460,9 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive pa
              thisClosureCaptures = Set.delete p neededByInner
              toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
              clonesCode = String.joinWith "" (map (\v -> "    let mut " <> v <> " = " <> v <> ".clone();\n") toClone)
-             newCode = "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |" <> pCode <> "| -> UnknownType {\n" <>
+             newCode = "crate::Value::Func(std::rc::Rc::new(move |" <> pCode <> "| -> UnknownType {\n" <>
                        clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
-                       "})), ..Default::default() })"
+                       "}))"
           in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
         ) initialState paramsArr
       
@@ -502,13 +502,13 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound freeVars true expr
       in
         if Array.length toCloneOutside > 0 then
-          "{\n    " <> outsideClonesCode <> "perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    " <> outsideClonesCode <> "crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
-          "    })), ..Default::default() })\n}"
+          "    }))\n}"
         else
-          "{\n    perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
-          "    })), ..Default::default() })\n}"
+          "    }))\n}"
     else case syn of
   Typed ty inner -> 
     let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
@@ -596,8 +596,8 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       OpIntBitNot -> "!(" <> boxUnbox Int aTy aStrRaw <> ")"
       OpIntNegate -> "-(" <> boxUnbox Int aTy aStrRaw <> ")"
       OpNumberNegate -> "-(" <> boxUnbox Number aTy aStrRaw <> ")"
-      OpArrayLength -> "((" <> boxUnbox Any aTy aStrRaw <> ").init_array.as_ref().unwrap().len() as i64)"
-      OpIsTag (Qualified _ (Ident ctorName)) -> "(" <> boxUnbox Any aTy aStrRaw <> ".tag == \"" <> ctorName <> "\")"
+      OpArrayLength -> "((" <> boxUnbox Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
+      OpIsTag (Qualified _ (Ident ctorName)) -> "(" <> boxUnbox Any aTy aStrRaw <> ".unwrap_record().tag == \"" <> ctorName <> "\")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
@@ -658,17 +658,17 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
       OpArrayIndex -> 
         let aStr = boxUnbox Any aTy aStrRaw
-        in "(" <> aStr <> ").init_array.as_ref().unwrap()[(" <> bStrInt <> ") as usize].clone()"
+        in "(" <> aStr <> ").unwrap_array()[(" <> bStrInt <> ") as usize].clone()"
       OpNumberNum OpAdd -> "(" <> aStrNum <> " + " <> bStrNum <> ")"
       OpNumberNum OpSubtract -> "(" <> aStrNum <> " - " <> bStrNum <> ")"
       OpNumberNum OpMultiply -> "(" <> aStrNum <> " * " <> bStrNum <> ")"
       OpNumberNum OpDivide -> "(" <> aStrNum <> " / " <> bStrNum <> ")"
       OpStringAppend -> "format!(\"{}{}\", " <> aStrStr <> ", " <> bStrStr <> ")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
-  Accessor base (GetProp k) -> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false base <> "." <> sanitizeIdent k <> ".clone().unwrap()"
+  Accessor base (GetProp k) -> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false base <> ".unwrap_record()." <> sanitizeIdent k <> ".clone().unwrap()"
   Accessor base (GetCtorField _ _ _ _ _ fieldIdx) ->
     let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false base
-    in baseStr <> ".vals.as_ref().unwrap()[" <> show fieldIdx <> "].clone()"
+    in baseStr <> ".unwrap_record().vals.as_ref().unwrap()[" <> show fieldIdx <> "].clone()"
   Var (Qualified mbMod (Ident name)) ->
     let sName = sanitizeIdent name
     in case Map.lookup sName bound of
@@ -705,7 +705,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                in (case Array.foldr (\etaArg (Tuple i code) -> 
                    let prevEtas = Array.take i etaArgs
                        clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
-                   in Tuple (i - 1) ("perceus_ptr::PerceusPtr::new(Record_a { call: Some(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " })), ..Default::default() })")
+                   in Tuple (i - 1) ("crate::Value::Func(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " }))")
                  ) (Tuple (expectedArgsLength - 1) boxedInnerCall) etaArgs of
                  Tuple _ res -> res)
           else
@@ -810,7 +810,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                 vFinal = boxUnbox Any vTy vCode
             in sanitizeIdent k <> ": Some(" <> vFinal <> ")"
           ) arrProps)
-      in "perceus_ptr::PerceusPtr::new(Record_a { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() })"
+      in "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
   Abs params body -> 
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
@@ -829,7 +829,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
     in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr body
-  PrimUndefined -> "crate::UnknownType::new(crate::Record_a { ..Default::default() })"
+  PrimUndefined -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
   CtorSaturated _ _ _ (Ident ctorName) fields ->
     let fieldsCode = if Array.null fields then "None" else 
           "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
@@ -839,15 +839,15 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                 valTy = inferTypeExpr currentMod aritiesMap bound val
             in boxUnbox Any valTy valCode
           ) fields) <> "]))"
-    in "perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() })"
-  CtorDef _ _ (Ident ctorName) _ -> "perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", ..Default::default() })"
+    in "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() }))"
+  CtorDef _ _ (Ident ctorName) _ -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", ..Default::default() }))"
 
   LetRec _ binds body ->
     let
       bindsArray = NonEmptyArray.toArray binds
       
       declCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "let mut " <> sanitizeIdent n <> " = perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() });"
+          "let mut " <> sanitizeIdent n <> " = crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }));"
         ) bindsArray)
       
       evalCode = String.joinWith "\n    " (Array.mapWithIndex (\i (Tuple (Ident n) val) -> 
@@ -862,7 +862,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         ) bindsArray)
         
       mutCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "*(unsafe { perceus_ptr::PerceusPtr::force_mut(&mut " <> sanitizeIdent n <> ") }) = (*val_" <> sanitizeIdent n <> ").clone();"
+          "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" <> sanitizeIdent n <> ".as_record_mut()) }) = crate::Record_a { call: Some((*val_" <> sanitizeIdent n <> ").unwrap_func()), ..Default::default() };"
         ) bindsArray)
         
       bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock body
