@@ -18,4 +18,10 @@ Bonne nouvelle : L'AST de l'optimiseur (`NeutralExpr`) nous transmet **déjà** 
 
 ## 3. Enums Natifs pour les ADT (Suppression du Record_a)
 
-**Objectif :** Résoudre le temps du benchmark *Red-Black Tree* (3 secondes en Rust) causé par l'allocation de mega-structures `Record_a` via `Rc`. Utiliser `dataDecls` pour générer des `enum` Rust stricts avec `PerceusPtr`.
+**Objectif :** Résoudre le temps du benchmark *Red-Black Tree* (3 secondes en Rust) causé par l'allocation de mega-structures `Record_a` sur le tas (heap) via `Rc`. Utiliser `dataDecls` pour générer des `enum` Rust stricts.
+
+### Baby steps pour la Step 3 :
+- [ ] **Step 3.1 :** Dans la fonction `codegenModule`, parcourir `backendMod.dataTypes` pour générer le code source des `enum` Rust (ex: `pub enum List { Nil, Cons(UnknownType, PerceusPtr<UnknownType>) }`).
+- [ ] **Step 3.2 :** Mettre à jour `CtorSaturated` dans `codegenExpr_` pour instancier directement ces `enum` natifs au lieu d'initialiser un lourd `Record_a`.
+- [ ] **Step 3.3 :** Mettre à jour `Branch` (Pattern Matching) pour utiliser un vrai `match` Rust sur ces enums au lieu de vérifier la chaîne de caractères `val.tag == "Cons"`.
+- [ ] **Step 3.4 :** Valider via les tests (Red-Black Tree, etc.) que le temps d'exécution s'effondre grâce à la légèreté des enums natifs.
