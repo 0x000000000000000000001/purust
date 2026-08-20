@@ -1,0 +1,9 @@
+@@ -613,7 +613,7 @@
+                  Number -> Number
+                  String -> String
+                  Char -> Char
+-                 _ -> ty
++                 _ -> if inEffectBlock && codegenExprType true ty == "crate::UnknownType" then innerTy else ty
+          in "/* Typed " <> codegenExprType true actualTy <> " <- " <> codegenExprType true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox actualTy innerTy innerCode
+  
+    App fn args -> 

@@ -347,42 +347,34 @@ var foldlArray = function(f) {
 };
 
 // output-es/Data.Foldable/index.js
-var identity2 = (x) => x;
+var monoidDual = /* @__PURE__ */ (() => {
+  const semigroupDual1 = { append: (v) => (v1) => (x) => v1(v(x)) };
+  return { mempty: (x) => x, Semigroup0: () => semigroupDual1 };
+})();
 var monoidEndo = /* @__PURE__ */ (() => {
   const semigroupEndo1 = { append: (v) => (v1) => (x) => v(v1(x)) };
   return { mempty: (x) => x, Semigroup0: () => semigroupEndo1 };
 })();
-var monoidDual = /* @__PURE__ */ (() => {
-  const $0 = monoidEndo.Semigroup0();
-  const semigroupDual1 = { append: (v) => (v1) => $0.append(v1)(v) };
-  return { mempty: monoidEndo.mempty, Semigroup0: () => semigroupDual1 };
-})();
+var identity1 = (x) => x;
+var identity2 = (x) => x;
 var foldableTuple = { foldr: (f) => (z) => (v) => f(v._2)(z), foldl: (f) => (z) => (v) => f(z)(v._2), foldMap: (dictMonoid) => (f) => (v) => f(v._2) };
 var foldableArray = {
   foldr: foldrArray,
   foldl: foldlArray,
   foldMap: (dictMonoid) => {
+    const Semigroup0 = dictMonoid.Semigroup0();
     const mempty = dictMonoid.mempty;
-    return (f) => foldableArray.foldr((x) => (acc) => dictMonoid.Semigroup0().append(f(x))(acc))(mempty);
+    return (f) => foldableArray.foldr((x) => (acc) => Semigroup0.append(f(x))(acc))(mempty);
   }
 };
-var foldlDefault = (dictFoldable) => {
-  const foldMap23 = dictFoldable.foldMap(monoidDual);
-  return (c) => (u) => (xs) => foldMap23((x) => (a) => c(a)(x))(xs)(u);
-};
-var foldrDefault = (dictFoldable) => {
-  const foldMap23 = dictFoldable.foldMap(monoidEndo);
-  return (c) => (u) => (xs) => foldMap23((x) => c(x))(xs)(u);
-};
-var lookup = (dictFoldable) => {
-  const foldMap23 = dictFoldable.foldMap(monoidFirst);
-  return (dictEq) => (a) => foldMap23((v) => {
-    if (dictEq.eq(a)(v._1)) {
-      return $Maybe("Just", v._2);
-    }
-    return Nothing;
-  });
-};
+var foldlDefault = (dictFoldable) => (c) => (u) => (xs) => dictFoldable.foldMap(monoidDual)((x) => (a) => c(a)(x))(xs)(u);
+var foldrDefault = (dictFoldable) => (c) => (u) => (xs) => dictFoldable.foldMap(monoidEndo)((x) => c(x))(xs)(u);
+var lookup = (dictFoldable) => (dictEq) => (a) => dictFoldable.foldMap(monoidFirst)((v) => {
+  if (dictEq.eq(a)(v._1)) {
+    return $Maybe("Just", v._2);
+  }
+  return Nothing;
+});
 var or = (dictFoldable) => (dictHeytingAlgebra) => dictFoldable.foldMap((() => {
   const semigroupDisj1 = { append: (v) => (v1) => dictHeytingAlgebra.disj(v)(v1) };
   return { mempty: dictHeytingAlgebra.ff, Semigroup0: () => semigroupDisj1 };
@@ -446,11 +438,11 @@ var eqBoolean = { eq: eqBooleanImpl };
 
 // output-es/Data.Ord/foreign.js
 var unsafeCompareImpl = function(lt) {
-  return function(eq2) {
+  return function(eq) {
     return function(gt) {
       return function(x) {
         return function(y) {
-          return x < y ? lt : x === y ? eq2 : gt;
+          return x < y ? lt : x === y ? eq : gt;
         };
       };
     };
@@ -494,7 +486,7 @@ var ordInt = { compare: /* @__PURE__ */ ordIntImpl(LT)(EQ)(GT), Eq0: () => eqInt
 var ordChar = { compare: /* @__PURE__ */ ordCharImpl(LT)(EQ)(GT), Eq0: () => eqChar };
 var ordBoolean = { compare: /* @__PURE__ */ ordBooleanImpl(LT)(EQ)(GT), Eq0: () => eqBoolean };
 var ordArray = (dictOrd) => {
-  const eqArray2 = { eq: eqArrayImpl(dictOrd.Eq0().eq) };
+  const eqArray4 = { eq: eqArrayImpl(dictOrd.Eq0().eq) };
   return {
     compare: (xs) => (ys) => ordInt.compare(0)(ordArrayImpl((x) => (y) => {
       const v = dictOrd.compare(x)(y);
@@ -509,7 +501,7 @@ var ordArray = (dictOrd) => {
       }
       fail();
     })(xs)(ys)),
-    Eq0: () => eqArray2
+    Eq0: () => eqArray4
   };
 };
 
@@ -601,10 +593,16 @@ var traverseArrayImpl = /* @__PURE__ */ (function() {
 })();
 
 // output-es/Data.Traversable/index.js
-var identity3 = (x) => x;
+var identity = (x) => x;
 var traversableTuple = {
-  traverse: (dictApplicative) => (f) => (v) => dictApplicative.Apply0().Functor0().map(Tuple(v._1))(f(v._2)),
-  sequence: (dictApplicative) => (v) => dictApplicative.Apply0().Functor0().map(Tuple(v._1))(v._2),
+  traverse: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
+    return (f) => (v) => Functor0.map(Tuple(v._1))(f(v._2));
+  },
+  sequence: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
+    return (v) => Functor0.map(Tuple(v._1))(v._2);
+  },
   Functor0: () => functorTuple,
   Foldable1: () => foldableTuple
 };
@@ -613,17 +611,9 @@ var traversableArray = {
     const Apply0 = dictApplicative.Apply0();
     return traverseArrayImpl(Apply0.apply)(Apply0.Functor0().map)(dictApplicative.pure);
   },
-  sequence: (dictApplicative) => traversableArray.traverse(dictApplicative)(identity3),
+  sequence: (dictApplicative) => traversableArray.traverse(dictApplicative)(identity),
   Functor0: () => functorArray,
   Foldable1: () => foldableArray
-};
-var mapAccumR = (dictTraversable) => {
-  const traverse22 = dictTraversable.traverse(applicativeStateR);
-  return (f) => (s0) => (xs) => traverse22((a) => (s) => f(s)(a))(xs)(s0);
-};
-var mapAccumL = (dictTraversable) => {
-  const traverse22 = dictTraversable.traverse(applicativeStateL);
-  return (f) => (s0) => (xs) => traverse22((a) => (s) => f(s)(a))(xs)(s0);
 };
 
 // output-es/Data.Array/foreign.js
@@ -715,7 +705,7 @@ var filterImpl = function(f, xs) {
   return xs.filter(f);
 };
 var sortByImpl2 = /* @__PURE__ */ (function() {
-  function mergeFromTo(compare3, fromOrdering, xs1, xs2, from, to) {
+  function mergeFromTo(compare, fromOrdering, xs1, xs2, from, to) {
     var mid;
     var i;
     var j;
@@ -724,15 +714,15 @@ var sortByImpl2 = /* @__PURE__ */ (function() {
     var y;
     var c;
     mid = from + (to - from >> 1);
-    if (mid - from > 1) mergeFromTo(compare3, fromOrdering, xs2, xs1, from, mid);
-    if (to - mid > 1) mergeFromTo(compare3, fromOrdering, xs2, xs1, mid, to);
+    if (mid - from > 1) mergeFromTo(compare, fromOrdering, xs2, xs1, from, mid);
+    if (to - mid > 1) mergeFromTo(compare, fromOrdering, xs2, xs1, mid, to);
     i = from;
     j = mid;
     k = from;
     while (i < mid && j < to) {
       x = xs2[i];
       y = xs2[j];
-      c = fromOrdering(compare3(x)(y));
+      c = fromOrdering(compare(x)(y));
       if (c > 0) {
         xs1[k++] = y;
         ++j;
@@ -748,11 +738,11 @@ var sortByImpl2 = /* @__PURE__ */ (function() {
       xs1[k++] = xs2[j++];
     }
   }
-  return function(compare3, fromOrdering, xs) {
+  return function(compare, fromOrdering, xs) {
     var out;
     if (xs.length < 2) return xs;
     out = xs.slice(0);
-    mergeFromTo(compare3, fromOrdering, out, xs.slice(0), 0, xs.length);
+    mergeFromTo(compare, fromOrdering, out, xs.slice(0), 0, xs.length);
     return out;
   };
 })();
@@ -783,10 +773,6 @@ var allImpl = function(p, xs) {
 };
 
 // output-es/Data.Array/index.js
-var zipWithA = (dictApplicative) => {
-  const sequence1 = traversableArray.traverse(dictApplicative)(identity3);
-  return (f) => (xs) => (ys) => sequence1(zipWithImpl(f, xs, ys));
-};
 var sortBy = (comp) => ($0) => sortByImpl2(
   comp,
   (v) => {
@@ -837,14 +823,13 @@ var nubBy = (comp) => (xs) => {
     return arrayMap(snd)(sortWith(ordInt)(fst)((() => {
       const result = [indexedAndSorted[0]];
       for (const v1 of indexedAndSorted) {
-        const $0 = comp((() => {
-          const $02 = result.length - 1 | 0;
-          if ($02 >= 0 && $02 < result.length) {
-            return result[$02]._2;
+        if (comp((() => {
+          const $0 = result.length - 1 | 0;
+          if ($0 >= 0 && $0 < result.length) {
+            return result[$0]._2;
           }
           fail();
-        })())(v1._2);
-        if ($0 === "LT" || $0 === "GT" || $0 !== "EQ") {
+        })())(v1._2) !== "EQ") {
           result.push(v1);
         }
       }
@@ -862,10 +847,10 @@ var groupBy = (op) => (xs) => {
     return Nothing;
   })();
   iterate(iter)((x) => () => {
-    const sub1 = [];
-    sub1.push(x);
-    pushWhile(op(x))(iter)(sub1)();
-    result.push(sub1);
+    const sub = [];
+    sub.push(x);
+    pushWhile(op(x))(iter)(sub)();
+    result.push(sub);
   })();
   return result;
 };
@@ -885,17 +870,16 @@ var mapMaybe = (f) => concatMap((x) => {
   fail();
 });
 var filterA = (dictApplicative) => {
-  const traverse12 = traversableArray.traverse(dictApplicative);
-  const $0 = dictApplicative.Apply0().Functor0();
+  const Functor0 = dictApplicative.Apply0().Functor0();
   return (p) => {
-    const $1 = traverse12((x) => $0.map(Tuple(x))(p(x)));
-    const $2 = $0.map(mapMaybe((v) => {
+    const $0 = traversableArray.traverse(dictApplicative)((x) => Functor0.map(Tuple(x))(p(x)));
+    const $1 = Functor0.map(mapMaybe((v) => {
       if (v._2) {
         return $Maybe("Just", v._1);
       }
       return Nothing;
     }));
-    return (x) => $2($1(x));
+    return (x) => $1($0(x));
   };
 };
 var any = ($0) => ($1) => anyImpl($0, $1);
@@ -950,9 +934,10 @@ var foldableList = {
     return go;
   },
   foldMap: (dictMonoid) => {
+    const Semigroup0 = dictMonoid.Semigroup0();
     const mempty = dictMonoid.mempty;
     return (f) => foldableList.foldl((acc) => {
-      const $0 = dictMonoid.Semigroup0().append(acc);
+      const $0 = Semigroup0.append(acc);
       return (x) => $0(f(x));
     })(mempty);
   }
@@ -960,7 +945,7 @@ var foldableList = {
 
 // output-es/Data.Unfoldable1/foreign.js
 var unfoldr1ArrayImpl = function(isNothing2) {
-  return function(fromJust3) {
+  return function(fromJust) {
     return function(fst2) {
       return function(snd2) {
         return function(f) {
@@ -972,7 +957,7 @@ var unfoldr1ArrayImpl = function(isNothing2) {
               result.push(fst2(tuple));
               var maybe = snd2(tuple);
               if (isNothing2(maybe)) return result;
-              value = fromJust3(maybe);
+              value = fromJust(maybe);
             }
           };
         };
@@ -982,17 +967,18 @@ var unfoldr1ArrayImpl = function(isNothing2) {
 };
 
 // output-es/Data.Unfoldable1/index.js
-var fromJust = (v) => {
-  if (v.tag === "Just") {
-    return v._1;
-  }
-  fail();
+var unfoldable1Array = {
+  unfoldr1: /* @__PURE__ */ unfoldr1ArrayImpl(isNothing)((v) => {
+    if (v.tag === "Just") {
+      return v._1;
+    }
+    fail();
+  })(fst)(snd)
 };
-var unfoldable1Array = { unfoldr1: /* @__PURE__ */ unfoldr1ArrayImpl(isNothing)(fromJust)(fst)(snd) };
 
 // output-es/Data.Unfoldable/foreign.js
 var unfoldrArrayImpl = function(isNothing2) {
-  return function(fromJust3) {
+  return function(fromJust) {
     return function(fst2) {
       return function(snd2) {
         return function(f) {
@@ -1002,7 +988,7 @@ var unfoldrArrayImpl = function(isNothing2) {
             while (true) {
               var maybe = f(value);
               if (isNothing2(maybe)) return result;
-              var tuple = fromJust3(maybe);
+              var tuple = fromJust(maybe);
               result.push(fst2(tuple));
               value = snd2(tuple);
             }
@@ -1014,14 +1000,13 @@ var unfoldrArrayImpl = function(isNothing2) {
 };
 
 // output-es/Data.Unfoldable/index.js
-var fromJust2 = (v) => {
-  if (v.tag === "Just") {
-    return v._1;
-  }
-  fail();
-};
 var unfoldableArray = {
-  unfoldr: /* @__PURE__ */ unfoldrArrayImpl(isNothing)(fromJust2)(fst)(snd),
+  unfoldr: /* @__PURE__ */ unfoldrArrayImpl(isNothing)((v) => {
+    if (v.tag === "Just") {
+      return v._1;
+    }
+    fail();
+  })(fst)(snd),
   Unfoldable10: () => unfoldable1Array
 };
 
@@ -1244,9 +1229,9 @@ var update = (dictOrd) => (f) => (k) => {
   return go;
 };
 var pop = (dictOrd) => {
-  const compare3 = dictOrd.compare;
+  const compare = dictOrd.compare;
   return (k) => (m) => {
-    const v = unsafeSplit(compare3, k, m);
+    const v = unsafeSplit(compare, k, m);
     if (v._1.tag === "Just") {
       return $Maybe("Just", $Tuple(v._1._1, unsafeJoinNodes(v._2, v._3)));
     }
@@ -1363,9 +1348,9 @@ var $$delete = (dictOrd) => (k) => {
   return go;
 };
 var alter = (dictOrd) => {
-  const compare3 = dictOrd.compare;
+  const compare = dictOrd.compare;
   return (f) => (k) => (m) => {
-    const v = unsafeSplit(compare3, k, m);
+    const v = unsafeSplit(compare, k, m);
     const v2 = f(v._1);
     if (v2.tag === "Nothing") {
       return unsafeJoinNodes(v._2, v._3);
@@ -1443,7 +1428,7 @@ var monoidString = { mempty: "", Semigroup0: () => semigroupString };
 var monoidArray = { mempty: [], Semigroup0: () => semigroupArray };
 var power = (dictMonoid) => {
   const mempty1 = dictMonoid.mempty;
-  const $0 = dictMonoid.Semigroup0();
+  const Semigroup0 = dictMonoid.Semigroup0();
   return (x) => {
     const go = (p) => {
       if (p <= 0) {
@@ -1454,10 +1439,10 @@ var power = (dictMonoid) => {
       }
       if (intMod(p)(2) === 0) {
         const x$p2 = go(intDiv(p, 2));
-        return $0.append(x$p2)(x$p2);
+        return Semigroup0.append(x$p2)(x$p2);
       }
       const x$p = go(intDiv(p, 2));
-      return $0.append(x$p)($0.append(x$p)(x));
+      return Semigroup0.append(x$p)(Semigroup0.append(x$p)(x));
     };
     return go;
   };
@@ -1810,7 +1795,8 @@ function showErrorImpl(err) {
 // output-es/Control.Monad.Error.Class/index.js
 var $$try = (dictMonadError) => {
   const Monad0 = dictMonadError.MonadThrow0().Monad0();
-  return (a) => dictMonadError.catchError(Monad0.Bind1().Apply0().Functor0().map(Right)(a))((x) => Monad0.Applicative0().pure($Either("Left", x)));
+  const Functor0 = Monad0.Bind1().Apply0().Functor0();
+  return (a) => dictMonadError.catchError(Functor0.map(Right)(a))((x) => Monad0.Applicative0().pure($Either("Left", x)));
 };
 
 // output-es/Partial/foreign.js
@@ -1918,7 +1904,7 @@ var Aff = (function() {
       }
     };
   })();
-  function Supervisor(util) {
+  function Supervisor(util2) {
     var fibers = {};
     var fiberId = 0;
     var count = 0;
@@ -1952,9 +1938,9 @@ var Aff = (function() {
               return function() {
                 delete kills[fid];
                 killCount--;
-                if (util.isLeft(result) && util.fromLeft(result)) {
+                if (util2.isLeft(result) && util2.fromLeft(result)) {
                   setTimeout(function() {
-                    throw util.fromLeft(result);
+                    throw util2.fromLeft(result);
                   }, 0);
                 }
                 if (killCount === 0) {
@@ -1992,7 +1978,7 @@ var Aff = (function() {
   var PENDING = 4;
   var RETURN = 5;
   var COMPLETED = 6;
-  function Fiber(util, supervisor, aff) {
+  function Fiber(util2, supervisor, aff) {
     var runTick = 0;
     var status = SUSPENDED;
     var step = aff;
@@ -2006,11 +1992,11 @@ var Aff = (function() {
     var joins = null;
     var rethrow = true;
     function run2(localRunTick) {
-      var tmp, result, attempt;
+      var tmp, result, attempt2;
       while (true) {
         tmp = null;
         result = null;
-        attempt = null;
+        attempt2 = null;
         switch (status) {
           case STEP_BIND:
             status = CONTINUE;
@@ -2024,12 +2010,12 @@ var Aff = (function() {
               }
             } catch (e) {
               status = RETURN;
-              fail2 = util.left(e);
+              fail2 = util2.left(e);
               step = null;
             }
             break;
           case STEP_RESULT:
-            if (util.isLeft(step)) {
+            if (util2.isLeft(step)) {
               status = RETURN;
               fail2 = step;
               step = null;
@@ -2037,7 +2023,7 @@ var Aff = (function() {
               status = RETURN;
             } else {
               status = STEP_BIND;
-              step = util.fromRight(step);
+              step = util2.fromRight(step);
             }
             break;
           case CONTINUE:
@@ -2053,7 +2039,7 @@ var Aff = (function() {
               case PURE:
                 if (bhead === null) {
                   status = RETURN;
-                  step = util.right(step._1);
+                  step = util2.right(step._1);
                 } else {
                   status = STEP_BIND;
                   step = step._1;
@@ -2061,11 +2047,11 @@ var Aff = (function() {
                 break;
               case SYNC:
                 status = STEP_RESULT;
-                step = runSync(util.left, util.right, step._1);
+                step = runSync(util2.left, util2.right, step._1);
                 break;
               case ASYNC:
                 status = PENDING;
-                step = runAsync(util.left, step._1, function(result2) {
+                step = runAsync(util2.left, step._1, function(result2) {
                   return function() {
                     if (runTick !== localRunTick) {
                       return;
@@ -2084,7 +2070,7 @@ var Aff = (function() {
                 return;
               case THROW:
                 status = RETURN;
-                fail2 = util.left(step._1);
+                fail2 = util2.left(step._1);
                 step = null;
                 break;
               // Enqueue the Catch so that we can call the error handler later on
@@ -2116,18 +2102,18 @@ var Aff = (function() {
                 break;
               case FORK:
                 status = STEP_RESULT;
-                tmp = Fiber(util, supervisor, step._2);
+                tmp = Fiber(util2, supervisor, step._2);
                 if (supervisor) {
                   supervisor.register(tmp);
                 }
                 if (step._1) {
                   tmp.run();
                 }
-                step = util.right(tmp);
+                step = util2.right(tmp);
                 break;
               case SEQ:
                 status = CONTINUE;
-                step = sequential(util, supervisor, step._1);
+                step = sequential(util2, supervisor, step._1);
                 break;
             }
             break;
@@ -2139,9 +2125,9 @@ var Aff = (function() {
               step = interrupt || fail2 || step;
             } else {
               tmp = attempts._3;
-              attempt = attempts._1;
+              attempt2 = attempts._1;
               attempts = attempts._2;
-              switch (attempt.tag) {
+              switch (attempt2.tag) {
                 // We cannot recover from an unmasked interrupt. Otherwise we should
                 // continue stepping, or run the exception handler if an exception
                 // was raised.
@@ -2150,7 +2136,7 @@ var Aff = (function() {
                     status = RETURN;
                   } else if (fail2) {
                     status = CONTINUE;
-                    step = attempt._2(util.fromLeft(fail2));
+                    step = attempt2._2(util2.fromLeft(fail2));
                     fail2 = null;
                   }
                   break;
@@ -2159,10 +2145,10 @@ var Aff = (function() {
                   if (interrupt && interrupt !== tmp && bracketCount === 0 || fail2) {
                     status = RETURN;
                   } else {
-                    bhead = attempt._1;
-                    btail = attempt._2;
+                    bhead = attempt2._1;
+                    btail = attempt2._2;
                     status = STEP_BIND;
-                    step = util.fromRight(step);
+                    step = util2.fromRight(step);
                   }
                   break;
                 // If we have a bracket, we should enqueue the handlers,
@@ -2172,11 +2158,11 @@ var Aff = (function() {
                 case BRACKET:
                   bracketCount--;
                   if (fail2 === null) {
-                    result = util.fromRight(step);
-                    attempts = new Aff2(CONS, new Aff2(RELEASE, attempt._2, result), attempts, tmp);
+                    result = util2.fromRight(step);
+                    attempts = new Aff2(CONS, new Aff2(RELEASE, attempt2._2, result), attempts, tmp);
                     if (interrupt === tmp || bracketCount > 0) {
                       status = CONTINUE;
-                      step = attempt._3(result);
+                      step = attempt2._3(result);
                     }
                   }
                   break;
@@ -2186,11 +2172,11 @@ var Aff = (function() {
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
                   if (interrupt && interrupt !== tmp && bracketCount === 0) {
-                    step = attempt._1.killed(util.fromLeft(interrupt))(attempt._2);
+                    step = attempt2._1.killed(util2.fromLeft(interrupt))(attempt2._2);
                   } else if (fail2) {
-                    step = attempt._1.failed(util.fromLeft(fail2))(attempt._2);
+                    step = attempt2._1.failed(util2.fromLeft(fail2))(attempt2._2);
                   } else {
-                    step = attempt._1.completed(util.fromRight(step))(attempt._2);
+                    step = attempt2._1.completed(util2.fromRight(step))(attempt2._2);
                   }
                   fail2 = null;
                   bracketCount++;
@@ -2199,13 +2185,13 @@ var Aff = (function() {
                   bracketCount++;
                   attempts = new Aff2(CONS, new Aff2(FINALIZED, step, fail2), attempts, interrupt);
                   status = CONTINUE;
-                  step = attempt._1;
+                  step = attempt2._1;
                   break;
                 case FINALIZED:
                   bracketCount--;
                   status = RETURN;
-                  step = attempt._1;
-                  fail2 = attempt._2;
+                  step = attempt2._1;
+                  fail2 = attempt2._2;
                   break;
               }
             }
@@ -2220,12 +2206,12 @@ var Aff = (function() {
             joins = null;
             if (interrupt && fail2) {
               setTimeout(function() {
-                throw util.fromLeft(fail2);
+                throw util2.fromLeft(fail2);
               }, 0);
-            } else if (util.isLeft(step) && rethrow) {
+            } else if (util2.isLeft(step) && rethrow) {
               setTimeout(function() {
                 if (rethrow) {
-                  throw util.fromLeft(step);
+                  throw util2.fromLeft(step);
                 }
               }, 0);
             }
@@ -2259,26 +2245,26 @@ var Aff = (function() {
     function kill(error3, cb) {
       return function() {
         if (status === COMPLETED) {
-          cb(util.right(void 0))();
+          cb(util2.right(void 0))();
           return function() {
           };
         }
         var canceler = onComplete({
           rethrow: false,
           handler: function() {
-            return cb(util.right(void 0));
+            return cb(util2.right(void 0));
           }
         })();
         switch (status) {
           case SUSPENDED:
-            interrupt = util.left(error3);
+            interrupt = util2.left(error3);
             status = COMPLETED;
             step = interrupt;
             run2(runTick);
             break;
           case PENDING:
             if (interrupt === null) {
-              interrupt = util.left(error3);
+              interrupt = util2.left(error3);
             }
             if (bracketCount === 0) {
               if (status === PENDING) {
@@ -2292,7 +2278,7 @@ var Aff = (function() {
             break;
           default:
             if (interrupt === null) {
-              interrupt = util.left(error3);
+              interrupt = util2.left(error3);
             }
             if (bracketCount === 0) {
               status = RETURN;
@@ -2335,7 +2321,7 @@ var Aff = (function() {
       }
     };
   }
-  function runPar(util, supervisor, par, cb) {
+  function runPar(util2, supervisor, par, cb) {
     var fiberId = 0;
     var fibers = {};
     var killId = 0;
@@ -2390,7 +2376,7 @@ var Aff = (function() {
         }
       }
       if (count === 0) {
-        cb2(util.right(void 0))();
+        cb2(util2.right(void 0))();
       } else {
         kid = 0;
         tmp = count;
@@ -2402,7 +2388,7 @@ var Aff = (function() {
     }
     function join(result, head2, tail) {
       var fail2, step, lhs, rhs, tmp, kid;
-      if (util.isLeft(result)) {
+      if (util2.isLeft(result)) {
         fail2 = result;
         step = null;
       } else {
@@ -2427,7 +2413,7 @@ var Aff = (function() {
         switch (head2.tag) {
           case MAP:
             if (fail2 === null) {
-              head2._3 = util.right(head2._1(util.fromRight(step)));
+              head2._3 = util2.right(head2._1(util2.fromRight(step)));
               step = head2._3;
             } else {
               head2._3 = fail2;
@@ -2459,17 +2445,17 @@ var Aff = (function() {
             } else if (lhs === EMPTY || rhs === EMPTY) {
               return;
             } else {
-              step = util.right(util.fromRight(lhs)(util.fromRight(rhs)));
+              step = util2.right(util2.fromRight(lhs)(util2.fromRight(rhs)));
               head2._3 = step;
             }
             break;
           case ALT:
             lhs = head2._1._3;
             rhs = head2._2._3;
-            if (lhs === EMPTY && util.isLeft(rhs) || rhs === EMPTY && util.isLeft(lhs)) {
+            if (lhs === EMPTY && util2.isLeft(rhs) || rhs === EMPTY && util2.isLeft(lhs)) {
               return;
             }
-            if (lhs !== EMPTY && util.isLeft(lhs) && rhs !== EMPTY && util.isLeft(rhs)) {
+            if (lhs !== EMPTY && util2.isLeft(lhs) && rhs !== EMPTY && util2.isLeft(rhs)) {
               fail2 = step === lhs ? rhs : lhs;
               step = null;
               head2._3 = fail2;
@@ -2551,7 +2537,7 @@ var Aff = (function() {
                 status = RETURN;
                 tmp = step;
                 step = new Aff2(FORKED, fid, new Aff2(CONS, head2, tail), EMPTY);
-                tmp = Fiber(util, supervisor, tmp);
+                tmp = Fiber(util2, supervisor, tmp);
                 tmp.onComplete({
                   rethrow: false,
                   handler: resolve(step)
@@ -2589,7 +2575,7 @@ var Aff = (function() {
       }
     }
     function cancel(error3, cb2) {
-      interrupt = util.left(error3);
+      interrupt = util2.left(error3);
       var innerKills;
       for (var kid in kills) {
         if (kills.hasOwnProperty(kid)) {
@@ -2625,10 +2611,10 @@ var Aff = (function() {
       });
     };
   }
-  function sequential(util, supervisor, par) {
+  function sequential(util2, supervisor, par) {
     return new Aff2(ASYNC, function(cb) {
       return function() {
-        return runPar(util, supervisor, par, cb);
+        return runPar(util2, supervisor, par, cb);
       };
     });
   }
@@ -2676,9 +2662,9 @@ function _bind(aff) {
 }
 var _liftEffect = Aff.Sync;
 var makeAff = Aff.Async;
-function _makeFiber(util, aff) {
+function _makeFiber(util2, aff) {
   return function() {
-    return Aff.Fiber(util, null, aff);
+    return Aff.Fiber(util2, null, aff);
   };
 }
 var _sequential = Aff.Seq;
@@ -2722,7 +2708,7 @@ var applyAff = { apply: (f) => (a) => _bind(f)((f$p) => _bind(a)((a$p) => applic
 var applicativeAff = { pure: _pure, Apply0: () => applyAff };
 var monadThrowAff = { throwError: _throwError, Monad0: () => monadAff };
 var monadErrorAff = { catchError: _catchError, MonadThrow0: () => monadThrowAff };
-var $$try2 = /* @__PURE__ */ $$try(monadErrorAff);
+var attempt = /* @__PURE__ */ $$try(monadErrorAff);
 var nonCanceler = /* @__PURE__ */ (() => {
   const $0 = _pure();
   return (v) => $0;
@@ -3030,29 +3016,6 @@ var mkdir3 = (path2) => {
   return () => mkdirSync(path2, $0);
 };
 
-// output-es/Data.FoldableWithIndex/index.js
-var foldableWithIndexArray = {
-  foldrWithIndex: (f) => (z) => {
-    const $0 = foldrArray((v) => {
-      const $02 = v._1;
-      const $12 = v._2;
-      return (y) => f($02)($12)(y);
-    })(z);
-    const $1 = mapWithIndexArray(Tuple);
-    return (x) => $0($1(x));
-  },
-  foldlWithIndex: (f) => (z) => {
-    const $0 = foldlArray((y) => (v) => f(v._1)(y)(v._2))(z);
-    const $1 = mapWithIndexArray(Tuple);
-    return (x) => $0($1(x));
-  },
-  foldMapWithIndex: (dictMonoid) => {
-    const mempty = dictMonoid.mempty;
-    return (f) => foldableWithIndexArray.foldrWithIndex((i) => (x) => (acc) => dictMonoid.Semigroup0().append(f(i)(x))(acc))(mempty);
-  },
-  Foldable0: () => foldableArray
-};
-
 // output-es/Foreign.Object/foreign.js
 var empty = {};
 function _lookup(no, yes, k, m) {
@@ -3152,12 +3115,37 @@ var isDirectoryImpl = (s) => s.isDirectory();
 var isFileImpl = (s) => s.isFile();
 var modifiedTimeMsImpl = (s) => s.mtimeMs;
 
+// output-es/Data.FoldableWithIndex/index.js
+var foldableWithIndexArray = {
+  foldrWithIndex: (f) => (z) => {
+    const $0 = foldrArray((v) => {
+      const $02 = v._1;
+      const $12 = v._2;
+      return (y) => f($02)($12)(y);
+    })(z);
+    const $1 = mapWithIndexArray(Tuple);
+    return (x) => $0($1(x));
+  },
+  foldlWithIndex: (f) => (z) => {
+    const $0 = foldlArray((y) => (v) => f(v._1)(y)(v._2))(z);
+    const $1 = mapWithIndexArray(Tuple);
+    return (x) => $0($1(x));
+  },
+  foldMapWithIndex: (dictMonoid) => {
+    const Semigroup0 = dictMonoid.Semigroup0();
+    const mempty = dictMonoid.mempty;
+    return (f) => foldableWithIndexArray.foldrWithIndex((i) => (x) => (acc) => Semigroup0.append(f(i)(x))(acc))(mempty);
+  },
+  Foldable0: () => foldableArray
+};
+
 // output-es/Data.TraversableWithIndex/index.js
 var traversableWithIndexArray = {
   traverseWithIndex: (dictApplicative) => {
+    const FunctorWithIndex0 = traversableWithIndexArray.FunctorWithIndex0();
     const sequence1 = traversableWithIndexArray.Traversable2().sequence(dictApplicative);
     return (f) => {
-      const $0 = traversableWithIndexArray.FunctorWithIndex0().mapWithIndex(f);
+      const $0 = FunctorWithIndex0.mapWithIndex(f);
       return (x) => sequence1($0(x));
     };
   },
@@ -3167,7 +3155,6 @@ var traversableWithIndexArray = {
 };
 
 // output-es/Data.Argonaut.Decode.Decoders/index.js
-var traverseWithIndex = /* @__PURE__ */ (() => traversableWithIndexArray.traverseWithIndex(applicativeEither))();
 var decodeJArray = (x) => {
   const $0 = _caseJson(
     (v) => Nothing,
@@ -3212,7 +3199,7 @@ var decodeInt = (a) => {
 };
 var decodeArray = (decoder) => {
   const $0 = Named("Array");
-  const $1 = traverseWithIndex((i) => {
+  const $1 = traversableWithIndexArray.traverseWithIndex(applicativeEither)((i) => {
     const $12 = AtIndex(i);
     return (x) => {
       const $2 = decoder(x);
@@ -3293,7 +3280,10 @@ var $Prop = (_1, _2) => ({ tag: "Prop", _1, _2 });
 var $Qualified = (_1, _2) => ({ tag: "Qualified", _1, _2 });
 var $ReExport = (_1, _2) => ({ tag: "ReExport", _1, _2 });
 var eqArray = { eq: /* @__PURE__ */ eqArrayImpl(eqStringImpl) };
-var eqTuple1 = (dictEq1) => ({ eq: (x) => (y) => eqArray.eq(x._1)(y._1) && dictEq1.eq(x._2)(y._2) });
+var eqTuple1 = /* @__PURE__ */ (() => {
+  const $0 = eqArrayImpl(eqStringImpl);
+  return (dictEq1) => ({ eq: (x) => (y) => $0(x._1)(y._1) && dictEq1.eq(x._2)(y._2) });
+})();
 var zero = /* @__PURE__ */ (() => semiringRecordCons({ reflectSymbol: () => "column" })()(semiringRecordCons({ reflectSymbol: () => "line" })()(semiringRecordNil)(semiringInt))(semiringInt).zeroRecord($$Proxy)($$Proxy))();
 var Prop = (value0) => (value1) => $Prop(value0, value1);
 var LitArray = (value0) => $Literal("LitArray", value0);
@@ -3318,7 +3308,8 @@ var BinderLit = (value0) => (value1) => $Binder("BinderLit", value0, value1);
 var ExprVar = (value0) => (value1) => $Expr("ExprVar", value0, value1);
 var ExprLit = (value0) => (value1) => $Expr("ExprLit", value0, value1);
 var eqLiteral = (dictEq) => {
-  const eq12 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
+  const $0 = eqArrayImpl(dictEq.eq);
+  const $1 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
   return {
     eq: (x) => (y) => {
       if (x.tag === "LitInt") {
@@ -3337,28 +3328,41 @@ var eqLiteral = (dictEq) => {
         return y.tag === "LitBoolean" && x._1 === y._1;
       }
       if (x.tag === "LitArray") {
-        return y.tag === "LitArray" && eqArrayImpl(dictEq.eq)(x._1)(y._1);
+        return y.tag === "LitArray" && $0(x._1)(y._1);
       }
-      return x.tag === "LitRecord" && y.tag === "LitRecord" && eq12(x._1)(y._1);
+      return x.tag === "LitRecord" && y.tag === "LitRecord" && $1(x._1)(y._1);
     }
   };
 };
 var propKey = (v) => v._1;
-var compare2 = (x) => (y) => {
-  if (x.tag === "Nothing") {
-    if (y.tag === "Nothing") {
-      return EQ;
+var ordMaybe = /* @__PURE__ */ (() => {
+  const eqMaybe1 = {
+    eq: (x) => (y) => {
+      if (x.tag === "Nothing") {
+        return y.tag === "Nothing";
+      }
+      return x.tag === "Just" && y.tag === "Just" && x._1 === y._1;
     }
-    return LT;
-  }
-  if (y.tag === "Nothing") {
-    return GT;
-  }
-  if (x.tag === "Just" && y.tag === "Just") {
-    return ordString.compare(x._1)(y._1);
-  }
-  fail();
-};
+  };
+  return {
+    compare: (x) => (y) => {
+      if (x.tag === "Nothing") {
+        if (y.tag === "Nothing") {
+          return EQ;
+        }
+        return LT;
+      }
+      if (y.tag === "Nothing") {
+        return GT;
+      }
+      if (x.tag === "Just" && y.tag === "Just") {
+        return ordString.compare(x._1)(y._1);
+      }
+      fail();
+    },
+    Eq0: () => eqMaybe1
+  };
+})();
 var functorProp = { map: (f) => (m) => $Prop(m._1, f(m._2)) };
 var functorLiteral = {
   map: (f) => (m) => {
@@ -3388,8 +3392,14 @@ var functorLiteral = {
 };
 var foldableProp = { foldl: (k) => (a) => (v) => k(a)(v._2), foldr: (k) => (b) => (v) => k(v._2)(b), foldMap: (dictMonoid) => (k) => (v) => k(v._2) };
 var traversableProp = {
-  traverse: (dictApplicative) => (k) => (v) => dictApplicative.Apply0().Functor0().map(Prop(v._1))(k(v._2)),
-  sequence: (dictApplicative) => (v) => dictApplicative.Apply0().Functor0().map(Prop(v._1))(v._2),
+  traverse: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
+    return (k) => (v) => Functor0.map(Prop(v._1))(k(v._2));
+  },
+  sequence: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
+    return (v) => Functor0.map(Prop(v._1))(v._2);
+  },
   Functor0: () => functorProp,
   Foldable1: () => foldableProp
 };
@@ -3397,14 +3407,13 @@ var foldableLiteral = {
   foldl: (k) => foldlDefault(foldableLiteral)(k),
   foldr: (k) => foldrDefault(foldableLiteral)(k),
   foldMap: (dictMonoid) => {
-    const foldMap23 = foldableArray.foldMap(dictMonoid);
     const mempty = dictMonoid.mempty;
     return (k) => (v) => {
       if (v.tag === "LitArray") {
-        return foldMap23(k)(v._1);
+        return foldableArray.foldMap(dictMonoid)(k)(v._1);
       }
       if (v.tag === "LitRecord") {
-        return foldMap23((v$1) => k(v$1._2))(v._1);
+        return foldableArray.foldMap(dictMonoid)((v$1) => k(v$1._2))(v._1);
       }
       return mempty;
     };
@@ -3412,14 +3421,13 @@ var foldableLiteral = {
 };
 var traversableLiteral = {
   traverse: (dictApplicative) => {
-    const $0 = dictApplicative.Apply0().Functor0();
-    const traverse22 = traversableArray.traverse(dictApplicative);
+    const Functor0 = dictApplicative.Apply0().Functor0();
     return (k) => (v) => {
       if (v.tag === "LitArray") {
-        return $0.map(LitArray)(traverse22(k)(v._1));
+        return Functor0.map(LitArray)(traversableArray.traverse(dictApplicative)(k)(v._1));
       }
       if (v.tag === "LitRecord") {
-        return $0.map(LitRecord)(traverse22(traversableProp.traverse(dictApplicative)(k))(v._1));
+        return Functor0.map(LitRecord)(traversableArray.traverse(dictApplicative)(traversableProp.traverse(dictApplicative)(k))(v._1));
       }
       if (v.tag === "LitInt") {
         return dictApplicative.pure($Literal("LitInt", v._1));
@@ -3439,7 +3447,7 @@ var traversableLiteral = {
       fail();
     };
   },
-  sequence: (dictApplicative) => (a) => traversableLiteral.traverse(dictApplicative)(identity3)(a),
+  sequence: (dictApplicative) => (a) => traversableLiteral.traverse(dictApplicative)(identity)(a),
   Functor0: () => functorLiteral,
   Foldable1: () => foldableLiteral
 };
@@ -3448,7 +3456,7 @@ var ordQualified = (dictOrd) => {
   const eqQualified1 = { eq: (x) => (y) => (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && $0.eq(x._2)(y._2) };
   return {
     compare: (x) => (y) => {
-      const v = compare2(x._1)(y._1);
+      const v = ordMaybe.compare(x._1)(y._1);
       if (v === "LT") {
         return LT;
       }
@@ -3460,7 +3468,7 @@ var ordQualified = (dictOrd) => {
     Eq0: () => eqQualified1
   };
 };
-var eq9 = /* @__PURE__ */ eqArrayImpl(eqStringImpl);
+var eqArray1 = { eq: /* @__PURE__ */ eqArrayImpl(eqStringImpl) };
 var eqReExport = { eq: (x) => (y) => x._1 === y._1 && x._2 === y._2 };
 var ordReExport = {
   compare: (x) => (y) => {
@@ -3531,7 +3539,7 @@ var eqExprType = {
 var eqMeta = {
   eq: (x) => (y) => {
     if (x.tag === "IsConstructor") {
-      return y.tag === "IsConstructor" && (x._1 === "ProductType" ? y._1 === "ProductType" : x._1 === "SumType" && y._1 === "SumType") && eq9(x._2)(y._2);
+      return y.tag === "IsConstructor" && (x._1 === "ProductType" ? y._1 === "ProductType" : x._1 === "SumType" && y._1 === "SumType") && eqArray1.eq(x._2)(y._2);
     }
     if (x.tag === "IsNewtype") {
       return y.tag === "IsNewtype";
@@ -3551,14 +3559,6 @@ var eqMeta = {
 var emptySpan = { path: "<internal>", start: zero, end: zero };
 
 // output-es/PureScript.Backend.Optimizer.CoreFn.Json/index.js
-var intercalate = (sep) => (xs) => foldlArray((v) => (v1) => {
-  if (v.init) {
-    return { init: false, acc: v1 };
-  }
-  return { init: false, acc: v.acc + sep + v1 };
-})({ init: true, acc: "" })(xs).acc;
-var traverse = /* @__PURE__ */ (() => traversableArray.traverse(applicativeEither))();
-var fromFoldable2 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var getFieldOptional$p = (decode) => (obj) => (prop) => {
   const v = _lookup(Nothing, Just, prop, obj);
   if (v.tag === "Nothing") {
@@ -3677,7 +3677,15 @@ var decodeModuleName = (x) => {
     return $Either("Left", $0._1);
   }
   if ($0.tag === "Right") {
-    return $Either("Right", intercalate(".")($0._1));
+    return $Either(
+      "Right",
+      foldlArray((v) => (v1) => {
+        if (v.init) {
+          return { init: false, acc: v1 };
+        }
+        return { init: false, acc: v.acc + "." + v1 };
+      })({ init: true, acc: "" })($0._1).acc
+    );
   }
   fail();
 };
@@ -3826,7 +3834,7 @@ var decodeReExports = (json) => {
     return $Either("Left", $0._1);
   }
   if ($0.tag === "Right") {
-    const $1 = traverse(traversableTuple.traverse(applicativeEither)(decodeArray2(decodeString)))(toArrayWithKey(Tuple)($0._1));
+    const $1 = traversableArray.traverse(applicativeEither)(traversableTuple.traverse(applicativeEither)(decodeArray2(decodeString)))(toArrayWithKey(Tuple)($0._1));
     if ($1.tag === "Left") {
       return $Either("Left", $1._1);
     }
@@ -3991,7 +3999,7 @@ var decodeExprType = (json) => {
             return $Either("Left", $3._1);
           }
           if ($3.tag === "Right") {
-            const $4 = traverse((v3) => {
+            const $4 = traversableArray.traverse(applicativeEither)((v3) => {
               const $42 = Tuple(v3._1);
               const $5 = decodeExprType(v3._2);
               if ($5.tag === "Left") {
@@ -4044,7 +4052,20 @@ var decodeExprType = (json) => {
                     return $Either("Left", $5._1);
                   }
                   if ($5.tag === "Right") {
-                    return $Either("Right", $ExprType("ADT", intercalate(".")($4._1), $4._1, $5._1));
+                    return $Either(
+                      "Right",
+                      $ExprType(
+                        "ADT",
+                        foldlArray((v) => (v1$1) => {
+                          if (v.init) {
+                            return { init: false, acc: v1$1 };
+                          }
+                          return { init: false, acc: v.acc + "." + v1$1 };
+                        })({ init: true, acc: "" })($4._1).acc,
+                        $4._1,
+                        $5._1
+                      )
+                    );
                   }
                 }
               }
@@ -4130,7 +4151,20 @@ var decodeExprType = (json) => {
                         return $Either("Left", $5._1);
                       }
                       if ($5.tag === "Right") {
-                        return $Either("Right", $ExprType("ADT", intercalate(".")($4._1), $4._1, $5._1));
+                        return $Either(
+                          "Right",
+                          $ExprType(
+                            "ADT",
+                            foldlArray((v) => (v1$1) => {
+                              if (v.init) {
+                                return { init: false, acc: v1$1 };
+                              }
+                              return { init: false, acc: v.acc + "." + v1$1 };
+                            })({ init: true, acc: "" })($4._1).acc,
+                            $4._1,
+                            $5._1
+                          )
+                        );
                       }
                     }
                     fail();
@@ -5083,7 +5117,7 @@ var decodeModule$p = (decodeAnn$p) => (json) => {
                             }
                             fail();
                           })();
-                          const $13 = traverse((v) => {
+                          const $13 = traversableArray.traverse(applicativeEither)((v) => {
                             const v1 = _lookup(Nothing, Just, v, $12);
                             if (v1.tag === "Just") {
                               const $132 = decodeAnn($2._1)(v1._1);
@@ -5104,7 +5138,7 @@ var decodeModule$p = (decodeAnn$p) => (json) => {
                             return $Either("Left", $13._1);
                           }
                           if ($13.tag === "Right") {
-                            const foreignMap = fromFoldable2($13._1);
+                            const foreignMap = fromFoldable(ordString)(foldableArray)($13._1);
                             const $14 = getField(decodeArray2(decodeComment))($0._1)("comments");
                             if ($14.tag === "Left") {
                               return $Either("Left", $14._1);
@@ -5158,38 +5192,6 @@ var force = function(l) {
 };
 
 // output-es/PureScript.Backend.Optimizer.CoreFn.Sort/index.js
-var lookup2 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
 var runSort = /* @__PURE__ */ (() => {
   const go = (go$a0$copy) => (go$a1$copy) => (go$a2$copy) => {
     let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$a2 = go$a2$copy, go$c = true, go$r;
@@ -5234,15 +5236,45 @@ var runSort = /* @__PURE__ */ (() => {
         fail();
       };
       if (v.tag === "Cons" && v._1.tag === "Right") {
-        const $0 = lookup2(v._1._1)(modIndex);
-        if ($0.tag === "Just" && !$0._1._1) {
+        const $0 = v._1._1;
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordString.compare($0)(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
+        const $1 = go$1(modIndex);
+        if ($1.tag === "Just" && !$1._1._1) {
           go$a0 = acc;
-          go$a1 = insert(ordString)(v._1._1)($Tuple(true, $0._1._2))(modIndex);
+          go$a1 = insert(ordString)($0)($Tuple(true, $1._1._2))(modIndex);
           go$a2 = foldrArray((x) => Cons($Either("Right", x._2)))($List(
             "Cons",
-            $Either("Left", $0._1._2),
+            $Either("Left", $1._1._2),
             v._2
-          ))($0._1._2.imports);
+          ))($1._1._2.imports);
           continue;
         }
       }
@@ -5352,7 +5384,7 @@ var $BackendOperatorNum = (tag) => tag;
 var $BackendOperatorOrd = (tag) => tag;
 var $BackendSyntax = (tag, _1, _2, _3, _4, _5) => ({ tag, _1, _2, _3, _4, _5 });
 var $Pair = (_1, _2) => ({ tag: "Pair", _1, _2 });
-var eq7 = /* @__PURE__ */ eqArrayImpl(eqStringImpl);
+var eqArray2 = { eq: /* @__PURE__ */ eqArrayImpl(eqStringImpl) };
 var Pair = (value0) => (value1) => $Pair(value0, value1);
 var OpEq = /* @__PURE__ */ $BackendOperatorOrd("OpEq");
 var OpNotEq = /* @__PURE__ */ $BackendOperatorOrd("OpNotEq");
@@ -5538,13 +5570,17 @@ var functorBackendSyntax = {
 var foldablePair = {
   foldl: (f) => (acc) => (v) => f(f(acc)(v._1))(v._2),
   foldr: (f) => (acc) => (v) => f(v._1)(f(v._2)(acc)),
-  foldMap: (dictMonoid) => (f) => (v) => dictMonoid.Semigroup0().append(f(v._1))(f(v._2))
+  foldMap: (dictMonoid) => {
+    const Semigroup0 = dictMonoid.Semigroup0();
+    return (f) => (v) => Semigroup0.append(f(v._1))(f(v._2));
+  }
 };
 var traversablePair = {
-  sequence: (dictApplicative) => (a) => traversablePair.traverse(dictApplicative)(identity3)(a),
+  sequence: (dictApplicative) => (a) => traversablePair.traverse(dictApplicative)(identity)(a),
   traverse: (dictApplicative) => {
     const Apply0 = dictApplicative.Apply0();
-    return (f) => (v) => Apply0.apply(Apply0.Functor0().map(Pair)(f(v._1)))(f(v._2));
+    const Functor0 = dictApplicative.Apply0().Functor0();
+    return (f) => (v) => Apply0.apply(Functor0.map(Pair)(f(v._1)))(f(v._2));
   },
   Functor0: () => functorPair,
   Foldable1: () => foldablePair
@@ -5552,27 +5588,30 @@ var traversablePair = {
 var foldableBackendOperator = {
   foldr: (a) => foldrDefault(foldableBackendOperator)(a),
   foldl: (a) => foldlDefault(foldableBackendOperator)(a),
-  foldMap: (dictMonoid) => (f) => (v) => {
-    if (v.tag === "Op1") {
-      return f(v._2);
-    }
-    if (v.tag === "Op2") {
-      return dictMonoid.Semigroup0().append(f(v._2))(f(v._3));
-    }
-    fail();
+  foldMap: (dictMonoid) => {
+    const Semigroup0 = dictMonoid.Semigroup0();
+    return (f) => (v) => {
+      if (v.tag === "Op1") {
+        return f(v._2);
+      }
+      if (v.tag === "Op2") {
+        return Semigroup0.append(f(v._2))(f(v._3));
+      }
+      fail();
+    };
   }
 };
 var traversableBackendOperato = {
-  sequence: (dictApplicative) => (a) => traversableBackendOperato.traverse(dictApplicative)(identity3)(a),
+  sequence: (dictApplicative) => (a) => traversableBackendOperato.traverse(dictApplicative)(identity)(a),
   traverse: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
     const Apply0 = dictApplicative.Apply0();
-    const $0 = Apply0.Functor0();
     return (f) => (v) => {
       if (v.tag === "Op1") {
-        return $0.map(Op1(v._1))(f(v._2));
+        return Functor0.map(Op1(v._1))(f(v._2));
       }
       if (v.tag === "Op2") {
-        return Apply0.apply($0.map(Op2(v._1))(f(v._2)))(f(v._3));
+        return Apply0.apply(Functor0.map(Op2(v._1))(f(v._2)))(f(v._3));
       }
       fail();
     };
@@ -5583,17 +5622,20 @@ var traversableBackendOperato = {
 var foldableBackendEffect = {
   foldr: (a) => foldrDefault(foldableBackendEffect)(a),
   foldl: (a) => foldlDefault(foldableBackendEffect)(a),
-  foldMap: (dictMonoid) => (f) => (v) => {
-    if (v.tag === "EffectRefNew") {
-      return f(v._1);
-    }
-    if (v.tag === "EffectRefRead") {
-      return f(v._1);
-    }
-    if (v.tag === "EffectRefWrite") {
-      return dictMonoid.Semigroup0().append(f(v._1))(f(v._2));
-    }
-    fail();
+  foldMap: (dictMonoid) => {
+    const Semigroup0 = dictMonoid.Semigroup0();
+    return (f) => (v) => {
+      if (v.tag === "EffectRefNew") {
+        return f(v._1);
+      }
+      if (v.tag === "EffectRefRead") {
+        return f(v._1);
+      }
+      if (v.tag === "EffectRefWrite") {
+        return Semigroup0.append(f(v._1))(f(v._2));
+      }
+      fail();
+    };
   }
 };
 var foldableBackendSyntax = {
@@ -5601,9 +5643,7 @@ var foldableBackendSyntax = {
   foldl: (a) => foldlDefault(foldableBackendSyntax)(a),
   foldMap: (dictMonoid) => {
     const mempty = dictMonoid.mempty;
-    const foldMap72 = foldableArray.foldMap(dictMonoid);
-    const $0 = dictMonoid.Semigroup0();
-    const foldMap9 = foldableArray.foldMap(dictMonoid);
+    const Semigroup0 = dictMonoid.Semigroup0();
     return (f) => (v) => {
       if (v.tag === "Var") {
         return mempty;
@@ -5613,27 +5653,27 @@ var foldableBackendSyntax = {
       }
       if (v.tag === "Lit") {
         if (v._1.tag === "LitArray") {
-          return foldMap72(f)(v._1._1);
+          return foldableArray.foldMap(dictMonoid)(f)(v._1._1);
         }
         if (v._1.tag === "LitRecord") {
-          return foldMap72((v$1) => f(v$1._2))(v._1._1);
+          return foldableArray.foldMap(dictMonoid)((v$1) => f(v$1._2))(v._1._1);
         }
         return mempty;
       }
       if (v.tag === "App") {
-        return $0.append(f(v._1))(foldMap9(f)(v._2));
+        return Semigroup0.append(f(v._1))(foldableArray.foldMap(dictMonoid)(f)(v._2));
       }
       if (v.tag === "Abs") {
         return f(v._2);
       }
       if (v.tag === "UncurriedApp") {
-        return $0.append(f(v._1))(foldMap72(f)(v._2));
+        return Semigroup0.append(f(v._1))(foldableArray.foldMap(dictMonoid)(f)(v._2));
       }
       if (v.tag === "UncurriedAbs") {
         return f(v._2);
       }
       if (v.tag === "UncurriedEffectApp") {
-        return $0.append(f(v._1))(foldMap72(f)(v._2));
+        return Semigroup0.append(f(v._1))(foldableArray.foldMap(dictMonoid)(f)(v._2));
       }
       if (v.tag === "UncurriedEffectAbs") {
         return f(v._2);
@@ -5642,16 +5682,16 @@ var foldableBackendSyntax = {
         return f(v._1);
       }
       if (v.tag === "Update") {
-        return $0.append(f(v._1))(foldMap72((v$1) => f(v$1._2))(v._2));
+        return Semigroup0.append(f(v._1))(foldableArray.foldMap(dictMonoid)((v$1) => f(v$1._2))(v._2));
       }
       if (v.tag === "LetRec") {
-        return $0.append(foldMap9((v$1) => f(v$1._2))(v._2))(f(v._3));
+        return Semigroup0.append(foldableArray.foldMap(dictMonoid)((v$1) => f(v$1._2))(v._2))(f(v._3));
       }
       if (v.tag === "Let") {
-        return $0.append(f(v._3))(f(v._4));
+        return Semigroup0.append(f(v._3))(f(v._4));
       }
       if (v.tag === "EffectBind") {
-        return $0.append(f(v._3))(f(v._4));
+        return Semigroup0.append(f(v._3))(f(v._4));
       }
       if (v.tag === "EffectPure") {
         return f(v._1);
@@ -5660,18 +5700,23 @@ var foldableBackendSyntax = {
         return f(v._1);
       }
       if (v.tag === "Branch") {
-        return $0.append(foldMap9((v$1) => dictMonoid.Semigroup0().append(f(v$1._1))(f(v$1._2)))(v._1))(f(v._2));
+        return Semigroup0.append(foldableArray.foldMap(dictMonoid)((() => {
+          const Semigroup0$1 = dictMonoid.Semigroup0();
+          return (v$1) => Semigroup0$1.append(f(v$1._1))(f(v$1._2));
+        })())(v._1))(f(v._2));
       }
       if (v.tag === "PrimOp") {
+        const Semigroup0$1 = dictMonoid.Semigroup0();
         if (v._1.tag === "Op1") {
           return f(v._1._2);
         }
         if (v._1.tag === "Op2") {
-          return dictMonoid.Semigroup0().append(f(v._1._2))(f(v._1._3));
+          return Semigroup0$1.append(f(v._1._2))(f(v._1._3));
         }
         fail();
       }
       if (v.tag === "PrimEffect") {
+        const Semigroup0$1 = dictMonoid.Semigroup0();
         if (v._1.tag === "EffectRefNew") {
           return f(v._1._1);
         }
@@ -5679,7 +5724,7 @@ var foldableBackendSyntax = {
           return f(v._1._1);
         }
         if (v._1.tag === "EffectRefWrite") {
-          return dictMonoid.Semigroup0().append(f(v._1._1))(f(v._1._2));
+          return Semigroup0$1.append(f(v._1._1))(f(v._1._2));
         }
         fail();
       }
@@ -5687,7 +5732,7 @@ var foldableBackendSyntax = {
         return mempty;
       }
       if (v.tag === "CtorSaturated") {
-        return foldMap72((v$1) => f(v$1._2))(v._5);
+        return foldableArray.foldMap(dictMonoid)((v$1) => f(v$1._2))(v._5);
       }
       if (v.tag === "CtorDef") {
         return mempty;
@@ -5703,19 +5748,19 @@ var foldableBackendSyntax = {
   }
 };
 var traversableBackendEffect = {
-  sequence: (dictApplicative) => (a) => traversableBackendEffect.traverse(dictApplicative)(identity3)(a),
+  sequence: (dictApplicative) => (a) => traversableBackendEffect.traverse(dictApplicative)(identity)(a),
   traverse: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
     const Apply0 = dictApplicative.Apply0();
-    const $0 = Apply0.Functor0();
     return (f) => (v) => {
       if (v.tag === "EffectRefNew") {
-        return $0.map(EffectRefNew)(f(v._1));
+        return Functor0.map(EffectRefNew)(f(v._1));
       }
       if (v.tag === "EffectRefRead") {
-        return $0.map(EffectRefRead)(f(v._1));
+        return Functor0.map(EffectRefRead)(f(v._1));
       }
       if (v.tag === "EffectRefWrite") {
-        return Apply0.apply($0.map(EffectRefWrite)(f(v._1)))(f(v._2));
+        return Apply0.apply(Functor0.map(EffectRefWrite)(f(v._1)))(f(v._2));
       }
       fail();
     };
@@ -5724,15 +5769,10 @@ var traversableBackendEffect = {
   Foldable1: () => foldableBackendEffect
 };
 var traversableBackendSyntax = {
-  sequence: (dictApplicative) => (a) => traversableBackendSyntax.traverse(dictApplicative)(identity3)(a),
+  sequence: (dictApplicative) => (a) => traversableBackendSyntax.traverse(dictApplicative)(identity)(a),
   traverse: (dictApplicative) => {
+    const Functor0 = dictApplicative.Apply0().Functor0();
     const Apply0 = dictApplicative.Apply0();
-    const $0 = Apply0.Functor0();
-    const traverse7 = traversableArray.traverse(dictApplicative);
-    const traverse9 = traversableArray.traverse(dictApplicative);
-    const traverse11 = traversablePair.traverse(dictApplicative);
-    const traverse12 = traversableBackendOperato.traverse(dictApplicative);
-    const traverse13 = traversableBackendEffect.traverse(dictApplicative);
     return (f) => (v) => {
       if (v.tag === "Var") {
         return dictApplicative.pure($BackendSyntax("Var", v._1));
@@ -5757,67 +5797,67 @@ var traversableBackendSyntax = {
           return dictApplicative.pure($BackendSyntax("Lit", $Literal("LitBoolean", v._1._1)));
         }
         if (v._1.tag === "LitArray") {
-          return $0.map((x) => $BackendSyntax("Lit", $Literal("LitArray", x)))(traverse7(f)(v._1._1));
+          return Functor0.map((x) => $BackendSyntax("Lit", $Literal("LitArray", x)))(traversableArray.traverse(dictApplicative)(f)(v._1._1));
         }
         if (v._1.tag === "LitRecord") {
-          return $0.map((x) => $BackendSyntax("Lit", $Literal("LitRecord", x)))(traverse7(traversableProp.traverse(dictApplicative)(f))(v._1._1));
+          return Functor0.map((x) => $BackendSyntax("Lit", $Literal("LitRecord", x)))(traversableArray.traverse(dictApplicative)(traversableProp.traverse(dictApplicative)(f))(v._1._1));
         }
         fail();
       }
       if (v.tag === "App") {
-        return Apply0.apply($0.map(App2)(f(v._1)))(traverse9(f)(v._2));
+        return Apply0.apply(Functor0.map(App2)(f(v._1)))(traversableArray.traverse(dictApplicative)(f)(v._2));
       }
       if (v.tag === "Abs") {
-        return $0.map(Abs(v._1))(f(v._2));
+        return Functor0.map(Abs(v._1))(f(v._2));
       }
       if (v.tag === "UncurriedApp") {
-        return Apply0.apply($0.map(UncurriedApp)(f(v._1)))(traverse7(f)(v._2));
+        return Apply0.apply(Functor0.map(UncurriedApp)(f(v._1)))(traversableArray.traverse(dictApplicative)(f)(v._2));
       }
       if (v.tag === "UncurriedAbs") {
-        return $0.map(UncurriedAbs(v._1))(f(v._2));
+        return Functor0.map(UncurriedAbs(v._1))(f(v._2));
       }
       if (v.tag === "UncurriedEffectApp") {
-        return Apply0.apply($0.map(UncurriedEffectApp)(f(v._1)))(traverse7(f)(v._2));
+        return Apply0.apply(Functor0.map(UncurriedEffectApp)(f(v._1)))(traversableArray.traverse(dictApplicative)(f)(v._2));
       }
       if (v.tag === "UncurriedEffectAbs") {
-        return $0.map(UncurriedEffectAbs(v._1))(f(v._2));
+        return Functor0.map(UncurriedEffectAbs(v._1))(f(v._2));
       }
       if (v.tag === "Accessor") {
-        const $1 = v._2;
-        return $0.map((a) => $BackendSyntax("Accessor", a, $1))(f(v._1));
+        const $0 = v._2;
+        return Functor0.map((a) => $BackendSyntax("Accessor", a, $0))(f(v._1));
       }
       if (v.tag === "Update") {
-        return Apply0.apply($0.map(Update)(f(v._1)))(traverse7(traversableProp.traverse(dictApplicative)(f))(v._2));
+        return Apply0.apply(Functor0.map(Update)(f(v._1)))(traversableArray.traverse(dictApplicative)(traversableProp.traverse(dictApplicative)(f))(v._2));
       }
       if (v.tag === "CtorDef") {
         return dictApplicative.pure($BackendSyntax("CtorDef", v._1, v._2, v._3, v._4));
       }
       if (v.tag === "CtorSaturated") {
-        return $0.map(CtorSaturated(v._1)(v._2)(v._3)(v._4))(traverse7(traversableTuple.traverse(dictApplicative)(f))(v._5));
+        return Functor0.map(CtorSaturated(v._1)(v._2)(v._3)(v._4))(traversableArray.traverse(dictApplicative)(traversableTuple.traverse(dictApplicative)(f))(v._5));
       }
       if (v.tag === "LetRec") {
-        return Apply0.apply($0.map(LetRec(v._1))(traverse9(traversableTuple.traverse(dictApplicative)(f))(v._2)))(f(v._3));
+        return Apply0.apply(Functor0.map(LetRec(v._1))(traversableArray.traverse(dictApplicative)(traversableTuple.traverse(dictApplicative)(f))(v._2)))(f(v._3));
       }
       if (v.tag === "Let") {
-        return Apply0.apply($0.map(Let(v._1)(v._2))(f(v._3)))(f(v._4));
+        return Apply0.apply(Functor0.map(Let(v._1)(v._2))(f(v._3)))(f(v._4));
       }
       if (v.tag === "EffectBind") {
-        return Apply0.apply($0.map(EffectBind(v._1)(v._2))(f(v._3)))(f(v._4));
+        return Apply0.apply(Functor0.map(EffectBind(v._1)(v._2))(f(v._3)))(f(v._4));
       }
       if (v.tag === "EffectPure") {
-        return $0.map(EffectPure)(f(v._1));
+        return Functor0.map(EffectPure)(f(v._1));
       }
       if (v.tag === "EffectDefer") {
-        return $0.map(EffectDefer)(f(v._1));
+        return Functor0.map(EffectDefer)(f(v._1));
       }
       if (v.tag === "Branch") {
-        return Apply0.apply($0.map(Branch)(traverse9(traverse11(f))(v._1)))(f(v._2));
+        return Apply0.apply(Functor0.map(Branch)(traversableArray.traverse(dictApplicative)(traversablePair.traverse(dictApplicative)(f))(v._1)))(f(v._2));
       }
       if (v.tag === "PrimOp") {
-        return $0.map(PrimOp)(traverse12(f)(v._1));
+        return Functor0.map(PrimOp)(traversableBackendOperato.traverse(dictApplicative)(f)(v._1));
       }
       if (v.tag === "PrimEffect") {
-        return $0.map(PrimEffect)(traverse13(f)(v._1));
+        return Functor0.map(PrimEffect)(traversableBackendEffect.traverse(dictApplicative)(f)(v._1));
       }
       if (v.tag === "PrimUndefined") {
         return dictApplicative.pure(PrimUndefined);
@@ -5826,7 +5866,7 @@ var traversableBackendSyntax = {
         return dictApplicative.pure($BackendSyntax("Fail", v._1));
       }
       if (v.tag === "Typed") {
-        return $0.map(Typed(v._1))(f(v._2));
+        return Functor0.map(Typed(v._1))(f(v._2));
       }
       fail();
     };
@@ -5835,8 +5875,8 @@ var traversableBackendSyntax = {
   Foldable1: () => foldableBackendSyntax
 };
 var eqTuple2 = { eq: (x) => (y) => (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 };
-var eq10 = /* @__PURE__ */ (() => eqArrayImpl(eqTuple2.eq))();
-var eq11 = /* @__PURE__ */ (() => eqArrayImpl(eqTuple2.eq))();
+var eqNonEmptyArray = /* @__PURE__ */ (() => ({ eq: eqArrayImpl(eqTuple2.eq) }))();
+var eqArray12 = /* @__PURE__ */ (() => ({ eq: eqArrayImpl(eqTuple2.eq) }))();
 var eqBackendOperator2 = {
   eq: (x) => (y) => {
     if (x.tag === "OpArrayIndex") {
@@ -6034,11 +6074,14 @@ var eqBackendAccessor = {
   }
 };
 var eqBackendSyntax = (dictEq) => {
+  const eqLiteral2 = eqLiteral(dictEq);
   const $0 = eqArrayImpl(dictEq.eq);
-  const eq21 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
-  const eq22 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
-  const eq23 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
-  const eq24 = eqArrayImpl((x) => (y) => dictEq.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2));
+  const $1 = eqArrayImpl(dictEq.eq);
+  const $2 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
+  const $3 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
+  const $4 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
+  const $5 = eqArrayImpl((x) => (y) => dictEq.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2));
+  const eqBackendOperator3 = eqBackendOperator(dictEq);
   return {
     eq: (x) => (y) => {
       if (x.tag === "Var") {
@@ -6048,40 +6091,40 @@ var eqBackendSyntax = (dictEq) => {
         return y.tag === "Local" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2;
       }
       if (x.tag === "Lit") {
-        return y.tag === "Lit" && eqLiteral(dictEq).eq(x._1)(y._1);
+        return y.tag === "Lit" && eqLiteral2.eq(x._1)(y._1);
       }
       if (x.tag === "App") {
-        return y.tag === "App" && dictEq.eq(x._1)(y._1) && eqArrayImpl(dictEq.eq)(x._2)(y._2);
+        return y.tag === "App" && dictEq.eq(x._1)(y._1) && $0(x._2)(y._2);
       }
       if (x.tag === "Abs") {
-        return y.tag === "Abs" && eq10(x._1)(y._1) && dictEq.eq(x._2)(y._2);
+        return y.tag === "Abs" && eqNonEmptyArray.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2);
       }
       if (x.tag === "UncurriedApp") {
-        return y.tag === "UncurriedApp" && dictEq.eq(x._1)(y._1) && $0(x._2)(y._2);
+        return y.tag === "UncurriedApp" && dictEq.eq(x._1)(y._1) && $1(x._2)(y._2);
       }
       if (x.tag === "UncurriedAbs") {
-        return y.tag === "UncurriedAbs" && eq11(x._1)(y._1) && dictEq.eq(x._2)(y._2);
+        return y.tag === "UncurriedAbs" && eqArray12.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2);
       }
       if (x.tag === "UncurriedEffectApp") {
-        return y.tag === "UncurriedEffectApp" && dictEq.eq(x._1)(y._1) && $0(x._2)(y._2);
+        return y.tag === "UncurriedEffectApp" && dictEq.eq(x._1)(y._1) && $1(x._2)(y._2);
       }
       if (x.tag === "UncurriedEffectAbs") {
-        return y.tag === "UncurriedEffectAbs" && eq11(x._1)(y._1) && dictEq.eq(x._2)(y._2);
+        return y.tag === "UncurriedEffectAbs" && eqArray12.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2);
       }
       if (x.tag === "Accessor") {
         return y.tag === "Accessor" && dictEq.eq(x._1)(y._1) && eqBackendAccessor.eq(x._2)(y._2);
       }
       if (x.tag === "Update") {
-        return y.tag === "Update" && dictEq.eq(x._1)(y._1) && eq21(x._2)(y._2);
+        return y.tag === "Update" && dictEq.eq(x._1)(y._1) && $2(x._2)(y._2);
       }
       if (x.tag === "CtorSaturated") {
-        return y.tag === "CtorSaturated" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2 && (x._2 === "ProductType" ? y._2 === "ProductType" : x._2 === "SumType" && y._2 === "SumType") && x._3 === y._3 && x._4 === y._4 && eq22(x._5)(y._5);
+        return y.tag === "CtorSaturated" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2 && (x._2 === "ProductType" ? y._2 === "ProductType" : x._2 === "SumType" && y._2 === "SumType") && x._3 === y._3 && x._4 === y._4 && $3(x._5)(y._5);
       }
       if (x.tag === "CtorDef") {
-        return y.tag === "CtorDef" && (x._1 === "ProductType" ? y._1 === "ProductType" : x._1 === "SumType" && y._1 === "SumType") && x._2 === y._2 && x._3 === y._3 && eq7(x._4)(y._4);
+        return y.tag === "CtorDef" && (x._1 === "ProductType" ? y._1 === "ProductType" : x._1 === "SumType" && y._1 === "SumType") && x._2 === y._2 && x._3 === y._3 && eqArray2.eq(x._4)(y._4);
       }
       if (x.tag === "LetRec") {
-        return y.tag === "LetRec" && x._1 === y._1 && eq23(x._2)(y._2) && dictEq.eq(x._3)(y._3);
+        return y.tag === "LetRec" && x._1 === y._1 && $4(x._2)(y._2) && dictEq.eq(x._3)(y._3);
       }
       if (x.tag === "Let") {
         return y.tag === "Let" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && dictEq.eq(x._3)(y._3) && dictEq.eq(x._4)(y._4);
@@ -6096,10 +6139,10 @@ var eqBackendSyntax = (dictEq) => {
         return y.tag === "EffectDefer" && dictEq.eq(x._1)(y._1);
       }
       if (x.tag === "Branch") {
-        return y.tag === "Branch" && eq24(x._1)(y._1) && dictEq.eq(x._2)(y._2);
+        return y.tag === "Branch" && $5(x._1)(y._1) && dictEq.eq(x._2)(y._2);
       }
       if (x.tag === "PrimOp") {
-        return y.tag === "PrimOp" && eqBackendOperator(dictEq).eq(x._1)(y._1);
+        return y.tag === "PrimOp" && eqBackendOperator3.eq(x._1)(y._1);
       }
       if (x.tag === "PrimEffect") {
         return y.tag === "PrimEffect" && (() => {
@@ -6128,7 +6171,6 @@ var $Capture = (tag) => tag;
 var $Complexity = (tag) => tag;
 var $ResultTerm = (tag) => tag;
 var ordQualified2 = /* @__PURE__ */ ordQualified(ordString);
-var pop2 = /* @__PURE__ */ pop(ordInt);
 var KnownNeutral = /* @__PURE__ */ $ResultTerm("KnownNeutral");
 var Unknown = /* @__PURE__ */ $ResultTerm("Unknown");
 var Trivial = /* @__PURE__ */ $Complexity("Trivial");
@@ -6150,7 +6192,6 @@ var semigroupResultTerm = {
   }
 };
 var monoidResultTerm = { mempty: KnownNeutral, Semigroup0: () => semigroupResultTerm };
-var foldMap1 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidResultTerm))();
 var semigroupUsage = {
   append: (v) => (v1) => ({
     total: v.total + v1.total | 0,
@@ -6242,10 +6283,6 @@ var monoidBackendAnalysis = {
   mempty: { usages: Leaf, size: 0, complexity: Trivial, args: [], rewrite: false, deps: Leaf, result: KnownNeutral, externs: false },
   Semigroup0: () => semigroupBackendAnalysis
 };
-var foldMap2 = /* @__PURE__ */ (() => foldableBackendSyntax.foldMap(monoidBackendAnalysis))();
-var foldMap3 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidBackendAnalysis))();
-var foldMap4 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidBackendAnalysis))();
-var foldMap6 = (f) => (v) => semigroupBackendAnalysis.append(f(v._1))(f(v._2));
 var used = (level) => ({
   ...monoidBackendAnalysis.mempty,
   usages: $$$Map(
@@ -6268,7 +6305,7 @@ var callArity = (lvl) => (arity) => (v) => ({
   ))(lvl)(v.usages)
 });
 var boundArg = (level) => (v) => {
-  const v1 = pop2(level)(v.usages);
+  const v1 = pop(ordInt)(level)(v.usages);
   if (v1.tag === "Nothing") {
     return { ...v, args: [monoidUsage.mempty, ...v.args] };
   }
@@ -6278,628 +6315,592 @@ var boundArg = (level) => (v) => {
   fail();
 };
 var analyzeDefault = (dictHasAnalysis) => {
-  const $0 = foldMap2(dictHasAnalysis.analysisOf);
+  const $0 = foldableBackendSyntax.foldMap(monoidBackendAnalysis)(dictHasAnalysis.analysisOf);
   return (x) => {
     const $1 = $0(x);
     return { ...$1, size: $1.size + 1 | 0 };
   };
 };
 var accessed = (level) => (v) => ({ ...v, usages: update(ordInt)((x) => $Maybe("Just", { ...x, access: x.access + 1 | 0 }))(level)(v.usages) });
-var analyze = (dictHasAnalysis) => {
-  const analysisOf1 = dictHasAnalysis.analysisOf;
-  const analyzeDefault1 = analyzeDefault(dictHasAnalysis);
-  return (dictHasSyntax) => (externAnalysis) => (expr) => {
-    if (expr.tag === "Var") {
-      const analysis = { ...monoidBackendAnalysis.mempty, deps: insert(ordQualified2)(expr._1)()(monoidBackendAnalysis.mempty.deps), externs: true, size: 1 };
-      const v = externAnalysis(expr._1)(Nothing);
-      if (v.tag === "Just") {
-        return { ...analysis, args: v._1.args };
+var analyze = (dictHasAnalysis) => (dictHasSyntax) => (externAnalysis) => (expr) => {
+  if (expr.tag === "Var") {
+    const analysis = { ...monoidBackendAnalysis.mempty, deps: insert(ordQualified2)(expr._1)()(monoidBackendAnalysis.mempty.deps), externs: true, size: 1 };
+    const v = externAnalysis(expr._1)(Nothing);
+    if (v.tag === "Just") {
+      return { ...analysis, args: v._1.args };
+    }
+    if (v.tag === "Nothing") {
+      return analysis;
+    }
+    fail();
+  }
+  if (expr.tag === "Local") {
+    const $0 = used(expr._2);
+    return { ...$0, size: $0.size + 1 | 0 };
+  }
+  if (expr.tag === "Let") {
+    const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
+      const $02 = dictHasAnalysis.analysisOf(expr._4);
+      return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
+    })());
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: dictHasAnalysis.analysisOf(expr._4).result,
+      size: $0.size + 1 | 0
+    };
+  }
+  if (expr.tag === "LetRec") {
+    const $0 = semigroupBackendAnalysis.append(foldableArray.foldMap(monoidBackendAnalysis)((x) => dictHasAnalysis.analysisOf(x._2))(expr._2))(dictHasAnalysis.analysisOf(expr._3));
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: dictHasAnalysis.analysisOf(expr._3).result,
+      size: $0.size + 1 | 0,
+      usages: $$delete(ordInt)(expr._1)($0.usages)
+    };
+  }
+  if (expr.tag === "EffectBind") {
+    const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
+      const $02 = dictHasAnalysis.analysisOf(expr._4);
+      return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
+    })());
+    const go = (v) => {
+      if (v.tag === "Leaf") {
+        return Leaf;
       }
-      if (v.tag === "Nothing") {
-        return analysis;
+      if (v.tag === "Node") {
+        return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
       }
       fail();
-    }
-    if (expr.tag === "Local") {
-      const $0 = used(expr._2);
-      return { ...$0, size: $0.size + 1 | 0 };
-    }
-    if (expr.tag === "Let") {
-      const $0 = semigroupBackendAnalysis.append(analysisOf1(expr._3))((() => {
-        const $02 = analysisOf1(expr._4);
-        return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
-      })());
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: dictHasAnalysis.analysisOf(expr._4).result,
-        size: $0.size + 1 | 0
-      };
-    }
-    if (expr.tag === "LetRec") {
-      const $0 = semigroupBackendAnalysis.append(foldMap3((x) => analysisOf1(x._2))(expr._2))(analysisOf1(expr._3));
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: dictHasAnalysis.analysisOf(expr._3).result,
-        size: $0.size + 1 | 0,
-        usages: $$delete(ordInt)(expr._1)($0.usages)
-      };
-    }
-    if (expr.tag === "EffectBind") {
-      const $0 = semigroupBackendAnalysis.append(analysisOf1(expr._3))((() => {
-        const $02 = analysisOf1(expr._4);
-        return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
-      })());
-      const go = (v) => {
-        if (v.tag === "Leaf") {
-          return Leaf;
+    };
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
         }
-        if (v.tag === "Node") {
-          return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
         }
         fail();
-      };
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
+      })(),
+      result: Unknown,
+      size: $0.size + 1 | 0,
+      usages: go($0.usages)
+    };
+  }
+  if (expr.tag === "EffectPure") {
+    const $0 = dictHasAnalysis.analysisOf(expr._1);
+    return {
+      ...$0,
+      result: Unknown,
+      size: $0.size + 1 | 0,
+      usages: (() => {
+        const go = (v) => {
+          if (v.tag === "Leaf") {
+            return Leaf;
           }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
+          if (v.tag === "Node") {
+            return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
           }
           fail();
-        })(),
-        result: Unknown,
-        size: $0.size + 1 | 0,
-        usages: go($0.usages)
-      };
+        };
+        return go($0.usages);
+      })()
+    };
+  }
+  if (expr.tag === "EffectDefer") {
+    const $0 = dictHasAnalysis.analysisOf(expr._1);
+    return {
+      ...$0,
+      result: Unknown,
+      size: $0.size + 1 | 0,
+      usages: (() => {
+        const go = (v) => {
+          if (v.tag === "Leaf") {
+            return Leaf;
+          }
+          if (v.tag === "Node") {
+            return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+          }
+          fail();
+        };
+        return go($0.usages);
+      })()
+    };
+  }
+  if (expr.tag === "Abs") {
+    const $0 = foldrArray((x) => boundArg(x._2))(analyzeDefault(dictHasAnalysis)(expr))(expr._1);
+    const go = (v) => {
+      if (v.tag === "Leaf") {
+        return Leaf;
+      }
+      if (v.tag === "Node") {
+        return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+      }
+      fail();
+    };
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return KnownSize;
+        }
+        if ($0.complexity === "Deref") {
+          return KnownSize;
+        }
+        return $0.complexity;
+      })(),
+      result: KnownNeutral,
+      usages: go($0.usages)
+    };
+  }
+  if (expr.tag === "UncurriedAbs") {
+    const $0 = foldrArray((x) => boundArg(x._2))(analyzeDefault(dictHasAnalysis)(expr))(expr._1);
+    const go = (v) => {
+      if (v.tag === "Leaf") {
+        return Leaf;
+      }
+      if (v.tag === "Node") {
+        return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+      }
+      fail();
+    };
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return KnownSize;
+        }
+        if ($0.complexity === "Deref") {
+          return KnownSize;
+        }
+        return $0.complexity;
+      })(),
+      result: KnownNeutral,
+      usages: go($0.usages)
+    };
+  }
+  if (expr.tag === "UncurriedApp") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    const analysis = {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown
+    };
+    const v = dictHasSyntax.syntaxOf(expr._1);
+    if (v.tag === "Just" && v._1.tag === "Local") {
+      return callArity(v._1._2)(expr._2.length)(analysis);
     }
-    if (expr.tag === "EffectPure") {
-      const $0 = analysisOf1(expr._1);
+    return analysis;
+  }
+  if (expr.tag === "UncurriedEffectAbs") {
+    const $0 = foldrArray((x) => boundArg(x._2))(analyzeDefault(dictHasAnalysis)(expr))(expr._1);
+    const go = (v) => {
+      if (v.tag === "Leaf") {
+        return Leaf;
+      }
+      if (v.tag === "Node") {
+        return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+      }
+      fail();
+    };
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return KnownSize;
+        }
+        if ($0.complexity === "Deref") {
+          return KnownSize;
+        }
+        return $0.complexity;
+      })(),
+      result: KnownNeutral,
+      usages: go($0.usages)
+    };
+  }
+  if (expr.tag === "UncurriedEffectApp") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    const go = (v2) => {
+      if (v2.tag === "Leaf") {
+        return Leaf;
+      }
+      if (v2.tag === "Node") {
+        return $$$Map("Node", v2._1, v2._2, v2._3, { ...v2._4, captured: CaptureClosure }, go(v2._5), go(v2._6));
+      }
+      fail();
+    };
+    const analysis = {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown,
+      usages: go($0.usages)
+    };
+    const v = dictHasSyntax.syntaxOf(expr._1);
+    if (v.tag === "Just" && v._1.tag === "Local") {
+      return callArity(v._1._2)(expr._2.length)(analysis);
+    }
+    return analysis;
+  }
+  if (expr.tag === "App") {
+    const $0 = dictHasAnalysis.analysisOf(expr._1).args;
+    const $1 = expr._2.length;
+    const remainingArgs = $1 < 1 ? $0 : sliceImpl($1, $0.length, $0);
+    const analysis = (() => {
+      if (remainingArgs.length === 0) {
+        const $2 = analyzeDefault(dictHasAnalysis)(expr);
+        return {
+          ...$2,
+          complexity: (() => {
+            if ($2.complexity === "Trivial") {
+              return NonTrivial;
+            }
+            if ($2.complexity === "Deref") {
+              return NonTrivial;
+            }
+            if ($2.complexity === "KnownSize") {
+              return NonTrivial;
+            }
+            if ($2.complexity === "NonTrivial") {
+              return $2.complexity;
+            }
+            fail();
+          })()
+        };
+      }
+      return analyzeDefault(dictHasAnalysis)(expr);
+    })();
+    const v1 = dictHasSyntax.syntaxOf(expr._1);
+    return {
+      ...v1.tag === "Just" && v1._1.tag === "Local" ? { ...callArity(v1._1._2)(expr._2.length)({ ...analysis, size: analysis.size + 1 | 0 }), result: Unknown } : { ...analysis, result: Unknown, size: analysis.size + 1 | 0 },
+      args: remainingArgs
+    };
+  }
+  if (expr.tag === "Update") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    const analysis = {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown
+    };
+    const v2 = dictHasSyntax.syntaxOf(expr._1);
+    if (v2.tag === "Just" && v2._1.tag === "Local") {
+      return updated(v2._1._2)(analysis);
+    }
+    return analysis;
+  }
+  if (expr.tag === "CtorSaturated") {
+    const $0 = foldableArray.foldMap(monoidBackendAnalysis)((v) => dictHasAnalysis.analysisOf(v._2))(expr._5);
+    return { ...$0, deps: insert(ordQualified2)(expr._1)()($0.deps), result: KnownNeutral, size: $0.size + 1 | 0 };
+  }
+  if (expr.tag === "CtorDef") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })()
+    };
+  }
+  if (expr.tag === "Branch") {
+    const v2 = (() => {
+      if (0 < expr._1.length) {
+        return expr._1[0];
+      }
+      fail();
+    })();
+    const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(v2._1))(semigroupBackendAnalysis.append((() => {
+      const $02 = dictHasAnalysis.analysisOf(v2._2);
       return {
-        ...$0,
-        result: Unknown,
-        size: $0.size + 1 | 0,
+        ...$02,
         usages: (() => {
           const go = (v) => {
             if (v.tag === "Leaf") {
               return Leaf;
             }
             if (v.tag === "Node") {
-              return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+              return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureBranch }, go(v._5), go(v._6));
             }
             fail();
           };
-          return go($0.usages);
+          return go($02.usages);
         })()
       };
-    }
-    if (expr.tag === "EffectDefer") {
-      const $0 = analysisOf1(expr._1);
+    })())(semigroupBackendAnalysis.append((() => {
+      const $02 = foldableArray.foldMap(monoidBackendAnalysis)((v) => semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(v._1))(dictHasAnalysis.analysisOf(v._2)))((() => {
+        const $03 = unconsImpl((v) => Nothing, (v) => (xs) => $Maybe("Just", xs), expr._1);
+        if ($03.tag === "Just") {
+          return $03._1;
+        }
+        fail();
+      })());
       return {
-        ...$0,
-        result: Unknown,
-        size: $0.size + 1 | 0,
+        ...$02,
         usages: (() => {
           const go = (v) => {
             if (v.tag === "Leaf") {
               return Leaf;
             }
             if (v.tag === "Node") {
-              return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+              return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureBranch }, go(v._5), go(v._6));
             }
             fail();
           };
-          return go($0.usages);
+          return go($02.usages);
         })()
       };
-    }
-    if (expr.tag === "Abs") {
-      const $0 = foldrArray((x) => boundArg(x._2))(analyzeDefault1(expr))(expr._1);
-      const go = (v) => {
-        if (v.tag === "Leaf") {
-          return Leaf;
-        }
-        if (v.tag === "Node") {
-          return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
-        }
-        fail();
-      };
+    })())((() => {
+      const $02 = dictHasAnalysis.analysisOf(expr._2);
       return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return KnownSize;
-          }
-          if ($0.complexity === "Deref") {
-            return KnownSize;
-          }
-          return $0.complexity;
-        })(),
-        result: KnownNeutral,
-        usages: go($0.usages)
-      };
-    }
-    if (expr.tag === "UncurriedAbs") {
-      const $0 = foldrArray((x) => boundArg(x._2))(analyzeDefault1(expr))(expr._1);
-      const go = (v) => {
-        if (v.tag === "Leaf") {
-          return Leaf;
-        }
-        if (v.tag === "Node") {
-          return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
-        }
-        fail();
-      };
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return KnownSize;
-          }
-          if ($0.complexity === "Deref") {
-            return KnownSize;
-          }
-          return $0.complexity;
-        })(),
-        result: KnownNeutral,
-        usages: go($0.usages)
-      };
-    }
-    if (expr.tag === "UncurriedApp") {
-      const $0 = analyzeDefault1(expr);
-      const analysis = {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: Unknown
-      };
-      const v = dictHasSyntax.syntaxOf(expr._1);
-      if (v.tag === "Just" && v._1.tag === "Local") {
-        return callArity(v._1._2)(expr._2.length)(analysis);
-      }
-      return analysis;
-    }
-    if (expr.tag === "UncurriedEffectAbs") {
-      const $0 = foldrArray((x) => boundArg(x._2))(analyzeDefault1(expr))(expr._1);
-      const go = (v) => {
-        if (v.tag === "Leaf") {
-          return Leaf;
-        }
-        if (v.tag === "Node") {
-          return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
-        }
-        fail();
-      };
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return KnownSize;
-          }
-          if ($0.complexity === "Deref") {
-            return KnownSize;
-          }
-          return $0.complexity;
-        })(),
-        result: KnownNeutral,
-        usages: go($0.usages)
-      };
-    }
-    if (expr.tag === "UncurriedEffectApp") {
-      const $0 = analyzeDefault1(expr);
-      const go = (v2) => {
-        if (v2.tag === "Leaf") {
-          return Leaf;
-        }
-        if (v2.tag === "Node") {
-          return $$$Map("Node", v2._1, v2._2, v2._3, { ...v2._4, captured: CaptureClosure }, go(v2._5), go(v2._6));
-        }
-        fail();
-      };
-      const analysis = {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: Unknown,
-        usages: go($0.usages)
-      };
-      const v = dictHasSyntax.syntaxOf(expr._1);
-      if (v.tag === "Just" && v._1.tag === "Local") {
-        return callArity(v._1._2)(expr._2.length)(analysis);
-      }
-      return analysis;
-    }
-    if (expr.tag === "App") {
-      const $0 = analysisOf1(expr._1).args;
-      const $1 = expr._2.length;
-      const remainingArgs = $1 < 1 ? $0 : sliceImpl($1, $0.length, $0);
-      const analysis = (() => {
-        if (remainingArgs.length === 0) {
-          const $2 = analyzeDefault1(expr);
-          return {
-            ...$2,
-            complexity: (() => {
-              if ($2.complexity === "Trivial") {
-                return NonTrivial;
-              }
-              if ($2.complexity === "Deref") {
-                return NonTrivial;
-              }
-              if ($2.complexity === "KnownSize") {
-                return NonTrivial;
-              }
-              if ($2.complexity === "NonTrivial") {
-                return $2.complexity;
-              }
-              fail();
-            })()
+        ...$02,
+        usages: (() => {
+          const go = (v) => {
+            if (v.tag === "Leaf") {
+              return Leaf;
+            }
+            if (v.tag === "Node") {
+              return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureBranch }, go(v._5), go(v._6));
+            }
+            fail();
           };
-        }
-        return analyzeDefault1(expr);
-      })();
-      const v1 = dictHasSyntax.syntaxOf(expr._1);
-      return {
-        ...v1.tag === "Just" && v1._1.tag === "Local" ? { ...callArity(v1._1._2)(expr._2.length)({ ...analysis, size: analysis.size + 1 | 0 }), result: Unknown } : { ...analysis, result: Unknown, size: analysis.size + 1 | 0 },
-        args: remainingArgs
-      };
-    }
-    if (expr.tag === "Update") {
-      const $0 = analyzeDefault1(expr);
-      const analysis = {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: Unknown
-      };
-      const v2 = dictHasSyntax.syntaxOf(expr._1);
-      if (v2.tag === "Just" && v2._1.tag === "Local") {
-        return updated(v2._1._2)(analysis);
-      }
-      return analysis;
-    }
-    if (expr.tag === "CtorSaturated") {
-      const $0 = foldMap4((v) => analysisOf1(v._2))(expr._5);
-      return { ...$0, deps: insert(ordQualified2)(expr._1)()($0.deps), result: KnownNeutral, size: $0.size + 1 | 0 };
-    }
-    if (expr.tag === "CtorDef") {
-      const $0 = analyzeDefault1(expr);
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
+          return go($02.usages);
         })()
       };
-    }
-    if (expr.tag === "Branch") {
-      const v2 = (() => {
-        if (0 < expr._1.length) {
-          return expr._1[0];
+    })())));
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
         }
         fail();
-      })();
-      const $0 = semigroupBackendAnalysis.append(analysisOf1(v2._1))(semigroupBackendAnalysis.append((() => {
-        const $02 = analysisOf1(v2._2);
-        return {
-          ...$02,
-          usages: (() => {
-            const go = (v) => {
-              if (v.tag === "Leaf") {
-                return Leaf;
-              }
-              if (v.tag === "Node") {
-                return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureBranch }, go(v._5), go(v._6));
-              }
-              fail();
-            };
-            return go($02.usages);
-          })()
-        };
-      })())(semigroupBackendAnalysis.append((() => {
-        const $02 = foldMap4(foldMap6(analysisOf1))((() => {
-          const $03 = unconsImpl((v) => Nothing, (v) => (xs) => $Maybe("Just", xs), expr._1);
-          if ($03.tag === "Just") {
-            return $03._1;
-          }
-          fail();
-        })());
-        return {
-          ...$02,
-          usages: (() => {
-            const go = (v) => {
-              if (v.tag === "Leaf") {
-                return Leaf;
-              }
-              if (v.tag === "Node") {
-                return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureBranch }, go(v._5), go(v._6));
-              }
-              fail();
-            };
-            return go($02.usages);
-          })()
-        };
-      })())((() => {
-        const $02 = analysisOf1(expr._2);
-        return {
-          ...$02,
-          usages: (() => {
-            const go = (v) => {
-              if (v.tag === "Leaf") {
-                return Leaf;
-              }
-              if (v.tag === "Node") {
-                return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureBranch }, go(v._5), go(v._6));
-              }
-              fail();
-            };
-            return go($02.usages);
-          })()
-        };
-      })())));
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: foldMap1((x) => dictHasAnalysis.analysisOf(x._2).result)(expr._1)
-      };
-    }
-    if (expr.tag === "Fail") {
-      const $0 = analyzeDefault1(expr);
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })()
-      };
-    }
-    if (expr.tag === "PrimOp") {
-      const $0 = expr._1;
-      const $1 = analyzeDefault1(expr);
-      const analysis = {
-        ...$1,
-        complexity: (() => {
-          if ($1.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($1.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($1.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($1.complexity === "NonTrivial") {
-            return $1.complexity;
-          }
-          fail();
-        })(),
-        result: Unknown
-      };
-      const v2 = (v3) => {
-        if ($0.tag === "Op1" && $0._1.tag === "OpIsTag") {
-          return { ...analysis, deps: insert(ordQualified2)($0._1._1)()(analysis.deps) };
+      })(),
+      result: foldableArray.foldMap(monoidResultTerm)((x) => dictHasAnalysis.analysisOf(x._2).result)(expr._1)
+    };
+  }
+  if (expr.tag === "Fail") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
         }
-        return analysis;
-      };
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })()
+    };
+  }
+  if (expr.tag === "PrimOp") {
+    const $0 = expr._1;
+    const $1 = analyzeDefault(dictHasAnalysis)(expr);
+    const analysis = {
+      ...$1,
+      complexity: (() => {
+        if ($1.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($1.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($1.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($1.complexity === "NonTrivial") {
+          return $1.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown
+    };
+    const v2 = (v3) => {
       if ($0.tag === "Op1" && $0._1.tag === "OpIsTag") {
-        const $2 = dictHasSyntax.syntaxOf($0._2);
-        if ($2.tag === "Just" && $2._1.tag === "Local") {
-          return cased($2._1._2)({ ...analysis, deps: insert(ordQualified2)($0._1._1)()(analysis.deps) });
-        }
+        return { ...analysis, deps: insert(ordQualified2)($0._1._1)()(analysis.deps) };
       }
-      return v2(true);
+      return analysis;
+    };
+    if ($0.tag === "Op1" && $0._1.tag === "OpIsTag") {
+      const $2 = dictHasSyntax.syntaxOf($0._2);
+      if ($2.tag === "Just" && $2._1.tag === "Local") {
+        return cased($2._1._2)({ ...analysis, deps: insert(ordQualified2)($0._1._1)()(analysis.deps) });
+      }
     }
-    if (expr.tag === "PrimEffect") {
-      const $0 = analyzeDefault1(expr);
-      const go = (v) => {
-        if (v.tag === "Leaf") {
-          return Leaf;
+    return v2(true);
+  }
+  if (expr.tag === "PrimEffect") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    const go = (v) => {
+      if (v.tag === "Leaf") {
+        return Leaf;
+      }
+      if (v.tag === "Node") {
+        return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+      }
+      fail();
+    };
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
         }
-        if (v.tag === "Node") {
-          return $$$Map("Node", v._1, v._2, v._3, { ...v._4, captured: CaptureClosure }, go(v._5), go(v._6));
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
         }
         fail();
-      };
-      return {
-        ...$0,
-        complexity: (() => {
-          if ($0.complexity === "Trivial") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "Deref") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "KnownSize") {
-            return NonTrivial;
-          }
-          if ($0.complexity === "NonTrivial") {
-            return $0.complexity;
-          }
-          fail();
-        })(),
-        result: Unknown,
-        usages: go($0.usages)
-      };
-    }
-    if (expr.tag === "PrimUndefined") {
-      return analyzeDefault1(expr);
-    }
-    if (expr.tag === "Accessor") {
-      const analysis = (() => {
-        if (expr._2.tag === "GetCtorField") {
-          const $0 = analyzeDefault1(expr);
-          return { ...$0, deps: insert(ordQualified2)(expr._2._1)()($0.deps), result: Unknown };
-        }
-        return { ...analyzeDefault1(expr), result: Unknown };
-      })();
-      const v2 = dictHasSyntax.syntaxOf(expr._1);
-      if (v2.tag === "Just") {
-        if (v2._1.tag === "Accessor") {
-          return analysis;
-        }
-        if (v2._1.tag === "Local") {
-          return accessed(v2._1._2)({ ...analysis, complexity: analysis.complexity === "Trivial" ? Deref : analysis.complexity });
-        }
-        if (v2._1.tag === "Var") {
-          if (expr._2.tag === "GetProp") {
-            const $0 = externAnalysis(v2._1._1)($Maybe("Just", expr._2._1));
-            if ($0.tag === "Just") {
-              return { ...analysis, args: $0._1.args, complexity: analysis.complexity };
-            }
-          }
-          return { ...analysis, complexity: analysis.complexity };
-        }
+      })(),
+      result: Unknown,
+      usages: go($0.usages)
+    };
+  }
+  if (expr.tag === "PrimUndefined") {
+    return analyzeDefault(dictHasAnalysis)(expr);
+  }
+  if (expr.tag === "Accessor") {
+    const analysis = (() => {
+      if (expr._2.tag === "GetCtorField") {
+        const $0 = analyzeDefault(dictHasAnalysis)(expr);
+        return { ...$0, deps: insert(ordQualified2)(expr._2._1)()($0.deps), result: Unknown };
       }
-      return { ...analysis, complexity: analysis.complexity === "Trivial" ? Deref : analysis.complexity };
-    }
-    if (expr.tag === "Lit") {
-      const analysis = { ...analyzeDefault1(expr), result: KnownNeutral };
-      if (expr._1.tag === "LitArray") {
-        if (expr._1._1.length > 0) {
-          return {
-            ...analysis,
-            complexity: (() => {
-              if (analysis.complexity === "Trivial") {
-                return KnownSize;
-              }
-              if (analysis.complexity === "Deref") {
-                return KnownSize;
-              }
-              return analysis.complexity;
-            })()
-          };
-        }
+      return { ...analyzeDefault(dictHasAnalysis)(expr), result: Unknown };
+    })();
+    const v2 = dictHasSyntax.syntaxOf(expr._1);
+    if (v2.tag === "Just") {
+      if (v2._1.tag === "Accessor") {
         return analysis;
       }
-      if (expr._1.tag === "LitRecord") {
-        if (expr._1._1.length > 0) {
-          return {
-            ...analysis,
-            complexity: (() => {
-              if (analysis.complexity === "Trivial") {
-                return KnownSize;
-              }
-              if (analysis.complexity === "Deref") {
-                return KnownSize;
-              }
-              return analysis.complexity;
-            })()
-          };
-        }
-        return analysis;
+      if (v2._1.tag === "Local") {
+        return accessed(v2._1._2)({ ...analysis, complexity: analysis.complexity === "Trivial" ? Deref : analysis.complexity });
       }
-      if (expr._1.tag === "LitString" && length2(expr._1._1) > 128) {
+      if (v2._1.tag === "Var") {
+        if (expr._2.tag === "GetProp") {
+          const $0 = externAnalysis(v2._1._1)($Maybe("Just", expr._2._1));
+          if ($0.tag === "Just") {
+            return { ...analysis, args: $0._1.args, complexity: analysis.complexity };
+          }
+        }
+        return { ...analysis, complexity: analysis.complexity };
+      }
+    }
+    return { ...analysis, complexity: analysis.complexity === "Trivial" ? Deref : analysis.complexity };
+  }
+  if (expr.tag === "Lit") {
+    const analysis = { ...analyzeDefault(dictHasAnalysis)(expr), result: KnownNeutral };
+    if (expr._1.tag === "LitArray") {
+      if (expr._1._1.length > 0) {
         return {
           ...analysis,
           complexity: (() => {
@@ -6915,157 +6916,182 @@ var analyze = (dictHasAnalysis) => {
       }
       return analysis;
     }
-    if (expr.tag === "Typed") {
-      return analysisOf1(expr._2);
+    if (expr._1.tag === "LitRecord") {
+      if (expr._1._1.length > 0) {
+        return {
+          ...analysis,
+          complexity: (() => {
+            if (analysis.complexity === "Trivial") {
+              return KnownSize;
+            }
+            if (analysis.complexity === "Deref") {
+              return KnownSize;
+            }
+            return analysis.complexity;
+          })()
+        };
+      }
+      return analysis;
     }
-    fail();
-  };
+    if (expr._1.tag === "LitString" && length2(expr._1._1) > 128) {
+      return {
+        ...analysis,
+        complexity: (() => {
+          if (analysis.complexity === "Trivial") {
+            return KnownSize;
+          }
+          if (analysis.complexity === "Deref") {
+            return KnownSize;
+          }
+          return analysis.complexity;
+        })()
+      };
+    }
+    return analysis;
+  }
+  if (expr.tag === "Typed") {
+    return dictHasAnalysis.analysisOf(expr._2);
+  }
+  fail();
 };
-var analyzeEffectBlock = (dictHasAnalysis) => {
-  const analyzeDefault1 = analyzeDefault(dictHasAnalysis);
-  const analyze1 = analyze(dictHasAnalysis);
-  return (dictHasSyntax) => {
-    const analyze22 = analyze1(dictHasSyntax);
-    return (externAnalysis) => (expr) => {
-      if (expr.tag === "Let") {
-        const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
-          const $02 = dictHasAnalysis.analysisOf(expr._4);
-          return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
-        })());
-        return {
-          ...$0,
-          complexity: (() => {
-            if ($0.complexity === "Trivial") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "Deref") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "KnownSize") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "NonTrivial") {
-              return $0.complexity;
-            }
-            fail();
-          })(),
-          result: dictHasAnalysis.analysisOf(expr._4).result,
-          size: $0.size + 1 | 0
-        };
-      }
-      if (expr.tag === "LetRec") {
-        const $0 = semigroupBackendAnalysis.append(foldMap3((x) => dictHasAnalysis.analysisOf(x._2))(expr._2))(dictHasAnalysis.analysisOf(expr._3));
-        return {
-          ...$0,
-          complexity: (() => {
-            if ($0.complexity === "Trivial") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "Deref") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "KnownSize") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "NonTrivial") {
-              return $0.complexity;
-            }
-            fail();
-          })(),
-          result: dictHasAnalysis.analysisOf(expr._3).result,
-          size: $0.size + 1 | 0,
-          usages: $$delete(ordInt)(expr._1)($0.usages)
-        };
-      }
-      if (expr.tag === "EffectBind") {
-        const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
-          const $02 = dictHasAnalysis.analysisOf(expr._4);
-          return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
-        })());
-        return {
-          ...$0,
-          complexity: (() => {
-            if ($0.complexity === "Trivial") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "Deref") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "KnownSize") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "NonTrivial") {
-              return $0.complexity;
-            }
-            fail();
-          })(),
-          result: Unknown,
-          size: $0.size + 1 | 0
-        };
-      }
-      if (expr.tag === "EffectPure") {
-        const $0 = dictHasAnalysis.analysisOf(expr._1);
-        return { ...$0, result: Unknown, size: $0.size + 1 | 0 };
-      }
-      if (expr.tag === "EffectDefer") {
-        const $0 = dictHasAnalysis.analysisOf(expr._1);
-        return { ...$0, result: Unknown, size: $0.size + 1 | 0 };
-      }
-      if (expr.tag === "UncurriedEffectApp") {
-        const $0 = analyzeDefault1(expr);
-        const analysis = {
-          ...$0,
-          complexity: (() => {
-            if ($0.complexity === "Trivial") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "Deref") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "KnownSize") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "NonTrivial") {
-              return $0.complexity;
-            }
-            fail();
-          })(),
-          result: Unknown
-        };
-        const v = dictHasSyntax.syntaxOf(expr._1);
-        if (v.tag === "Just" && v._1.tag === "Local") {
-          return callArity(v._1._2)(expr._2.length)(analysis);
+var analyzeEffectBlock = (dictHasAnalysis) => (dictHasSyntax) => (externAnalysis) => (expr) => {
+  if (expr.tag === "Let") {
+    const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
+      const $02 = dictHasAnalysis.analysisOf(expr._4);
+      return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
+    })());
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
         }
-        return analysis;
-      }
-      if (expr.tag === "PrimEffect") {
-        const $0 = analyzeDefault1(expr);
-        return {
-          ...$0,
-          complexity: (() => {
-            if ($0.complexity === "Trivial") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "Deref") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "KnownSize") {
-              return NonTrivial;
-            }
-            if ($0.complexity === "NonTrivial") {
-              return $0.complexity;
-            }
-            fail();
-          })(),
-          result: Unknown
-        };
-      }
-      if (expr.tag === "Typed") {
-        return dictHasAnalysis.analysisOf(expr._2);
-      }
-      return analyze22(externAnalysis)(expr);
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: dictHasAnalysis.analysisOf(expr._4).result,
+      size: $0.size + 1 | 0
     };
-  };
+  }
+  if (expr.tag === "LetRec") {
+    const $0 = semigroupBackendAnalysis.append(foldableArray.foldMap(monoidBackendAnalysis)((x) => dictHasAnalysis.analysisOf(x._2))(expr._2))(dictHasAnalysis.analysisOf(expr._3));
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: dictHasAnalysis.analysisOf(expr._3).result,
+      size: $0.size + 1 | 0,
+      usages: $$delete(ordInt)(expr._1)($0.usages)
+    };
+  }
+  if (expr.tag === "EffectBind") {
+    const $0 = semigroupBackendAnalysis.append(dictHasAnalysis.analysisOf(expr._3))((() => {
+      const $02 = dictHasAnalysis.analysisOf(expr._4);
+      return { ...$02, usages: $$delete(ordInt)(expr._2)($02.usages) };
+    })());
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown,
+      size: $0.size + 1 | 0
+    };
+  }
+  if (expr.tag === "EffectPure") {
+    const $0 = dictHasAnalysis.analysisOf(expr._1);
+    return { ...$0, result: Unknown, size: $0.size + 1 | 0 };
+  }
+  if (expr.tag === "EffectDefer") {
+    const $0 = dictHasAnalysis.analysisOf(expr._1);
+    return { ...$0, result: Unknown, size: $0.size + 1 | 0 };
+  }
+  if (expr.tag === "UncurriedEffectApp") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    const analysis = {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown
+    };
+    const v = dictHasSyntax.syntaxOf(expr._1);
+    if (v.tag === "Just" && v._1.tag === "Local") {
+      return callArity(v._1._2)(expr._2.length)(analysis);
+    }
+    return analysis;
+  }
+  if (expr.tag === "PrimEffect") {
+    const $0 = analyzeDefault(dictHasAnalysis)(expr);
+    return {
+      ...$0,
+      complexity: (() => {
+        if ($0.complexity === "Trivial") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "Deref") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "KnownSize") {
+          return NonTrivial;
+        }
+        if ($0.complexity === "NonTrivial") {
+          return $0.complexity;
+        }
+        fail();
+      })(),
+      result: Unknown
+    };
+  }
+  if (expr.tag === "Typed") {
+    return dictHasAnalysis.analysisOf(expr._2);
+  }
+  return analyze(dictHasAnalysis)(dictHasSyntax)(externAnalysis)(expr);
 };
 
 // output-es/PureScript.Backend.Optimizer.Semantics/index.js
@@ -7082,101 +7108,47 @@ var $LocalBinding = (tag, _1) => ({ tag, _1 });
 var $MkFn = (tag, _1, _2) => ({ tag, _1, _2 });
 var $SemConditional = (_1, _2) => ({ tag: "SemConditional", _1, _2 });
 var $UnpackOp = (tag, _1, _2, _3, _4, _5) => ({ tag, _1, _2, _3, _4, _5 });
-var compare1 = /* @__PURE__ */ (() => ordQualified(ordString).compare)();
-var compare22 = (x) => (y) => {
-  if (x.tag === "Nothing") {
-    if (y.tag === "Nothing") {
-      return EQ;
-    }
-    return LT;
-  }
-  if (y.tag === "Nothing") {
-    return GT;
-  }
-  if (x.tag === "Just" && y.tag === "Just") {
-    return ordString.compare(x._1)(y._1);
-  }
-  fail();
-};
-var eq102 = /* @__PURE__ */ eqArrayImpl((x) => (y) => (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2);
-var lookup3 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
+var ordQualified3 = /* @__PURE__ */ ordQualified(ordString);
+var ordMaybe2 = /* @__PURE__ */ (() => {
+  const eqMaybe1 = {
+    eq: (x) => (y) => {
+      if (x.tag === "Nothing") {
+        return y.tag === "Nothing";
       }
-      if (v.tag === "Node") {
-        const v1 = ordInt.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
+      return x.tag === "Just" && y.tag === "Just" && x._1 === y._1;
     }
-    return go$r;
   };
-  return go;
-};
-var toUnfoldable = /* @__PURE__ */ (() => {
-  const $0 = unfoldableArray.unfoldr((xs) => {
-    if (xs.tag === "Nil") {
-      return Nothing;
-    }
-    if (xs.tag === "Cons") {
-      return $Maybe("Just", $Tuple(xs._1, xs._2));
-    }
-    fail();
-  });
-  return (x) => $0((() => {
-    const go = (m$p, z$p) => {
-      if (m$p.tag === "Leaf") {
-        return z$p;
+  return {
+    compare: (x) => (y) => {
+      if (x.tag === "Nothing") {
+        if (y.tag === "Nothing") {
+          return EQ;
+        }
+        return LT;
       }
-      if (m$p.tag === "Node") {
-        return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
+      if (y.tag === "Nothing") {
+        return GT;
+      }
+      if (x.tag === "Just" && y.tag === "Just") {
+        return ordString.compare(x._1)(y._1);
       }
       fail();
-    };
-    return go(x, Nil);
-  })());
+    },
+    Eq0: () => eqMaybe1
+  };
 })();
-var or2 = /* @__PURE__ */ or(foldableArray)(heytingAlgebraBoolean);
-var and2 = /* @__PURE__ */ and(foldableArray)(heytingAlgebraBoolean);
-var foldMap = /* @__PURE__ */ (() => foldableArray.foldMap(monoidBackendAnalysis))();
-var foldMap12 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidBackendAnalysis))();
-var power2 = /* @__PURE__ */ power(monoidBackendAnalysis);
-var toUnfoldable1 = /* @__PURE__ */ (() => unfoldableArray.unfoldr((xs) => {
-  if (xs.tag === "Nil") {
-    return Nothing;
-  }
-  if (xs.tag === "Cons") {
-    return $Maybe("Just", $Tuple(xs._1, xs._2));
-  }
-  fail();
-}))();
-var fromFoldable3 = /* @__PURE__ */ foldrArray(Cons)(Nil);
-var eq16 = (x) => (y) => {
-  if (x.tag === "Left") {
-    return y.tag === "Left" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2;
-  }
-  return x.tag === "Right" && y.tag === "Right" && eqBackendOperator2.eq(x._1)(y._1);
+var eqNonEmptyArray2 = {
+  eq: /* @__PURE__ */ eqArrayImpl((x) => (y) => (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2)
 };
-var identity7 = (x) => x;
-var lookup1 = /* @__PURE__ */ lookup(foldableArray)(eqString);
+var and2 = /* @__PURE__ */ and(foldableArray)(heytingAlgebraBoolean);
+var eqEither = {
+  eq: (x) => (y) => {
+    if (x.tag === "Left") {
+      return y.tag === "Left" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2;
+    }
+    return x.tag === "Right" && y.tag === "Right" && eqBackendOperator2.eq(x._1)(y._1);
+  }
+};
 var NeutralExpr = (x) => x;
 var InlineDefault = /* @__PURE__ */ $InlineDirective("InlineDefault");
 var InlineNever = /* @__PURE__ */ $InlineDirective("InlineNever");
@@ -7185,10 +7157,8 @@ var InlineRef = /* @__PURE__ */ $InlineAccessor("InlineRef");
 var SemEffectPure = (value0) => $BackendSemantics("SemEffectPure", value0);
 var NeutData = (value0) => (value1) => (value2) => (value3) => (value4) => $BackendSemantics("NeutData", value0, value1, value2, value3, value4);
 var NeutUpdate = (value0) => (value1) => $BackendSemantics("NeutUpdate", value0, value1);
-var NeutLit = (value0) => $BackendSemantics("NeutLit", value0);
 var NeutUncurriedApp = (value0) => (value1) => $BackendSemantics("NeutUncurriedApp", value0, value1);
 var NeutUncurriedEffectApp = (value0) => (value1) => $BackendSemantics("NeutUncurriedEffectApp", value0, value1);
-var NeutPrimEffect = (value0) => $BackendSemantics("NeutPrimEffect", value0);
 var NeutPrimUndefined = /* @__PURE__ */ $BackendSemantics("NeutPrimUndefined");
 var hasSyntaxBackendExpr = {
   syntaxOf: /* @__PURE__ */ (() => {
@@ -7225,20 +7195,21 @@ var hasAnalysisBackendExpr = {
   }
 };
 var eqUnpackOp = (dictEq) => {
-  const eq19 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
-  const eq22 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
+  const $0 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
+  const $1 = eqArrayImpl(dictEq.eq);
+  const $2 = eqArrayImpl((x) => (y) => x._1 === y._1 && dictEq.eq(x._2)(y._2));
   return {
     eq: (x) => (y) => {
       if (x.tag === "UnpackRecord") {
-        return y.tag === "UnpackRecord" && eq19(x._1)(y._1);
+        return y.tag === "UnpackRecord" && $0(x._1)(y._1);
       }
       if (x.tag === "UnpackUpdate") {
-        return y.tag === "UnpackUpdate" && dictEq.eq(x._1)(y._1) && eq19(x._2)(y._2);
+        return y.tag === "UnpackUpdate" && dictEq.eq(x._1)(y._1) && $0(x._2)(y._2);
       }
       if (x.tag === "UnpackArray") {
-        return y.tag === "UnpackArray" && eqArrayImpl(dictEq.eq)(x._1)(y._1);
+        return y.tag === "UnpackArray" && $1(x._1)(y._1);
       }
-      return x.tag === "UnpackData" && y.tag === "UnpackData" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2 && (x._2 === "ProductType" ? y._2 === "ProductType" : x._2 === "SumType" && y._2 === "SumType") && x._3 === y._3 && x._4 === y._4 && eq22(x._5)(y._5);
+      return x.tag === "UnpackData" && y.tag === "UnpackData" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2 && (x._2 === "ProductType" ? y._2 === "ProductType" : x._2 === "SumType" && y._2 === "SumType") && x._3 === y._3 && x._4 === y._4 && $2(x._5)(y._5);
     }
   };
 };
@@ -7280,38 +7251,6 @@ var ordInlineAccessor = {
   },
   Eq0: () => eqInlineAccessor
 };
-var lookup22 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordInlineAccessor.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
 var eqEvalRef = {
   eq: (x) => (y) => {
     if (x.tag === "EvalExtern") {
@@ -7324,7 +7263,7 @@ var ordEvalRef = {
   compare: (x) => (y) => {
     if (x.tag === "EvalExtern") {
       if (y.tag === "EvalExtern") {
-        return compare1(x._1)(y._1);
+        return ordQualified3.compare(x._1)(y._1);
       }
       return LT;
     }
@@ -7332,7 +7271,7 @@ var ordEvalRef = {
       return GT;
     }
     if (x.tag === "EvalLocal" && y.tag === "EvalLocal") {
-      const v = compare22(x._1)(y._1);
+      const v = ordMaybe2.compare(x._1)(y._1);
       if (v === "LT") {
         return LT;
       }
@@ -7345,96 +7284,69 @@ var ordEvalRef = {
   },
   Eq0: () => eqEvalRef
 };
-var alter2 = /* @__PURE__ */ alter(ordEvalRef);
-var lookup32 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
+var eqDistOp = (dictEq) => {
+  const $0 = eqArrayImpl(dictEq.eq);
+  const $1 = eqArrayImpl(dictEq.eq);
+  return {
+    eq: (x) => (y) => {
+      if (x.tag === "DistApp") {
+        return y.tag === "DistApp" && $0(x._1)(y._1);
       }
-      if (v.tag === "Node") {
-        const v1 = ordEvalRef.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
+      if (x.tag === "DistUncurriedApp") {
+        return y.tag === "DistUncurriedApp" && $1(x._1)(y._1);
       }
-      fail();
+      if (x.tag === "DistAccessor") {
+        return y.tag === "DistAccessor" && eqBackendAccessor.eq(x._1)(y._1);
+      }
+      if (x.tag === "DistPrimOp1") {
+        return y.tag === "DistPrimOp1" && (() => {
+          if (x._1.tag === "OpBooleanNot") {
+            return y._1.tag === "OpBooleanNot";
+          }
+          if (x._1.tag === "OpIntBitNot") {
+            return y._1.tag === "OpIntBitNot";
+          }
+          if (x._1.tag === "OpIntNegate") {
+            return y._1.tag === "OpIntNegate";
+          }
+          if (x._1.tag === "OpNumberNegate") {
+            return y._1.tag === "OpNumberNegate";
+          }
+          if (x._1.tag === "OpArrayLength") {
+            return y._1.tag === "OpArrayLength";
+          }
+          return x._1.tag === "OpIsTag" && y._1.tag === "OpIsTag" && (x._1._1._1.tag === "Nothing" ? y._1._1._1.tag === "Nothing" : x._1._1._1.tag === "Just" && y._1._1._1.tag === "Just" && x._1._1._1._1 === y._1._1._1._1) && x._1._1._2 === y._1._1._2;
+        })();
+      }
+      if (x.tag === "DistPrimOp2L") {
+        return y.tag === "DistPrimOp2L" && eqBackendOperator2.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2);
+      }
+      return x.tag === "DistPrimOp2R" && y.tag === "DistPrimOp2R" && dictEq.eq(x._1)(y._1) && eqBackendOperator2.eq(x._2)(y._2);
     }
-    return go$r;
   };
-  return go;
 };
-var eqDistOp = (dictEq) => ({
-  eq: (x) => (y) => {
-    if (x.tag === "DistApp") {
-      return y.tag === "DistApp" && eqArrayImpl(dictEq.eq)(x._1)(y._1);
-    }
-    if (x.tag === "DistUncurriedApp") {
-      return y.tag === "DistUncurriedApp" && eqArrayImpl(dictEq.eq)(x._1)(y._1);
-    }
-    if (x.tag === "DistAccessor") {
-      return y.tag === "DistAccessor" && eqBackendAccessor.eq(x._1)(y._1);
-    }
-    if (x.tag === "DistPrimOp1") {
-      return y.tag === "DistPrimOp1" && (() => {
-        if (x._1.tag === "OpBooleanNot") {
-          return y._1.tag === "OpBooleanNot";
-        }
-        if (x._1.tag === "OpIntBitNot") {
-          return y._1.tag === "OpIntBitNot";
-        }
-        if (x._1.tag === "OpIntNegate") {
-          return y._1.tag === "OpIntNegate";
-        }
-        if (x._1.tag === "OpNumberNegate") {
-          return y._1.tag === "OpNumberNegate";
-        }
-        if (x._1.tag === "OpArrayLength") {
-          return y._1.tag === "OpArrayLength";
-        }
-        return x._1.tag === "OpIsTag" && y._1.tag === "OpIsTag" && (x._1._1._1.tag === "Nothing" ? y._1._1._1.tag === "Nothing" : x._1._1._1.tag === "Just" && y._1._1._1.tag === "Just" && x._1._1._1._1 === y._1._1._1._1) && x._1._1._2 === y._1._1._2;
-      })();
-    }
-    if (x.tag === "DistPrimOp2L") {
-      return y.tag === "DistPrimOp2L" && eqBackendOperator2.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2);
-    }
-    return x.tag === "DistPrimOp2R" && y.tag === "DistPrimOp2R" && dictEq.eq(x._1)(y._1) && eqBackendOperator2.eq(x._2)(y._2);
-  }
-});
 var eqBackendRewrite = (dictEq) => {
-  const eq21 = eqArrayImpl((x) => (y) => dictEq.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2));
+  const eqUnpackOp1 = eqUnpackOp(dictEq);
+  const $0 = eqArrayImpl((x) => (y) => dictEq.eq(x._1)(y._1) && dictEq.eq(x._2)(y._2));
+  const eqDistOp1 = eqDistOp(dictEq);
   return {
     eq: (x) => (y) => {
       if (x.tag === "RewriteInline") {
         return y.tag === "RewriteInline" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && dictEq.eq(x._3)(y._3) && dictEq.eq(x._4)(y._4);
       }
       if (x.tag === "RewriteUncurry") {
-        return y.tag === "RewriteUncurry" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && eq102(x._3)(y._3) && dictEq.eq(x._4)(y._4) && dictEq.eq(x._5)(y._5);
+        return y.tag === "RewriteUncurry" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && eqNonEmptyArray2.eq(x._3)(y._3) && dictEq.eq(x._4)(y._4) && dictEq.eq(x._5)(y._5);
       }
       if (x.tag === "RewriteStop") {
         return y.tag === "RewriteStop" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2;
       }
       if (x.tag === "RewriteUnpackOp") {
-        return y.tag === "RewriteUnpackOp" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && eqUnpackOp(dictEq).eq(x._3)(y._3) && dictEq.eq(x._4)(y._4);
+        return y.tag === "RewriteUnpackOp" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && eqUnpackOp1.eq(x._3)(y._3) && dictEq.eq(x._4)(y._4);
       }
       if (x.tag === "RewriteDistBranchesLet") {
-        return y.tag === "RewriteDistBranchesLet" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && eq21(x._3)(y._3) && dictEq.eq(x._4)(y._4) && dictEq.eq(x._5)(y._5);
+        return y.tag === "RewriteDistBranchesLet" && (x._1.tag === "Nothing" ? y._1.tag === "Nothing" : x._1.tag === "Just" && y._1.tag === "Just" && x._1._1 === y._1._1) && x._2 === y._2 && $0(x._3)(y._3) && dictEq.eq(x._4)(y._4) && dictEq.eq(x._5)(y._5);
       }
-      return x.tag === "RewriteDistBranchesOp" && y.tag === "RewriteDistBranchesOp" && eq21(x._1)(y._1) && dictEq.eq(x._2)(y._2) && eqDistOp(dictEq).eq(x._3)(y._3);
+      return x.tag === "RewriteDistBranchesOp" && y.tag === "RewriteDistBranchesOp" && $0(x._1)(y._1) && dictEq.eq(x._2)(y._2) && eqDistOp1.eq(x._3)(y._3);
     }
   };
 };
@@ -7522,7 +7434,36 @@ var shouldUnpackUpdate = (ident) => (level) => (binding2) => (body) => {
     fail();
   })();
   if (binding2.tag === "ExprSyntax" && binding2._2.tag === "Update") {
-    const $1 = lookup3(level)($0.usages);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordInt.compare(level)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = go($0.usages);
     if ($1.tag === "Just" && $1._1.total === ($1._1.access + $1._1.update | 0)) {
       return $Maybe(
         "Just",
@@ -7584,7 +7525,36 @@ var shouldUnpackRecord = (ident) => (level) => (binding2) => (body) => {
     fail();
   })();
   if (binding2.tag === "ExprSyntax" && binding2._2.tag === "Lit" && binding2._2._1.tag === "LitRecord") {
-    const $1 = lookup3(level)($0.usages);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordInt.compare(level)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = go($0.usages);
     if ($1.tag === "Just" && $1._1.total === ($1._1.access + $1._1.update | 0)) {
       return $Maybe(
         "Just",
@@ -7638,7 +7608,36 @@ var shouldUnpackCtor = (ident) => (level) => (a) => (body) => {
     fail();
   })();
   if (a.tag === "ExprSyntax" && a._2.tag === "CtorSaturated") {
-    const $1 = lookup3(level)($0.usages);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordInt.compare(level)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = go($0.usages);
     if ($1.tag === "Just" && $1._1.total === ($1._1.access + $1._1.case | 0)) {
       return $Maybe(
         "Just",
@@ -7692,7 +7691,36 @@ var shouldUnpackArray = (ident) => (level) => (binding2) => (body) => {
     fail();
   })();
   if (binding2.tag === "ExprSyntax" && binding2._2.tag === "Lit" && binding2._2._1.tag === "LitArray") {
-    const $1 = lookup3(level)($0.usages);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordInt.compare(level)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = go($0.usages);
     if ($1.tag === "Just" && $1._1.total === $1._1.access) {
       return $Maybe(
         "Just",
@@ -7746,9 +7774,57 @@ var shouldUncurryAbs = (ident) => (level) => (a) => (b) => {
     fail();
   })();
   if (a.tag === "ExprSyntax" && a._2.tag === "Abs") {
-    const $1 = lookup3(level)($0.usages);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordInt.compare(level)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = go($0.usages);
     if ($1.tag === "Just") {
-      const $2 = toUnfoldable($1._1.arities);
+      const $2 = unfoldableArray.unfoldr((xs) => {
+        if (xs.tag === "Nil") {
+          return Nothing;
+        }
+        if (xs.tag === "Cons") {
+          return $Maybe("Just", $Tuple(xs._1, xs._2));
+        }
+        fail();
+      })((() => {
+        const go$1 = (m$p, z$p) => {
+          if (m$p.tag === "Leaf") {
+            return z$p;
+          }
+          if (m$p.tag === "Node") {
+            return go$1(m$p._5, $List("Cons", m$p._3, go$1(m$p._6, z$p)));
+          }
+          fail();
+        };
+        return go$1($1._1.arities, Nil);
+      })());
       if ($2.length === 1 && $2[0] === a._2._1.length) {
         return $Maybe(
           "Just",
@@ -7840,7 +7916,7 @@ var shouldInlineExternLiteral = (v) => {
 var shouldInlineExternAppArg = (v) => (v1) => v1.tag === "SemLam" && (v.captured === "CaptureNone" || v.captured === "CaptureBranch") && v.total > 0 && v.call === v.total;
 var shouldInlineExternApp = (v) => (v1) => (v2) => (args) => {
   const delayed = v1.args.length > 0;
-  return (v1.complexity === "Trivial" || v1.complexity === "Deref") && v1.size < 16 || v1.usages.tag === "Leaf" && !v1.externs && v1.size < 64 || delayed && v1.args.length <= args.length && v1.size < 16 || delayed && or2(zipWithImpl(
+  return (v1.complexity === "Trivial" || v1.complexity === "Deref") && v1.size < 16 || v1.usages.tag === "Leaf" && !v1.externs && v1.size < 64 || delayed && v1.args.length <= args.length && v1.size < 16 || delayed && or(foldableArray)(heytingAlgebraBoolean)(zipWithImpl(
     shouldInlineExternAppArg,
     v1.args,
     args
@@ -7874,7 +7950,36 @@ var shouldDistributeBranches = (ident) => (level) => (a) => (body) => {
   })();
   const v1 = a.tag === "ExprSyntax" && a._2.tag === "Typed" ? untypedExpr(a._2._2) : a;
   if (v1.tag === "ExprSyntax" && v1._2.tag === "Branch" && $0.size <= 128 && v1._1.result === "KnownNeutral") {
-    const $1 = lookup3(level)($0.usages);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1$1 = ordInt.compare(level)(v._3);
+          if (v1$1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1$1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1$1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = go($0.usages);
     if ($1.tag === "Just" && $1._1.total === ($1._1.access + $1._1.case | 0)) {
       return $Maybe(
         "Just",
@@ -7930,7 +8035,10 @@ var shouldDistributeBranchUncurriedApps = (analysis1) => (branches) => (def) => 
       "Just",
       $BackendExpr(
         "ExprRewrite",
-        { ...semigroupBackendAnalysis.append(analysis1)(foldMap(hasAnalysisBackendExpr.analysisOf)(spine)), rewrite: true },
+        {
+          ...semigroupBackendAnalysis.append(analysis1)(foldableArray.foldMap(monoidBackendAnalysis)(hasAnalysisBackendExpr.analysisOf)(spine)),
+          rewrite: true
+        },
         $BackendRewrite("RewriteDistBranchesOp", branches, def, $DistOp("DistUncurriedApp", spine))
       )
     );
@@ -8027,7 +8135,10 @@ var shouldDistributeBranchApps = (analysis1) => (branches) => (def) => (spine) =
       "Just",
       $BackendExpr(
         "ExprRewrite",
-        { ...semigroupBackendAnalysis.append(analysis1)(foldMap12(hasAnalysisBackendExpr.analysisOf)(spine)), rewrite: true },
+        {
+          ...semigroupBackendAnalysis.append(analysis1)(foldableArray.foldMap(monoidBackendAnalysis)(hasAnalysisBackendExpr.analysisOf)(spine)),
+          rewrite: true
+        },
         $BackendRewrite("RewriteDistBranchesOp", branches, def, $DistOp("DistApp", spine))
       )
     );
@@ -8047,10 +8158,39 @@ var rewriteInline = (ident) => (level) => (binding2) => (body) => {
   return $BackendExpr(
     "ExprRewrite",
     (() => {
-      const v = lookup3(level)(s2.usages);
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v2 = go$a0;
+          if (v2.tag === "Leaf") {
+            go$c = false;
+            go$r = Nothing;
+            continue;
+          }
+          if (v2.tag === "Node") {
+            const v1 = ordInt.compare(level)(v2._3);
+            if (v1 === "LT") {
+              go$a0 = v2._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$a0 = v2._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$c = false;
+              go$r = $Maybe("Just", v2._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const v = go(s2.usages);
       const $0 = (() => {
         if (v.tag === "Just") {
-          return semigroupBackendAnalysis.append(s2)(power2((() => {
+          return semigroupBackendAnalysis.append(s2)(power(monoidBackendAnalysis)((() => {
             if (binding2.tag === "ExprSyntax") {
               return binding2._1;
             }
@@ -8122,7 +8262,36 @@ var shouldInlineLet = (level) => (a) => (b) => {
     }
     fail();
   })();
-  const v2 = lookup3(level)((() => {
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = Nothing;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordInt.compare(level)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = $Maybe("Just", v._4);
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  const v2 = go((() => {
     if (b.tag === "ExprSyntax") {
       return b._1.usages;
     }
@@ -8136,52 +8305,52 @@ var shouldInlineLet = (level) => (a) => (b) => {
   }
   if (v2.tag === "Just") {
     return $0.complexity === "Trivial" || v2._1.captured === "CaptureNone" && v2._1.total === 1 || (v2._1.captured === "CaptureNone" || v2._1.captured === "CaptureBranch") && ($0.complexity === "Trivial" || $0.complexity === "Deref") && $0.size < 5 || $0.complexity === "Deref" && v2._1.call === v2._1.total || (() => {
-      const go = (go$a0$copy) => {
-        let go$a0 = go$a0$copy, go$c = true, go$r;
-        while (go$c) {
-          const v = go$a0;
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v = go$1$a0;
           if (v.tag === "ExprSyntax") {
             if (v._2.tag === "Typed") {
-              go$a0 = v._2._2;
-              continue;
-            }
-            go$c = false;
-            go$r = $Maybe("Just", v._2);
-            continue;
-          }
-          go$c = false;
-          go$r = Nothing;
-        }
-        return go$r;
-      };
-      const $1 = go(a);
-      return $0.complexity === "KnownSize" && v2._1.total === 1 || (() => {
-        const go$1 = (go$1$a0$copy) => {
-          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
-          while (go$1$c) {
-            const v = go$1$a0;
-            if (v.tag === "ExprSyntax") {
-              if (v._2.tag === "Typed") {
-                go$1$a0 = v._2._2;
-                continue;
-              }
-              go$1$c = false;
-              go$1$r = $Maybe("Just", v._2);
+              go$1$a0 = v._2._2;
               continue;
             }
             go$1$c = false;
-            go$1$r = Nothing;
+            go$1$r = $Maybe("Just", v._2);
+            continue;
           }
-          return go$1$r;
+          go$1$c = false;
+          go$1$r = Nothing;
+        }
+        return go$1$r;
+      };
+      const $1 = go$1(a);
+      return $0.complexity === "KnownSize" && v2._1.total === 1 || (() => {
+        const go$2 = (go$2$a0$copy) => {
+          let go$2$a0 = go$2$a0$copy, go$2$c = true, go$2$r;
+          while (go$2$c) {
+            const v = go$2$a0;
+            if (v.tag === "ExprSyntax") {
+              if (v._2.tag === "Typed") {
+                go$2$a0 = v._2._2;
+                continue;
+              }
+              go$2$c = false;
+              go$2$r = $Maybe("Just", v._2);
+              continue;
+            }
+            go$2$c = false;
+            go$2$r = Nothing;
+          }
+          return go$2$r;
         };
-        const $2 = go$1(a);
+        const $2 = go$2(a);
         return $1.tag === "Just" && ($1._1.tag === "Abs" || $1._1.tag === "UncurriedAbs" || $1._1.tag === "UncurriedEffectAbs" || $1._1.tag === "EffectDefer") && (v2._1.total === 1 || $0.usages.tag === "Leaf" || $0.size < 16) || $2.tag === "Just" && ($2._1.tag === "PrimEffect" || $2._1.tag === "UncurriedEffectApp" || $2._1.tag === "EffectBind" || $2._1.tag === "EffectDefer") && v2._1.total === 1;
       })();
     })();
   }
   fail();
 };
-var insertDirective = (ref) => (acc) => (dir) => alter2((v) => {
+var insertDirective = (ref) => (acc) => (dir) => alter(ordEvalRef)((v) => {
   if (v.tag === "Just") {
     return $Maybe("Just", insert(ordInlineAccessor)(acc)(dir)(v._1));
   }
@@ -8190,63 +8359,6 @@ var insertDirective = (ref) => (acc) => (dir) => alter2((v) => {
   }
   fail();
 })(ref);
-var guardFailOver1 = (f) => (as) => (k) => {
-  const v = foldlArray((v2) => (v1) => {
-    if (v2.tag === "Nothing") {
-      const $0 = f(v1);
-      if ($0.tag === "NeutFail") {
-        return $Maybe("Just", $0);
-      }
-      return Nothing;
-    }
-    return v2;
-  })(Nothing)(as);
-  if (v.tag === "Just") {
-    return v._1;
-  }
-  if (v.tag === "Nothing") {
-    return k(as);
-  }
-  fail();
-};
-var guardFailOver2 = (f) => (as) => (k) => {
-  const v = foldlDefault(foldableBackendEffect)((v2) => (v1) => {
-    if (v2.tag === "Nothing") {
-      const $0 = f(v1);
-      if ($0.tag === "NeutFail") {
-        return $Maybe("Just", $0);
-      }
-      return Nothing;
-    }
-    return v2;
-  })(Nothing)(as);
-  if (v.tag === "Just") {
-    return v._1;
-  }
-  if (v.tag === "Nothing") {
-    return k(as);
-  }
-  fail();
-};
-var guardFailOver3 = (f) => (as) => (k) => {
-  const v = foldlDefault(foldableLiteral)((v2) => (v1) => {
-    if (v2.tag === "Nothing") {
-      const $0 = f(v1);
-      if ($0.tag === "NeutFail") {
-        return $Maybe("Just", $0);
-      }
-      return Nothing;
-    }
-    return v2;
-  })(Nothing)(as);
-  if (v.tag === "Just") {
-    return v._1;
-  }
-  if (v.tag === "Nothing") {
-    return k(as);
-  }
-  fail();
-};
 var foldBackendExpr = (foldSyntax) => (foldRewrite) => {
   const go = (v) => {
     if (v.tag === "ExprSyntax") {
@@ -8517,11 +8629,19 @@ var evalUncurriedBeta = (fn) => (mk) => (spine) => {
       if (v1.tag === "Nil") {
         return v._1;
       }
-      return fn(v._1)(toUnfoldable1(v1));
+      return fn(v._1)(unfoldableArray.unfoldr((xs) => {
+        if (xs.tag === "Nil") {
+          return Nothing;
+        }
+        if (xs.tag === "Cons") {
+          return $Maybe("Just", $Tuple(xs._1, xs._2));
+        }
+        fail();
+      })(v1));
     }
     fail();
   };
-  return go(mk)(fromFoldable3(spine));
+  return go(mk)(foldrArray(Cons)(Nil)(spine));
 };
 var evalPrimOpOrd = (dictOrd) => {
   const Eq0 = dictOrd.Eq0();
@@ -8547,10 +8667,6 @@ var evalPrimOpOrd = (dictOrd) => {
     fail();
   };
 };
-var evalPrimOpOrd1 = /* @__PURE__ */ evalPrimOpOrd(ordString);
-var evalPrimOpOrd2 = /* @__PURE__ */ evalPrimOpOrd(ordInt);
-var evalPrimOpOrd3 = /* @__PURE__ */ evalPrimOpOrd(ordChar);
-var evalPrimOpOrd4 = /* @__PURE__ */ evalPrimOpOrd(ordBoolean);
 var evalPrimOpNot = (v) => {
   if (v.tag === "Op1") {
     if (v._1.tag === "OpBooleanNot") {
@@ -9094,7 +9210,10 @@ var evalPrimOp = (env) => (v) => {
                                                         if ($4.tag === "NeutLit" && $4._1.tag === "LitString") {
                                                           return $BackendSemantics(
                                                             "NeutLit",
-                                                            $Literal("LitBoolean", evalPrimOpOrd1($0._1)($3._1._1)($4._1._1))
+                                                            $Literal(
+                                                              "LitBoolean",
+                                                              evalPrimOpOrd(ordString)($0._1)($3._1._1)($4._1._1)
+                                                            )
                                                           );
                                                         }
                                                       }
@@ -9165,7 +9284,7 @@ var evalPrimOp = (env) => (v) => {
                                                 if ($4.tag === "NeutLit" && $4._1.tag === "LitInt") {
                                                   return $BackendSemantics(
                                                     "NeutLit",
-                                                    $Literal("LitBoolean", evalPrimOpOrd2($0._1)($3._1._1)($4._1._1))
+                                                    $Literal("LitBoolean", evalPrimOpOrd(ordInt)($0._1)($3._1._1)($4._1._1))
                                                   );
                                                 }
                                               }
@@ -9263,7 +9382,10 @@ var evalPrimOp = (env) => (v) => {
                             if ($3.tag === "NeutLit" && $3._1.tag === "LitChar") {
                               const $4 = deref($2);
                               if ($4.tag === "NeutLit" && $4._1.tag === "LitChar") {
-                                return $BackendSemantics("NeutLit", $Literal("LitBoolean", evalPrimOpOrd3($0._1)($3._1._1)($4._1._1)));
+                                return $BackendSemantics(
+                                  "NeutLit",
+                                  $Literal("LitBoolean", evalPrimOpOrd(ordChar)($0._1)($3._1._1)($4._1._1))
+                                );
                               }
                             }
                           }
@@ -9274,7 +9396,10 @@ var evalPrimOp = (env) => (v) => {
                           if ($3.tag === "NeutLit" && $3._1.tag === "LitBoolean") {
                             const $4 = deref($2);
                             if ($4.tag === "NeutLit" && $4._1.tag === "LitBoolean") {
-                              return $BackendSemantics("NeutLit", $Literal("LitBoolean", evalPrimOpOrd4($0._1)($3._1._1)($4._1._1)));
+                              return $BackendSemantics(
+                                "NeutLit",
+                                $Literal("LitBoolean", evalPrimOpOrd(ordBoolean)($0._1)($3._1._1)($4._1._1))
+                              );
                             }
                           }
                         }
@@ -9391,7 +9516,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
   if (v1.tag === "SemTyped") {
     return evalAssocOp(env)(op1)(v)(v1._2);
   }
-  if (v.tag === "SemAssocOp" && v1.tag === "SemAssocOp" && eq16(op1)(v._1) && eq16(v._1)(v1._1)) {
+  if (v.tag === "SemAssocOp" && v1.tag === "SemAssocOp" && eqEither.eq(op1)(v._1) && eqEither.eq(v._1)(v1._1)) {
     const v3 = evalAssocOp$p(env)(op1)((() => {
       const $02 = v._2.length - 1 | 0;
       if ($02 >= 0 && $02 < v._2.length) {
@@ -9404,7 +9529,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
       }
       fail();
     })());
-    if (v3.tag === "SemAssocOp" && eq16(v1._1)(v3._1)) {
+    if (v3.tag === "SemAssocOp" && eqEither.eq(v1._1)(v3._1)) {
       return $BackendSemantics(
         "SemAssocOp",
         op1,
@@ -9459,7 +9584,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
       }
       fail();
     })())(b);
-    if (v4.tag === "SemAssocOp" && eq16(op2)(v4._1)) {
+    if (v4.tag === "SemAssocOp" && eqEither.eq(op2)(v4._1)) {
       return $BackendSemantics(
         "SemAssocOp",
         op1,
@@ -9485,14 +9610,14 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
       })())(v4)
     );
   };
-  if (v1.tag === "SemAssocOp" && eq16(op1)(v1._1)) {
+  if (v1.tag === "SemAssocOp" && eqEither.eq(op1)(v1._1)) {
     const v4 = evalAssocOp$p(env)(op1)(v)((() => {
       if (0 < v1._2.length) {
         return v1._2[0];
       }
       fail();
     })());
-    if (v4.tag === "SemAssocOp" && eq16(v1._1)(v4._1)) {
+    if (v4.tag === "SemAssocOp" && eqEither.eq(v1._1)(v4._1)) {
       return $BackendSemantics(
         "SemAssocOp",
         op1,
@@ -9527,7 +9652,7 @@ var evalAssocOp = (env) => (op1) => (v) => (v1) => {
       })()
     );
   }
-  if (v.tag === "SemAssocOp" && eq16(op1)(v._1)) {
+  if (v.tag === "SemAssocOp" && eqEither.eq(op1)(v._1)) {
     return $0(v._2, v1, v._1);
   }
   return $BackendSemantics("SemAssocOp", op1, [v, v1]);
@@ -10252,7 +10377,19 @@ var evalApp = (env) => (hd) => (spine) => {
       })(nextFn)(args))
     );
     const $2 = (args, fn) => {
-      const app = $BackendSemantics("NeutApp", fn, toUnfoldable1(args));
+      const app = $BackendSemantics(
+        "NeutApp",
+        fn,
+        unfoldableArray.unfoldr((xs) => {
+          if (xs.tag === "Nil") {
+            return Nothing;
+          }
+          if (xs.tag === "Cons") {
+            return $Maybe("Just", $Tuple(xs._1, xs._2));
+          }
+          fail();
+        })(args)
+      );
       if (mbTy.tag === "Just") {
         return $BackendSemantics("SemTyped", mbTy._1, app);
       }
@@ -10370,7 +10507,7 @@ var evalApp = (env) => (hd) => (spine) => {
     }
     return $2(v1, v);
   };
-  return go(Nothing)(env)(hd)(fromFoldable3(spine));
+  return go(Nothing)(env)(hd)(foldrArray(Cons)(Nil)(spine));
 };
 var evalMkFn = (env) => (n) => (sem) => {
   if (n === 0) {
@@ -10411,12 +10548,26 @@ var evalUncurriedApp = (env) => (hd) => (spine) => {
         continue;
       }
       if (v.tag === "SemRef") {
-        const $0 = v._1;
-        const $1 = v._3;
-        const $2 = v._2;
-        go$c = false;
-        go$r = guardFailOver1(identity7)(spine)((spine$p) => evalRef(env)($0)($2)($ExternSpine("ExternUncurriedApp", spine$p))($1));
-        continue;
+        const v$12 = foldlArray((v$13) => (v1) => {
+          if (v$13.tag === "Nothing") {
+            if (v1.tag === "NeutFail") {
+              return $Maybe("Just", v1);
+            }
+            return Nothing;
+          }
+          return v$13;
+        })(Nothing)(spine);
+        if (v$12.tag === "Just") {
+          go$c = false;
+          go$r = v$12._1;
+          continue;
+        }
+        if (v$12.tag === "Nothing") {
+          go$c = false;
+          go$r = evalRef(env)(v._1)(v._2)($ExternSpine("ExternUncurriedApp", spine))(v._3);
+          continue;
+        }
+        fail();
       }
       if (v.tag === "SemLet") {
         go$c = false;
@@ -10436,16 +10587,33 @@ var evalUncurriedApp = (env) => (hd) => (spine) => {
         go$r = $BackendSemantics("NeutFail", v._1);
         continue;
       }
-      go$c = false;
-      go$r = guardFailOver1(identity7)(spine)((spine$p) => {
+      const v$1 = foldlArray((v$12) => (v1) => {
+        if (v$12.tag === "Nothing") {
+          if (v1.tag === "NeutFail") {
+            return $Maybe("Just", v1);
+          }
+          return Nothing;
+        }
+        return v$12;
+      })(Nothing)(spine);
+      if (v$1.tag === "Just") {
+        go$c = false;
+        go$r = v$1._1;
+        continue;
+      }
+      if (v$1.tag === "Nothing") {
         if (mbTy.tag === "Just") {
-          return $BackendSemantics("SemTyped", mbTy._1, $BackendSemantics("NeutUncurriedApp", v, spine$p));
+          go$c = false;
+          go$r = $BackendSemantics("SemTyped", mbTy._1, $BackendSemantics("NeutUncurriedApp", v, spine));
+          continue;
         }
         if (mbTy.tag === "Nothing") {
-          return $BackendSemantics("NeutUncurriedApp", v, spine$p);
+          go$c = false;
+          go$r = $BackendSemantics("NeutUncurriedApp", v, spine);
+          continue;
         }
-        fail();
-      });
+      }
+      fail();
     }
     return go$r;
   };
@@ -10508,16 +10676,33 @@ var evalUncurriedEffectApp = (env) => (hd) => (spine) => {
         go$r = $BackendSemantics("NeutFail", v._1);
         continue;
       }
-      go$c = false;
-      go$r = guardFailOver1(identity7)(spine)((spine$p) => {
+      const v$1 = foldlArray((v$12) => (v1) => {
+        if (v$12.tag === "Nothing") {
+          if (v1.tag === "NeutFail") {
+            return $Maybe("Just", v1);
+          }
+          return Nothing;
+        }
+        return v$12;
+      })(Nothing)(spine);
+      if (v$1.tag === "Just") {
+        go$c = false;
+        go$r = v$1._1;
+        continue;
+      }
+      if (v$1.tag === "Nothing") {
         if (mbTy.tag === "Just") {
-          return $BackendSemantics("SemTyped", mbTy._1, $BackendSemantics("NeutUncurriedEffectApp", v, spine$p));
+          go$c = false;
+          go$r = $BackendSemantics("SemTyped", mbTy._1, $BackendSemantics("NeutUncurriedEffectApp", v, spine));
+          continue;
         }
         if (mbTy.tag === "Nothing") {
-          return $BackendSemantics("NeutUncurriedEffectApp", v, spine$p);
+          go$c = false;
+          go$r = $BackendSemantics("NeutUncurriedEffectApp", v, spine);
+          continue;
         }
-        fail();
-      });
+      }
+      fail();
     }
     return go$r;
   };
@@ -10565,7 +10750,7 @@ var evalBackendSyntax = (dictEval) => ({
           const $0 = v.locals[v1._2]._1;
           const $1 = (() => {
             if (v1._1.tag === "Just") {
-              return lookup1(v1._1._1)($0);
+              return lookup(foldableArray)(eqString)(v1._1._1)($0);
             }
             if (v1._1.tag === "Nothing") {
               return Nothing;
@@ -10777,8 +10962,8 @@ var evalBackendSyntax = (dictEval) => ({
       })());
     }
     if (v1.tag === "PrimEffect") {
-      return guardFailOver2(identity7)((() => {
-        const $0 = dictEval.eval(v);
+      const $0 = dictEval.eval(v);
+      const $1 = (() => {
         if (v1._1.tag === "EffectRefNew") {
           return $BackendEffect("EffectRefNew", $0(v1._1._1));
         }
@@ -10789,13 +10974,77 @@ var evalBackendSyntax = (dictEval) => ({
           return $BackendEffect("EffectRefWrite", $0(v1._1._1), $0(v1._1._2));
         }
         fail();
-      })())(NeutPrimEffect);
+      })();
+      const Semigroup0 = monoidDual.Semigroup0();
+      const $2 = (() => {
+        if ($1.tag === "EffectRefNew") {
+          if ($1._1.tag === "NeutFail") {
+            return $Maybe("Just", $1._1);
+          }
+          return Nothing;
+        }
+        if ($1.tag === "EffectRefRead") {
+          if ($1._1.tag === "NeutFail") {
+            return $Maybe("Just", $1._1);
+          }
+          return Nothing;
+        }
+        if ($1.tag === "EffectRefWrite") {
+          return Semigroup0.append((() => {
+            const $22 = $1._1;
+            return (a) => {
+              if (a.tag === "Nothing") {
+                if ($22.tag === "NeutFail") {
+                  return $Maybe("Just", $22);
+                }
+                return Nothing;
+              }
+              return a;
+            };
+          })())((() => {
+            const $22 = $1._2;
+            return (a) => {
+              if (a.tag === "Nothing") {
+                if ($22.tag === "NeutFail") {
+                  return $Maybe("Just", $22);
+                }
+                return Nothing;
+              }
+              return a;
+            };
+          })())(Nothing);
+        }
+        fail();
+      })();
+      if ($2.tag === "Just") {
+        return $2._1;
+      }
+      if ($2.tag === "Nothing") {
+        return $BackendSemantics("NeutPrimEffect", $1);
+      }
+      fail();
     }
     if (v1.tag === "PrimUndefined") {
       return NeutPrimUndefined;
     }
     if (v1.tag === "Lit") {
-      return guardFailOver3(identity7)(functorLiteral.map(dictEval.eval(v))(v1._1))(NeutLit);
+      const $0 = functorLiteral.map(dictEval.eval(v))(v1._1);
+      const $1 = foldableLiteral.foldMap(monoidDual)((x) => (a) => {
+        if (a.tag === "Nothing") {
+          if (x.tag === "NeutFail") {
+            return $Maybe("Just", x);
+          }
+          return Nothing;
+        }
+        return a;
+      })($0)(Nothing);
+      if ($1.tag === "Just") {
+        return $1._1;
+      }
+      if ($1.tag === "Nothing") {
+        return $BackendSemantics("NeutLit", $0);
+      }
+      fail();
     }
     if (v1.tag === "Fail") {
       return $BackendSemantics("NeutFail", v1._1);
@@ -10804,10 +11053,27 @@ var evalBackendSyntax = (dictEval) => ({
       return $BackendSemantics("NeutCtorDef", $Qualified($Maybe("Just", v.currentModule), v1._3), v1._1, v1._2, v1._3, v1._4);
     }
     if (v1.tag === "CtorSaturated") {
-      return guardFailOver1(snd)(arrayMap((() => {
-        const $0 = dictEval.eval(v);
-        return (m) => $Tuple(m._1, $0(m._2));
-      })())(v1._5))(NeutData(v1._1)(v1._2)(v1._3)(v1._4));
+      const $0 = arrayMap((() => {
+        const $02 = dictEval.eval(v);
+        return (m) => $Tuple(m._1, $02(m._2));
+      })())(v1._5);
+      const $1 = NeutData(v1._1)(v1._2)(v1._3)(v1._4);
+      const v$1 = foldlArray((v$12) => (v1$1) => {
+        if (v$12.tag === "Nothing") {
+          if (v1$1._2.tag === "NeutFail") {
+            return $Maybe("Just", v1$1._2);
+          }
+          return Nothing;
+        }
+        return v$12;
+      })(Nothing)($0);
+      if (v$1.tag === "Just") {
+        return v$1._1;
+      }
+      if (v$1.tag === "Nothing") {
+        return $1($0);
+      }
+      fail();
     }
     if (v1.tag === "Typed") {
       return $BackendSemantics("SemTyped", v1._1, dictEval.eval(v)(v1._2));
@@ -11004,17 +11270,28 @@ var optimize = (traceSteps) => (ctx) => (env) => (v) => (initN) => (originalExpr
         continue;
       }
       go$c = false;
-      go$r = $Tuple(reverse(toUnfoldable1(newSteps)), v1._2);
+      go$r = $Tuple(
+        reverse(unfoldableArray.unfoldr((xs) => {
+          if (xs.tag === "Nil") {
+            return Nothing;
+          }
+          if (xs.tag === "Cons") {
+            return $Maybe("Just", $Tuple(xs._1, xs._2));
+          }
+          fail();
+        })(newSteps)),
+        v1._2
+      );
     }
     return go$r;
   };
   return go(traceSteps ? $List("Cons", originalExpr, Nil) : Nil)(initN)(originalExpr);
 };
 var evalNeutralExpr = { eval: (env) => (v) => evalBackendSyntax(evalNeutralExpr).eval(env)(v) };
-var eval3 = /* @__PURE__ */ (() => evalBackendSyntax(evalNeutralExpr).eval)();
+var evalBackendSyntax1 = /* @__PURE__ */ evalBackendSyntax(evalNeutralExpr);
 var addStop = (v) => (ref) => (acc) => ({
   ...v,
-  directives: alter2((v2) => {
+  directives: alter(ordEvalRef)((v2) => {
     if (v2.tag === "Just") {
       return $Maybe("Just", insert(ordInlineAccessor)(acc)(InlineNever)(v2._1));
     }
@@ -11028,11 +11305,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
     if ($12.tag === "Just" && $12._1.head.tag === "ExternAccessor" && $12._1.head._1.tag === "GetProp") {
       const $22 = $12._1.head._1._1;
       if ($0.tag === "ExternExpr") {
-        const $3 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-        const $4 = lookup22($InlineAccessor("InlineProp", $22));
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v$1 = go$a0;
+            if (v$1.tag === "Leaf") {
+              go$c = false;
+              go$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+              if (v1$1 === "LT") {
+                go$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$c = false;
+                go$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const $3 = go(v.directives);
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineProp", $22))(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
         const v3 = (() => {
           if ($3.tag === "Just") {
-            return $4($3._1);
+            return go$1($3._1);
           }
           if ($3.tag === "Nothing") {
             return Nothing;
@@ -11060,11 +11394,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           $0._2
         );
         if ($3.tag === "Just") {
-          const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-          const $5 = lookup22($InlineAccessor("InlineProp", $22));
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v$1 = go$a0;
+              if (v$1.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const $4 = go(v.directives);
+          const go$1 = (go$1$a0$copy) => {
+            let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+            while (go$1$c) {
+              const v$1 = go$1$a0;
+              if (v$1.tag === "Leaf") {
+                go$1$c = false;
+                go$1$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineProp", $22))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$1$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$1$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$1$c = false;
+                  go$1$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$1$r;
+          };
           const v42 = (() => {
             if ($4.tag === "Just") {
-              return $5($4._1);
+              return go$1($4._1);
             }
             if ($4.tag === "Nothing") {
               return Nothing;
@@ -11084,11 +11475,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
     const v4 = (v5) => {
       const $22 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), spine);
       if ($22.tag === "Just" && $22._1.head.tag === "ExternApp" && $0.tag === "ExternExpr") {
-        const $3 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-        const $4 = lookup22(InlineRef);
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v$1 = go$a0;
+            if (v$1.tag === "Leaf") {
+              go$c = false;
+              go$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+              if (v1$1 === "LT") {
+                go$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$c = false;
+                go$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const $3 = go(v.directives);
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordInlineAccessor.compare(InlineRef)(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
         const v7 = (() => {
           if ($3.tag === "Just") {
-            return $4($3._1);
+            return go$1($3._1);
           }
           if ($3.tag === "Nothing") {
             return Nothing;
@@ -11110,11 +11558,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
       if ($3.tag === "Just" && $3._1.head.tag === "ExternAccessor" && $3._1.head._1.tag === "GetProp") {
         const $4 = $3._1.head._1._1;
         if ($0.tag === "ExternExpr") {
-          const $5 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-          const $6 = lookup22($InlineAccessor("InlineSpineProp", $4));
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v$1 = go$a0;
+              if (v$1.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const $5 = go(v.directives);
+          const go$1 = (go$1$a0$copy) => {
+            let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+            while (go$1$c) {
+              const v$1 = go$1$a0;
+              if (v$1.tag === "Leaf") {
+                go$1$c = false;
+                go$1$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineSpineProp", $4))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$1$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$1$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$1$c = false;
+                  go$1$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$1$r;
+          };
           const v5 = (() => {
             if ($5.tag === "Just") {
-              return $6($5._1);
+              return go$1($5._1);
             }
             if ($5.tag === "Nothing") {
               return Nothing;
@@ -11137,23 +11642,81 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
     if ($0.tag === "ExternExpr") {
       const $2 = $0._2;
       const $3 = $0._1;
-      const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-      const $5 = lookup22(InlineRef);
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+            if (v1$1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$c = false;
+              go$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const $4 = go(v.directives);
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$1 = go$1$a0;
+          if (v$1.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordInlineAccessor.compare(InlineRef)(v$1._3);
+            if (v1$1 === "LT") {
+              go$1$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$1$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$1$c = false;
+              go$1$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
       const v2 = (() => {
         if ($4.tag === "Just") {
-          return $5($4._1);
+          return go$1($4._1);
         }
         if ($4.tag === "Nothing") {
           return Nothing;
         }
         fail();
       })();
-      const $6 = () => {
+      const $5 = () => {
+        const $52 = () => $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2));
         if ($2.tag === "Lit" && shouldInlineExternLiteral($2._1)) {
           return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2));
         }
         if ((v1._1.complexity === "Trivial" || v1._1.complexity === "Deref") && v1._1.size < 16) {
-          return $Maybe("Just", evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2));
+          return $52();
         }
         return Nothing;
       };
@@ -11168,7 +11731,7 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           return Nothing;
         }
       }
-      return $6();
+      return $5();
     }
     if ($0.tag === "ExternCtor" && $0._5.length === 0) {
       return $Maybe("Just", $BackendSemantics("NeutData", qual, $0._2, $0._3, $0._4, []));
@@ -11179,11 +11742,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
     if (spine[0].tag === "ExternAccessor") {
       if (spine[0]._1.tag === "GetProp") {
         if ($0.tag === "ExternExpr") {
-          const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-          const $3 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v$1 = go$a0;
+              if (v$1.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const $2 = go(v.directives);
+          const go$1 = (go$1$a0$copy) => {
+            let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+            while (go$1$c) {
+              const v$1 = go$1$a0;
+              if (v$1.tag === "Leaf") {
+                go$1$c = false;
+                go$1$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineProp", spine[0]._1._1))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$1$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$1$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$1$c = false;
+                  go$1$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$1$r;
+          };
           const v2 = (() => {
             if ($2.tag === "Just") {
-              return $3($2._1);
+              return go$1($2._1);
             }
             if ($2.tag === "Nothing") {
               return Nothing;
@@ -11217,18 +11837,75 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           );
           if ($2.tag === "Just") {
             const $3 = $2._1._2;
-            const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-            const $5 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+            const go = (go$a0$copy) => {
+              let go$a0 = go$a0$copy, go$c = true, go$r;
+              while (go$c) {
+                const v$1 = go$a0;
+                if (v$1.tag === "Leaf") {
+                  go$c = false;
+                  go$r = Nothing;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+                  if (v1$1 === "LT") {
+                    go$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$1 === "GT") {
+                    go$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$1 === "EQ") {
+                    go$c = false;
+                    go$r = $Maybe("Just", v$1._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$r;
+            };
+            const $4 = go(v.directives);
+            const go$1 = (go$1$a0$copy) => {
+              let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+              while (go$1$c) {
+                const v$1 = go$1$a0;
+                if (v$1.tag === "Leaf") {
+                  go$1$c = false;
+                  go$1$r = Nothing;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineProp", spine[0]._1._1))(v$1._3);
+                  if (v1$1 === "LT") {
+                    go$1$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$1 === "GT") {
+                    go$1$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$1 === "EQ") {
+                    go$1$c = false;
+                    go$1$r = $Maybe("Just", v$1._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$1$r;
+            };
             const v3 = (() => {
               if ($4.tag === "Just") {
-                return $5($4._1);
+                return go$1($4._1);
               }
               if ($4.tag === "Nothing") {
                 return Nothing;
               }
               fail();
             })();
-            const $6 = () => $Maybe(
+            const $5 = () => $Maybe(
               "Just",
               evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3)
             );
@@ -11247,7 +11924,7 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
               }
             }
             if (($2._1._1.complexity === "Trivial" || $2._1._1.complexity === "Deref") && $2._1._1.size < 16) {
-              return $6();
+              return $5();
             }
           }
         }
@@ -11259,18 +11936,75 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
       if ($0.tag === "ExternExpr") {
         const $2 = $0._2;
         const $3 = $0._1;
-        const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-        const $5 = lookup22(InlineRef);
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v$1 = go$a0;
+            if (v$1.tag === "Leaf") {
+              go$c = false;
+              go$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+              if (v1$1 === "LT") {
+                go$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$c = false;
+                go$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const $4 = go(v.directives);
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordInlineAccessor.compare(InlineRef)(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
         const v2 = (() => {
           if ($4.tag === "Just") {
-            return $5($4._1);
+            return go$1($4._1);
           }
           if ($4.tag === "Nothing") {
             return Nothing;
           }
           fail();
         })();
-        const $6 = () => $Maybe(
+        const $5 = () => $Maybe(
           "Just",
           evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($3.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))(InlineRef))($2))(spine[0]._1)
         );
@@ -11295,7 +12029,7 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           }
         }
         if (shouldInlineExternApp(qual)(v1._1)($2)(spine[0]._1)) {
-          return $6();
+          return $5();
         }
         return Nothing;
       }
@@ -11310,11 +12044,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
     if (spine[0].tag === "ExternAccessor") {
       if (spine[0]._1.tag === "GetProp" && spine[1].tag === "ExternApp") {
         if ($0.tag === "ExternExpr") {
-          const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-          const $3 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v$1 = go$a0;
+              if (v$1.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const $2 = go(v.directives);
+          const go$1 = (go$1$a0$copy) => {
+            let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+            while (go$1$c) {
+              const v$1 = go$1$a0;
+              if (v$1.tag === "Leaf") {
+                go$1$c = false;
+                go$1$r = Nothing;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineProp", spine[0]._1._1))(v$1._3);
+                if (v1$1 === "LT") {
+                  go$1$a0 = v$1._5;
+                  continue;
+                }
+                if (v1$1 === "GT") {
+                  go$1$a0 = v$1._6;
+                  continue;
+                }
+                if (v1$1 === "EQ") {
+                  go$1$c = false;
+                  go$1$r = $Maybe("Just", v$1._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$1$r;
+          };
           const v2 = (() => {
             if ($2.tag === "Just") {
-              return $3($2._1);
+              return go$1($2._1);
             }
             if ($2.tag === "Nothing") {
               return Nothing;
@@ -11354,18 +12145,75 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
           );
           if ($2.tag === "Just") {
             const $3 = $2._1._2;
-            const $4 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-            const $5 = lookup22($InlineAccessor("InlineProp", spine[0]._1._1));
+            const go = (go$a0$copy) => {
+              let go$a0 = go$a0$copy, go$c = true, go$r;
+              while (go$c) {
+                const v$1 = go$a0;
+                if (v$1.tag === "Leaf") {
+                  go$c = false;
+                  go$r = Nothing;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+                  if (v1$1 === "LT") {
+                    go$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$1 === "GT") {
+                    go$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$1 === "EQ") {
+                    go$c = false;
+                    go$r = $Maybe("Just", v$1._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$r;
+            };
+            const $4 = go(v.directives);
+            const go$1 = (go$1$a0$copy) => {
+              let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+              while (go$1$c) {
+                const v$1 = go$1$a0;
+                if (v$1.tag === "Leaf") {
+                  go$1$c = false;
+                  go$1$r = Nothing;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineProp", spine[0]._1._1))(v$1._3);
+                  if (v1$1 === "LT") {
+                    go$1$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$1 === "GT") {
+                    go$1$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$1 === "EQ") {
+                    go$1$c = false;
+                    go$1$r = $Maybe("Just", v$1._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$1$r;
+            };
             const v3 = (() => {
               if ($4.tag === "Just") {
-                return $5($4._1);
+                return go$1($4._1);
               }
               if ($4.tag === "Nothing") {
                 return Nothing;
               }
               fail();
             })();
-            const $6 = () => $Maybe(
+            const $5 = () => $Maybe(
               "Just",
               evalApp(v)(evalBackendSyntax(evalNeutralExpr).eval($0._1.length === 0 ? v : addStop(v)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", spine[0]._1._1)))($3))(spine[1]._1)
             );
@@ -11390,7 +12238,7 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
               }
             }
             if (shouldInlineExternApp(qual)($2._1._1)($3)(spine[1]._1)) {
-              return $6();
+              return $5();
             }
           }
         }
@@ -11400,11 +12248,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
     }
     if (spine[0].tag === "ExternApp" && spine[1].tag === "ExternAccessor" && spine[1]._1.tag === "GetProp") {
       if ($0.tag === "ExternExpr") {
-        const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-        const $3 = lookup22($InlineAccessor("InlineSpineProp", spine[1]._1._1));
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v$1 = go$a0;
+            if (v$1.tag === "Leaf") {
+              go$c = false;
+              go$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+              if (v1$1 === "LT") {
+                go$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$c = false;
+                go$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const $2 = go(v.directives);
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineSpineProp", spine[1]._1._1))(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
         const v2 = (() => {
           if ($2.tag === "Just") {
-            return $3($2._1);
+            return go$1($2._1);
           }
           if ($2.tag === "Nothing") {
             return Nothing;
@@ -11429,11 +12334,68 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
   }
   if (spine.length === 3 && spine[0].tag === "ExternApp" && spine[1].tag === "ExternAccessor" && spine[1]._1.tag === "GetProp" && spine[2].tag === "ExternApp") {
     if ($0.tag === "ExternExpr") {
-      const $2 = lookup32($EvalRef("EvalExtern", qual))(v.directives);
-      const $3 = lookup22($InlineAccessor("InlineSpineProp", spine[1]._1._1));
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordEvalRef.compare($EvalRef("EvalExtern", qual))(v$1._3);
+            if (v1$1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$c = false;
+              go$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const $2 = go(v.directives);
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$1 = go$1$a0;
+          if (v$1.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordInlineAccessor.compare($InlineAccessor("InlineSpineProp", spine[1]._1._1))(v$1._3);
+            if (v1$1 === "LT") {
+              go$1$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$1$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$1$c = false;
+              go$1$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
       const v2 = (() => {
         if ($2.tag === "Just") {
-          return $3($2._1);
+          return go$1($2._1);
         }
         if ($2.tag === "Nothing") {
           return Nothing;
@@ -11465,7 +12427,7 @@ var evalExternFromImpl = (v) => (qual) => (v1) => (spine) => {
 var evalExternRefFromImpl = (env) => (qual) => (v) => {
   if (v._2.tag === "ExternExpr") {
     if (v._2._2.tag === "Var" || v._2._2.tag === "Lit" || v._2._2.tag === "CtorSaturated" || v._2._2.tag === "Accessor" || v._2._2.tag === "Update" || v._2._2.tag === "PrimOp") {
-      return eval3(v._2._1.length === 0 ? env : addStop(env)($EvalRef("EvalExtern", qual))(InlineRef))(v._2._2);
+      return evalBackendSyntax1.eval(v._2._1.length === 0 ? env : addStop(env)($EvalRef("EvalExtern", qual))(InlineRef))(v._2._2);
     }
     return $BackendSemantics("NeutVar", qual);
   }
@@ -11477,7 +12439,7 @@ var evalExternRefFromImpl = (env) => (qual) => (v) => {
         "LitRecord",
         arrayMap((v1) => $Prop(
           v1._1,
-          eval3($0.length === 0 ? env : addStop(env)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", v1._1)))(v1._2._2)
+          evalBackendSyntax1.eval($0.length === 0 ? env : addStop(env)($EvalRef("EvalExtern", qual))($InlineAccessor("InlineProp", v1._1)))(v1._2._2)
         ))(v._2._2)
       )
     );
@@ -11662,6 +12624,8 @@ var eqLayoutDelim = {
 };
 var insertLayout = (v) => (nextPos) => (stack) => {
   const tokPos = v.range.start;
+  const offsideP = (lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column;
+  const offsideEndP = (lytPos, lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column <= lytPos.column;
   const insertStart = (lyt) => (v1) => {
     const go = (go$a0$copy) => (go$a1$copy) => {
       let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
@@ -11742,7 +12706,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     return (v$1) => go(v$1._1)(v$1._2);
   };
   const insertKwProperty = (k, state) => {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)(state));
+    const $02 = insertSep(collapse(offsideP)(state));
     const v1 = $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
     if (v1._1.tag === "Cons" && v1._1._1._2 === "LytProperty") {
       return $Tuple(v1._1._2, v1._2);
@@ -11752,10 +12716,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
   if (v.value.tag === "TokLowerName") {
     if (v.value._1.tag === "Nothing") {
       if (v.value._2 === "data") {
-        const $04 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-          stack,
-          []
-        )));
+        const $04 = insertSep(collapse(offsideP)($Tuple(stack, [])));
         const v2 = $Tuple($04._1, snoc($04._2)($Tuple(v, $04._1)));
         if (v2._1.tag === "Cons" && v2._1._1._2 === "LytWhere" && v2._1._2.tag === "Cons" && v2._1._2._1._2 === "LytRoot" && v2._1._2._2.tag === "Nil" && tokPos.column === v2._1._1._1.column) {
           return $Tuple($List("Cons", $Tuple(tokPos, LytTopDecl), v2._1), v2._2);
@@ -11766,10 +12727,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
         return v2;
       }
       if (v.value._2 === "class") {
-        const $04 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-          stack,
-          []
-        )));
+        const $04 = insertSep(collapse(offsideP)($Tuple(stack, [])));
         const v2 = $Tuple($04._1, snoc($04._2)($Tuple(v, $04._1)));
         if (v2._1.tag === "Cons" && v2._1._1._2 === "LytWhere" && v2._1._2.tag === "Cons" && v2._1._2._1._2 === "LytRoot" && v2._1._2._2.tag === "Nil" && tokPos.column === v2._1._1._1.column) {
           return $Tuple($List("Cons", $Tuple(tokPos, LytTopDeclHead), v2._1), v2._2);
@@ -11780,7 +12738,6 @@ var insertLayout = (v) => (nextPos) => (stack) => {
         return v2;
       }
       if (v.value._2 === "where") {
-        const whereP = (v2) => (v3) => v3 === "LytDo" || (v3 === "LytLet" || v3 === "LytLetStmt" || v3 === "LytWhere" || v3 === "LytOf" || v3 === "LytDo" || v3 === "LytAdo") && tokPos.column <= v2.column;
         if (stack.tag === "Cons") {
           if (stack._1._2 === "LytTopDeclHead") {
             return insertStart(LytWhere)($Tuple(stack._2, snoc([])($Tuple(v, stack._2))));
@@ -11790,7 +12747,12 @@ var insertLayout = (v) => (nextPos) => (stack) => {
           }
         }
         return insertStart(LytWhere)((() => {
-          const $04 = collapse(whereP)($Tuple(stack, []));
+          const $04 = collapse((v2) => (v3) => {
+            if (v3 === "LytDo") {
+              return true;
+            }
+            return offsideEndP(v2, v3);
+          })($Tuple(stack, []));
           return $Tuple($04._1, snoc($04._2)($Tuple(v, $04._1)));
         })());
       }
@@ -11827,10 +12789,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
             );
           }
         }
-        const $04 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-          stack,
-          []
-        )));
+        const $04 = insertSep(collapse(offsideP)($Tuple(stack, [])));
         const $12 = $Tuple($04._1, snoc($04._2)($Tuple(v, $04._1)));
         if ($12._1.tag === "Cons" && eqLayoutDelim.eq($12._1._1._2)(LytProperty)) {
           return $Tuple($12._1._2, $12._2);
@@ -11871,7 +12830,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
           const $05 = insertStart(LytOf)($Tuple(v2._1._2, snoc(v2._2)($Tuple(v, v2._1._2))));
           return $Tuple($List("Cons", $Tuple(nextPos, LytCaseBinders), $05._1), $05._2);
         }
-        const $04 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)(v2));
+        const $04 = insertSep(collapse(offsideP)(v2));
         const $12 = $Tuple($04._1, snoc($04._2)($Tuple(v, $04._1)));
         if ($12._1.tag === "Cons" && eqLayoutDelim.eq($12._1._1._2)(LytProperty)) {
           return $Tuple($12._1._2, $12._2);
@@ -11886,10 +12845,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
         if (v2._1.tag === "Cons" && v2._1._1._2 === "LytIf") {
           return $Tuple($List("Cons", $Tuple(tokPos, LytThen), v2._1._2), snoc(v2._2)($Tuple(v, v2._1._2)));
         }
-        const $04 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-          stack,
-          []
-        )));
+        const $04 = insertSep(collapse(offsideP)($Tuple(stack, [])));
         const $12 = $Tuple($04._1, snoc($04._2)($Tuple(v, $04._1)));
         if ($12._1.tag === "Cons" && eqLayoutDelim.eq($12._1._1._2)(LytProperty)) {
           return $Tuple($12._1._2, $12._2);
@@ -11901,10 +12857,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
         if (v2._1.tag === "Cons" && v2._1._1._2 === "LytThen") {
           return $Tuple(v2._1._2, snoc(v2._2)($Tuple(v, v2._1._2)));
         }
-        const v3 = collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-          stack,
-          []
-        ));
+        const v3 = collapse(offsideP)($Tuple(stack, []));
         if (v3._1.tag === "Cons" && v3._1._1._2 === "LytWhere" && v3._1._2.tag === "Cons" && v3._1._2._1._2 === "LytRoot" && v3._1._2._2.tag === "Nil" && tokPos.column === v3._1._1._1.column) {
           return $Tuple(v3._1, snoc(v3._2)($Tuple(v, v3._1)));
         }
@@ -11915,10 +12868,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
         }
         return $12;
       }
-      const $03 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-        stack,
-        []
-      )));
+      const $03 = insertSep(collapse(offsideP)($Tuple(stack, [])));
       const $1 = $Tuple($03._1, snoc($03._2)($Tuple(v, $03._1)));
       if ($1._1.tag === "Cons" && eqLayoutDelim.eq($1._1._1._2)(LytProperty)) {
         return $Tuple($1._1._2, $1._2);
@@ -11931,20 +12881,14 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     if (v.value._2 === "ado") {
       return insertKwProperty(insertStart(LytAdo), $Tuple(stack, []));
     }
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokForall") {
     return insertKwProperty((v1) => $Tuple($List("Cons", $Tuple(tokPos, LytForall), v1._1), v1._2), $Tuple(stack, []));
   }
   if (v.value.tag === "TokBackslash") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple($List("Cons", $Tuple(tokPos, LytLambdaBinders), $02._1), snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokRightArrow") {
@@ -11955,7 +12899,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
       if (v3 === "LytOf") {
         return false;
       }
-      return (v3 === "LytLet" || v3 === "LytLetStmt" || v3 === "LytWhere" || v3 === "LytOf" || v3 === "LytDo" || v3 === "LytAdo") && tokPos.column <= v2.column;
+      return offsideEndP(v2, v3);
     })($Tuple(stack, []));
     if ($02._1.tag === "Cons" && ($02._1._1._2 === "LytCaseBinders" || $02._1._1._2 === "LytCaseGuard" || $02._1._1._2 === "LytLambdaBinders")) {
       return $Tuple($02._1._2, snoc($02._2)($Tuple(v, $02._1._2)));
@@ -11967,17 +12911,11 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     if (v2._1.tag === "Cons" && v2._1._1._2 === "LytDeclGuard") {
       return $Tuple(v2._1._2, snoc(v2._2)($Tuple(v, v2._1._2)));
     }
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokPipe") {
-    const v2 = collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column <= lytPos.column)($Tuple(
-      stack,
-      []
-    ));
+    const v2 = collapse(($03) => ($1) => offsideEndP($03, $1))($Tuple(stack, []));
     if (v2._1.tag === "Cons") {
       if (v2._1._1._2 === "LytOf") {
         const $03 = $List("Cons", $Tuple(tokPos, LytCaseGuard), v2._1);
@@ -11996,10 +12934,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
         return $Tuple($03, snoc(v2._2)($Tuple(v, $03)));
       }
     }
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokTick") {
@@ -12007,10 +12942,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     if (v2._1.tag === "Cons" && v2._1._1._2 === "LytTick") {
       return $Tuple(v2._1._2, snoc(v2._2)($Tuple(v, v2._1._2)));
     }
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column <= lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(($03) => ($1) => offsideEndP($03, $1))($Tuple(stack, [])));
     return $Tuple($List("Cons", $Tuple(tokPos, LytTick), $02._1), snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokComma") {
@@ -12021,10 +12953,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     return $Tuple(v2._1, snoc(v2._2)($Tuple(v, v2._1)));
   }
   if (v.value.tag === "TokDot") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     const $1 = snoc($02._2)($Tuple(v, $02._1));
     if ($02._1.tag === "Cons" && $02._1._1._2 === "LytForall") {
       return $Tuple($02._1._2, $1);
@@ -12032,27 +12961,18 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     return $Tuple($List("Cons", $Tuple(tokPos, LytProperty), $02._1), $1);
   }
   if (v.value.tag === "TokLeftParen") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple($List("Cons", $Tuple(tokPos, LytParen), $02._1), snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokLeftBrace") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple(
       $List("Cons", $Tuple(tokPos, LytProperty), $List("Cons", $Tuple(tokPos, LytBrace), $02._1)),
       snoc($02._2)($Tuple(v, $02._1))
     );
   }
   if (v.value.tag === "TokLeftSquare") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     return $Tuple($List("Cons", $Tuple(tokPos, LytSquare), $02._1), snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokRightParen") {
@@ -12083,10 +13003,7 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     return $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
   }
   if (v.value.tag === "TokString") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(offsideP)($Tuple(stack, [])));
     const $1 = $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
     if ($1._1.tag === "Cons" && eqLayoutDelim.eq($1._1._1._2)(LytProperty)) {
       return $Tuple($1._1._2, $1._2);
@@ -12094,16 +13011,10 @@ var insertLayout = (v) => (nextPos) => (stack) => {
     return $1;
   }
   if (v.value.tag === "TokOperator") {
-    const $02 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column <= lytPos.column)($Tuple(
-      stack,
-      []
-    )));
+    const $02 = insertSep(collapse(($03) => ($1) => offsideEndP($03, $1))($Tuple(stack, [])));
     return $Tuple($02._1, snoc($02._2)($Tuple(v, $02._1)));
   }
-  const $0 = insertSep(collapse((lytPos) => (lyt) => (lyt === "LytLet" || lyt === "LytLetStmt" || lyt === "LytWhere" || lyt === "LytOf" || lyt === "LytDo" || lyt === "LytAdo") && tokPos.column < lytPos.column)($Tuple(
-    stack,
-    []
-  )));
+  const $0 = insertSep(collapse(offsideP)($Tuple(stack, [])));
   return $Tuple($0._1, snoc($0._2)($Tuple(v, $0._1)));
 };
 
@@ -12146,11 +13057,10 @@ var consTokens = (dictFoldable) => {
 
 // output-es/PureScript.CST.Lexer/index.js
 var $LexResult = (tag, _1, _2) => ({ tag, _1, _2 });
-var fold1 = /* @__PURE__ */ (() => foldableArray.foldMap(/* @__PURE__ */ (() => {
+var monoidRecord = /* @__PURE__ */ (() => {
   const semigroupRecord1 = { append: (ra) => (rb) => ({ raw: ra.raw + rb.raw, string: ra.string + rb.string }) };
   return { mempty: { raw: "", string: "" }, Semigroup0: () => semigroupRecord1 };
-})())(identity2))();
-var consTokens2 = /* @__PURE__ */ consTokens(foldableArray);
+})();
 var isCharCodePoint = /* @__PURE__ */ (() => ({ fromChar: codePointFromChar, fromCharCode: boundedEnumCodePoint.toEnum }))();
 var isCharChar = { fromChar: (x) => x, fromCharCode: charToEnum };
 var toModuleName = (v) => {
@@ -12583,6 +13493,52 @@ var token = /* @__PURE__ */ (() => {
   const hexEscapeRegex = regex2(LexExpected("hex"))("[a-fA-F0-9]{1,6}");
   const charSingleQuote = $$char(LexExpected("single quote"))("'");
   const charQuote = $$char(LexExpected("quote"))('"');
+  const parseNumberExponentPart = optional((() => {
+    const $0 = $$char(LexExpected("exponent"))("e");
+    const $1 = optional(altLex.alt(string(LexExpected("negative"))("-"))(string(LexExpected("positive"))("+")));
+    return (str) => {
+      const v1 = $0(str);
+      if (v1.tag === "LexFail") {
+        return $LexResult("LexFail", v1._1, v1._2);
+      }
+      if (v1.tag === "LexSucc") {
+        const v1$1 = $1(v1._2);
+        if (v1$1.tag === "LexFail") {
+          return $LexResult("LexFail", v1$1._1, v1$1._2);
+        }
+        if (v1$1.tag === "LexSucc") {
+          const v3 = intPartRegex(v1$1._2);
+          if (v3.tag === "LexFail") {
+            return $LexResult("LexFail", v3._1, v3._2);
+          }
+          if (v3.tag === "LexSucc") {
+            return $LexResult("LexSucc", { sign: v1$1._1, exponent: v3._1 }, v3._2);
+          }
+        }
+      }
+      fail();
+    };
+  })());
+  const parseNumberFractionPart = optional((() => {
+    const $0 = $$char(LexExpected("dot"))(".");
+    const $1 = regex2(LexExpected("fraction part"))("[0-9_]+");
+    return (str) => {
+      const v1 = $0(str);
+      if (v1.tag === "LexFail") {
+        return $LexResult("LexFail", v1._1, str);
+      }
+      if (v1.tag === "LexSucc") {
+        const v3 = $1(v1._2);
+        if (v3.tag === "LexFail") {
+          return $LexResult("LexFail", v3._1, str);
+        }
+        if (v3.tag === "LexSucc") {
+          return $LexResult("LexSucc", v3._1, v3._2);
+        }
+      }
+      fail();
+    };
+  })());
   const charAny = satisfy(LexExpected("char"))((v) => true);
   const parseEscape = (dictIsChar) => (str) => {
     const v1 = charAny(str);
@@ -12946,7 +13902,7 @@ var token = /* @__PURE__ */ (() => {
             return $LexResult(
               "LexSucc",
               (() => {
-                const v1$1 = fold1(v3._1);
+                const v1$1 = foldableArray.foldMap(monoidRecord)(identity1)(v3._1);
                 return $Token("TokString", v1$1.raw, v1$1.string);
               })(),
               v3$1._2
@@ -12987,56 +13943,12 @@ var token = /* @__PURE__ */ (() => {
       return $LexResult("LexFail", v1._1, v1._2);
     }
     if (v1.tag === "LexSucc") {
-      const v1$1 = optional((() => {
-        const $0 = $$char(LexExpected("dot"))(".");
-        const $1 = regex2(LexExpected("fraction part"))("[0-9_]+");
-        return (str$1) => {
-          const v1$12 = $0(str$1);
-          if (v1$12.tag === "LexFail") {
-            return $LexResult("LexFail", v1$12._1, str$1);
-          }
-          if (v1$12.tag === "LexSucc") {
-            const v3 = $1(v1$12._2);
-            if (v3.tag === "LexFail") {
-              return $LexResult("LexFail", v3._1, str$1);
-            }
-            if (v3.tag === "LexSucc") {
-              return $LexResult("LexSucc", v3._1, v3._2);
-            }
-          }
-          fail();
-        };
-      })())(v1._2);
+      const v1$1 = parseNumberFractionPart(v1._2);
       if (v1$1.tag === "LexFail") {
         return $LexResult("LexFail", v1$1._1, v1$1._2);
       }
       if (v1$1.tag === "LexSucc") {
-        const v1$2 = optional((() => {
-          const $0 = $$char(LexExpected("exponent"))("e");
-          const $1 = optional(altLex.alt(string(LexExpected("negative"))("-"))(string(LexExpected("positive"))("+")));
-          return (str$1) => {
-            const v1$22 = $0(str$1);
-            if (v1$22.tag === "LexFail") {
-              return $LexResult("LexFail", v1$22._1, v1$22._2);
-            }
-            if (v1$22.tag === "LexSucc") {
-              const v1$3 = $1(v1$22._2);
-              if (v1$3.tag === "LexFail") {
-                return $LexResult("LexFail", v1$3._1, v1$3._2);
-              }
-              if (v1$3.tag === "LexSucc") {
-                const v3 = intPartRegex(v1$3._2);
-                if (v3.tag === "LexFail") {
-                  return $LexResult("LexFail", v3._1, v3._2);
-                }
-                if (v3.tag === "LexSucc") {
-                  return $LexResult("LexSucc", { sign: v1$3._1, exponent: v3._1 }, v3._2);
-                }
-              }
-            }
-            fail();
-          };
-        })())(v1$1._2);
+        const v1$2 = parseNumberExponentPart(v1$1._2);
         if (v1$2.tag === "LexFail") {
           return $LexResult("LexFail", v1$2._1, v1$2._2);
         }
@@ -13163,7 +14075,7 @@ var lexWithState$p = (lexLeadingComments) => {
           const endPos = bumpToken(startPos)(v1._1);
           const nextStart = foldlArray(bumpComment)(foldlArray(bumpComment)(endPos)(v3._1))(v3$1._1);
           const v2 = insertLayout({ range: { start: startPos, end: endPos }, leadingComments: leading, trailingComments: v3._1, value: v1._1 })(nextStart)(stack);
-          return force(consTokens2(v2._2)($Tuple(nextStart, go(v2._1)(nextStart)(v3$1._1)(v3$1._2)))._2);
+          return force(consTokens(foldableArray)(v2._2)($Tuple(nextStart, go(v2._1)(nextStart)(v3$1._1)(v3$1._2)))._2);
         }
       }
     }
@@ -13610,10 +14522,7 @@ var parseImpl = function(just) {
 };
 
 // output-es/PureScript.Backend.Optimizer.App/index.js
-var filterA2 = /* @__PURE__ */ filterA(applicativeAff);
-var traverse2 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeAff))();
-var fromFoldable4 = /* @__PURE__ */ foldrArray(Cons)(Nil);
-var readCoreFnModule = (filePath) => _bind($$try2(toAff1(stat2)(filePath)))((statRes) => {
+var readCoreFnModule = (filePath) => _bind(attempt(toAff1(stat2)(filePath)))((statRes) => {
   if (statRes.tag === "Right") {
     if (isFileImpl(statRes._1)) {
       return _bind(toAff2(readTextFile)(UTF8)(filePath))((contents) => {
@@ -13665,8 +14574,8 @@ var loadDirectives = /* @__PURE__ */ (() => {
     return _pure();
   })())(() => _pure(parsedDirectives.directives));
 })();
-var coreFnModulesFromOutput = (outputDir) => _bind(toAff1(readdir2)(outputDir))((files) => _bind(filterA2((f) => _bind(toAff1(stat2)(outputDir + "/" + f))((stat3) => _pure(isDirectoryImpl(stat3))))(files))((validDirs) => _bind(traverse2((dir) => readCoreFnModule(outputDir + "/" + dir + "/corefn.json"))(validDirs))((mbModules) => _pure(sortModules(foldableList)(fromFoldable4(mapMaybe((x) => x)(mbModules)))))));
-var checkCache = (version2) => (corefnPath) => (cachePath) => _bind($$try2(toAff1(stat2)(corefnPath)))((corefnStatRes) => _bind($$try2(toAff1(stat2)(cachePath)))((cacheStatRes) => {
+var coreFnModulesFromOutput = (outputDir) => _bind(toAff1(readdir2)(outputDir))((files) => _bind(filterA(applicativeAff)((f) => _bind(toAff1(stat2)(outputDir + "/" + f))((stat3) => _pure(isDirectoryImpl(stat3))))(files))((validDirs) => _bind(traversableArray.traverse(applicativeAff)((dir) => readCoreFnModule(outputDir + "/" + dir + "/corefn.json"))(validDirs))((mbModules) => _pure(sortModules(foldableList)(foldrArray(Cons)(Nil)(mapMaybe((x) => x)(mbModules)))))));
+var checkCache = (version2) => (corefnPath) => (cachePath) => _bind(attempt(toAff1(stat2)(corefnPath)))((corefnStatRes) => _bind(attempt(toAff1(stat2)(cachePath)))((cacheStatRes) => {
   if (corefnStatRes.tag === "Right" && cacheStatRes.tag === "Right" && modifiedTimeMsImpl(cacheStatRes._1) >= modifiedTimeMsImpl(corefnStatRes._1)) {
     return _bind(toAff2(readTextFile)(UTF8)(cachePath))((cacheContent) => _pure(parseImpl(Just)(Nothing)(version2)(cacheContent)));
   }
@@ -13674,31 +14583,26 @@ var checkCache = (version2) => (corefnPath) => (cachePath) => _bind($$try2(toAff
 }));
 
 // output-es/Data.List/index.js
-var foldM2 = (dictMonad) => (v) => (v1) => (v2) => {
-  if (v2.tag === "Nil") {
-    return dictMonad.Applicative0().pure(v1);
-  }
-  if (v2.tag === "Cons") {
-    const $0 = v2._2;
-    return dictMonad.Bind1().bind(v(v1)(v2._1))((b$p) => foldM2(dictMonad)(v)(b$p)($0));
-  }
-  fail();
+var foldM2 = (dictMonad) => {
+  const Applicative0 = dictMonad.Applicative0();
+  const Bind1 = dictMonad.Bind1();
+  return (v) => (v1) => (v2) => {
+    if (v2.tag === "Nil") {
+      return Applicative0.pure(v1);
+    }
+    if (v2.tag === "Cons") {
+      const $0 = v2._2;
+      return Bind1.bind(v(v1)(v2._1))((b$p) => foldM2(dictMonad)(v)(b$p)($0));
+    }
+    fail();
+  };
 };
 
 // output-es/Data.Map/index.js
-var semigroupSemigroupMap = (dictOrd) => {
-  const compare3 = dictOrd.compare;
-  return (dictSemigroup) => {
-    const append = dictSemigroup.append;
-    return { append: (v) => (v1) => unsafeUnionWith(compare3, append, v, v1) };
-  };
-};
-var monoidSemigroupMap = (dictOrd) => {
-  const semigroupSemigroupMap1 = semigroupSemigroupMap(dictOrd);
-  return (dictSemigroup) => {
-    const semigroupSemigroupMap2 = semigroupSemigroupMap1(dictSemigroup);
-    return { mempty: Leaf, Semigroup0: () => semigroupSemigroupMap2 };
-  };
+var monoidSemigroupMap = (dictOrd) => (dictSemigroup) => {
+  const append = dictSemigroup.append;
+  const semigroupSemigroupMap2 = { append: (v) => (v1) => unsafeUnionWith(dictOrd.compare, append, v, v1) };
+  return { mempty: Leaf, Semigroup0: () => semigroupSemigroupMap2 };
 };
 
 // output-es/Data.Semigroup.First/index.js
@@ -13706,23 +14610,20 @@ var semigroupFirst2 = { append: (x) => (v) => x };
 
 // output-es/Data.Set/index.js
 var foldableSet = {
-  foldMap: (dictMonoid) => {
-    const foldMap14 = foldableList.foldMap(dictMonoid);
-    return (f) => {
-      const $0 = foldMap14(f);
-      return (x) => $0((() => {
-        const go = (m$p, z$p) => {
-          if (m$p.tag === "Leaf") {
-            return z$p;
-          }
-          if (m$p.tag === "Node") {
-            return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
-          }
-          fail();
-        };
-        return go(x, Nil);
-      })());
-    };
+  foldMap: (dictMonoid) => (f) => {
+    const $0 = foldableList.foldMap(dictMonoid)(f);
+    return (x) => $0((() => {
+      const go = (m$p, z$p) => {
+        if (m$p.tag === "Leaf") {
+          return z$p;
+        }
+        if (m$p.tag === "Node") {
+          return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
+        }
+        fail();
+      };
+      return go(x, Nil);
+    })());
   },
   foldl: (f) => (x) => {
     const go = (go$a0$copy) => (go$a1$copy) => {
@@ -13786,8 +14687,8 @@ var mapMaybe2 = (dictOrd) => (f) => foldableSet.foldr((a) => (acc) => {
 var monoidSet = (dictOrd) => {
   const semigroupSet1 = {
     append: (() => {
-      const compare3 = dictOrd.compare;
-      return (m1) => (m2) => unsafeUnionWith(compare3, $$const, m1, m2);
+      const compare = dictOrd.compare;
+      return (m1) => (m2) => unsafeUnionWith(compare, $$const, m1, m2);
     })()
   };
   return { mempty: Leaf, Semigroup0: () => semigroupSet1 };
@@ -13796,295 +14697,28 @@ var monoidSet = (dictOrd) => {
 // output-es/PureScript.Backend.Optimizer.Convert/index.js
 var $CaseRowGuardedExpr = (tag, _1) => ({ tag, _1 });
 var $PatternCase = (tag, _1, _2) => ({ tag, _1, _2 });
-var eq = /* @__PURE__ */ eqArrayImpl(eqStringImpl);
-var compare = /* @__PURE__ */ (() => ordArray(ordString).compare)();
-var compare12 = /* @__PURE__ */ (() => ordQualified(ordString).compare)();
-var ordQualified3 = /* @__PURE__ */ ordQualified(ordString);
-var lookup4 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
+var eqArray3 = { eq: /* @__PURE__ */ eqArrayImpl(eqStringImpl) };
+var ordArray2 = /* @__PURE__ */ ordArray(ordString);
+var ordQualified4 = /* @__PURE__ */ ordQualified(ordString);
+var ordQualified1 = /* @__PURE__ */ ordQualified(ordString);
 var monoidSemigroupMap2 = /* @__PURE__ */ monoidSemigroupMap(ordString)(semigroupFirst2);
-var foldMap5 = /* @__PURE__ */ (() => foldableSet.foldMap(monoidSemigroupMap2))();
-var toUnfoldable2 = /* @__PURE__ */ (() => {
-  const $0 = unfoldableArray.unfoldr((xs) => {
-    if (xs.tag === "Nil") {
-      return Nothing;
-    }
-    if (xs.tag === "Cons") {
-      return $Maybe("Just", $Tuple(xs._1, xs._2));
-    }
-    fail();
-  });
-  return (x) => $0((() => {
-    const go = (m$p, z$p) => {
-      if (m$p.tag === "Leaf") {
-        return z$p;
-      }
-      if (m$p.tag === "Node") {
-        return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
-      }
-      fail();
-    };
-    return go(x, Nil);
-  })());
-})();
-var foldMap22 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidArray))();
-var fromFoldable1 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
-var lookup12 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordQualified3.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var lookup23 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordEvalRef.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var lookup33 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordInlineAccessor.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var fromFoldable22 = /* @__PURE__ */ fromFoldable(ordInlineAccessor)(foldableArray);
-var analyzeEffectBlock2 = /* @__PURE__ */ analyzeEffectBlock(hasAnalysisBackendExpr)(hasSyntaxBackendExpr);
-var analyze2 = /* @__PURE__ */ analyze(hasAnalysisBackendExpr)(hasSyntaxBackendExpr);
-var foldMap32 = /* @__PURE__ */ (() => foldableArray.foldMap(/* @__PURE__ */ (() => {
+var fromFoldable2 = /* @__PURE__ */ fromFoldable(ordInlineAccessor)(foldableArray);
+var monoidRecord1 = /* @__PURE__ */ (() => {
   const semigroupRecord1 = { append: (ra) => (rb) => ({ rowsNoMatch: [...ra.rowsNoMatch, ...rb.rowsNoMatch], rowsWithMatch: [...ra.rowsWithMatch, ...rb.rowsWithMatch] }) };
   return { mempty: { rowsNoMatch: [], rowsWithMatch: [] }, Semigroup0: () => semigroupRecord1 };
-})()))();
-var forWithIndex = /* @__PURE__ */ (() => {
-  const $0 = traversableWithIndexArray.traverseWithIndex(applicativeFn);
-  return (b) => (a) => $0(a)(b);
 })();
-var zipWithA2 = /* @__PURE__ */ zipWithA(applicativeFn);
-var lookup42 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var traverse3 = /* @__PURE__ */ (() => traversableLiteral.traverse(applicativeFn))();
-var traverse1 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeFn))();
-var traverse32 = /* @__PURE__ */ (() => traversableArray.traverse(applicativeFn))();
-var append3 = /* @__PURE__ */ (() => semigroupSemigroupMap(ordString)(semigroupFirst2).append)();
-var toUnfoldable12 = /* @__PURE__ */ (() => {
+var toUnfoldable = /* @__PURE__ */ (() => {
   const $0 = unfoldableArray.unfoldr(stepUnfoldr);
   return (x) => $0($MapIter("IterNode", x, IterLeaf));
 })();
-var foldMap42 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidSemigroupMap2))();
-var $$for = /* @__PURE__ */ (() => {
-  const traverse22 = traversableArray.traverse(applicativeFn);
-  return (x) => (f) => traverse22(f)(x);
+var fromFoldable1 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
+var fromFoldable22 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
+var ordQualified22 = /* @__PURE__ */ ordQualified(ordString);
+var monoidSet2 = /* @__PURE__ */ monoidSet(ordQualified22);
+var toUnfoldable1 = /* @__PURE__ */ (() => {
+  const $0 = unfoldableArray.unfoldr(stepUnfoldr);
+  return (x) => $0($MapIter("IterNode", x, IterLeaf));
 })();
-var member = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = false;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordQualified3.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = true;
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var alter3 = /* @__PURE__ */ alter(ordEvalRef);
-var mapAccumL2 = /* @__PURE__ */ mapAccumL(traversableArray);
-var fromFoldable32 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
-var member1 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = false;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = true;
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var fromFoldable42 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
-var fromFoldable5 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
-var maximum2 = /* @__PURE__ */ maximum(ordInt)(foldable1NonEmptyArray);
-var mapAccumR2 = /* @__PURE__ */ mapAccumR(traversableArray);
-var foldMap52 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidSet(ordQualified3)))();
-var fromFoldable6 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordReExport)(a)()(m))(Leaf);
 var PatWild = /* @__PURE__ */ $PatternCase("PatWild");
 var eqPatternCase = {
   eq: (x) => (y) => {
@@ -14092,7 +14726,7 @@ var eqPatternCase = {
       return y.tag === "PatWild";
     }
     if (x.tag === "PatRecord") {
-      return y.tag === "PatRecord" && eq(x._1)(y._1);
+      return y.tag === "PatRecord" && eqArray3.eq(x._1)(y._1);
     }
     if (x.tag === "PatProduct") {
       return y.tag === "PatProduct" && (x._1._1.tag === "Nothing" ? y._1._1.tag === "Nothing" : x._1._1.tag === "Just" && y._1._1.tag === "Just" && x._1._1._1 === y._1._1._1) && x._1._2 === y._1._2 && (x._2._1.tag === "Nothing" ? y._2._1.tag === "Nothing" : x._2._1.tag === "Just" && y._2._1.tag === "Just" && x._2._1._1 === y._2._1._1) && x._2._2 === y._2._2;
@@ -14131,7 +14765,7 @@ var ordPatternCase = {
     }
     if (x.tag === "PatRecord") {
       if (y.tag === "PatRecord") {
-        return compare(x._1)(y._1);
+        return ordArray2.compare(x._1)(y._1);
       }
       return LT;
     }
@@ -14140,14 +14774,14 @@ var ordPatternCase = {
     }
     if (x.tag === "PatProduct") {
       if (y.tag === "PatProduct") {
-        const v = compare12(x._1)(y._1);
+        const v = ordQualified4.compare(x._1)(y._1);
         if (v === "LT") {
           return LT;
         }
         if (v === "GT") {
           return GT;
         }
-        return ordQualified3.compare(x._2)(y._2);
+        return ordQualified1.compare(x._2)(y._2);
       }
       return LT;
     }
@@ -14165,14 +14799,14 @@ var ordPatternCase = {
     }
     if (x.tag === "PatSum") {
       if (y.tag === "PatSum") {
-        const v = compare12(x._1)(y._1);
+        const v = ordQualified4.compare(x._1)(y._1);
         if (v === "LT") {
           return LT;
         }
         if (v === "GT") {
           return GT;
         }
-        return ordQualified3.compare(x._2)(y._2);
+        return ordQualified1.compare(x._2)(y._2);
       }
       return LT;
     }
@@ -14222,14 +14856,15 @@ var ordPatternCase = {
   },
   Eq0: () => eqPatternCase
 };
-var monoidSet2 = /* @__PURE__ */ monoidSet(ordPatternCase);
-var foldMapWithIndex = /* @__PURE__ */ (() => foldableWithIndexArray.foldMapWithIndex((() => {
-  const Semigroup0 = monoidSet2.Semigroup0();
+var monoidRecord2 = /* @__PURE__ */ (() => {
+  const $0 = monoidSet(ordPatternCase);
+  const Semigroup0 = $0.Semigroup0();
   const semigroupRecord1 = {
     append: (ra) => (rb) => ({ aScore: ra.aScore + rb.aScore | 0, ctors: Semigroup0.append(ra.ctors)(rb.ctors), tailRowIndices: [...ra.tailRowIndices, ...rb.tailRowIndices] })
   };
-  return { mempty: { aScore: 0, ctors: monoidSet2.mempty, tailRowIndices: [] }, Semigroup0: () => semigroupRecord1 };
-})()))();
+  return { mempty: { aScore: 0, ctors: $0.mempty, tailRowIndices: [] }, Semigroup0: () => semigroupRecord1 };
+})();
+var monoidSet1 = /* @__PURE__ */ monoidSet(ordPatternCase);
 var unwrapExternSpine = (v) => {
   if (v.tag === "ExternApp") {
     return $ExternSpine("ExternApp", arrayMap(unwrapSemTyped)(v._1));
@@ -14309,6 +14944,7 @@ var toExternImpl = (env) => (group2) => (isDict) => (expr) => {
   }
   const v1 = (v2) => {
     if (v.tag === "ExprSyntax" && v._2.tag === "CtorDef") {
+      const $0 = v._2._2;
       return $Tuple(
         $Tuple(
           (() => {
@@ -14323,17 +14959,46 @@ var toExternImpl = (env) => (group2) => (isDict) => (expr) => {
           $ExternImpl(
             "ExternCtor",
             (() => {
-              const $0 = lookup4(v._2._2)(env.dataTypes);
-              if ($0.tag === "Nothing") {
+              const go = (go$a0$copy) => {
+                let go$a0 = go$a0$copy, go$c = true, go$r;
+                while (go$c) {
+                  const v$1 = go$a0;
+                  if (v$1.tag === "Leaf") {
+                    go$c = false;
+                    go$r = Nothing;
+                    continue;
+                  }
+                  if (v$1.tag === "Node") {
+                    const v12 = ordString.compare($0)(v$1._3);
+                    if (v12 === "LT") {
+                      go$a0 = v$1._5;
+                      continue;
+                    }
+                    if (v12 === "GT") {
+                      go$a0 = v$1._6;
+                      continue;
+                    }
+                    if (v12 === "EQ") {
+                      go$c = false;
+                      go$r = $Maybe("Just", v$1._4);
+                      continue;
+                    }
+                  }
+                  fail();
+                }
+                return go$r;
+              };
+              const $1 = go(env.dataTypes);
+              if ($1.tag === "Nothing") {
                 return { constructors: Leaf, size: 0 };
               }
-              if ($0.tag === "Just") {
-                return $0._1;
+              if ($1.tag === "Just") {
+                return $1._1;
               }
               fail();
             })(),
             v._2._1,
-            v._2._2,
+            $0,
             v._2._3,
             v._2._4
           )
@@ -14372,9 +15037,31 @@ var toExternImpl = (env) => (group2) => (isDict) => (expr) => {
 };
 var toCaseRowVars = (v) => {
   const $0 = v.column;
-  return foldMap5((x) => $$$Map("Node", 1, 1, x, $0, Leaf, Leaf))(v.pattern.vars);
+  return foldableSet.foldMap(monoidSemigroupMap2)((x) => $$$Map("Node", 1, 1, x, $0, Leaf, Leaf))(v.pattern.vars);
 };
-var patternVars = (v) => [...toUnfoldable2(v.pattern.vars), ...foldMap22(patternVars)(v.pattern.subterms)];
+var patternVars = (v) => [
+  ...unfoldableArray.unfoldr((xs) => {
+    if (xs.tag === "Nil") {
+      return Nothing;
+    }
+    if (xs.tag === "Cons") {
+      return $Maybe("Just", $Tuple(xs._1, xs._2));
+    }
+    fail();
+  })((() => {
+    const go = (m$p, z$p) => {
+      if (m$p.tag === "Leaf") {
+        return z$p;
+      }
+      if (m$p.tag === "Node") {
+        return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
+      }
+      fail();
+    };
+    return go(v.pattern.vars, Nil);
+  })()),
+  ...foldableArray.foldMap(monoidArray)(patternVars)(v.pattern.subterms)
+];
 var normalizeCaseRows = (x) => {
   const go = (go$a0$copy) => (go$a1$copy) => {
     let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
@@ -14387,7 +15074,7 @@ var normalizeCaseRows = (x) => {
             "Just",
             (() => {
               if ($02.pattern.patternCase.tag === "PatRecord") {
-                const keys2 = fromFoldable1($02.pattern.patternCase._1);
+                const keys2 = foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf)($02.pattern.patternCase._1);
                 if (acc.tag === "Nothing") {
                   return keys2;
                 }
@@ -14436,7 +15123,26 @@ var normalizeCaseRows = (x) => {
                 accessor: $BackendAccessor("GetProp", fieldName),
                 pattern: { vars: Leaf, patternCase: PatWild, subterms: [] }
               }
-            ))(toUnfoldable2(allFieldsSet))
+            ))(unfoldableArray.unfoldr((xs) => {
+              if (xs.tag === "Nil") {
+                return Nothing;
+              }
+              if (xs.tag === "Cons") {
+                return $Maybe("Just", $Tuple(xs._1, xs._2));
+              }
+              fail();
+            })((() => {
+              const go$1 = (m$p, z$p) => {
+                if (m$p.tag === "Leaf") {
+                  return z$p;
+                }
+                if (m$p.tag === "Node") {
+                  return go$1(m$p._5, $List("Cons", m$p._3, go$1(m$p._6, z$p)));
+                }
+                fail();
+              };
+              return go$1(allFieldsSet, Nil);
+            })()))
           ])));
           return { ...pat, pattern: { ...pat.pattern, patternCase: $PatternCase("PatRecord", v1._1), subterms: v1._2 } };
         }
@@ -14449,7 +15155,36 @@ var normalizeCaseRows = (x) => {
 };
 var makeExternEvalSpine = (conv) => (env) => (qual) => (spine) => {
   const spine$p = arrayMap(unwrapExternSpine)(spine);
-  const $0 = lookup12(qual)(conv.foreignSemantics);
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = Nothing;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordQualified1.compare(qual)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = $Maybe("Just", v._4);
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  const $0 = go(conv.foreignSemantics);
   const result = (() => {
     if ($0.tag === "Just") {
       return $0._1(env)(qual)(spine$p);
@@ -14460,7 +15195,36 @@ var makeExternEvalSpine = (conv) => (env) => (qual) => (spine) => {
     fail();
   })();
   if (result.tag === "Nothing") {
-    const $1 = lookup12(qual)(conv.implementations);
+    const go$1 = (go$1$a0$copy) => {
+      let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+      while (go$1$c) {
+        const v = go$1$a0;
+        if (v.tag === "Leaf") {
+          go$1$c = false;
+          go$1$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordQualified1.compare(qual)(v._3);
+          if (v1 === "LT") {
+            go$1$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$1$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$1$c = false;
+            go$1$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$1$r;
+    };
+    const $1 = go$1(conv.implementations);
     if ($1.tag === "Just") {
       return evalExternFromImpl({ ...env, locals: [] })(qual)($1._1)(spine$p);
     }
@@ -14472,7 +15236,36 @@ var makeExternEvalSpine = (conv) => (env) => (qual) => (spine) => {
   return result;
 };
 var makeExternEvalRef = (conv) => (env) => (qual) => {
-  const $0 = lookup12(qual)(conv.implementations);
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = Nothing;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordQualified1.compare(qual)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = $Maybe("Just", v._4);
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  const $0 = go(conv.implementations);
   if ($0.tag === "Just") {
     return $Maybe("Just", evalExternRefFromImpl(env)(qual)($0._1));
   }
@@ -14530,18 +15323,47 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
     if (impl.tag === "ExternExpr") {
       if (impl._2.tag === "App") {
         if (impl._2._1.tag === "Var") {
-          const v = lookup23($EvalRef("EvalExtern", impl._2._1._1))(directives);
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v2 = go$a0;
+              if (v2.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v2.tag === "Node") {
+                const v1 = ordEvalRef.compare($EvalRef("EvalExtern", impl._2._1._1))(v2._3);
+                if (v1 === "LT") {
+                  go$a0 = v2._5;
+                  continue;
+                }
+                if (v1 === "GT") {
+                  go$a0 = v2._6;
+                  continue;
+                }
+                if (v1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v2._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const v = go(directives);
           if (v.tag === "Just") {
-            const go = (m$p, z$p) => {
+            const go$1 = (m$p, z$p) => {
               if (m$p.tag === "Leaf") {
                 return z$p;
               }
               if (m$p.tag === "Node") {
-                return go(
+                return go$1(
                   m$p._5,
                   (() => {
                     const $02 = m$p._4;
-                    const $12 = go(m$p._6, z$p);
+                    const $12 = go$1(m$p._6, z$p);
                     const $22 = (prop) => insert(ordInlineAccessor)($InlineAccessor(
                       "InlineSpineProp",
                       prop
@@ -14564,7 +15386,7 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
               }
               fail();
             };
-            const newDirs = go(v._1, Leaf);
+            const newDirs = go$1(v._1, Leaf);
             if (newDirs.tag === "Leaf") {
               return Nothing;
             }
@@ -14574,11 +15396,71 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
         return Nothing;
       }
       if (impl._2.tag === "Accessor" && impl._2._1.tag === "App" && impl._2._1._1.tag === "Var" && impl._2._2.tag === "GetProp") {
-        const $02 = lookup23($EvalRef("EvalExtern", impl._2._1._1._1))(directives);
-        const $12 = lookup33($InlineAccessor("InlineSpineProp", impl._2._2._1));
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v2 = go$a0;
+            if (v2.tag === "Leaf") {
+              go$c = false;
+              go$r = Nothing;
+              continue;
+            }
+            if (v2.tag === "Node") {
+              const v1 = ordEvalRef.compare($EvalRef("EvalExtern", impl._2._1._1._1))(v2._3);
+              if (v1 === "LT") {
+                go$a0 = v2._5;
+                continue;
+              }
+              if (v1 === "GT") {
+                go$a0 = v2._6;
+                continue;
+              }
+              if (v1 === "EQ") {
+                go$c = false;
+                go$r = $Maybe("Just", v2._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const $02 = go(directives);
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v2 = go$1$a0;
+            if (v2.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = Nothing;
+              continue;
+            }
+            if (v2.tag === "Node") {
+              const v1 = ordInlineAccessor.compare($InlineAccessor(
+                "InlineSpineProp",
+                impl._2._2._1
+              ))(v2._3);
+              if (v1 === "LT") {
+                go$1$a0 = v2._5;
+                continue;
+              }
+              if (v1 === "GT") {
+                go$1$a0 = v2._6;
+                continue;
+              }
+              if (v1 === "EQ") {
+                go$1$c = false;
+                go$1$r = $Maybe("Just", v2._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
         const v = (() => {
           if ($02.tag === "Just") {
-            return $12($02._1);
+            return go$1($02._1);
           }
           if ($02.tag === "Nothing") {
             return Nothing;
@@ -14608,7 +15490,7 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
     if ($12._1) {
       return $Maybe(
         "Just",
-        fromFoldable22([
+        fromFoldable2([
           $Tuple(InlineRef, InlineAlways),
           ...arrayMap((p) => $Tuple(
             $InlineAccessor("InlineProp", p),
@@ -14618,11 +15500,68 @@ var inferTransitiveDirective = (directives) => (impl) => (backendExpr) => (cfn) 
       );
     }
     if (backendExpr.tag === "ExprSyntax" && backendExpr._2.tag === "App" && backendExpr._2._1.tag === "ExprSyntax" && backendExpr._2._1._2.tag === "Var") {
-      const $22 = lookup23($EvalRef("EvalExtern", backendExpr._2._1._2._1))(directives);
-      const $3 = lookup33(InlineRef);
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v = go$a0;
+          if (v.tag === "Leaf") {
+            go$c = false;
+            go$r = Nothing;
+            continue;
+          }
+          if (v.tag === "Node") {
+            const v1 = ordEvalRef.compare($EvalRef("EvalExtern", backendExpr._2._1._2._1))(v._3);
+            if (v1 === "LT") {
+              go$a0 = v._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$a0 = v._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$c = false;
+              go$r = $Maybe("Just", v._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const $22 = go(directives);
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v = go$1$a0;
+          if (v.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = Nothing;
+            continue;
+          }
+          if (v.tag === "Node") {
+            const v1 = ordInlineAccessor.compare(InlineRef)(v._3);
+            if (v1 === "LT") {
+              go$1$a0 = v._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$1$a0 = v._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$1$c = false;
+              go$1$r = $Maybe("Just", v._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
       const v2 = (() => {
         if ($22.tag === "Just") {
-          return $3($22._1);
+          return go$1($22._1);
         }
         if ($22.tag === "Nothing") {
           return Nothing;
@@ -14761,7 +15700,36 @@ var inferExprType = (v) => {
 };
 var getCtx = (env) => {
   const lookupExtern = (qual) => (acc) => {
-    const $0 = lookup12(qual)(env.implementations);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordQualified1.compare(qual)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $0 = go(env.implementations);
     if ($0.tag === "Just") {
       if ($0._1._2.tag === "ExternExpr") {
         if (acc.tag === "Nothing") {
@@ -14815,9 +15783,9 @@ var getCtx = (env) => {
         }
         if (v1.tag === "Nothing") {
           if ($0) {
-            return analyzeEffectBlock2(lookupExtern)(expr);
+            return analyzeEffectBlock(hasAnalysisBackendExpr)(hasSyntaxBackendExpr)(lookupExtern)(expr);
           }
-          return analyze2(lookupExtern)(expr);
+          return analyze(hasAnalysisBackendExpr)(hasSyntaxBackendExpr)(lookupExtern)(expr);
         }
         fail();
       };
@@ -14832,7 +15800,7 @@ var decompose = (chosenColumn) => {
     }
     return { nonMatchesBefore: [p], match: Nothing };
   };
-  return foldMap32((row) => {
+  return foldableArray.foldMap(monoidRecord1)((row) => {
     const v = row.patterns.length > 0 ? $Maybe("Just", row.patterns) : Nothing;
     if (v.tag === "Nothing") {
       return _crashWith("decompose - nextRow.patterns cannot be empty since the first row contains at least one `PatCtor` patternCase");
@@ -14985,7 +15953,7 @@ var chooseNextPattern = (row0Patterns) => (tailRows) => {
     })(Nothing)(arrayMap((v) => {
       const $22 = v._1;
       const $3 = v._2;
-      const matchingCols = foldMapWithIndex((rowIdx) => (row) => {
+      const matchingCols = foldableWithIndexArray.foldMapWithIndex(monoidRecord2)((rowIdx) => (row) => {
         if ($22 >= 0 && $22 < row.patterns.length) {
           return {
             tailRowIndices: (() => {
@@ -15000,7 +15968,7 @@ var chooseNextPattern = (row0Patterns) => (tailRows) => {
               if (!eqPatternCase.eq(row.patterns[$22].pattern.patternCase)(PatWild)) {
                 return $4;
               }
-              return monoidSet2.mempty;
+              return monoidSet1.mempty;
             })(),
             aScore: -filterImpl((x) => !eqPatternCase.eq(PatWild)(x.pattern.patternCase), row.patterns[$22].pattern.subterms).length
           };
@@ -15056,7 +16024,7 @@ var chooseNextPattern = (row0Patterns) => (tailRows) => {
 };
 var buildM = (a) => (env) => build(getCtx(env))(a);
 var make = (a) => {
-  const $0 = traversableBackendSyntax.traverse(applicativeFn)(identity3)(a);
+  const $0 = traversableBackendSyntax.traverse(applicativeFn)(identity)(a);
   return (x) => build(getCtx(x))($0(x));
 };
 var guardBoolean = (n) => (lhs) => $BackendSyntax(
@@ -15177,18 +16145,18 @@ var binderToPattern = (v) => {
     }
     if (v._2.tag === "LitArray") {
       const $0 = $PatternCase("PatArray", v._2._1.length);
-      const $1 = forWithIndex(v._2._1)((idx) => (nextArg) => {
+      const $1 = traversableWithIndexArray.traverseWithIndex(applicativeFn)((idx) => (nextArg) => {
         const $12 = binderToPattern(nextArg);
         return (x) => ({ accessor: $BackendAccessor("GetIndex", idx), pattern: $12(x) });
-      });
+      })(v._2._1);
       return (x) => ({ vars: Leaf, patternCase: $0, subterms: $1(x) });
     }
     if (v._2.tag === "LitRecord") {
       const $0 = $PatternCase("PatRecord", arrayMap(propKey)(v._2._1));
-      const $1 = forWithIndex(v._2._1)((idx) => (nextArg) => {
+      const $1 = traversableWithIndexArray.traverseWithIndex(applicativeFn)((idx) => (nextArg) => {
         const $12 = binderToPattern(nextArg._2);
         return (x) => ({ accessor: $BackendAccessor("GetProp", nextArg._1), pattern: $12(x) });
-      });
+      })(v._2._1);
       return (x) => ({ vars: Leaf, patternCase: $0, subterms: $1(x) });
     }
     fail();
@@ -15203,7 +16171,7 @@ var binderToPattern = (v) => {
       }
       if (v._1.meta._1.tag === "IsConstructor") {
         if (v._1.meta._1._1 === "ProductType") {
-          const $0 = forWithIndex(v._4)((idx) => (nextArg) => {
+          const $0 = traversableWithIndexArray.traverseWithIndex(applicativeFn)((idx) => (nextArg) => {
             const $02 = binderToPattern(nextArg);
             return (x) => ({
               accessor: $BackendAccessor(
@@ -15217,11 +16185,11 @@ var binderToPattern = (v) => {
               ),
               pattern: $02(x)
             });
-          });
+          })(v._4);
           return (x) => ({ vars: Leaf, patternCase: $PatternCase("PatProduct", v._2, v._3), subterms: $0(x) });
         }
         if (v._1.meta._1._1 === "SumType") {
-          const $0 = forWithIndex(v._4)((idx) => (nextArg) => {
+          const $0 = traversableWithIndexArray.traverseWithIndex(applicativeFn)((idx) => (nextArg) => {
             const $02 = binderToPattern(nextArg);
             return (x) => ({
               accessor: $BackendAccessor(
@@ -15235,7 +16203,7 @@ var binderToPattern = (v) => {
               ),
               pattern: $02(x)
             });
-          });
+          })(v._4);
           return (x) => ({ vars: Leaf, patternCase: $PatternCase("PatSum", v._2, v._3), subterms: $0(x) });
         }
       }
@@ -15295,7 +16263,36 @@ var toBackendExprWithType = (mbTy) => (expr) => {
             return buildM($BackendSyntax("Var", $12));
           };
           if ($12._1.tag === "Just" && $12._1._1 === $2) {
-            const $4 = lookup42($12._2)($3);
+            const go = (go$a0$copy) => {
+              let go$a0 = go$a0$copy, go$c = true, go$r;
+              while (go$c) {
+                const v = go$a0;
+                if (v.tag === "Leaf") {
+                  go$c = false;
+                  go$r = Nothing;
+                  continue;
+                }
+                if (v.tag === "Node") {
+                  const v1 = ordString.compare($12._2)(v._3);
+                  if (v1 === "LT") {
+                    go$a0 = v._5;
+                    continue;
+                  }
+                  if (v1 === "GT") {
+                    go$a0 = v._6;
+                    continue;
+                  }
+                  if (v1 === "EQ") {
+                    go$c = false;
+                    go$r = $Maybe("Just", v._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$r;
+            };
+            const $4 = go($3);
             if ($4.tag === "Just") {
               return buildM($BackendSyntax("Local", $Maybe("Just", $12._2), $4._1));
             }
@@ -15303,20 +16300,46 @@ var toBackendExprWithType = (mbTy) => (expr) => {
           return v4(true);
         };
         if ($12._1.tag === "Nothing") {
-          const $4 = lookup42($12._2)($3);
-          if ($4.tag === "Just") {
-            return build(getCtx(x))($BackendSyntax(
-              "Local",
-              $Maybe("Just", $12._2),
-              $4._1
-            ));
+          const $4 = $12._2;
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v = go$a0;
+              if (v.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v.tag === "Node") {
+                const v1 = ordString.compare($4)(v._3);
+                if (v1 === "LT") {
+                  go$a0 = v._5;
+                  continue;
+                }
+                if (v1 === "GT") {
+                  go$a0 = v._6;
+                  continue;
+                }
+                if (v1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const $5 = go($3);
+          if ($5.tag === "Just") {
+            return build(getCtx(x))($BackendSyntax("Local", $Maybe("Just", $4), $5._1));
           }
         }
         return v2(true)(x);
       };
     }
     if (expr.tag === "ExprLit") {
-      const $12 = traverse3(toBackendExpr)(expr._2);
+      const $12 = traversableLiteral.traverse(applicativeFn)(toBackendExpr)(expr._2);
       return (x) => build(getCtx(x))($BackendSyntax("Lit", $12(x)));
     }
     if (expr.tag === "ExprConstructor") {
@@ -15326,7 +16349,36 @@ var toBackendExprWithType = (mbTy) => (expr) => {
       return (x) => build(getCtx(x))($BackendSyntax(
         "CtorDef",
         (() => {
-          const v2 = lookup4($3)(x.dataTypes);
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v = go$a0;
+              if (v.tag === "Leaf") {
+                go$c = false;
+                go$r = Nothing;
+                continue;
+              }
+              if (v.tag === "Node") {
+                const v1 = ordString.compare($3)(v._3);
+                if (v1 === "LT") {
+                  go$a0 = v._5;
+                  continue;
+                }
+                if (v1 === "GT") {
+                  go$a0 = v._6;
+                  continue;
+                }
+                if (v1 === "EQ") {
+                  go$c = false;
+                  go$r = $Maybe("Just", v._4);
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          const v2 = go(x.dataTypes);
           if (v2.tag === "Just" && (() => {
             if (v2._1.constructors.tag === "Leaf") {
               return false;
@@ -15355,7 +16407,7 @@ var toBackendExprWithType = (mbTy) => (expr) => {
     }
     if (expr.tag === "ExprUpdate") {
       const $12 = toBackendExpr(expr._2);
-      const $2 = traverse1(traversableProp.traverse(applicativeFn)(toBackendExpr))(expr._3);
+      const $2 = traversableArray.traverse(applicativeFn)(traversableProp.traverse(applicativeFn)(toBackendExpr))(expr._3);
       return (x) => build(getCtx(x))($BackendSyntax("Update", $12(x), $2(x)));
     }
     if (expr.tag === "ExprAbs") {
@@ -15385,7 +16437,7 @@ var toBackendExprWithType = (mbTy) => (expr) => {
             return build(getCtx(x))($BackendSyntax(
               "LetRec",
               x.currentLevel,
-              intro(foldableArray)(idents)(x.currentLevel)(traverse32(toBackendBinding)($12))(x),
+              intro(foldableArray)(idents)(x.currentLevel)(traversableArray.traverse(applicativeFn)(toBackendBinding)($12))(x),
               intro(foldableArray)(idents)(x.currentLevel)(next)(x)
             ));
           };
@@ -15436,13 +16488,17 @@ var toBackendExprWithType = (mbTy) => (expr) => {
         const $2 = v._1;
         const $3 = v._2;
         return (mainCb) => (caseRows) => {
-          const $4 = zipWithA2((ident) => (b) => {
-            const $42 = binderToPattern(b);
-            return (x) => ({ column: ident, pattern: $42(x) });
-          })(idents)($2);
+          const $4 = traversableArray.traverse(applicativeFn)(identity)(zipWithImpl(
+            (ident) => (b) => {
+              const $42 = binderToPattern(b);
+              return (x) => ({ column: ident, pattern: $42(x) });
+            },
+            idents,
+            $2
+          ));
           return (x) => {
             const $5 = $4(x);
-            const args = sortBy(ordString.compare)(foldMap22(patternVars)($5));
+            const args = sortBy(ordString.compare)(foldableArray.foldMap(monoidArray)(patternVars)($5));
             if ($3.tag === "Unconditional") {
               const $6 = $3._1;
               return makeLet2(Nothing)(makeUncurriedAbs(args)((v1) => toBackendExpr($6)))((tmp) => mainCb(snoc(caseRows)({
@@ -15541,7 +16597,7 @@ var buildCasePattern = (chosenColumn) => (rows) => {
     const inlineWildSubterms = arrayMap((column) => ({ column, pattern: { vars: Leaf, patternCase: PatWild, subterms: [] } }))(idents);
     return arrayMap((v) => ({
       guardFn: v.guardFn,
-      vars: append3(v.vars)(toCaseRowVars(v.match)),
+      vars: unsafeUnionWith(ordString.compare, semigroupFirst2.append, v.vars, toCaseRowVars(v.match)),
       patterns: [
         ...v.nonMatchesBefore,
         ...v.match.pattern.patternCase.tag === "PatWild" ? inlineWildSubterms : zipWithImpl((column) => (v$1) => ({ column, pattern: v$1.pattern }), idents, v.match.pattern.subterms),
@@ -15556,7 +16612,7 @@ var buildCasePattern = (chosenColumn) => (rows) => {
       const inlineWildSubterms = arrayMap((column) => ({ column, pattern: { vars: Leaf, patternCase: PatWild, subterms: [] } }))(idents);
       return arrayMap((v$1) => ({
         guardFn: v$1.guardFn,
-        vars: append3(v$1.vars)(toCaseRowVars(v$1.match)),
+        vars: unsafeUnionWith(ordString.compare, semigroupFirst2.append, v$1.vars, toCaseRowVars(v$1.match)),
         patterns: [
           ...v$1.nonMatchesBefore,
           ...v$1.match.pattern.patternCase.tag === "PatWild" ? inlineWildSubterms : zipWithImpl((column) => (v$2) => ({ column, pattern: v$2.pattern }), idents, v$1.match.pattern.subterms),
@@ -15602,7 +16658,12 @@ var buildCasePattern = (chosenColumn) => (rows) => {
   fail();
 };
 var buildCaseLeaf = (row0) => (tailRows) => {
-  const orderedArgs = toUnfoldable12(append3(row0.vars)(foldMap42(toCaseRowVars)(row0.patterns)));
+  const orderedArgs = toUnfoldable(unsafeUnionWith(
+    ordString.compare,
+    semigroupFirst2.append,
+    row0.vars,
+    foldableArray.foldMap(monoidSemigroupMap2)(toCaseRowVars)(row0.patterns)
+  ));
   if (row0.guardFn.tag === "UnconditionalFn") {
     return make($BackendSyntax(
       "UncurriedApp",
@@ -15620,7 +16681,7 @@ var buildCaseLeaf = (row0) => (tailRows) => {
         tmp
       ))));
     })((args) => {
-      const $1 = $$for($0)((v) => {
+      const $1 = traversableArray.traverse(applicativeFn)((v) => {
         const $12 = toBackendExprWithType(Nothing)(v._1);
         const $2 = make($BackendSyntax(
           "UncurriedApp",
@@ -15628,7 +16689,7 @@ var buildCaseLeaf = (row0) => (tailRows) => {
           arrayMap((v$1) => make($BackendSyntax("Local", $Maybe("Just", v$1._1), v$1._2)))(args)
         ));
         return (x) => $Pair($12(x), $2(x));
-      });
+      })($0);
       return (x) => build(getCtx(x))($BackendSyntax(
         "Branch",
         $1(x),
@@ -15642,13 +16703,38 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
   const qualifiedIdent = $Qualified($Maybe("Just", env.currentModule), v._2);
   const backendExpr = toBackendExprWithType(Nothing)(v._3)(env);
   const mbType = backendExpr.tag === "ExprSyntax" && backendExpr._2.tag === "Typed" ? $Maybe("Just", backendExpr._2._1) : Nothing;
-  const v1 = optimize(member(qualifiedIdent)(env.traceIdents))(getCtx(env))({
-    currentModule: env.currentModule,
-    evalExternRef: makeExternEvalRef(env),
-    evalExternSpine: makeExternEvalSpine(env),
-    locals: [],
-    directives: env.directives
-  })(qualifiedIdent)(env.rewriteLimit)(backendExpr);
+  const v1 = optimize((() => {
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v$1 = go$a0;
+        if (v$1.tag === "Leaf") {
+          go$c = false;
+          go$r = false;
+          continue;
+        }
+        if (v$1.tag === "Node") {
+          const v12 = ordQualified1.compare(qualifiedIdent)(v$1._3);
+          if (v12 === "LT") {
+            go$a0 = v$1._5;
+            continue;
+          }
+          if (v12 === "GT") {
+            go$a0 = v$1._6;
+            continue;
+          }
+          if (v12 === "EQ") {
+            go$c = false;
+            go$r = true;
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    return go(env.traceIdents);
+  })())(getCtx(env))({ currentModule: env.currentModule, evalExternRef: makeExternEvalRef(env), evalExternSpine: makeExternEvalSpine(env), locals: [], directives: env.directives })(qualifiedIdent)(env.rewriteLimit)(backendExpr);
   const v2 = toExternImpl(env)(group2)(isTypeClassDictionaryWithProps(v._3)._1)((() => {
     if (mbType.tag === "Just") {
       return $BackendExpr(
@@ -15673,8 +16759,8 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
   return {
     accum: {
       ...env,
-      implementations: insert(ordQualified3)(qualifiedIdent)(v2._1)(env.implementations),
-      moduleImplementations: insert(ordQualified3)(qualifiedIdent)(v2._1)(env.moduleImplementations),
+      implementations: insert(ordQualified1)(qualifiedIdent)(v2._1)(env.implementations),
+      moduleImplementations: insert(ordQualified1)(qualifiedIdent)(v2._1)(env.moduleImplementations),
       optimizationSteps: (() => {
         const $0 = Tuple(qualifiedIdent);
         if (v1._1.length > 0) {
@@ -15686,7 +16772,7 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
         const v4 = inferTransitiveDirective(env.directives)(v2._1._2)(backendExpr)(v._3);
         if (v4.tag === "Just") {
           const $0 = v4._1;
-          return alter3((v5) => {
+          return alter(ordEvalRef)((v5) => {
             if (v5.tag === "Just") {
               return $Maybe(
                 "Just",
@@ -15713,20 +16799,18 @@ var toTopLevelBackendBinding = (group2) => (env) => (v) => {
 };
 var toBackendTopLevelBindingGroup = (env) => (v) => {
   if (v.tag === "Rec") {
-    const $0 = mapAccumL2(toTopLevelBackendBinding(arrayMap((v1) => $Qualified(
-      $Maybe("Just", env.currentModule),
-      v1._2
-    ))(v._1)))(env)(v._1);
-    return { ...$0, value: { recursive: true, bindings: $0.value } };
+    const $0 = toTopLevelBackendBinding(arrayMap((v1) => $Qualified($Maybe("Just", env.currentModule), v1._2))(v._1));
+    const $1 = traversableArray.traverse(applicativeStateL)((a) => (s) => $0(s)(a))(v._1)(env);
+    return { ...$1, value: { recursive: true, bindings: $1.value } };
   }
   if (v.tag === "NonRec") {
-    const $0 = mapAccumL2(toTopLevelBackendBinding([]))(env)([v._1]);
+    const $0 = traversableArray.traverse(applicativeStateL)((a) => (s) => toTopLevelBackendBinding([])(s)(a))([v._1])(env);
     return { ...$0, value: { recursive: false, bindings: $0.value } };
   }
   fail();
 };
 var toBackendTopLevelBindingGroups = (binds) => (env) => {
-  const result = mapAccumL2(toBackendTopLevelBindingGroup)(env)(binds);
+  const result = traversableArray.traverse(applicativeStateL)((a) => (s) => toBackendTopLevelBindingGroup(s)(a))(binds)(env);
   return {
     ...result,
     value: arrayMap((as) => ({
@@ -15741,13 +16825,75 @@ var toBackendTopLevelBindingGroups = (binds) => (env) => {
   };
 };
 var toBackendModule = (v) => (env) => {
-  const localExports = fromFoldable32(v.exports);
+  const localExports = foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf)(v.exports);
   const isBindingUsed = (deps) => (v1) => {
-    const res = member1(v1._1)(localExports) || member($Qualified($Maybe("Just", v.name), v1._1))(deps);
+    const $0 = v1._1;
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v$1 = go$a0;
+        if (v$1.tag === "Leaf") {
+          go$c = false;
+          go$r = false;
+          continue;
+        }
+        if (v$1.tag === "Node") {
+          const v1$1 = ordString.compare($0)(v$1._3);
+          if (v1$1 === "LT") {
+            go$a0 = v$1._5;
+            continue;
+          }
+          if (v1$1 === "GT") {
+            go$a0 = v$1._6;
+            continue;
+          }
+          if (v1$1 === "EQ") {
+            go$c = false;
+            go$r = true;
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const $1 = $Qualified($Maybe("Just", v.name), $0);
+    const res = go(localExports) || (() => {
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$1 = go$1$a0;
+          if (v$1.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordQualified1.compare($1)(v$1._3);
+            if (v1$1 === "LT") {
+              go$1$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$1$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$1$c = false;
+              go$1$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
+      return go$1(deps);
+    })();
     return res;
   };
   const directives = parseDirectiveHeader(v.name)(v.comments);
-  const dataTypes = fromFoldable42(arrayMap((group2) => $Tuple(
+  const dataTypes = fromFoldable1(arrayMap((group2) => $Tuple(
     (() => {
       if (0 < group2.length) {
         return group2[0]._1;
@@ -15755,8 +16901,8 @@ var toBackendModule = (v) => (env) => {
       fail();
     })(),
     {
-      constructors: fromFoldable5(mapWithIndexArray((tag) => (v1) => $Tuple(v1._2._1, { fields: v1._2._2, tag }))(group2)),
-      size: maximum2(arrayMap((x) => x._2._2.length)(group2))
+      constructors: fromFoldable22(mapWithIndexArray((tag) => (v1) => $Tuple(v1._2._1, { fields: v1._2._2, tag }))(group2)),
+      size: maximum(ordInt)(foldable1NonEmptyArray)(arrayMap((x) => x._2._2.length)(group2))
     }
   ))(groupAllBy((x) => (y) => ordString.compare(x._1)(y._1))(arrayBind(v.dataDecls)((decl) => arrayBind(decl.constructors)((ctor) => [
     $Tuple(decl.name, $Tuple(ctor.name, mapWithIndexArray((i) => (v1) => "value" + showIntImpl(i))(ctor.fields)))
@@ -15773,7 +16919,7 @@ var toBackendModule = (v) => (env) => {
           return go(
             (() => {
               const $0 = m$p._4;
-              return alter3((v2) => {
+              return alter(ordEvalRef)((v2) => {
                 if (v2.tag === "Nothing") {
                   return $Maybe("Just", $0);
                 }
@@ -15795,40 +16941,40 @@ var toBackendModule = (v) => (env) => {
     })(),
     moduleImplementations: Leaf
   });
-  const usedBindings = mapAccumR2((deps) => (group2) => {
-    if (group2.recursive) {
-      if (anyImpl(isBindingUsed(deps), group2.bindings)) {
+  const usedBindings = traversableArray.traverse(applicativeStateR)((a) => (s) => {
+    if (a.recursive) {
+      if (anyImpl(isBindingUsed(s), a.bindings)) {
         return {
-          accum: unsafeUnionWith(ordQualified3.compare, $$const, foldMap52((x) => x._2._1)(group2.bindings), deps),
-          value: { ...group2, bindings: mapMaybe((x) => x)(arrayMap((x) => $Maybe("Just", $Tuple(x._1, x._2._2)))(group2.bindings)) }
+          accum: unsafeUnionWith(ordQualified22.compare, $$const, foldableArray.foldMap(monoidSet2)((x) => x._2._1)(a.bindings), s),
+          value: { ...a, bindings: mapMaybe((x) => x)(arrayMap((x) => $Maybe("Just", $Tuple(x._1, x._2._2)))(a.bindings)) }
         };
       }
-      return { accum: deps, value: { ...group2, bindings: mapMaybe((x) => x)([]) } };
+      return { accum: s, value: { ...a, bindings: mapMaybe((x) => x)([]) } };
     }
     return {
-      accum: mapAccumR2((deps$p) => (v2) => {
-        if (isBindingUsed(deps$p)(v2)) {
+      accum: traversableArray.traverse(applicativeStateR)((a$1) => (s$1) => {
+        if (isBindingUsed(s$1)(a$1)) {
           return {
-            accum: unsafeUnionWith(ordQualified3.compare, $$const, v2._2._1, deps$p),
-            value: $Maybe("Just", $Tuple(v2._1, v2._2._2))
+            accum: unsafeUnionWith(ordQualified22.compare, $$const, a$1._2._1, s$1),
+            value: $Maybe("Just", $Tuple(a$1._1, a$1._2._2))
           };
         }
-        return { accum: deps$p, value: Nothing };
-      })(deps)(group2.bindings).accum,
+        return { accum: s$1, value: Nothing };
+      })(a.bindings)(s).accum,
       value: {
-        ...group2,
-        bindings: mapMaybe((x) => x)(mapAccumR2((deps$p) => (v2) => {
-          if (isBindingUsed(deps$p)(v2)) {
+        ...a,
+        bindings: mapMaybe((x) => x)(traversableArray.traverse(applicativeStateR)((a$1) => (s$1) => {
+          if (isBindingUsed(s$1)(a$1)) {
             return {
-              accum: unsafeUnionWith(ordQualified3.compare, $$const, v2._2._1, deps$p),
-              value: $Maybe("Just", $Tuple(v2._1, v2._2._2))
+              accum: unsafeUnionWith(ordQualified22.compare, $$const, a$1._2._1, s$1),
+              value: $Maybe("Just", $Tuple(a$1._1, a$1._2._2))
             };
           }
-          return { accum: deps$p, value: Nothing };
-        })(deps)(group2.bindings).value)
+          return { accum: s$1, value: Nothing };
+        })(a.bindings)(s).value)
       }
     };
-  })(Leaf)(moduleBindings.value);
+  })(moduleBindings.value)(Leaf);
   return $Tuple(
     moduleBindings.accum.optimizationSteps,
     {
@@ -15850,11 +16996,11 @@ var toBackendModule = (v) => (env) => {
       })(usedBindings.accum),
       dataTypes: (() => {
         const $0 = any(isBindingUsed(usedBindings.accum));
-        return filterWithKey(ordString)((v$1) => (x) => $0(toUnfoldable12(x.constructors)))(dataTypes);
+        return filterWithKey(ordString)((v$1) => (x) => $0(toUnfoldable1(x.constructors)))(dataTypes);
       })(),
       bindings: usedBindings.value,
       exports: localExports,
-      reExports: fromFoldable6(v.reExports),
+      reExports: foldlArray((m) => (a) => insert(ordReExport)(a)()(m))(Leaf)(v.reExports),
       implementations: moduleBindings.accum.moduleImplementations,
       directives: filterWithKey(ordEvalRef)((k) => (v1) => k.tag === "EvalExtern" && k._1._1.tag === "Just" && k._1._1._1 === v.name)(moduleBindings.accum.directives),
       foreign: v.foreign
@@ -15865,8 +17011,8 @@ var toBackendModule = (v) => (env) => {
 // output-es/PureScript.Backend.Optimizer.Builder/index.js
 var buildModules = (dictMonad) => {
   const Bind1 = dictMonad.Bind1();
-  const $0 = dictMonad.Applicative0();
-  const $$void = Bind1.Apply0().Functor0().map((v) => {
+  const Applicative0 = dictMonad.Applicative0();
+  const $$void = dictMonad.Bind1().Apply0().Functor0().map((v) => {
   });
   return (options) => (coreFnModules) => {
     const go = (go$a0$copy) => (go$a1$copy) => {
@@ -15889,15 +17035,15 @@ var buildModules = (dictMonad) => {
     };
     const moduleCount = go(0)(coreFnModules);
     return $$void(foldM2(dictMonad)((v) => (coreFnModule) => {
-      const $1 = v.directives;
-      const $2 = v.implementations;
-      const $3 = v.moduleIndex;
-      const buildEnv = { implementations: $2, moduleCount, moduleIndex: $3 };
+      const $0 = v.directives;
+      const $1 = v.implementations;
+      const $2 = v.moduleIndex;
+      const buildEnv = { implementations: $1, moduleCount, moduleIndex: $2 };
       return Bind1.bind(options.onPrepareModule(buildEnv)(coreFnModule))((v1) => {
-        const $4 = v1.name;
+        const $3 = v1.name;
         return Bind1.bind(options.onSkipModule(buildEnv)(v1))((mbCachedMod) => {
           if (mbCachedMod.tag === "Just") {
-            return $0.pure({
+            return Applicative0.pure({
               directives: (() => {
                 const go$1 = (m$p, z$p) => {
                   if (m$p.tag === "Leaf") {
@@ -15908,7 +17054,7 @@ var buildModules = (dictMonad) => {
                   }
                   fail();
                 };
-                return go$1(mbCachedMod._1.directives, $1);
+                return go$1(mbCachedMod._1.directives, $0);
               })(),
               implementations: (() => {
                 const go$1 = (m$p, z$p) => {
@@ -15920,27 +17066,27 @@ var buildModules = (dictMonad) => {
                   }
                   fail();
                 };
-                return go$1(mbCachedMod._1.implementations, $2);
+                return go$1(mbCachedMod._1.implementations, $1);
               })(),
-              moduleIndex: $3 + 1 | 0
+              moduleIndex: $2 + 1 | 0
             });
           }
           if (mbCachedMod.tag === "Nothing") {
             const v2 = toBackendModule(v1)({
               analyzeCustom: options.analyzeCustom,
-              currentModule: $4,
+              currentModule: $3,
               currentLevel: 0,
               toLevel: Leaf,
-              implementations: $2,
+              implementations: $1,
               moduleImplementations: Leaf,
-              directives: $1,
+              directives: $0,
               dataTypes: Leaf,
               foreignSemantics: options.foreignSemantics,
               rewriteLimit: 1e4,
               traceIdents: options.traceIdents,
               optimizationSteps: []
             });
-            const $5 = v2._2;
+            const $4 = v2._2;
             const go$1 = (m$p, z$p) => {
               if (m$p.tag === "Leaf") {
                 return z$p;
@@ -15950,8 +17096,8 @@ var buildModules = (dictMonad) => {
               }
               fail();
             };
-            const newImplementations = go$1($5.implementations, $2);
-            return Bind1.bind(options.onCodegenModule({ ...buildEnv, implementations: newImplementations })(v1)($5)(v2._1))(() => $0.pure({
+            const newImplementations = go$1($4.implementations, $1);
+            return Bind1.bind(options.onCodegenModule({ ...buildEnv, implementations: newImplementations })(v1)($4)(v2._1))(() => Applicative0.pure({
               directives: (() => {
                 const go$2 = (m$p, z$p) => {
                   if (m$p.tag === "Leaf") {
@@ -15962,10 +17108,10 @@ var buildModules = (dictMonad) => {
                   }
                   fail();
                 };
-                return go$2($5.directives, $1);
+                return go$2($4.directives, $0);
               })(),
               implementations: newImplementations,
-              moduleIndex: $3 + 1 | 0
+              moduleIndex: $2 + 1 | 0
             }));
           }
           fail();
@@ -16105,7 +17251,6 @@ var findFfiFile = (extension) => (extraSpagoDirs) => (mbFfiDir) => (modName) => 
 };
 
 // output-es/PureScript.Backend.Optimizer.Semantics.Foreign/index.js
-var fromFoldable7 = /* @__PURE__ */ foldrArray(Cons)(Nil);
 var record_builder_copyRecord = /* @__PURE__ */ $Tuple(
   /* @__PURE__ */ $Qualified(/* @__PURE__ */ $Maybe("Just", "Record.Builder"), "copyRecord"),
   (v) => (v1) => (v2) => {
@@ -16368,7 +17513,7 @@ var runEffectFn = (mod) => (name2) => (n) => {
       if (v1.length === 1 && v1[0].tag === "ExternApp") {
         const $0 = unconsImpl((v$1) => Nothing, (x) => (xs) => $Maybe("Just", { head: x, tail: xs }), v1[0]._1);
         if ($0.tag === "Just" && $0._1.tail.length === n) {
-          return $Maybe("Just", goRunEffectFn(env)([])($0._1.head)(fromFoldable7($0._1.tail)));
+          return $Maybe("Just", goRunEffectFn(env)([])($0._1.head)(foldrArray(Cons)(Nil)($0._1.tail)));
         }
       }
       return Nothing;
@@ -17109,112 +18254,41 @@ var collectFieldsModule = (v) => foldlArray((acc) => (b) => unsafeUnionWith(
   collectFieldsBind(b)
 ))(Leaf)(v.decls);
 
-// output-es/Purust.CodeGen/index.js
-var lookup5 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = Nothing;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = $Maybe("Just", v._4);
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var union = (m1) => (m2) => unsafeUnionWith(ordString.compare, $$const, m1, m2);
-var foldMap7 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
-var fromFoldable8 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
-var member2 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = false;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = true;
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var member12 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = false;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = true;
-          continue;
-        }
-      }
-      fail();
-    }
-    return go$r;
-  };
-  return go;
-};
-var fromFoldable23 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
-var foldMap13 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
-var toUnfoldable3 = /* @__PURE__ */ (() => {
-  const $0 = unfoldableArray.unfoldr(stepUnfoldr);
-  return (x) => $0($MapIter("IterNode", x, IterLeaf));
+// output-es/Debug/foreign.js
+var req = typeof module === "undefined" ? void 0 : module.require;
+var util = (function() {
+  try {
+    return req === void 0 ? void 0 : req("util");
+  } catch (e) {
+    return void 0;
+  }
 })();
+function _trace(x, k) {
+  if (util !== void 0) {
+    console.log(util.inspect(x, { depth: null, colors: true }));
+  } else {
+    console.log(x);
+  }
+  return k({});
+}
+var now2 = (function() {
+  var perf;
+  if (typeof performance !== "undefined") {
+    perf = performance;
+  } else if (req) {
+    try {
+      perf = req("perf_hooks").performance;
+    } catch (e) {
+    }
+  }
+  return (function() {
+    return (perf || Date).now();
+  });
+})();
+
+// output-es/Purust.CodeGen/index.js
+var union = (m1) => (m2) => unsafeUnionWith(ordString.compare, $$const, m1, m2);
+var fromFoldable3 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
 var unwrapType = (v) => {
   if (v.tag === "ForAll") {
     return unwrapType(v._2);
@@ -17284,6 +18358,18 @@ var printType = (v) => {
   }
   if (v.tag === "ConstrainedType") {
     return "ConstrainedType(" + printType(v._2) + ")";
+  }
+  if (v.tag === "TypeApp") {
+    return "TypeApp(" + printType(v._1) + ", [...])";
+  }
+  if (v.tag === "TypeVar") {
+    return "TypeVar";
+  }
+  if (v.tag === "Int") {
+    return "Int";
+  }
+  if (v.tag === "Boolean") {
+    return "Boolean";
   }
   if (v.tag === "Any") {
     return "Any";
@@ -17425,9 +18511,6 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
       Any
     );
   }
-  if (v.tag === "Let") {
-    return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._4);
-  }
   if (v.tag === "LetRec") {
     return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3);
   }
@@ -17453,6 +18536,25 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     return defTy;
   }
   if (v.tag === "Typed") {
+    const innerTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
+    const v1 = unwrapType(innerTy);
+    if (unwrapType(v._1).tag === "Func") {
+      if (v1.tag === "Boolean") {
+        return innerTy;
+      }
+      if (v1.tag === "Int") {
+        return innerTy;
+      }
+      if (v1.tag === "Number") {
+        return innerTy;
+      }
+      if (v1.tag === "String") {
+        return innerTy;
+      }
+      if (v1.tag === "Char") {
+        return innerTy;
+      }
+    }
     return v._1;
   }
   if (v.tag === "CtorSaturated") {
@@ -17460,12 +18562,41 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
   }
   if (v.tag === "Var") {
     const sName = sanitizeIdent(v._1._2);
-    const v1 = lookup5(sName)(bound);
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v$1 = go$a0;
+        if (v$1.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v$1.tag === "Node") {
+          const v12 = ordString.compare(sName)(v$1._3);
+          if (v12 === "LT") {
+            go$a0 = v$1._5;
+            continue;
+          }
+          if (v12 === "GT") {
+            go$a0 = v$1._6;
+            continue;
+          }
+          if (v12 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v$1._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const v1 = go(bound);
     if (v1.tag === "Just") {
       return v1._1;
     }
     if (v1.tag === "Nothing") {
-      const v2 = lookup5((() => {
+      const $0 = (() => {
         if (v._1._1.tag === "Just") {
           return replaceAll(".")("_")(v._1._1._1) + "_" + sName;
         }
@@ -17473,7 +18604,37 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
           return replaceAll(".")("_")(currentMod) + "_" + sName;
         }
         fail();
-      })())(aritiesMap);
+      })();
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$1 = go$1$a0;
+          if (v$1.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordString.compare($0)(v$1._3);
+            if (v1$1 === "LT") {
+              go$1$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$1$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$1$c = false;
+              go$1$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
+      const v2 = go$1(aritiesMap);
       if (v2.tag === "Just") {
         return v2._1;
       }
@@ -17484,7 +18645,7 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
     fail();
   }
   if (v.tag === "Local") {
-    const v1 = lookup5((() => {
+    const $0 = (() => {
       if (v._1.tag === "Just") {
         return sanitizeIdent(v._1._1);
       }
@@ -17492,7 +18653,37 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
         return "lvl_" + showIntImpl(v._2);
       }
       fail();
-    })())(bound);
+    })();
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v$1 = go$a0;
+        if (v$1.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v$1.tag === "Node") {
+          const v12 = ordString.compare($0)(v$1._3);
+          if (v12 === "LT") {
+            go$a0 = v$1._5;
+            continue;
+          }
+          if (v12 === "GT") {
+            go$a0 = v$1._6;
+            continue;
+          }
+          if (v12 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v$1._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const v1 = go(bound);
     if (v1.tag === "Just") {
       return v1._1;
     }
@@ -17500,6 +18691,15 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
       return Any;
     }
     fail();
+  }
+  if (v.tag === "Let") {
+    if (v._1.tag === "Just") {
+      return inferTypeExpr(currentMod)(aritiesMap)(insert(ordString)(sanitizeIdent(v._1._1))(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(v._4);
+    }
+    if (v._1.tag === "Nothing") {
+      return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._4);
+    }
+    return Any;
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
@@ -17855,7 +19055,36 @@ var extractAbsParams = (v) => (v1) => {
   return Nothing;
 };
 var dedupArgs = (arr) => foldlArray((acc) => (item) => {
-  const count = lookup5(item)(acc.counts);
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "Leaf") {
+        go$c = false;
+        go$r = Nothing;
+        continue;
+      }
+      if (v.tag === "Node") {
+        const v1 = ordString.compare(item)(v._3);
+        if (v1 === "LT") {
+          go$a0 = v._5;
+          continue;
+        }
+        if (v1 === "GT") {
+          go$a0 = v._6;
+          continue;
+        }
+        if (v1 === "EQ") {
+          go$c = false;
+          go$r = $Maybe("Just", v._4);
+          continue;
+        }
+      }
+      fail();
+    }
+    return go$r;
+  };
+  const count = go(acc.counts);
   if (count.tag === "Nothing") {
     return { result: snoc(acc.result)(item), counts: insert(ordString)(item)(1)(acc.counts) };
   }
@@ -17881,6 +19110,7 @@ pub enum Value {
     Array(std::rc::Rc<Vec<UnknownType>>),
     Func(std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>),
     Record(perceus_ptr::PerceusPtr<Record_a>),
+    Class(std::rc::Rc<dyn std::any::Any>),
 }
 
 impl Value {
@@ -17911,6 +19141,9 @@ impl Value {
     pub fn as_record_mut(&mut self) -> &mut perceus_ptr::PerceusPtr<Record_a> {
         if let Value::Record(v) = self { v } else { panic!("Expected Record"); }
     }
+    pub fn unwrap_class<T: 'static>(&self) -> &T {
+        if let Value::Class(v) = self { v.downcast_ref::<T>().unwrap() } else { panic!("Expected Class"); }
+    }
     pub fn drop_explicit(self) {
         if let Value::Record(v) = self { v.drop_explicit(); }
     }
@@ -17933,8 +19166,46 @@ pub struct Record_a {
     pub tag: &'static str,
     pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,
     pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,
-` + foldMap7((field) => {
-  if (member2(field)(fromFoldable8(["unwrap", "clone", "as_ref", "tag", "vals", "call"]))) {
+` + foldableArray.foldMap(monoidString)((field) => {
+  if ((() => {
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v = go$a0;
+        if (v.tag === "Leaf") {
+          go$c = false;
+          go$r = false;
+          continue;
+        }
+        if (v.tag === "Node") {
+          const v1 = ordString.compare(field)(v._3);
+          if (v1 === "LT") {
+            go$a0 = v._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = true;
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    return go(foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf)([
+      "unwrap",
+      "clone",
+      "as_ref",
+      "tag",
+      "vals",
+      "call"
+    ]));
+  })()) {
     return "";
   }
   return "    pub " + sanitizeIdent(field) + ": Option<UnknownType>,\n";
@@ -17967,20 +19238,20 @@ var boxUnbox = (expected) => (actual) => (code) => {
   if (expStr === actStr) {
     return code;
   }
-  const v = unwrapType(actual);
-  const v1 = unwrapType(expected);
-  if (v1.tag === "Func") {
-    if (v.tag === "Func") {
-      const expRetRem2 = v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2;
-      if (0 < v1._1.length) {
-        return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(false)(v1._1[0]) + "| -> " + codegenExprType(true)(expRetRem2) + " { " + boxUnbox(expRetRem2)(v._1.length > 1 ? $ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2) : v._2)("_f(" + boxUnbox(0 < v._1.length ? v._1[0] : Any)(v1._1[0])("_a") + ")") + " } })";
+  const v1 = unwrapType(actual);
+  const v2 = unwrapType(expected);
+  if (v2.tag === "Func") {
+    if (v1.tag === "Func") {
+      const expRetRem2 = v2._1.length > 1 ? $ExprType("Func", sliceImpl(1, v2._1.length, v2._1), v2._2) : v2._2;
+      if (0 < v2._1.length) {
+        return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(false)(v2._1[0]) + "| -> " + codegenExprType(true)(expRetRem2) + " { " + boxUnbox(expRetRem2)(v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2)("_f(" + boxUnbox(0 < v1._1.length ? v1._1[0] : Any)(v2._1[0])("_a") + ")") + " } })";
       }
-      return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(false)(Any) + "| -> " + codegenExprType(true)(expRetRem2) + " { " + boxUnbox(expRetRem2)(v._1.length > 1 ? $ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2) : v._2)("_f(" + boxUnbox(0 < v._1.length ? v._1[0] : Any)(Any)("_a") + ")") + " } })";
+      return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(false)(Any) + "| -> " + codegenExprType(true)(expRetRem2) + " { " + boxUnbox(expRetRem2)(v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2)("_f(" + boxUnbox(0 < v1._1.length ? v1._1[0] : Any)(Any)("_a") + ")") + " } })";
     }
-    const expRetRem = v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2;
-    if (0 < v1._1.length) {
+    const expRetRem = v2._1.length > 1 ? $ExprType("Func", sliceImpl(1, v2._1.length, v2._1), v2._2) : v2._2;
+    if (0 < v2._1.length) {
       if (actStr === "crate::UnknownType" || actStr === "crate::Value") {
-        return "std::rc::Rc::new({ let _f = (" + code + ").unwrap_func(); move |mut _a: " + codegenExprType(false)(v1._1[0]) + "| -> " + codegenExprType(true)(expRetRem) + " { " + boxUnbox(expRetRem)(Any)("_f(" + boxUnbox(Any)(v1._1[0])("_a") + ")") + " } })";
+        return "std::rc::Rc::new({ let _f = (" + code + ").unwrap_func(); move |mut _a: " + codegenExprType(false)(v2._1[0]) + "| -> " + codegenExprType(true)(expRetRem) + " { " + boxUnbox(expRetRem)(Any)("_f(" + boxUnbox(Any)(v2._1[0])("_a") + ")") + " } })";
       }
       return code;
     }
@@ -17989,16 +19260,22 @@ var boxUnbox = (expected) => (actual) => (code) => {
     }
     return code;
   }
-  if (v.tag === "Func") {
-    const actRetRem = v._1.length > 1 ? $ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2) : v._2;
-    if (0 < v._1.length) {
+  if (v1.tag === "Func") {
+    const actRetRem = v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2;
+    if (0 < v1._1.length) {
       if (expStr === "crate::UnknownType" || expStr === "crate::Value") {
-        return "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(Any)(actRetRem)("_f(" + boxUnbox(v._1[0])(Any)("_a") + ")") + " } }))";
+        return _trace(
+          "BOXUNBOX: expected=" + printType(expected) + ", actual=" + printType(actual) + ", expStr=" + expStr + ", code=" + code,
+          (v3) => "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(Any)(actRetRem)("_f(" + boxUnbox(v1._1[0])(Any)("_a") + ")") + " } }))"
+        );
       }
       return code;
     }
     if (expStr === "crate::UnknownType" || expStr === "crate::Value") {
-      return "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(Any)(actRetRem)("_f(" + boxUnbox(Any)(Any)("_a") + ")") + " } }))";
+      return _trace(
+        "BOXUNBOX: expected=" + printType(expected) + ", actual=" + printType(actual) + ", expStr=" + expStr + ", code=" + code,
+        (v3) => "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(Any)(actRetRem)("_f(" + boxUnbox(Any)(Any)("_a") + ")") + " } }))"
+      );
     }
     return code;
   }
@@ -18108,7 +19385,38 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   const v = getInner(fn);
   if (v.tag === "Var") {
     const sName = sanitizeIdent(v._1._2);
-    if (member12(sName)(bound)) {
+    if ((() => {
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v12 = ordString.compare(sName)(v$1._3);
+            if (v12 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v12 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v12 === "EQ") {
+              go$c = false;
+              go$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      return go(bound);
+    })()) {
       const v12 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(fn))(fnCode)(0);
       return boxUnbox(appTy)(v12._1)(v12._2);
     }
@@ -18199,8 +19507,70 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       }
       return "";
     }
-    if (member12(fullName === "main" ? "main" : fullName)(aritiesMap)) {
-      const v$1 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
+    if ((() => {
+      const $0 = fullName === "main" ? "main" : fullName;
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v12 = ordString.compare($0)(v$1._3);
+            if (v12 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v12 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v12 === "EQ") {
+              go$c = false;
+              go$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      return go(aritiesMap);
+    })()) {
+      const $0 = fullName === "main" ? "main" : fullName;
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$12 = go$a0;
+          if (v$12.tag === "Leaf") {
+            go$c = false;
+            go$r = Nothing;
+            continue;
+          }
+          if (v$12.tag === "Node") {
+            const v12 = ordString.compare($0)(v$12._3);
+            if (v12 === "LT") {
+              go$a0 = v$12._5;
+              continue;
+            }
+            if (v12 === "GT") {
+              go$a0 = v$12._6;
+              continue;
+            }
+            if (v12 === "EQ") {
+              go$c = false;
+              go$r = $Maybe("Just", v$12._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const v$1 = go(aritiesMap);
       const n = (() => {
         if (v$1.tag === "Just") {
           return getArity(v$1._1);
@@ -18210,13 +19580,43 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         }
         fail();
       })();
-      const $0 = lookup5(fullName === "main" ? "main" : fullName)(aritiesMap);
+      const $1 = fullName === "main" ? "main" : fullName;
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$2 = go$1$a0;
+          if (v$2.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = Nothing;
+            continue;
+          }
+          if (v$2.tag === "Node") {
+            const v12 = ordString.compare($1)(v$2._3);
+            if (v12 === "LT") {
+              go$1$a0 = v$2._5;
+              continue;
+            }
+            if (v12 === "GT") {
+              go$1$a0 = v$2._6;
+              continue;
+            }
+            if (v12 === "EQ") {
+              go$1$c = false;
+              go$1$r = $Maybe("Just", v$2._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
+      const $2 = go$1(aritiesMap);
       const fnTy = (() => {
-        if ($0.tag === "Nothing") {
+        if ($2.tag === "Nothing") {
           return Any;
         }
-        if ($0.tag === "Just") {
-          return $0._1;
+        if ($2.tag === "Just") {
+          return $2._1;
         }
         fail();
       })();
@@ -18228,16 +19628,16 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         }
         if (m < n) {
           const missingCount = n - m | 0;
-          const $1 = extractAllArgTypes(fnTy);
-          const missingEtasTypes = m < 1 ? $1 : sliceImpl(m, $1.length, $1);
-          const evalArgs = mapWithIndexArray((i) => (v13) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
-          const etaArgs = mapWithIndexArray((i) => (v13) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
-          return boxUnbox(appTy)(Any)("{\n" + joinWith("")(mapWithIndexArray((i) => (argCode) => "        let mut eval_arg_" + showIntImpl(i) + " = " + argCode + ";\n")(argsCodeArray)) + "    " + foldrArray((etaArg) => (v2) => $Tuple(
-            v2._1 - 1 | 0,
+          const $3 = extractAllArgTypes(fnTy);
+          const missingEtasTypes = m < 1 ? $3 : sliceImpl(m, $3.length, $3);
+          const evalArgs = mapWithIndexArray((i) => (v23) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
+          const etaArgs = mapWithIndexArray((i) => (v23) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
+          return boxUnbox(appTy)(Any)("{\n" + joinWith("")(mapWithIndexArray((i) => (boxedArg) => "        let mut eval_arg_" + showIntImpl(i) + " = " + boxedArg + ";\n")(boxedArgs)) + "    " + foldrArray((etaArg) => (v3) => $Tuple(
+            v3._1 - 1 | 0,
             "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")([
               ...evalArgs,
-              ...v2._1 < 1 ? [] : sliceImpl(0, v2._1, etaArgs)
-            ])) + "    " + v2._2 + "\n}))"
+              ...v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs)
+            ])) + "    " + v3._2 + "\n}))"
           ))($Tuple(
             missingCount - 1 | 0,
             boxUnbox(Any)(extractFinalRetType(fnTy))(fullName + "(" + joinWith(", ")([
@@ -18246,13 +19646,15 @@ var genApp = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
             ]) + ")")
           ))(etaArgs)._2 + "\n}");
         }
-        const v12 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(foldlArray((acc) => (v13) => $BackendSyntax(
+        const v22 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(foldlArray((acc) => (v23) => $BackendSyntax(
           "App",
           acc,
           [$BackendSyntax("Var", $Qualified(Nothing, ""))]
         ))(fn)(n < 1 ? [] : sliceImpl(0, n, argsArray))))(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, boxedArgs)) + ")")(n);
-        return boxUnbox(appTy)(v12._1)(v12._2);
+        return boxUnbox(appTy)(v22._1)(v22._2);
       }
+      const v2 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(fn))(fnCode)(0);
+      return boxUnbox(appTy)(v2._1)(v2._2);
     }
   }
   const v1 = buildCall(inferTypeExpr(currentMod)(aritiesMap)(bound)(fn))(fnCode)(0);
@@ -18289,9 +19691,100 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         freeVars: thisClosureCaptures,
         isInnermost: false,
         code: ($1 === "_" ? "std::rc::Rc::new(move |" + $1 + ": " : "std::rc::Rc::new(move |mut " + $1 + ": ") + codegenExprType(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
-          (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
+          (v1) => {
+            const go = (go$a0$copy) => {
+              let go$a0 = go$a0$copy, go$c = true, go$r;
+              while (go$c) {
+                const v$1 = go$a0;
+                if (v$1.tag === "Leaf") {
+                  go$c = false;
+                  go$r = false;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$1 = ordString.compare(v1)(v$1._3);
+                  if (v1$1 === "LT") {
+                    go$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$1 === "GT") {
+                    go$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$1 === "EQ") {
+                    go$c = false;
+                    go$r = true;
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$r;
+            };
+            const go$1 = (go$1$a0$copy) => {
+              let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+              while (go$1$c) {
+                const v$1 = go$1$a0;
+                if (v$1.tag === "Leaf") {
+                  go$1$c = false;
+                  go$1$r = false;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$1 = ordString.compare(v1)(v$1._3);
+                  if (v1$1 === "LT") {
+                    go$1$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$1 === "GT") {
+                    go$1$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$1 === "EQ") {
+                    go$1$c = false;
+                    go$1$r = true;
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$1$r;
+            };
+            return !go(aritiesMap) && !go$1(allZeroArity);
+          },
           fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
-        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    drop(" + $1 + ");\n" : "") + "    " + st.code + "\n})"
+        ))) + ((() => {
+          const go = (go$a0$copy) => {
+            let go$a0 = go$a0$copy, go$c = true, go$r;
+            while (go$c) {
+              const v$1 = go$a0;
+              if (v$1.tag === "Leaf") {
+                go$c = false;
+                go$r = false;
+                continue;
+              }
+              if (v$1.tag === "Node") {
+                const v1 = ordString.compare($1)(v$1._3);
+                if (v1 === "LT") {
+                  go$a0 = v$1._5;
+                  continue;
+                }
+                if (v1 === "GT") {
+                  go$a0 = v$1._6;
+                  continue;
+                }
+                if (v1 === "EQ") {
+                  go$c = false;
+                  go$r = true;
+                  continue;
+                }
+              }
+              fail();
+            }
+            return go$r;
+          };
+          return $1 !== "_" && !go(st.freeVars);
+        })() ? "    drop(" + $1 + ");\n" : "") + "    " + st.code + "\n})"
       };
     };
   })({
@@ -18303,12 +19796,72 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       return boxUnbox(remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy)(inferTypeExpr(currentMod)(aritiesMap)(newBound)(body))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(newBound)(unsafeDifference(
         ordString.compare,
         freeVariables(body),
-        fromFoldable8(paramsArr)
+        foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf)(paramsArr)
       ))(false)(body));
     })()
   })(mapWithIndexArray(Tuple)(paramsArr));
   const toCloneOutside = filterImpl(
-    (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
+    (v) => {
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1 = ordString.compare(v)(v$1._3);
+            if (v1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$c = false;
+              go$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$1 = go$1$a0;
+          if (v$1.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1 = ordString.compare(v)(v$1._3);
+            if (v1 === "LT") {
+              go$1$a0 = v$1._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$1$a0 = v$1._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$1$c = false;
+              go$1$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$1$r;
+      };
+      return !go(aritiesMap) && !go$1(allZeroArity);
+    },
     fromFoldableImpl(
       foldableSet.foldr,
       unsafeIntersectionWith(ordString.compare, $$const, finalState.freeVars, alive)
@@ -18348,11 +19901,131 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   if (isEffectNode(v) && !inEffectBlock) {
     const freeVars = freeVariables(v);
     const insideClonesCode = "// FREEVARS: " + joinWith(", ")(fromFoldableImpl(foldableSet.foldr, freeVars)) + "\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
-      (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
+      (v1) => {
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v$1 = go$a0;
+            if (v$1.tag === "Leaf") {
+              go$c = false;
+              go$r = false;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordString.compare(v1)(v$1._3);
+              if (v1$1 === "LT") {
+                go$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$c = false;
+                go$r = true;
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = false;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordString.compare(v1)(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = true;
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
+        return !go(aritiesMap) && !go$1(allZeroArity);
+      },
       fromFoldableImpl(foldableSet.foldr, freeVars)
     )));
     const toCloneOutside = filterImpl(
-      (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
+      (v1) => {
+        const go = (go$a0$copy) => {
+          let go$a0 = go$a0$copy, go$c = true, go$r;
+          while (go$c) {
+            const v$1 = go$a0;
+            if (v$1.tag === "Leaf") {
+              go$c = false;
+              go$r = false;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordString.compare(v1)(v$1._3);
+              if (v1$1 === "LT") {
+                go$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$c = false;
+                go$r = true;
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$r;
+        };
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = false;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1$1 = ordString.compare(v1)(v$1._3);
+              if (v1$1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1$1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1$1 === "EQ") {
+                go$1$c = false;
+                go$1$r = true;
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
+        return !go(aritiesMap) && !go$1(allZeroArity);
+      },
       fromFoldableImpl(foldableSet.foldr, unsafeIntersectionWith(ordString.compare, $$const, freeVars, alive))
     );
     const outsideClonesCode = joinWith("")(arrayMap((v1) => "let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n    ")(toCloneOutside));
@@ -18378,7 +20051,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
     };
     const inner = stripTyped(v._2);
     if (inner.tag === "Abs") {
-      return "/* Typed Abs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
+      const paramsArr = arrayMap((v1) => {
         if (v1._1.tag === "Just") {
           return sanitizeIdent(v1._1._1);
         }
@@ -18386,10 +20059,26 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return "lvl_" + showIntImpl(v1._2);
         }
         fail();
-      })(inner._1))(v._1)(inner._2));
+      })(inner._1);
+      return "/* Typed Abs */" + boxUnbox(v._1)((() => {
+        const retTy = extractFinalRetType(v._1);
+        const argTys = extractAllArgTypes(v._1);
+        const $0 = paramsArr.length;
+        const remainingArgTys = $0 < 1 ? argTys : sliceImpl($0, argTys.length, argTys);
+        return $ExprType(
+          "Func",
+          mapWithIndexArray((i) => (v1) => {
+            if (i >= 0 && i < argTys.length) {
+              return argTys[i];
+            }
+            return Any;
+          })(paramsArr),
+          remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, retTy) : retTy
+        );
+      })())(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(paramsArr)(v._1)(inner._2));
     }
     if (inner.tag === "UncurriedAbs") {
-      return "/* Typed UncurriedAbs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
+      const paramsArr = arrayMap((v1) => {
         if (v1._1.tag === "Just") {
           return sanitizeIdent(v1._1._1);
         }
@@ -18397,10 +20086,26 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return "lvl_" + showIntImpl(v1._2);
         }
         fail();
-      })(inner._1))(v._1)(inner._2));
+      })(inner._1);
+      return "/* Typed UncurriedAbs */" + boxUnbox(v._1)((() => {
+        const retTy = extractFinalRetType(v._1);
+        const argTys = extractAllArgTypes(v._1);
+        const $0 = paramsArr.length;
+        const remainingArgTys = $0 < 1 ? argTys : sliceImpl($0, argTys.length, argTys);
+        return $ExprType(
+          "Func",
+          mapWithIndexArray((i) => (v1) => {
+            if (i >= 0 && i < argTys.length) {
+              return argTys[i];
+            }
+            return Any;
+          })(paramsArr),
+          remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, retTy) : retTy
+        );
+      })())(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(paramsArr)(v._1)(inner._2));
     }
     if (inner.tag === "UncurriedEffectAbs") {
-      return "/* Typed UncurriedEffectAbs */" + boxUnbox(v._1)(v._1)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(arrayMap((v1) => {
+      const paramsArr = arrayMap((v1) => {
         if (v1._1.tag === "Just") {
           return sanitizeIdent(v1._1._1);
         }
@@ -18408,7 +20113,55 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return "lvl_" + showIntImpl(v1._2);
         }
         fail();
-      })(inner._1))(v._1)(inner._2));
+      })(inner._1);
+      return "/* Typed UncurriedEffectAbs */" + boxUnbox(v._1)((() => {
+        const retTy = extractFinalRetType(v._1);
+        const argTys = extractAllArgTypes(v._1);
+        const $0 = paramsArr.length;
+        const remainingArgTys = $0 < 1 ? argTys : sliceImpl($0, argTys.length, argTys);
+        return $ExprType(
+          "Func",
+          mapWithIndexArray((i) => (v1) => {
+            if (i >= 0 && i < argTys.length) {
+              return argTys[i];
+            }
+            return Any;
+          })(paramsArr),
+          remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, retTy) : retTy
+        );
+      })())(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(paramsArr)(v._1)(inner._2));
+    }
+    if (inner.tag === "Lit" && inner._1.tag === "LitRecord") {
+      const v1 = unwrapType(v._1);
+      if (v1.tag === "ADT" && v1._2.length >= 2) {
+        const propsArr = fromFoldableImpl(foldrArray, inner._1._1);
+        const modName = joinWith("_")((() => {
+          const $0 = v1._2.length - 1 | 0;
+          if ($0 < 1) {
+            return [];
+          }
+          return sliceImpl(0, $0, v1._2);
+        })());
+        const className = sanitizeIdent((() => {
+          const $0 = v1._2.length - 1 | 0;
+          if ($0 >= 0 && $0 < v1._2.length) {
+            return v1._2[$0];
+          }
+          return "Unknown";
+        })());
+        return (modName === currentMod ? "crate::Value::Class(std::rc::Rc::new(crate::Dict_" + className + " { " : "crate::Value::Class(std::rc::Rc::new(Purs_" + modName + "::Dict_" + className + " { ") + joinWith(", ")(mapWithIndexArray((i) => (v2) => sanitizeIdent(v2._1) + ": " + boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(unsafeUnionWith(
+          ordString.compare,
+          $$const,
+          alive,
+          foldlArray((acc) => (v3) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v3._2)))(Leaf)((() => {
+            const $0 = i + 1 | 0;
+            if ($0 < 1) {
+              return propsArr;
+            }
+            return sliceImpl($0, propsArr.length, propsArr);
+          })())
+        ))(false)(v2._2)))(propsArr)) + " }))";
+      }
     }
     const innerTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(inner);
     return "/* Typed " + codegenExprType(true)(v._1) + " <- " + codegenExprType(true)(innerTy) + " : " + printAST(inner) + " */" + boxUnbox(v._1)(innerTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(bound)(alive)(inEffectBlock)(inner));
@@ -18523,17 +20276,75 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       if (v._1._1.tag === "OpBooleanNot") {
         return "!(" + boxUnbox($$Boolean)(aTy)(aStrRaw) + " /* aTy: " + codegenExprType(true)(aTy) + ", a is " + printAST(v._1._2) + ", fn ty is " + (() => {
           if (v._1._2.tag === "App") {
-            const v1 = lookup5("lvl_3")(bound);
-            const v1$1 = lookup5("lvl_3")(aritiesMap);
+            const go = (go$a0$copy) => {
+              let go$a0 = go$a0$copy, go$c = true, go$r;
+              while (go$c) {
+                const v$1 = go$a0;
+                if (v$1.tag === "Leaf") {
+                  go$c = false;
+                  go$r = Nothing;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v12 = ordString.compare("lvl_3")(v$1._3);
+                  if (v12 === "LT") {
+                    go$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v12 === "GT") {
+                    go$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v12 === "EQ") {
+                    go$c = false;
+                    go$r = $Maybe("Just", v$1._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$r;
+            };
+            const v1 = go(bound);
+            const go$1 = (go$1$a0$copy) => {
+              let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+              while (go$1$c) {
+                const v$1 = go$1$a0;
+                if (v$1.tag === "Leaf") {
+                  go$1$c = false;
+                  go$1$r = Nothing;
+                  continue;
+                }
+                if (v$1.tag === "Node") {
+                  const v1$12 = ordString.compare("lvl_3")(v$1._3);
+                  if (v1$12 === "LT") {
+                    go$1$a0 = v$1._5;
+                    continue;
+                  }
+                  if (v1$12 === "GT") {
+                    go$1$a0 = v$1._6;
+                    continue;
+                  }
+                  if (v1$12 === "EQ") {
+                    go$1$c = false;
+                    go$1$r = $Maybe("Just", v$1._4);
+                    continue;
+                  }
+                }
+                fail();
+              }
+              return go$1$r;
+            };
+            const v1$1 = go$1(aritiesMap);
             return printType(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1._2._1)) + ", lvl_3 in bound: " + (() => {
               if (v1.tag === "Just") {
-                return printType(v1._1);
+                return printType(v1._1) + ", lvl_3 in arities: ";
               }
               if (v1.tag === "Nothing") {
-                return "none";
+                return "none, lvl_3 in arities: ";
               }
               fail();
-            })() + ", lvl_3 in arities: " + (() => {
+            })() + (() => {
               if (v1$1.tag === "Just") {
                 return printType(v1$1._1);
               }
@@ -18752,7 +20563,28 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      return boxUnbox(inferTypeExpr(currentMod)(aritiesMap)(bound)(v))(Any)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1) + ".unwrap_record()." + sanitizeIdent(v._2._1) + ".clone().unwrap()");
+      const baseStr = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1);
+      return boxUnbox(inferTypeExpr(currentMod)(aritiesMap)(bound)(v))(Any)((() => {
+        const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1));
+        if (v1.tag === "ADT" && v1._2.length >= 2) {
+          const modName = joinWith("_")((() => {
+            const $0 = v1._2.length - 1 | 0;
+            if ($0 < 1) {
+              return [];
+            }
+            return sliceImpl(0, $0, v1._2);
+          })());
+          const className = sanitizeIdent((() => {
+            const $0 = v1._2.length - 1 | 0;
+            if ($0 >= 0 && $0 < v1._2.length) {
+              return v1._2[$0];
+            }
+            return "Unknown";
+          })());
+          return baseStr + ".unwrap_class::<" + (modName === currentMod ? "crate::Dict_" + className : "Purs_" + modName + "::Dict_" + className) + ">()." + sanitizeIdent(v._2._1) + ".clone()";
+        }
+        return baseStr + ".unwrap_record()." + sanitizeIdent(v._2._1) + ".clone().unwrap()";
+      })());
     }
     if (v._2.tag === "GetCtorField") {
       return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1) + ".unwrap_record().vals.as_ref().unwrap()[" + showIntImpl(v._2._6) + "].clone()";
@@ -18761,15 +20593,75 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   }
   if (v.tag === "Var") {
     const sName = sanitizeIdent(v._1._2);
-    const v1 = lookup5(sName)(bound);
-    if (v1.tag === "Just") {
-      const varCode = unwrapType(v1._1).tag === "Func" ? sName : sName + "()";
-      if (member2(sName)(alive)) {
+    const go = (go$a0$copy) => {
+      let go$a0 = go$a0$copy, go$c = true, go$r;
+      while (go$c) {
+        const v$1 = go$a0;
+        if (v$1.tag === "Leaf") {
+          go$c = false;
+          go$r = Nothing;
+          continue;
+        }
+        if (v$1.tag === "Node") {
+          const v1 = ordString.compare(sName)(v$1._3);
+          if (v1 === "LT") {
+            go$a0 = v$1._5;
+            continue;
+          }
+          if (v1 === "GT") {
+            go$a0 = v$1._6;
+            continue;
+          }
+          if (v1 === "EQ") {
+            go$c = false;
+            go$r = $Maybe("Just", v$1._4);
+            continue;
+          }
+        }
+        fail();
+      }
+      return go$r;
+    };
+    const v2 = go(bound);
+    if (v2.tag === "Just") {
+      const varCode = unwrapType(v2._1).tag === "Func" ? sName : sName + "()";
+      if ((() => {
+        const go$1 = (go$1$a0$copy) => {
+          let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+          while (go$1$c) {
+            const v$1 = go$1$a0;
+            if (v$1.tag === "Leaf") {
+              go$1$c = false;
+              go$1$r = false;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1 = ordString.compare(sName)(v$1._3);
+              if (v1 === "LT") {
+                go$1$a0 = v$1._5;
+                continue;
+              }
+              if (v1 === "GT") {
+                go$1$a0 = v$1._6;
+                continue;
+              }
+              if (v1 === "EQ") {
+                go$1$c = false;
+                go$1$r = true;
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$1$r;
+        };
+        return go$1(alive);
+      })()) {
         return varCode + ".clone()";
       }
       return varCode;
     }
-    if (v1.tag === "Nothing") {
+    if (v2.tag === "Nothing") {
       const fullName = (() => {
         if (v._1._1.tag === "Just") {
           return replaceAll(".")("_")(v._1._1._1) + "_";
@@ -18780,12 +20672,41 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         fail();
       })() + sanitizeIdent(v._1._2);
       const key = fullName === "main" ? "main" : fullName;
-      const v2 = lookup5(key)(aritiesMap);
-      const expectedArgsLength = (() => {
-        if (v2.tag === "Just") {
-          return getArity(v2._1);
+      const go$1 = (go$1$a0$copy) => {
+        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+        while (go$1$c) {
+          const v$1 = go$1$a0;
+          if (v$1.tag === "Leaf") {
+            go$1$c = false;
+            go$1$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1 = ordString.compare(key)(v$1._3);
+            if (v1 === "LT") {
+              go$1$a0 = v$1._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$1$a0 = v$1._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$1$c = false;
+              go$1$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
         }
-        if (v2.tag === "Nothing") {
+        return go$1$r;
+      };
+      const v3 = go$1(aritiesMap);
+      const expectedArgsLength = (() => {
+        if (v3.tag === "Just") {
+          return getArity(v3._1);
+        }
+        if (v3.tag === "Nothing") {
           return 0;
         }
         fail();
@@ -18794,7 +20715,36 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         if (expectedArgsLength === 0) {
           return fullName + "()";
         }
-        const $0 = lookup5(key)(aritiesMap);
+        const go$2 = (go$2$a0$copy) => {
+          let go$2$a0 = go$2$a0$copy, go$2$c = true, go$2$r;
+          while (go$2$c) {
+            const v$1 = go$2$a0;
+            if (v$1.tag === "Leaf") {
+              go$2$c = false;
+              go$2$r = Nothing;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1 = ordString.compare(key)(v$1._3);
+              if (v1 === "LT") {
+                go$2$a0 = v$1._5;
+                continue;
+              }
+              if (v1 === "GT") {
+                go$2$a0 = v$1._6;
+                continue;
+              }
+              if (v1 === "EQ") {
+                go$2$c = false;
+                go$2$r = $Maybe("Just", v$1._4);
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$2$r;
+        };
+        const $0 = go$2(aritiesMap);
         const fnTy = (() => {
           if ($0.tag === "Nothing") {
             return Any;
@@ -18805,16 +20755,47 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           fail();
         })();
         const expectedArgTys = extractAllArgTypes(fnTy);
-        const etaArgs = mapWithIndexArray((i) => (v2$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
-        return boxUnbox(fnTy)(Any)(foldrArray((etaArg) => (v3) => $Tuple(
-          v3._1 - 1 | 0,
-          "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs))) + " " + v3._2 + " }))"
+        const etaArgs = mapWithIndexArray((i) => (v3$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
+        return boxUnbox(fnTy)(Any)(foldrArray((etaArg) => (v4) => $Tuple(
+          v4._1 - 1 | 0,
+          "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v4._1 < 1 ? [] : sliceImpl(0, v4._1, etaArgs))) + " " + v4._2 + " }))"
         ))($Tuple(
           expectedArgsLength - 1 | 0,
           boxUnbox(Any)(extractFinalRetType(fnTy))(fullName + "(" + joinWith(", ")(mapWithIndexArray((i) => (eta) => boxUnbox(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any)(Any)(eta + ".clone()"))(etaArgs)) + ")")
         ))(etaArgs)._2);
       })();
-      if (member2(fullName)(alive)) {
+      if ((() => {
+        const go$2 = (go$2$a0$copy) => {
+          let go$2$a0 = go$2$a0$copy, go$2$c = true, go$2$r;
+          while (go$2$c) {
+            const v$1 = go$2$a0;
+            if (v$1.tag === "Leaf") {
+              go$2$c = false;
+              go$2$r = false;
+              continue;
+            }
+            if (v$1.tag === "Node") {
+              const v1 = ordString.compare(fullName)(v$1._3);
+              if (v1 === "LT") {
+                go$2$a0 = v$1._5;
+                continue;
+              }
+              if (v1 === "GT") {
+                go$2$a0 = v$1._6;
+                continue;
+              }
+              if (v1 === "EQ") {
+                go$2$c = false;
+                go$2$r = true;
+                continue;
+              }
+            }
+            fail();
+          }
+          return go$2$r;
+        };
+        return go$2(alive);
+      })()) {
         return varCode + ".clone()";
       }
       return varCode;
@@ -18837,29 +20818,60 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       $$const,
       alive,
       bodyVars
-    ))(false)(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
+    ))(false)(v._3) + ";\n" + ((() => {
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1 = ordString.compare(name2)(v$1._3);
+            if (v1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$c = false;
+              go$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      return go(bodyVars);
+    })() ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
   }
   if (v.tag === "EffectBind") {
-    const stripEffectDefer = (v1) => {
-      if (v1.tag === "EffectDefer") {
-        return stripEffectDefer(v1._1);
+    const stripEffectDefer = (v12) => {
+      if (v12.tag === "EffectDefer") {
+        return stripEffectDefer(v12._1);
       }
-      if (v1.tag === "Abs") {
-        return stripEffectDefer(v1._2);
+      if (v12.tag === "Abs") {
+        return stripEffectDefer(v12._2);
       }
-      if (v1.tag === "UncurriedEffectAbs") {
-        return stripEffectDefer(v1._2);
+      if (v12.tag === "UncurriedEffectAbs") {
+        return stripEffectDefer(v12._2);
       }
-      if (v1.tag === "Let") {
-        return $BackendSyntax("Let", v1._1, v1._2, v1._3, stripEffectDefer(v1._4));
+      if (v12.tag === "Let") {
+        return $BackendSyntax("Let", v12._1, v12._2, v12._3, stripEffectDefer(v12._4));
       }
-      if (v1.tag === "LetRec") {
-        return $BackendSyntax("LetRec", v1._1, v1._2, stripEffectDefer(v1._3));
+      if (v12.tag === "LetRec") {
+        return $BackendSyntax("LetRec", v12._1, v12._2, stripEffectDefer(v12._3));
       }
-      if (v1.tag === "Typed") {
-        return $BackendSyntax("Typed", v1._1, stripEffectDefer(v1._2));
+      if (v12.tag === "Typed") {
+        return $BackendSyntax("Typed", v12._1, stripEffectDefer(v12._2));
       }
-      return v1;
+      return v12;
     };
     const realVal = stripEffectDefer(v._3);
     const name2 = (() => {
@@ -18871,31 +20883,64 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       }
       fail();
     })();
-    const isUncurriedApp = (v1) => {
-      if (v1.tag === "UncurriedEffectApp") {
+    const isUncurriedApp = (v12) => {
+      if (v12.tag === "UncurriedEffectApp") {
         return true;
       }
-      if (v1.tag === "PrimEffect") {
+      if (v12.tag === "PrimEffect") {
         return true;
       }
-      if (v1.tag === "EffectBind") {
+      if (v12.tag === "EffectBind") {
         return true;
       }
-      if (v1.tag === "Let") {
-        return isUncurriedApp(v1._4);
+      if (v12.tag === "Let") {
+        return isUncurriedApp(v12._4);
       }
-      if (v1.tag === "LetRec") {
-        return isUncurriedApp(v1._3);
+      if (v12.tag === "LetRec") {
+        return isUncurriedApp(v12._3);
       }
-      return v1.tag === "Typed" && isUncurriedApp(v1._2);
+      return v12.tag === "Typed" && isUncurriedApp(v12._2);
     };
+    const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3));
+    const boundTy = v1.tag === "ADT" && v1._3.length === 1 ? v1._3[0] : Any;
     const rawValCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
       freeVariables(v._4)
     ))(true)(realVal);
-    return "{\n    let mut " + name2 + " = " + (isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func(f) = &_val_eval {\n            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
+    return "{\n    let mut " + name2 + " = " + boxUnbox(boundTy)(Any)(isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func(f) = &_val_eval {\n            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + ((() => {
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1$1 = ordString.compare(name2)(v$1._3);
+            if (v1$1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1$1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1$1 === "EQ") {
+              go$c = false;
+              go$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      return go(freeVariables(v._4));
+    })() ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(insert(ordString)(name2)(boundTy)(bound))(alive)(inEffectBlock)(v._4) + "\n}";
   }
   if (v.tag === "EffectPure") {
     return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(bound)(alive)(false)(v._1);
@@ -18910,7 +20955,38 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       }
       fail();
     })();
-    if (member2(name2)(alive)) {
+    if ((() => {
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = false;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1 = ordString.compare(name2)(v$1._3);
+            if (v1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$c = false;
+              go$r = true;
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      return go(alive);
+    })()) {
       return name2 + ".clone()";
     }
     return name2;
@@ -19056,18 +21132,47 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
   const mergedArities = unsafeUnionWith(
     ordString.compare,
     $$const,
-    fromFoldable23(arrayMap((v) => {
+    fromFoldable3(arrayMap((v) => {
       const rawIdentName = sanitizeIdent(v._1);
       return $Tuple(rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName, inferTypeExpr(modNameStr)(aritiesMap)(Leaf)(v._2));
     })(group2.bindings)),
     aritiesMap
   );
   return {
-    code: foldMap13((v) => {
+    code: foldableArray.foldMap(monoidString)((v) => {
       const rawIdentName = sanitizeIdent(replaceAll(".")("_")(v._1));
       const innerExpr = v._2.tag === "Typed" ? v._2._2 : v._2;
       const identName = rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName;
-      const $0 = lookup5(identName)(mergedArities);
+      const go = (go$a0$copy) => {
+        let go$a0 = go$a0$copy, go$c = true, go$r;
+        while (go$c) {
+          const v$1 = go$a0;
+          if (v$1.tag === "Leaf") {
+            go$c = false;
+            go$r = Nothing;
+            continue;
+          }
+          if (v$1.tag === "Node") {
+            const v1 = ordString.compare(identName)(v$1._3);
+            if (v1 === "LT") {
+              go$a0 = v$1._5;
+              continue;
+            }
+            if (v1 === "GT") {
+              go$a0 = v$1._6;
+              continue;
+            }
+            if (v1 === "EQ") {
+              go$c = false;
+              go$r = $Maybe("Just", v$1._4);
+              continue;
+            }
+          }
+          fail();
+        }
+        return go$r;
+      };
+      const $0 = go(mergedArities);
       const inferredType = (() => {
         if ($0.tag === "Nothing") {
           return Any;
@@ -19092,7 +21197,10 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
         })());
         const mbLoop = isSelfRecursive ? $Maybe("Just", { name: identName, params: deduped }) : Nothing;
         const paramPairs = zipWithImpl(Tuple, deduped, allArgTypes);
-        const bound = fromFoldable23(arrayMap((v2) => $Tuple(v2._1 === "_" ? "_" : sanitizeIdent(v2._1), v2._2))(paramPairs));
+        const bound = fromFoldable(ordString)(foldableArray)(arrayMap((v2) => $Tuple(
+          v2._1 === "_" ? "_" : sanitizeIdent(v2._1),
+          v2._2
+        ))(paramPairs));
         return "pub fn " + identName + "(" + joinWith(", ")(arrayMap((v2) => {
           const p = sanitizeIdent(v2._1);
           return (p === "_" ? "" + p + ": " : "mut " + p + ": ") + codegenExprType(true)(v2._2);
@@ -19186,83 +21294,34 @@ var codegenModule = (globalAritiesMap) => (v) => (backendMod) => {
   return "// Code generated by purust for module " + modNameStr + "\n\n" + joinWith("\n")(arrayMap((v1) => "#[derive(Clone)]\npub enum " + sanitizeIdent(v1._1) + " {\n" + joinWith(",\n")(arrayMap((v2) => {
     const fields = arrayMap((v3) => "crate::UnknownType")(v2._2.fields);
     return "    " + sanitizeIdent(v2._1) + (fields.length > 0 ? "(" + joinWith(", ")(fields) + ")" : "");
-  })(toUnfoldable3(v1._2.constructors))) + "\n}\n")(toUnfoldable3(backendMod.dataTypes))) + "\n" + foldlArray((acc) => (group2) => {
+  })(unfoldableArray.unfoldr(stepUnfoldr)($MapIter("IterNode", v1._2.constructors, IterLeaf)))) + "\n}\n")(unfoldableArray.unfoldr(stepUnfoldr)($MapIter(
+    "IterNode",
+    backendMod.dataTypes,
+    IterLeaf
+  )))) + "\n" + joinWith("\n")(arrayMap((v1) => "#[derive(Clone)]\npub struct Dict_" + sanitizeIdent(v1.name) + " {\n" + joinWith(",\n")(concat([
+    mapWithIndexArray((i) => (v2) => {
+      const $0 = v2._1.length - 1 | 0;
+      return ($0 >= 0 && $0 < v2._1.length ? "    pub " + v2._1[$0] : "    pub Super") + showIntImpl(i) + ": crate::UnknownType";
+    })(v1.superclasses),
+    arrayMap((v2) => "    pub " + sanitizeIdent(v2._1) + ": crate::UnknownType")(v1.methods)
+  ])) + "\n}\n")(v.classDecls)) + "\n" + foldlArray((acc) => (group2) => {
     const res = codegenBindingGroup(v.name)(modNameStr)(Leaf)(Leaf)(acc.arities)(group2);
     return { code: acc.code + res.code, arities: res.arities };
   })({ code: "", arities: globalAritiesMap })(backendMod.bindings).code;
 };
 
 // output-es/Main/index.js
-var toUnfoldable4 = /* @__PURE__ */ (() => {
-  const $0 = unfoldableArray.unfoldr(stepUnfoldr);
-  return (x) => $0($MapIter("IterNode", x, IterLeaf));
-})();
-var buildModules2 = /* @__PURE__ */ buildModules(monadAff);
-var member3 = (k) => {
-  const go = (go$a0$copy) => {
-    let go$a0 = go$a0$copy, go$c = true, go$r;
-    while (go$c) {
-      const v = go$a0;
-      if (v.tag === "Leaf") {
-        go$c = false;
-        go$r = false;
-        continue;
-      }
-      if (v.tag === "Node") {
-        const v1 = ordString.compare(k)(v._3);
-        if (v1 === "LT") {
-          go$a0 = v._5;
-          continue;
-        }
-        if (v1 === "GT") {
-          go$a0 = v._6;
-          continue;
-        }
-        if (v1 === "EQ") {
-          go$c = false;
-          go$r = true;
-          continue;
-        }
-      }
-      fail();
+var showMaybe = {
+  show: (v) => {
+    if (v.tag === "Just") {
+      return "(Just " + showStringImpl(v._1) + ")";
     }
-    return go$r;
-  };
-  return go;
-};
-var show2 = (v) => {
-  if (v.tag === "Just") {
-    return "(Just " + showStringImpl(v._1) + ")";
-  }
-  if (v.tag === "Nothing") {
-    return "Nothing";
-  }
-  fail();
-};
-var foldMap8 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
-var toUnfoldable13 = /* @__PURE__ */ (() => {
-  const $0 = unfoldableArray.unfoldr((xs) => {
-    if (xs.tag === "Nil") {
-      return Nothing;
-    }
-    if (xs.tag === "Cons") {
-      return $Maybe("Just", $Tuple(xs._1, xs._2));
+    if (v.tag === "Nothing") {
+      return "Nothing";
     }
     fail();
-  });
-  return (x) => $0((() => {
-    const go = (m$p, z$p) => {
-      if (m$p.tag === "Leaf") {
-        return z$p;
-      }
-      if (m$p.tag === "Node") {
-        return go(m$p._5, $List("Cons", m$p._3, go(m$p._6, z$p)));
-      }
-      fail();
-    };
-    return go(x, Nil);
-  })());
-})();
+  }
+};
 var main = /* @__PURE__ */ (() => {
   const $0 = _makeFiber(
     ffiUtil,
@@ -19394,7 +21453,11 @@ var main = /* @__PURE__ */ (() => {
                     return a;
                   }
                   fail();
-                })(b)(toUnfoldable4(v$1._1.foreign)))(v$1._1.dataDecls))(v$1._1.decls);
+                })(b)(unfoldableArray.unfoldr(stepUnfoldr)($MapIter(
+                  "IterNode",
+                  v$1._1.foreign,
+                  IterLeaf
+                ))))(v$1._1.dataDecls))(v$1._1.decls);
               })();
               go$a1 = v$1._2;
               continue;
@@ -19404,7 +21467,7 @@ var main = /* @__PURE__ */ (() => {
           return go$r;
         };
         const globalArities = go(Leaf)(finalModules);
-        return _bind(loadDirectives)((directives) => _bind(_liftEffect(() => ({ value: Leaf })))((modulesRef) => _bind(buildModules2({
+        return _bind(loadDirectives)((directives) => _bind(_liftEffect(() => ({ value: Leaf })))((modulesRef) => _bind(buildModules(monadAff)({
           directives,
           analyzeCustom: (v$1) => (v1) => Nothing,
           foreignSemantics: coreForeignSemantics,
@@ -19435,7 +21498,39 @@ var main = /* @__PURE__ */ (() => {
                     return 0;
                   };
                   const genFallback = (name2, ty) => {
-                    if (!member3(modPrefix + sanitizeIdent(name2))(Leaf)) {
+                    if ((() => {
+                      const $12 = modPrefix + sanitizeIdent(name2);
+                      const go$1 = (go$1$a0$copy) => {
+                        let go$1$a0 = go$1$a0$copy, go$1$c = true, go$1$r;
+                        while (go$1$c) {
+                          const v$2 = go$1$a0;
+                          if (v$2.tag === "Leaf") {
+                            go$1$c = false;
+                            go$1$r = false;
+                            continue;
+                          }
+                          if (v$2.tag === "Node") {
+                            const v1$1 = ordString.compare($12)(v$2._3);
+                            if (v1$1 === "LT") {
+                              go$1$a0 = v$2._5;
+                              continue;
+                            }
+                            if (v1$1 === "GT") {
+                              go$1$a0 = v$2._6;
+                              continue;
+                            }
+                            if (v1$1 === "EQ") {
+                              go$1$c = false;
+                              go$1$r = true;
+                              continue;
+                            }
+                          }
+                          fail();
+                        }
+                        return go$1$r;
+                      };
+                      return !go$1(Leaf);
+                    })()) {
                       const retTyStr = codegenExprType(true)(extractFinalRetType(ty));
                       return "pub fn " + modPrefix + sanitizeIdent(name2) + "(" + joinWith(", ")(mapWithIndexArray((i) => (argTy) => "mut a" + showIntImpl(i) + ": " + codegenExprType(true)(argTy))(extractAllArgTypes(ty))) + ") -> " + retTyStr + " { " + (() => {
                         if (retTyStr === "i64") {
@@ -19458,11 +21553,11 @@ var main = /* @__PURE__ */ (() => {
                     }
                     return "";
                   };
-                  log2("Found FFI for " + modNameStr + " at: " + show2(ffiPathMb))();
+                  log2("Found FFI for " + modNameStr + " at: " + showMaybe.show(ffiPathMb))();
                   const ffiContent = (() => {
                     if (ffiPathMb.tag === "Just") {
                       const content = readTextFile2(UTF8)(ffiPathMb._1)();
-                      return content + "\n\n" + foldMap8((tup) => {
+                      return content + "\n\n" + foldableArray.foldMap(monoidString)((tup) => {
                         if (tup._2.tag === "Just") {
                           if (contains("fn " + modPrefix + sanitizeIdent(tup._1))(content)) {
                             return "";
@@ -19473,10 +21568,14 @@ var main = /* @__PURE__ */ (() => {
                           return "";
                         }
                         fail();
-                      })(toUnfoldable4(foreignArr));
+                      })(unfoldableArray.unfoldr(stepUnfoldr)($MapIter(
+                        "IterNode",
+                        foreignArr,
+                        IterLeaf
+                      )));
                     }
                     if (ffiPathMb.tag === "Nothing") {
-                      return foldMap8((tup) => {
+                      return foldableArray.foldMap(monoidString)((tup) => {
                         if (tup._2.tag === "Just") {
                           return genFallback(tup._1, tup._2._1);
                         }
@@ -19484,7 +21583,11 @@ var main = /* @__PURE__ */ (() => {
                           return "";
                         }
                         fail();
-                      })(toUnfoldable4(foreignArr));
+                      })(unfoldableArray.unfoldr(stepUnfoldr)($MapIter(
+                        "IterNode",
+                        foreignArr,
+                        IterLeaf
+                      )));
                     }
                     fail();
                   })();
@@ -19503,15 +21606,35 @@ var main = /* @__PURE__ */ (() => {
                     return $Maybe("Just", nStr);
                   })(concat([
                     mapMaybe((modStr) => {
-                      if (modStr !== modName && contains(modStr + "_")(foldlArray((acc) => (other) => replaceAll(other)("MASKED")(acc))(rsFile)(filterImpl(
+                      const maskedFile = foldlArray((acc) => (other) => replaceAll(other)("MASKED")(acc))(rsFile)(filterImpl(
                         (other) => other !== modStr && contains(modStr)(other),
                         allModStrs
-                      )))) {
+                      ));
+                      if (modStr !== modName && (contains(modStr + "_")(maskedFile) || contains("Purs_" + modStr + "::")(maskedFile))) {
                         return $Maybe("Just", modStr);
                       }
                       return Nothing;
                     })(allModStrs),
-                    toUnfoldable13(collectModulesModule(v1))
+                    unfoldableArray.unfoldr((xs) => {
+                      if (xs.tag === "Nil") {
+                        return Nothing;
+                      }
+                      if (xs.tag === "Cons") {
+                        return $Maybe("Just", $Tuple(xs._1, xs._2));
+                      }
+                      fail();
+                    })((() => {
+                      const go$1 = (m$p, z$p) => {
+                        if (m$p.tag === "Leaf") {
+                          return z$p;
+                        }
+                        if (m$p.tag === "Node") {
+                          return go$1(m$p._5, $List("Cons", m$p._3, go$1(m$p._6, z$p)));
+                        }
+                        fail();
+                      };
+                      return go$1(collectModulesModule(v1), Nil);
+                    })())
                   ])));
                   const $1 = modulesRef.value;
                   modulesRef.value = insert(ordString)(modName)({
@@ -19531,7 +21654,11 @@ var main = /* @__PURE__ */ (() => {
           }
           const allModules = modulesRef.value;
           const mainModuleSanitized = replaceAll(".")("_")(mainModule);
-          writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(toUnfoldable4(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\n')();
+          writeTextFile2(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(unfoldableArray.unfoldr(stepUnfoldr)($MapIter(
+            "IterNode",
+            allModules,
+            IterLeaf
+          )))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\n')();
           writeTextFile2(UTF8)("output/purust_output/src/main.rs")("fn main() {\n    let mut _effect = Purs_" + mainModuleSanitized + "::main();\n    (_effect.unwrap_func())(purust_core::Value::Record(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")();
           const coreExists = existsSync("output/purust_output/purust_core");
           const $1 = mkdir3("output/purust_output/purust_core");
@@ -19578,7 +21705,7 @@ var main = /* @__PURE__ */ (() => {
               return writeTextFile2(UTF8)(modDir + "/src/lib.rs")($4)();
             };
           })(() => {
-          })(toUnfoldable4(allModules))();
+          })(unfoldableArray.unfoldr(stepUnfoldr)($MapIter("IterNode", allModules, IterLeaf)))();
           return log2("Successfully generated Rust code.")();
         }))));
       }));

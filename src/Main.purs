@@ -186,8 +186,9 @@ main = launchAff_ do
                 in foldl (\acc other -> String.replaceAll (Pattern other) (Replacement "MASKED") acc) rsFile longerPrefixes
           let extraImports = Array.mapMaybe (\modStr -> 
                 let modPrefix2 = modStr <> "_"
+                    modPrefix3 = "Purs_" <> modStr <> "::"
                     maskedFile = getMaskedFile modStr
-                in if modStr /= modName && String.contains (Pattern modPrefix2) maskedFile then Just modStr else Nothing
+                in if modStr /= modName && (String.contains (Pattern modPrefix2) maskedFile || String.contains (Pattern modPrefix3) maskedFile) then Just modStr else Nothing
               ) allModStrs
           
           let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
