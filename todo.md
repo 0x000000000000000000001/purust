@@ -10,7 +10,7 @@ L'objectif de cette roadmap est de transformer `purust` d'un générateur dynami
 - [x] **Step 2.1 (Traduction des Types) :** `codegenExprType` est implémenté.
 - [x] **Step 2.4 (Frontières de Boxing/Unboxing) :** `boxUnbox` est déployé dans les appels (`genApp`) et lors de la définition des variables (`Let`).
 - [x] **Step 2.2 (Typage des Closures) :** Mettre à jour `genAbs`. Les closures reçoivent maintenant leurs vrais types natifs via la propagation des noeuds `Typed` dans `inferTypeExpr` (ce qui a résolu l'erreur majeure `E0618` sur `Data.Array` et 13 autres crates).
-- [ ] **Step 2.5 (Corrections des Cas Extrêmes de Typage) :** 
+- [x] **Step 2.5 (Corrections des Cas Extrêmes de Typage) :** 
   - Résoudre `E0308` dans `Data.Symbol` : Le wrapping `boxUnbox` manque parfois la création d'un `Value::Func(...)` quand le type de retour attendu d'une closure abstraite est `UnknownType`.
   - Résoudre `E0267` (TCO Loop) dans `Test.StateMonad` : La boucle `loop` générée pour la TCO entoure actuellement l'extérieur des closures curriées, ce qui rend les `continue;` illégaux car ils se retrouvent enfermés dans des `Rc<dyn Fn>`. Le `loop` doit être poussé *à l'intérieur* de la dernière closure.
 

@@ -110,8 +110,26 @@ main = launchAff_ do
             accClass = foldl (\acc2 decl -> Set.insert (modStr <> "_" <> sanitizeIdent decl.name) acc2) accData mod.classDecls
         in accClass
 
+    buildGlobalClassFields :: List.List (Module Ann) -> Map.Map String (Array String)
+    buildGlobalClassFields modules = foldl processModule Map.empty modules
+      where
+      processModule acc (Module mod) =
+        let modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap mod.name) <> "_"
+        in foldl (\a classDecl -> 
+             let 
+               superNames = Array.mapWithIndex (\i (Tuple fqn _) -> 
+                 (case Array.last fqn of
+                    Just sc -> sc
+                    Nothing -> "Super") <> show i
+               ) classDecl.superclasses
+               methodNames = map (\(Tuple mName _) -> sanitizeIdent mName) classDecl.methods
+               allFields = Array.concat [superNames, methodNames]
+             in Map.insert (modPrefix <> sanitizeIdent classDecl.name) allFields a
+           ) acc mod.classDecls
+
   let globalArities = buildGlobalArities finalModules
   let globalTypes = buildGlobalTypes finalModules
+  let globalClassFields = buildGlobalClassFields finalModules
   
   directives <- loadDirectives
   
@@ -129,7 +147,7 @@ main = launchAff_ do
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
         writeCache cacheVersion ("output/" <> modNameStr <> "/.purust-cache.json") backendMod
-        let rsFile = codegenModule globalArities (Module coreFnMod) backendMod
+        let rsFile = codegenModule globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
           let foreignArr = coreFnMod.foreign

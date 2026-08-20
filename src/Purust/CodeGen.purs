@@ -32,8 +32,8 @@ chunkArray size arr =
   if Array.length arr <= 0 then []
   else [Array.take size arr] <> chunkArray size (Array.drop size arr)
 
-codegenModule :: Map.Map String ExprType -> Module Ann -> BackendModule -> String
-codegenModule globalAritiesMap (Module coreFnMod) backendMod =
+codegenModule :: Map.Map String ExprType -> Map.Map String (Array String) -> Module Ann -> BackendModule -> String
+codegenModule globalAritiesMap globalClassFields (Module coreFnMod) backendMod =
   let
     modNameStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name)
     
@@ -71,7 +71,7 @@ codegenModule globalAritiesMap (Module coreFnMod) backendMod =
 
     -- Traduction des Bindings
     bindingsRes = Array.foldl (\acc group -> 
-      let res = codegenBindingGroup coreFnMod.name modNameStr Set.empty Set.empty acc.arities group
+      let res = codegenBindingGroup coreFnMod.name modNameStr Set.empty Set.empty acc.arities globalClassFields group
       in { code: acc.code <> res.code, arities: res.arities }
     ) { code: "", arities: globalAritiesMap } backendMod.bindings
     
@@ -268,8 +268,8 @@ extractAbsParams n (NeutralExpr (Let ident ty val body)) =
     Nothing -> Nothing
 extractAbsParams _ _ = Nothing
 
-codegenBindingGroup :: ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
-codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap group =
+codegenBindingGroup :: ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> Map.Map String (Array String) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
+codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap globalClassFields group =
   if Array.null group.bindings then { code: "", arities: aritiesMap } else
   let
     isSelfRecursive = group.recursive && Array.length group.bindings == 1
@@ -322,12 +322,12 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
               bound = Map.fromFoldable (map (\(Tuple k v) -> Tuple (if k == "_" then "_" else sanitizeIdent k) v) paramPairs)
               bodyCodeRaw = case extracted of
                 Just (Tuple _ body) -> 
-                    let bodyRaw = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false body
-                        bodyTy = inferTypeExpr modNameStr aritiesMap bound body
+                    let bodyRaw = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop mergedArities globalClassFields bound Set.empty false body
+                        bodyTy = inferTypeExpr modNameStr mergedArities bound body
                     in boxUnbox retType bodyTy bodyRaw
                 Nothing -> 
-                   let fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty false innerExpr
-                       fnTy = inferTypeExpr modNameStr aritiesMap bound innerExpr
+                   let fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing mergedArities globalClassFields bound Set.empty false innerExpr
+                       fnTy = inferTypeExpr modNameStr mergedArities bound innerExpr
                        argsCodeAndType = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in Tuple ty (sanitizeIdent p <> ".clone()")) deduped
                        Tuple actualRetTy callCode = Array.foldl (\(Tuple currentTy accCode) (Tuple argTy argCode) ->
                          case unwrapType currentTy of
@@ -362,10 +362,10 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                 body = case innerExpr of
                   NeutralExpr (Abs _ b) -> b
                   _ -> unsafeCrashWith "impossible"
-                genResult = genAbs modNameStr allZeroArity allMacroBindings mbLoop aritiesMap bound Set.empty deduped inferredType body
+                genResult = genAbs modNameStr allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound Set.empty deduped inferredType body
               in { paramsCode: pCode, retCode: "UnknownType", bodyCode: genResult, isFunc: true }
             else
-              { paramsCode: "", retCode: codegenExprType true inferredType, bodyCode: codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing aritiesMap Map.empty Set.empty false expr, isFunc: false }
+              { paramsCode: "", retCode: codegenExprType true inferredType, bodyCode: codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing aritiesMap globalClassFields Map.empty Set.empty false expr, isFunc: false }
         
         bodyCodeWithLoop = if isSelfRecursive && isFunc then
             "    loop {\n" <>
@@ -390,8 +390,8 @@ getTyPrefix currentMod (Qualified mbMod _) = case mbMod of
   Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_"
 
 
-genApp :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
-genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn argsArray =
+genApp :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array String) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
+genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn argsArray =
     let buildCall :: ExprType -> String -> Int -> Tuple ExprType String
         buildCall accTy accCode idx = if idx >= Array.length argsCodeArray then Tuple accTy accCode else
             let argCode = fromMaybe "" (Array.index argsCodeArray idx)
@@ -411,7 +411,7 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
         getInner e = e
         argsFree = map freeVariables argsArray
         aliveForFn = Set.union alive (Array.foldl Set.union Set.empty argsFree)
-        fnCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForFn false fn
+        fnCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForFn false fn
         lookupArity fname = 
           let key = if fname == "main" then "main" else fname
           in case Map.lookup key aritiesMap of
@@ -421,7 +421,7 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
         argsCodeArray = Array.mapWithIndex (\i arg -> 
             let subsequentArgsFree = Array.drop (i + 1) argsFree
                 aliveForArg = Set.union alive (Array.foldl Set.union Set.empty subsequentArgsFree)
-            in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForArg false arg
+            in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForArg false arg
           ) argsArray
           
         m = Array.length argsArray
@@ -455,14 +455,15 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
                                  Just { name: ln, params: lp } -> fullName == ln && m == Array.length lp
                                  _ -> false) then
                              case mbLoop of
-                               Just { params: lp } ->
-                                 let tempsCode = Array.mapWithIndex (\i argCode -> "        let _tco_temp_" <> show i <> " = " <> argCode <> ";\n") argsCodeArray
-                                     assignsCode = Array.mapWithIndex (\i pName -> "        " <> sanitizeIdent pName <> " = _tco_temp_" <> show i <> ";\n") lp
-                                 in "{\n" <>
-                                    String.joinWith "" tempsCode <>
-                                    String.joinWith "" assignsCode <>
-                                    "        continue;\n" <>
-                                    "    }"
+                               Just { name: ln, params: lp } ->
+                                     let tempsCode = Array.mapWithIndex (\i argCode -> "        let _tco_temp_" <> show i <> " = " <> argCode <> ";\n") argsCodeArray
+                                         assignsCode = Array.mapWithIndex (\i pName -> "        " <> sanitizeIdent pName <> " = _tco_temp_" <> show i <> ";\n") lp
+                                         _dbg = unsafePerformEffect (log ("GENERATED CONTINUE FOR: " <> ln))
+                                     in (if _dbg == unit then "" else "") <> "{\n" <>
+                                        String.joinWith "" tempsCode <>
+                                        String.joinWith "" assignsCode <>
+                                        "        continue;\n" <>
+                                        "    }"
                                _ -> ""
                            else if Map.member (if fullName == "main" then "main" else fullName) aritiesMap then
                              -- Top-level function
@@ -516,8 +517,8 @@ genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive ap
                    
     in resultCode
 
-genAbs :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
-genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr fnTy body =
+genAbs :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array String) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
+genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr fnTy body =
     let
       capturedVars = Set.difference (freeVariables body) (Set.fromFoldable paramsArr)
       expectedArgTys = extractAllArgTypes fnTy
@@ -533,7 +534,7 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive pa
         isInnermost: true, 
         code: 
           let bodyTy = inferTypeExpr currentMod aritiesMap newBound body
-              rawCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap newBound capturedVars false body
+              rawCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
               remainingArgs = Array.drop (Array.length paramsArr) expectedArgTys
               innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
           in boxUnbox innermostExpectedRetTy bodyTy rawCode
@@ -568,12 +569,12 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive pa
         else finalState.code
     in wrappedCode
 
-codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
-codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive expr =
-  codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive false expr
+codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array String) -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
+codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive expr =
+  codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive false expr
 
-codegenExpr_ :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
-codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock expr@(NeutralExpr syn) = 
+codegenExpr_ :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array String) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
+codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) = 
   let
     isEffectNode :: NeutralExpr -> Boolean
     isEffectNode (NeutralExpr e) = case e of
@@ -594,7 +595,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n    ") toCloneOutside)
         toCloneInside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable freeVars)
         insideClonesCode = "// FREEVARS: " <> String.joinWith ", " (Array.fromFoldable freeVars) <> "\n" <> String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toCloneInside)
-        bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound freeVars true expr
+        bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound freeVars true expr
       in
         if Array.length toCloneOutside > 0 then
           "{\n    " <> outsideClonesCode <> "crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
@@ -624,7 +625,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                 remainingArgTys = Array.drop (Array.length paramsArr) argTys
                 finalRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys retTy else retTy
             in Func filledArgTys finalRetTy
-        in "/* Typed Abs */" <> boxUnbox ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr ty body)
+        in "/* Typed Abs */" <> boxUnbox ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr ty body)
       NeutralExpr (UncurriedAbs params body) ->
         let
           paramsArr = map (\(Tuple mbId lvl) -> case mbId of
@@ -637,7 +638,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                 remainingArgTys = Array.drop (Array.length paramsArr) argTys
                 finalRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys retTy else retTy
             in Func filledArgTys finalRetTy
-        in "/* Typed UncurriedAbs */" <> boxUnbox ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr ty body)
+        in "/* Typed UncurriedAbs */" <> boxUnbox ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr ty body)
       NeutralExpr (UncurriedEffectAbs params body) ->
         let
           paramsArr = map (\(Tuple mbId lvl) -> case mbId of
@@ -650,7 +651,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
                 remainingArgTys = Array.drop (Array.length paramsArr) argTys
                 finalRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys retTy else retTy
             in Func filledArgTys finalRetTy
-        in "/* Typed UncurriedEffectAbs */" <> boxUnbox ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr ty body)
+        in "/* Typed UncurriedEffectAbs */" <> boxUnbox ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr ty body)
       NeutralExpr (Lit (LitRecord props)) ->
         case unwrapType ty of
           ADT _ fqnParts _ | Array.length fqnParts >= 2 ->
@@ -662,52 +663,52 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
               propsCode = Array.mapWithIndex (\i (Prop p val) ->
                 let subsequentProps = Array.drop (i + 1) propsArr
                     aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
-                    valCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound aliveForProp false val
+                    valCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound aliveForProp false val
                     valTy = inferTypeExpr currentMod aritiesMap bound val
                 in sanitizeIdent p <> ": " <> boxUnbox Any valTy valCode
               ) propsArr
               fields = String.joinWith ", " propsCode
             in "crate::Value::Class(std::rc::Rc::new(" <> structName <> " { " <> fields <> " }))"
           _ ->
-            let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+            let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
                 innerTy = inferTypeExpr currentMod aritiesMap bound inner
             in "/* Typed " <> codegenExprType true ty <> " <- " <> codegenExprType true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox ty innerTy innerCode
       _ ->
-        let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+        let innerCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
             innerTy = inferTypeExpr currentMod aritiesMap bound inner
         in "/* Typed " <> codegenExprType true ty <> " <- " <> codegenExprType true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox ty innerTy innerCode
 
   App fn args -> 
     let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (App fn args))
-    in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn (NonEmptyArray.toArray args)
+    in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn (NonEmptyArray.toArray args)
   UncurriedApp fn args ->
     let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (UncurriedApp fn args))
-    in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn args
+    in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn args
   UncurriedEffectApp fn args -> 
     case fn of
       NeutralExpr (Typed _ (NeutralExpr (Accessor _ (GetProp "logRecord")))) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Accessor _ (GetProp "logRecord")) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Typed _ (NeutralExpr (Var (Qualified _ (Ident "logRecord"))))) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       NeutralExpr (Var (Qualified _ (Ident "logRecord"))) -> 
         let arg0 = Array.head args
         in case arg0 of
-             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a0 <> ".a);"
+             Just a0 -> "println!(\"{}\", " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false a0 <> ".a);"
              Nothing -> "// Unsupported UncurriedEffectApp without args\n"
       _ -> 
         let appTy = inferTypeExpr currentMod aritiesMap bound (NeutralExpr (UncurriedEffectApp fn args))
-        in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive appTy fn args
+        in genApp currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn args
 
   Update base props ->
     let
@@ -715,14 +716,14 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       propsCode = Array.mapWithIndex (\i (Prop k v) -> 
         let subsequentProps = Array.drop (i + 1) propsArr
             aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
-            valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForProp false v
+            valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForProp false v
             valTy = inferTypeExpr currentMod aritiesMap bound v
         in "_mut." <> sanitizeIdent k <> " = Some(" <> boxUnbox Any valTy valCode <> ");"
       ) propsArr
       aliveForBase = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty propsArr)
     in
       "{\n" <>
-      "    let mut _base = " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForBase false base <> ";\n" <>
+      "    let mut _base = " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n" <>
       "    {\n" <>
       "        let _mut = perceus_ptr::PerceusPtr::make_mut(_base.as_record_mut());\n" <>
       "        " <> String.joinWith "\n        " propsCode <> "\n" <>
@@ -737,16 +738,16 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
             subsequentBranches = Array.drop (i + 1) branchesArr
             varsSubsequent = Array.foldl (\acc (Pair c b) -> Set.union acc (Set.union (freeVariables c) (freeVariables b))) (freeVariables def) subsequentBranches
             aliveForCond = Set.union alive (Set.union (freeVariables body) varsSubsequent)
-            condCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForCond false cond
+            condCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForCond false cond
             condTy = inferTypeExpr currentMod aritiesMap bound cond
             condFinal = boxUnbox Boolean condTy condCode
-        in "if " <> condFinal <> " {\n        " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive false body <> "\n    }") branchesArr
-      defCode = "{\n        " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive false def <> "\n    }"
+        in "if " <> condFinal <> " {\n        " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive false body <> "\n    }") branchesArr
+      defCode = "{\n        " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive false def <> "\n    }"
     in
       String.joinWith " else " branchCode <> " else " <> defCode
   PrimOp (Op1 op a) ->
     let aTy = inferTypeExpr currentMod aritiesMap bound a
-        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false a
+        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false a
     in case op of
       OpBooleanNot -> "!(" <> boxUnbox Boolean aTy aStrRaw <> " /* aTy: " <> codegenExprType true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of
         NeutralExpr (App fn _) -> printType (inferTypeExpr currentMod aritiesMap bound fn) <> ", lvl_3 in bound: " <> (case Map.lookup "lvl_3" bound of
@@ -765,8 +766,8 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
     let aliveForA = Set.union alive (freeVariables b)
         aTy = inferTypeExpr currentMod aritiesMap bound a
         bTy = inferTypeExpr currentMod aritiesMap bound b
-        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForA false a
-        bStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false b
+        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForA false a
+        bStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false b
         aStrInt = boxUnbox Int aTy aStrRaw
         bStrInt = boxUnbox Int bTy bStrRaw
         aStrBool = boxUnbox Boolean aTy aStrRaw
@@ -828,7 +829,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       OpStringAppend -> "format!(\"{}{}\", " <> aStrStr <> ", " <> bStrStr <> ")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
   Accessor base (GetProp k) -> 
-    let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false base
+    let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap bound base
         accCode = case unwrapType baseTy of
           ADT _ fqnParts _ | Array.length fqnParts >= 2 ->
@@ -841,7 +842,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
             baseStr <> ".unwrap_record()." <> sanitizeIdent k <> ".clone().unwrap()"
     in boxUnbox (inferTypeExpr currentMod aritiesMap bound (NeutralExpr syn)) Any accCode
   Accessor base (GetCtorField _ _ _ _ _ fieldIdx) ->
-    let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false base
+    let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false base
     in baseStr <> ".unwrap_record().vals.as_ref().unwrap()[" <> show fieldIdx <> "].clone()"
   Var (Qualified mbMod (Ident name)) ->
     let sName = sanitizeIdent name
@@ -898,7 +899,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
         Nothing -> "lvl_" <> show (unwrap lvl)
       bodyVars = freeVariables body
       aliveForVal = Set.union alive bodyVars
-      valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForVal false val
+      valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForVal false val
       valTy = inferTypeExpr currentMod aritiesMap bound val
       newBound = Map.insert name valTy bound
       -- if name is not in bodyVars, it's dead immediately
@@ -907,7 +908,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       "{\n" <> 
       "    let mut " <> name <> " = " <> valCode <> ";\n" <>
       deadCode <>
-      "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap newBound alive inEffectBlock body <> "\n" <>
+      "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields newBound alive inEffectBlock body <> "\n" <>
       "}"
   EffectBind mbIdent lvl val body ->
     let name = case mbIdent of
@@ -937,7 +938,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           _ -> false
           
         aliveForVal = Set.union alive (freeVariables body)
-        rawValCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForVal true realVal
+        rawValCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForVal true realVal
         
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
@@ -966,9 +967,9 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
     "{\n" <>
     "    let mut " <> name <> " = " <> boxUnbox boundTy Any valCode <> ";\n" <>
     deadCode <>
-    "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap newBound alive inEffectBlock body <> "\n" <>
+    "    " <> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields newBound alive inEffectBlock body <> "\n" <>
     "}"
-  EffectPure val -> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound alive false val
+  EffectPure val -> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false val
   Local mbId lvl -> 
     let name = case mbId of
           Just (Ident nameRaw) -> sanitizeIdent nameRaw
@@ -988,7 +989,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       let arrCode = Array.mapWithIndex (\i a -> 
             let subsequent = Array.drop (i + 1) arr
                 aliveForA = Set.union alive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
-            in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForA false a
+            in codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForA false a
           ) arr
       in "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
     LitRecord props ->
@@ -996,7 +997,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
             let subsequent = Array.drop (i + 1) arrProps
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Prop _ sv) -> freeVariables sv) subsequent))
-                vCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForV false v
+                vCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForV false v
                 vTy = inferTypeExpr currentMod aritiesMap bound v
                 vFinal = boxUnbox Any vTy vCode
             in sanitizeIdent k <> ": Some(" <> vFinal <> ")"
@@ -1007,30 +1008,51 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
-    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr Any body
+    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr Any body
   UncurriedAbs params body ->
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
-    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr Any body
+    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr Any body
   UncurriedEffectAbs params body ->
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
-    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive paramsArr Any body
+    in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr Any body
   PrimUndefined -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
-  CtorSaturated _ _ _ (Ident ctorName) fields ->
-    let fieldsCode = if Array.null fields then "None" else 
-          "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
-            let subsequent = Array.drop (i + 1) fields
+  CtorSaturated (Qualified mbMod _) _ (ProperName tyNameStr) (Ident ctorName) fields ->
+    let
+      modPrefix = getTyPrefix currentMod (Qualified mbMod (Ident tyNameStr))
+      structKey = modPrefix <> sanitizeIdent tyNameStr
+    in case Map.lookup structKey globalClassFields of
+      Just classFields -> 
+        let
+          structName = case mbMod of
+            Just (ModuleName mn) -> 
+               let mnStr = String.replaceAll (Pattern ".") (Replacement "_") mn
+               in if mnStr == currentMod then "crate::Dict_" <> sanitizeIdent tyNameStr else "Purs_" <> mnStr <> "::Dict_" <> sanitizeIdent tyNameStr
+            Nothing -> "crate::Dict_" <> sanitizeIdent tyNameStr
+          structFieldsCode = String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
+            let fieldName = fromMaybe ("field" <> show i) (Array.index classFields i)
+                subsequent = Array.drop (i + 1) fields
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
-                valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForV false val
+                valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForV false val
                 valTy = inferTypeExpr currentMod aritiesMap bound val
-            in boxUnbox Any valTy valCode
-          ) fields) <> "]))"
-    in "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() }))"
+            in sanitizeIdent fieldName <> ": Some(" <> boxUnbox Any valTy valCode <> ")"
+          ) fields)
+        in "crate::Value::Class(std::rc::Rc::new(" <> structName <> " { " <> structFieldsCode <> ", ..Default::default() }))"
+      Nothing ->
+        let fieldsCode = if Array.null fields then "None" else 
+              "Some(std::rc::Rc::new(vec![" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
+                let subsequent = Array.drop (i + 1) fields
+                    aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
+                    valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForV false val
+                    valTy = inferTypeExpr currentMod aritiesMap bound val
+                in boxUnbox Any valTy valCode
+              ) fields) <> "]))"
+        in "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() }))"
   CtorDef _ _ (Ident ctorName) _ -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", ..Default::default() }))"
 
   LetRec _ binds body ->
@@ -1048,7 +1070,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
               subsequentVals = Array.drop (i + 1) bindsArray
               varsSubsequent = Array.foldl (\acc (Tuple _ v) -> Set.union acc (freeVariables v)) Set.empty subsequentVals
               aliveForVal = Set.union alive (Set.union (freeVariables body) varsSubsequent)
-              valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap bound aliveForVal false val
+              valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForVal false val
               valTy = inferTypeExpr currentMod aritiesMap bound val
               boxedValCode = boxUnbox Any valTy valCode
           in "let val_" <> sanitizeIdent n <> " = {\n        " <> clonesCode <> "\n        " <> boxedValCode <> "\n    };"
@@ -1058,10 +1080,10 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound al
           "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" <> sanitizeIdent n <> ".as_record_mut()) }) = crate::Record_a { call: Some((val_" <> sanitizeIdent n <> ").unwrap_func()), ..Default::default() };"
         ) bindsArray)
         
-      bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock body
+      bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock body
     in "{\n    " <> declCode <> "\n    " <> evalCode <> "\n    " <> mutCode <> "\n    " <> bodyCode <> "\n}"
 
-  EffectDefer inner -> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap bound alive inEffectBlock inner
+  EffectDefer inner -> codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
   Fail _ -> "unimplemented!() /* Unsupported Expr: Fail */"
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
 
