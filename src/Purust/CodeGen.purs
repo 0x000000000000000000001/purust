@@ -38,6 +38,9 @@ chunkArray size arr =
 globalConsumed :: Ref.Ref (Set.Set String)
 globalConsumed = unsafePerformEffect (Ref.new Set.empty)
 
+globalCaptured :: Ref.Ref (Set.Set String)
+globalCaptured = unsafePerformEffect (Ref.new Set.empty)
+
 codegenModule :: Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
 codegenModule globalAritiesMap globalClassFields (Module coreFnMod) backendMod =
   let
@@ -282,10 +285,11 @@ extractAbsParams n (NeutralExpr (Let ident ty val body)) =
 extractAbsParams _ _ = Nothing
 
 codegenBindingGroup :: ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
-codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap globalClassFields group =
-  if Array.null group.bindings then { code: "", arities: aritiesMap } else
-  let
-    isSelfRecursive = group.recursive && Array.length group.bindings == 1
+codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap globalClassFields group = unsafePerformEffect do
+  Ref.write Set.empty globalConsumed
+  pure $ if Array.null group.bindings then { code: "", arities: aritiesMap } else
+    let
+      isSelfRecursive = group.recursive && Array.length group.bindings == 1
     
     groupArities = Map.fromFoldable $ map (\(Tuple ident expr) -> 
         let rawIdentName = case ident of
@@ -562,7 +566,12 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         isInnermost: true, 
         code: 
           let bodyTy = inferTypeExpr currentMod aritiesMap newBound body
-              rawCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
+              rawCode = unsafePerformEffect do
+                oldCaptured <- Ref.read globalCaptured
+                Ref.modify (Set.union capturedVars) globalCaptured
+                let res = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
+                Ref.write oldCaptured globalCaptured
+                pure res
               remainingArgs = Array.drop (Array.length paramsArr) expectedArgTys
               innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
           in boxUnbox innermostExpectedRetTy bodyTy rawCode
@@ -1113,13 +1122,15 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
               ) fields) <> "]))"
             boundVars = Map.toUnfoldable bound :: Array (Tuple String ExprType)
             fieldsAlive = Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) fields)
+            capturedVars = unsafePerformEffect (Ref.read globalCaptured)
             deadAdtVars = Array.filter (\(Tuple name ty) -> 
-              not (Set.member name alive) &&
-              not (Set.member name fieldsAlive) &&
-              case extractFinalRetType ty of
-                ADT _ _ _ -> true
-                _ -> false
-            ) boundVars
+                  not (Set.member name alive) &&
+                  not (Set.member name fieldsAlive) &&
+                  not (Set.member name capturedVars) &&
+                  case extractFinalRetType ty of
+                    ADT _ _ _ -> true
+                    _ -> false
+                ) boundVars
             
             reuseCode = unsafePerformEffect do
               consumed <- Ref.read globalConsumed
