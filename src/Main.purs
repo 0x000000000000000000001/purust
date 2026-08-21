@@ -63,7 +63,9 @@ main = launchAff_ do
             
           acc2 = foldl (\a decl -> 
               foldl (\a2 ctor -> 
-                Map.insert (modPrefix <> sanitizeIdent ctor.name) Any a2
+                let retTy = ADT decl.name [] []
+                    ty = if Array.length ctor.fields > 0 then Func ctor.fields retTy else retTy
+                in Map.insert (modPrefix <> sanitizeIdent ctor.name) ty a2
               ) a decl.constructors
             ) acc1 mod.dataDecls
             
@@ -165,9 +167,9 @@ main = launchAff_ do
             genFallback name ty =
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let argTypes = extractAllArgTypes ty
-                    args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprType true argTy) argTypes
+                    args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprType modName true argTy) argTypes
                     _ = Debug.trace ("genFallback " <> unwrap name <> " args: " <> show args) \_ -> unit
-                    retTyStr = codegenExprType true (extractFinalRetType ty)
+                    retTyStr = codegenExprType modName true (extractFinalRetType ty)
                     defaultRet = case retTyStr of
                           "i64" -> "0"
                           "f64" -> "0.0"
