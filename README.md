@@ -1,5 +1,6 @@
 # purust
 
+<img height="160" alt="Screenshot 2026-08-21 at 23 20 53" src="https://github.com/user-attachments/assets/2766a736-74ca-43db-aa50-6fa7d994c8d6" />
 <br />
 <br />
 
