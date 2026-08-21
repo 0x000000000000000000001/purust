@@ -70,8 +70,8 @@ collectModulesExpr = case _ of
   ExprVar _ _ -> Set.empty
   ExprLit _ lit -> collectModulesLiteral collectModulesExpr lit
   ExprConstructor _ _ _ _ -> Set.empty
-  ExprAccessor _ expr _ -> collectModulesExpr expr
-  ExprUpdate _ expr props -> Set.union (collectModulesExpr expr) (Array.foldl (\acc (Prop _ v) -> Set.union acc (collectModulesExpr v)) Set.empty props)
+  ExprAccessor _ expr _ -> Set.insert "Record.Unsafe" (collectModulesExpr expr)
+  ExprUpdate _ expr props -> Set.insert "Record.Unsafe" (Set.union (collectModulesExpr expr) (Array.foldl (\acc (Prop _ v) -> Set.union acc (collectModulesExpr v)) Set.empty props))
   ExprAbs _ _ expr -> collectModulesExpr expr
   ExprApp _ e1 e2 -> Set.union (collectModulesExpr e1) (collectModulesExpr e2)
   ExprCase _ exprs alts -> Set.union

@@ -8,7 +8,7 @@ import Node.FS.Sync as FS
 import Node.Encoding (Encoding(..))
 import Node.Process as Process
 import Data.Array as Array
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
 import Data.Newtype (unwrap)
 import PureScript.Backend.Optimizer.Builder (buildModules)
@@ -197,24 +197,12 @@ main = launchAff_ do
                 Tuple _ Nothing -> ""
               ) (Map.toUnfoldable foreignArr)
           
-          let allModNames = map (\(Module m) -> unwrap m.name) (Array.fromFoldable finalModules)
-          let allModStrs = map (\n -> String.replaceAll (Pattern ".") (Replacement "_") n) allModNames
-          let getMaskedFile str = 
-                let longerPrefixes = Array.filter (\other -> other /= str && String.contains (Pattern str) other) allModStrs
-                in foldl (\acc other -> String.replaceAll (Pattern other) (Replacement "MASKED") acc) rsFile longerPrefixes
-          let extraImports = Array.mapMaybe (\modStr -> 
-                let modPrefix2 = modStr <> "_"
-                    modPrefix3 = "Purs_" <> modStr <> "::"
-                    maskedFile = getMaskedFile modStr
-                in if modStr /= modName && (String.contains (Pattern modPrefix2) maskedFile || String.contains (Pattern modPrefix3) maskedFile) then Just modStr else Nothing
-              ) allModStrs
-          
           let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
           let coreImports = Array.nub (Array.mapMaybe (\n -> 
                 let nStr = String.replaceAll (Pattern ".") (Replacement "_") n
                     isSelf = nStr == modName
                 in if n == "Prim" || String.indexOf (Pattern "Prim.") n == Just 0 || isSelf then Nothing else Just nStr
-              ) (Array.concat [extraImports, rawModules]))
+              ) rawModules)
           let importsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") coreImports)
           let rustCode = "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" <> importsRust <> "\n\n" <> rsFile <> "\n\n" <> ffiContent <> "\n\n"
           Ref.modify_ (\acc -> Map.insert modName { code: rustCode, imports: coreImports } acc) modulesRef
@@ -228,7 +216,34 @@ main = launchAff_ do
       FS.mkdir outDir
       FS.mkdir (outDir <> "/src")
     
+    
     allModules <- Ref.read modulesRef
+    
+    -- Transitive closure of imports
+    tcRef <- Ref.new (Map.empty :: Map.Map String (Set.Set String))
+    let initTc = Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })
+    _ <- foldl (\eff (Tuple k v) -> eff *> Ref.modify_ (Map.insert k (Set.fromFoldable v.imports)) tcRef) (pure unit) initTc
+    
+    let loop = do
+          changed <- Ref.new false
+          currMap <- Ref.read tcRef
+          let arr = Map.toUnfoldable currMap :: Array (Tuple String (Set.Set String))
+          _ <- foldl (\eff (Tuple k imps) -> eff *> do
+            let newImps = foldl (\acc i -> 
+                  case Map.lookup i currMap of
+                    Just trans -> Set.union acc trans
+                    Nothing -> acc
+                ) imps (Set.toUnfoldable imps :: Array String)
+            if Set.size newImps > Set.size imps then do
+               Ref.write true changed
+               Ref.modify_ (Map.insert k newImps) tcRef
+            else pure unit
+          ) (pure unit) arr
+          isChanged <- Ref.read changed
+          if isChanged then loop else pure unit
+    loop
+    finalTcMap <- Ref.read tcRef
+
     
     let allFields = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectFieldsModule mod)) Set.empty finalModules
     let preludeRsContent = codegenPrelude allFields
@@ -254,10 +269,13 @@ main = launchAff_ do
       when (not modExists) do
         FS.mkdir modDir
         FS.mkdir (modDir <> "/src")
-      let modDeps = "purust_core = { path = \"../purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") imp)
+      let modDeps = "purust_core = { path = \"../purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") (fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))))
       let modCargoToml = "[package]\nname = \"Purs_" <> k <> "\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> modDeps
       FS.writeTextFile UTF8 (modDir <> "/Cargo.toml") modCargoToml
-      FS.writeTextFile UTF8 (modDir <> "/src/lib.rs") v
+      let transImps = fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))
+      let newImportsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") transImps)
+      let finalCode = String.replace (Pattern "use purust_core::*;\n") (Replacement ("use purust_core::*;\n" <> newImportsRust <> "\n")) v
+      FS.writeTextFile UTF8 (modDir <> "/src/lib.rs") finalCode
     ) (pure unit) (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String }))
 
     

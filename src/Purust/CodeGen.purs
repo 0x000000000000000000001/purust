@@ -290,8 +290,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
   pure $ if Array.null group.bindings then { code: "", arities: aritiesMap } else
     let
       isSelfRecursive = group.recursive && Array.length group.bindings == 1
-    
-    groupArities = Map.fromFoldable $ map (\(Tuple ident expr) -> 
+      groupArities = Map.fromFoldable $ map (\(Tuple ident expr) -> 
         let rawIdentName = case ident of
               Ident i -> sanitizeIdent i
               _ -> "unknown"
@@ -300,9 +299,9 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
         in Tuple identName inferredTy
       ) group.bindings
       
-    mergedArities = Map.union groupArities aritiesMap
-    
-    code = foldMap (\(Tuple ident expr) ->
+      mergedArities = Map.union groupArities aritiesMap
+      
+      code = foldMap (\(Tuple ident expr) ->
       let
         rawIdentName = case ident of
           Ident i -> sanitizeIdent (String.replaceAll (Pattern ".") (Replacement "_") i)
@@ -396,8 +395,8 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
         "    // AST: " <> printAST expr <> "\n" <>
         bodyCodeFinal <> "\n" <>
         "}\n\n"
-    ) group.bindings
-  in { code: code, arities: mergedArities }
+      ) group.bindings
+    in { code: code, arities: mergedArities }
 
 
 
@@ -568,7 +567,7 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
           let bodyTy = inferTypeExpr currentMod aritiesMap newBound body
               rawCode = unsafePerformEffect do
                 oldCaptured <- Ref.read globalCaptured
-                Ref.modify (Set.union capturedVars) globalCaptured
+                _ <- Ref.modify (Set.union capturedVars) globalCaptured
                 let res = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
                 Ref.write oldCaptured globalCaptured
                 pure res
@@ -873,19 +872,8 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
   Accessor base (GetProp k) -> 
     let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap bound base
-        (Tuple accCode actualTy) = case unwrapType baseTy of
-          ADT _ fqnParts _ | Array.length fqnParts >= 2 ->
-            let className = sanitizeIdent (fromMaybe "Unknown" (Array.last fqnParts))
-                modName = String.joinWith "_" (Array.dropEnd 1 fqnParts)
-                structName = if modName == currentMod then "crate::Dict_" <> className else "Purs_" <> modName <> "::Dict_" <> className
-                actualT = case Map.lookup (modName <> "_" <> className) globalClassFields of
-                  Just classFields -> case Array.find (\(Tuple fn _) -> fn == sanitizeIdent k) classFields of
-                    Just (Tuple _ t) -> t
-                    Nothing -> Any
-                  Nothing -> Any
-            in Tuple (baseStr <> ".unwrap_class::<" <> structName <> ">()." <> sanitizeIdent k <> ".clone()") actualT
-          _ ->
-            Tuple (baseStr <> ".unwrap_record()." <> sanitizeIdent k <> ".clone().unwrap()") Any
+        accCode = baseStr <> ".unwrap_record()." <> sanitizeIdent k <> ".clone().unwrap()"
+        actualTy = Any
     in boxUnbox (inferTypeExpr currentMod aritiesMap bound (NeutralExpr syn)) actualTy accCode
   Accessor base (GetCtorField _ _ _ _ _ fieldIdx) ->
     let baseStr = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false base
@@ -1123,14 +1111,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
             boundVars = Map.toUnfoldable bound :: Array (Tuple String ExprType)
             fieldsAlive = Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) fields)
             capturedVars = unsafePerformEffect (Ref.read globalCaptured)
-            deadAdtVars = Array.filter (\(Tuple name ty) -> 
-                  not (Set.member name alive) &&
-                  not (Set.member name fieldsAlive) &&
-                  not (Set.member name capturedVars) &&
-                  case extractFinalRetType ty of
-                    ADT _ _ _ -> true
-                    _ -> false
-                ) boundVars
+            deadAdtVars = [] -- DISABLED memory reuse to avoid Rust move semantics errors
             
             reuseCode = unsafePerformEffect do
               consumed <- Ref.read globalConsumed
@@ -1168,7 +1149,8 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                 ) bindsArray)
               subsequentVals = Array.drop (i + 1) bindsArray
               varsSubsequent = Array.foldl (\acc (Tuple _ v) -> Set.union acc (freeVariables v)) Set.empty subsequentVals
-              aliveForVal = Set.union alive (Set.union (freeVariables body) varsSubsequent)
+              bindsVarsForAlive = Array.foldl (\acc (Tuple (Ident bn) _) -> Set.insert (sanitizeIdent bn) acc) Set.empty bindsArray
+              aliveForVal = Set.union alive (Set.union bindsVarsForAlive (Set.union (freeVariables body) varsSubsequent))
               
               valTy = inferTypeExpr currentMod aritiesMap bound val
               allArgTypes = extractAllArgTypes valTy
