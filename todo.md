@@ -19,7 +19,8 @@ L'objectif de cette roadmap est de transformer `purust` d'un générateur dynami
 
 ### Baby steps pour la Step 3 :
 - [x] **Step 3.1 (Stop Default Initialization) :** En attendant de supprimer `Record_a`, arrêter d'appeler `..Default::default()` sur une structure aussi massive juste pour allouer un primitif. Remplacé par un `enum Value` natif en Rust.
-- [ ] **Step 3.2 (Structs Natifs pour Type Classes) :** Utiliser les métadonnées de `classDecls` (fournies par le TAST) pour générer des `structs` Rust spécifiques et isolés pour les dictionnaires de classes de types.
+- [x] **Step 3.2 (Structs Natifs pour Type Classes) :** Utiliser les métadonnées de `classDecls` (fournies par le TAST) pour générer des `structs` Rust spécifiques et isolés pour les dictionnaires de classes de types.
+- [ ] **Step 3.2.1 (TCO pour LetRec / Lambda Lifting léger) :** Résoudre le Stack Overflow sur les closures récursives locales (ex: `go` dans `ListOps`). Implémenter la génération d'une sous-fonction pure décurryfiée (`fn {name}_impl`) supportant le `loop { continue; }` natif, encapsulée par une closure de pont pour respecter la curryfication, évitant ainsi l'empilement des frames.
 - [ ] **Step 3.3 (Enums Natifs pour ADTs) :** Utiliser les métadonnées de `dataDecls` pour générer des `enum` Rust avec les types de champs stricts.
 - [ ] **Step 3.4 (Records Anonymes) :** Remplacer le `Record_a` par des structs spécifiques pour les records anonymes purs (générés dynamiquement selon les types utilisés dans le programme).
 - [ ] **Step 3.5 (Unboxing des Closures) :** Remplacer les `Rc<dyn Fn>` par des closures natives, des fonctions inlinées ou des pointeurs statiques lorsque c'est possible (ex: fonctions top-level, ou closures qui ne capturent pas l'environnement). Le recours au `Rc<dyn Fn>` (et donc à la heap) doit être l'exception, et non la règle.

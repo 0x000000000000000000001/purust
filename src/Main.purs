@@ -110,7 +110,7 @@ main = launchAff_ do
             accClass = foldl (\acc2 decl -> Set.insert (modStr <> "_" <> sanitizeIdent decl.name) acc2) accData mod.classDecls
         in accClass
 
-    buildGlobalClassFields :: List.List (Module Ann) -> Map.Map String (Array String)
+    buildGlobalClassFields :: List.List (Module Ann) -> Map.Map String (Array (Tuple String ExprType))
     buildGlobalClassFields modules = foldl processModule Map.empty modules
       where
       processModule acc (Module mod) =
@@ -118,11 +118,11 @@ main = launchAff_ do
         in foldl (\a classDecl -> 
              let 
                superNames = Array.mapWithIndex (\i (Tuple fqn _) -> 
-                 (case Array.last fqn of
+                 Tuple ((case Array.last fqn of
                     Just sc -> sc
-                    Nothing -> "Super") <> show i
+                    Nothing -> "Super") <> show i) Any
                ) classDecl.superclasses
-               methodNames = map (\(Tuple mName _) -> sanitizeIdent mName) classDecl.methods
+               methodNames = map (\(Tuple mName mTy) -> Tuple (sanitizeIdent mName) mTy) classDecl.methods
                allFields = Array.concat [superNames, methodNames]
              in Map.insert (modPrefix <> sanitizeIdent classDecl.name) allFields a
            ) acc mod.classDecls
