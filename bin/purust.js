@@ -160,6 +160,15 @@ var showStringImpl = function(s) {
     }
   ) + '"';
 };
+var showArrayImpl = function(f) {
+  return function(xs) {
+    var ss = [];
+    for (var i = 0, l = xs.length; i < l; i++) {
+      ss[i] = f(xs[i]);
+    }
+    return "[" + ss.join(",") + "]";
+  };
+};
 
 // output-es/Data.Ordering/index.js
 var $Ordering = (tag) => tag;
@@ -17248,12 +17257,13 @@ var member12 = (k) => {
   };
   return go;
 };
-var fromFoldable33 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
-var foldMap13 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
 var toUnfoldable3 = /* @__PURE__ */ (() => {
   const $0 = unfoldableArray.unfoldr(stepUnfoldr);
   return (x) => $0($MapIter("IterNode", x, IterLeaf));
 })();
+var show4 = /* @__PURE__ */ showArrayImpl(showStringImpl);
+var fromFoldable33 = /* @__PURE__ */ fromFoldable(ordString)(foldableArray);
+var foldMap13 = /* @__PURE__ */ (() => foldableArray.foldMap(monoidString))();
 var unwrapType = (v) => {
   if (v.tag === "ForAll") {
     return unwrapType(v._2);
@@ -17663,6 +17673,7 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
   }
   return Any;
 };
+var globalConsumed = { value: Leaf };
 var getTyPrefix = (currentMod) => (v) => {
   if (v._1.tag === "Just") {
     return replaceAll(".")("_")(v._1._1) + "_";
@@ -19334,7 +19345,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       })(v._5)) + ", ..Default::default() }))";
     }
     if (v1.tag === "Nothing") {
-      return 'crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._4 + '", vals: ' + (v._5.length === 0 ? "None" : "Some(std::rc::Rc::new(vec![" + joinWith(", ")(mapWithIndexArray((i) => (v2) => boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+      const fieldsCode = v._5.length === 0 ? "None" : "Some(std::rc::Rc::new(vec![" + joinWith(", ")(mapWithIndexArray((i) => (v2) => boxUnbox(Any)(inferTypeExpr(currentMod)(aritiesMap)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -19345,7 +19356,28 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           }
           return sliceImpl($0, v._5.length, v._5);
         })()))
-      ))(false)(v2._2)))(v._5)) + "]))") + ", ..Default::default() }))";
+      ))(false)(v2._2)))(v._5)) + "]))";
+      const fieldsAlive = foldlArray(union)(Leaf)(arrayMap((v2) => freeVariables(v2._2))(v._5));
+      const boundVars = toUnfoldable3(bound);
+      const deadAdtVars = filterImpl((v2) => !member2(v2._1)(alive) && !member2(v2._1)(fieldsAlive) && extractFinalRetType(v2._2).tag === "ADT", boundVars);
+      return (() => {
+        const consumed = globalConsumed.value;
+        const dbg = foldlArray((acc) => (v2) => acc + " " + v2._1 + ":" + printType(v2._2))("")(boundVars);
+        const dbgDead = foldlArray((acc) => (v2) => acc + " " + v2._1)("")(deadAdtVars);
+        const $0 = filterImpl((v2) => !member2(v2._1)(consumed), deadAdtVars);
+        if (0 < $0.length) {
+          const $1 = $0[0]._1;
+          globalConsumed.value = insert(ordString)($1)()(consumed);
+          return _trace(
+            "KnotTying YES ctorName=" + v._4 + " bound: " + dbg + " dead: " + dbgDead + " alive: " + show4(fromFoldableImpl(foldableSet.foldr, alive)),
+            (v3) => "{\n    let mut _reuse = " + $1 + ';\n    {\n        let _mut = perceus_ptr::PerceusPtr::make_mut(_reuse.as_record_mut());\n        _mut.tag = "' + v._4 + '";\n        _mut.vals = ' + fieldsCode + ";\n    }\n    _reuse\n}"
+          );
+        }
+        return _trace(
+          "KnotTying NO ctorName=" + v._4 + " bound: " + dbg + " dead: " + dbgDead + " alive: " + show4(fromFoldableImpl(foldableSet.foldr, alive)),
+          (v3) => 'crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: "' + v._4 + '", vals: ' + fieldsCode + ", ..Default::default() }))"
+        );
+      })();
     }
     fail();
   }

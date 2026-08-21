@@ -26,11 +26,17 @@ import Data.Map as Map
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafeCrashWith)
+import Effect.Ref as Ref
+import Effect.Console (log)
+import Effect.Unsafe (unsafePerformEffect)
 
 chunkArray :: forall a. Int -> Array a -> Array (Array a)
 chunkArray size arr =
   if Array.length arr <= 0 then []
   else [Array.take size arr] <> chunkArray size (Array.drop size arr)
+
+globalConsumed :: Ref.Ref (Set.Set String)
+globalConsumed = unsafePerformEffect (Ref.new Set.empty)
 
 codegenModule :: Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
 codegenModule globalAritiesMap globalClassFields (Module coreFnMod) backendMod =
@@ -1105,7 +1111,36 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                     valTy = inferTypeExpr currentMod aritiesMap bound val
                 in boxUnbox Any valTy valCode
               ) fields) <> "]))"
-        in "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() }))"
+            boundVars = Map.toUnfoldable bound :: Array (Tuple String ExprType)
+            fieldsAlive = Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) fields)
+            deadAdtVars = Array.filter (\(Tuple name ty) -> 
+              not (Set.member name alive) &&
+              not (Set.member name fieldsAlive) &&
+              case extractFinalRetType ty of
+                ADT _ _ _ -> true
+                _ -> false
+            ) boundVars
+            
+            reuseCode = unsafePerformEffect do
+              consumed <- Ref.read globalConsumed
+              let dbg = Array.foldl (\acc (Tuple n t) -> acc <> " " <> n <> ":" <> printType t) "" boundVars
+              let dbgDead = Array.foldl (\acc (Tuple n t) -> acc <> " " <> n) "" deadAdtVars
+              let available = Array.filter (\(Tuple name _) -> not (Set.member name consumed)) deadAdtVars
+              case Array.head available of
+                Just (Tuple reuseName _) -> do
+                  Ref.write (Set.insert reuseName consumed) globalConsumed
+                  pure $ Debug.trace ("KnotTying YES ctorName=" <> ctorName <> " bound: " <> dbg <> " dead: " <> dbgDead <> " alive: " <> show (Array.fromFoldable alive :: Array String)) \_ -> "{\n" <>
+                         "    let mut _reuse = " <> reuseName <> ";\n" <>
+                         "    {\n" <>
+                         "        let _mut = perceus_ptr::PerceusPtr::make_mut(_reuse.as_record_mut());\n" <>
+                         "        _mut.tag = \"" <> ctorName <> "\";\n" <>
+                         "        _mut.vals = " <> fieldsCode <> ";\n" <>
+                         "    }\n" <>
+                         "    _reuse\n" <>
+                         "}"
+                Nothing ->
+                  pure $ Debug.trace ("KnotTying NO ctorName=" <> ctorName <> " bound: " <> dbg <> " dead: " <> dbgDead <> " alive: " <> show (Array.fromFoldable alive :: Array String)) \_ -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", vals: " <> fieldsCode <> ", ..Default::default() }))"
+        in reuseCode
   CtorDef _ _ (Ident ctorName) _ -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { tag: \"" <> ctorName <> "\", ..Default::default() }))"
 
   LetRec _ binds body ->
