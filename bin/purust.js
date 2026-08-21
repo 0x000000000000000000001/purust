@@ -17259,7 +17259,18 @@ var unwrapType = (v) => {
     return unwrapType(v._2);
   }
   if (v.tag === "ConstrainedType") {
-    const csArgs = replicateImpl(v._1.length, Any);
+    const csArgs = arrayMap((v12) => $ExprType(
+      "ADT",
+      (() => {
+        const $0 = v12._1.length - 1 | 0;
+        if ($0 >= 0 && $0 < v12._1.length) {
+          return v12._1[$0];
+        }
+        return "";
+      })(),
+      v12._1,
+      v12._2
+    ))(v._1);
     const v1 = unwrapType(v._2);
     if (v1.tag === "Func") {
       return $ExprType("Func", [...csArgs, ...v1._1], v1._2);
@@ -17890,7 +17901,21 @@ var extractAllArgTypes = (v) => {
     return extractAllArgTypes(v._2);
   }
   if (v.tag === "ConstrainedType") {
-    return [...replicateImpl(v._1.length, Any), ...extractAllArgTypes(v._2)];
+    return [
+      ...arrayMap((v1) => $ExprType(
+        "ADT",
+        (() => {
+          const $0 = v1._1.length - 1 | 0;
+          if ($0 >= 0 && $0 < v1._1.length) {
+            return v1._1[$0];
+          }
+          return "";
+        })(),
+        v1._1,
+        v1._2
+      ))(v._1),
+      ...extractAllArgTypes(v._2)
+    ];
   }
   if (v.tag === "Func") {
     return [...v._1, ...extractAllArgTypes(v._2)];
