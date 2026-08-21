@@ -158,7 +158,9 @@ codegenPrelude fields =
 unwrapType :: ExprType -> ExprType
 unwrapType (ForAll _ t) = unwrapType t
 unwrapType (ConstrainedType cs t) = 
-  let csArgs = Array.replicate (Array.length cs) Any
+  let csArgs = map (\(Tuple fqn args) -> 
+        let className = fromMaybe "" (Array.last fqn)
+        in ADT className fqn args) cs
   in case unwrapType t of
     Func args retTy -> Func (csArgs <> args) retTy
     other -> Func csArgs other
@@ -240,7 +242,11 @@ boxUnbox expected actual code =
 
 extractAllArgTypes :: ExprType -> Array ExprType
 extractAllArgTypes (ForAll _ t) = extractAllArgTypes t
-extractAllArgTypes (ConstrainedType cs t) = Array.replicate (Array.length cs) Any <> extractAllArgTypes t
+extractAllArgTypes (ConstrainedType cs t) = 
+  let csArgs = map (\(Tuple fqn args) -> 
+        let className = fromMaybe "" (Array.last fqn)
+        in ADT className fqn args) cs
+  in csArgs <> extractAllArgTypes t
 extractAllArgTypes (Func args t) = args <> extractAllArgTypes t
 extractAllArgTypes _ = []
 
