@@ -167,6 +167,7 @@ codegenPrelude fields =
     
 unwrapType :: ExprType -> ExprType
 unwrapType (ForAll _ t) = unwrapType t
+unwrapType (TypeApp t _) = unwrapType t
 unwrapType (ConstrainedType cs t) = 
   let csArgs = map (\(Tuple fqn args) -> 
         let className = fromMaybe "" (Array.last fqn)

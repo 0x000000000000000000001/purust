@@ -18330,6 +18330,9 @@ var unwrapType = (v) => {
   if (v.tag === "ForAll") {
     return unwrapType(v._2);
   }
+  if (v.tag === "TypeApp") {
+    return unwrapType(v._1);
+  }
   if (v.tag === "ConstrainedType") {
     const csArgs = arrayMap((v12) => $ExprType(
       "ADT",
