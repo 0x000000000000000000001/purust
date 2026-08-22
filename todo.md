@@ -8,7 +8,7 @@ L'objectif de cette roadmap est de transformer `purust` d'un générateur dynami
 ### Prochaines étapes (Explosion des performances) :
 - [x] **Step 1 (Enums Natifs pour ADTs) :** Utiliser les métadonnées de `dataDecls` (fournies par le TAST) pour générer des `enum` Rust structurés et stricts, remplaçant la sérialisation systématique dans des `Value::Array`. C'est la prochaine étape pour effondrer le temps d'exécution des arbres (Red-Black Tree, AST).
 - [x] **Step 2 (Structs Natifs pour Type Classes) :** Utiliser les métadonnées de `classDecls` pour générer des `structs` Rust spécifiques et isolés pour les dictionnaires de classes de types (évite la pénalité de résolution de clés).
-- [ ] **Step 3 (Records Anonymes) :** Remplacer le `Record_a` par des structs spécifiques pour les records anonymes purs (générés dynamiquement selon les types de row utilisés dans le programme).
+- [x] **Step 3 (Records Anonymes) :** Remplacer le `Record_a` par des structs spécifiques pour les records anonymes purs (générés dynamiquement selon les types de row utilisés dans le programme).
 - [ ] **Step 4 (Unboxing des Closures) :** Remplacer les `Rc<dyn Fn>` par des fonctions natives, inlinées ou des pointeurs statiques lorsque c'est possible. Le recours au `Rc<dyn Fn>` (et donc à la heap) doit être l'exception, et non la règle.
 
 Note : tu peux tester à la fin de tes travaux si tout fonctionne avec bin/rust/run -c, dans altbak.pub
