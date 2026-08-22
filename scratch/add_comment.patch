@@ -1,3 +1,5 @@
+--- src/Purust/CodeGen.purs
++++ src/Purust/CodeGen.purs
 @@ -1071,7 +1071,8 @@
                                     Nothing -> Any
                      valTy = inferTypeExprGlobal currentMod aritiesMap globalClassFields bound val

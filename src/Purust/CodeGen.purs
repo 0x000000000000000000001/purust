@@ -94,6 +94,68 @@ codegenModule globalAritiesMap globalClassFields (Module coreFnMod) backendMod =
 
 codegenPrelude :: Set.Set String -> String
 codegenPrelude fields =
+  let
+    shapes = Array.fromFoldable fields
+    
+    uniqueFields = Array.fromFoldable (Set.fromFoldable (Array.concatMap (\shape -> String.split (Pattern ",") shape) shapes))
+    validUniqueFields = Array.filter (\f -> not (Set.member f (Set.fromFoldable ["unwrap", "clone", "as_ref", "tag", "vals", "call"])) && not (String.null f)) uniqueFields
+    
+    validShapes = Array.filter (\shape -> not (String.null shape)) shapes
+
+    shapeToStructName shape = "Record_" <> String.joinWith "_" (map sanitizeIdent (Array.sortBy compare (String.split (Pattern ",") shape)))
+    
+    recordStructs = Array.foldMap (\shape -> 
+      let structName = shapeToStructName shape
+          structFields = Array.filter (\f -> not (String.null f)) (String.split (Pattern ",") shape)
+      in "#[derive(Clone, Default)]\npub struct " <> structName <> " {\n" <>
+         Array.foldMap (\f -> "    pub " <> sanitizeIdent f <> ": Option<UnknownType>,\n") structFields <>
+         "}\n\n"
+    ) validShapes
+
+    recordVariants = Array.foldMap (\shape -> 
+      let structName = shapeToStructName shape
+      in "    " <> structName <> "(perceus_ptr::PerceusPtr<" <> structName <> ">),\n"
+    ) validShapes
+    
+    getMethods = Array.foldMap (\f -> 
+      let sf = sanitizeIdent f
+          matchArms = Array.foldMap (\shape -> 
+             let structName = shapeToStructName shape
+             in if Array.elem f (String.split (Pattern ",") shape) then
+                  "            Value::" <> structName <> "(r) => r." <> sf <> ".clone().unwrap(),\n"
+                else ""
+          ) validShapes
+      in "    pub fn get_" <> sf <> "(&self) -> UnknownType {\n" <>
+         "        match self {\n" <> matchArms <>
+         "            Value::Record_a(r) => r." <> sf <> ".clone().unwrap(),\n" <>
+         "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
+         "        }\n" <>
+         "    }\n"
+    ) validUniqueFields
+    
+    setMethods = Array.foldMap (\f -> 
+      let sf = sanitizeIdent f
+          matchArms = Array.foldMap (\shape -> 
+             let structName = shapeToStructName shape
+             in if Array.elem f (String.split (Pattern ",") shape) then
+                  "            Value::" <> structName <> "(r) => {\n" <>
+                  "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
+                  "                mut_r." <> sf <> " = Some(val);\n" <>
+                  "            },\n"
+                else ""
+          ) validShapes
+      in "    pub fn set_" <> sf <> "(&mut self, val: UnknownType) {\n" <>
+         "        match self {\n" <> matchArms <>
+         "            Value::Record_a(r) => {\n" <>
+         "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
+         "                mut_r." <> sf <> " = Some(val);\n" <>
+         "            },\n" <>
+         "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
+         "        }\n" <>
+         "    }\n"
+    ) validUniqueFields
+    
+  in
   "#![allow(warnings)]\n\n" <>
   "use perceus_ptr::PerceusPtr;\n\n" <>
   "#[derive(Clone)]\npub enum Void {}\n\n" <>
@@ -106,8 +168,10 @@ codegenPrelude fields =
   "    Char(char),\n" <>
   "    Array(std::rc::Rc<Vec<UnknownType>>),\n" <>
   "    Func(std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>),\n" <>
-  "    Record(perceus_ptr::PerceusPtr<Record_a>),\n" <>
   "    Class(std::rc::Rc<dyn std::any::Any>),\n" <>
+  "    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" <>
+  "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
+  recordVariants <>
   "}\n\n" <>
   "impl Value {\n" <>
   "    pub fn unwrap_int(&self) -> i64 {\n" <>
@@ -129,23 +193,18 @@ codegenPrelude fields =
   "        if let Value::Array(v) = self { v.clone() } else { panic!(\"Expected Array\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_func(&self) -> std::rc::Rc<dyn Fn(UnknownType) -> UnknownType> {\n" <>
-  "        if let Value::Func(v) = self { v.clone() } else if let Value::Record(v) = self { v.call.clone().unwrap() } else { panic!(\"Expected Func\"); }\n" <>
-  "    }\n" <>
-  "    pub fn unwrap_record(&self) -> perceus_ptr::PerceusPtr<Record_a> {\n" <>
-  "        if let Value::Record(v) = self { v.clone() } else { panic!(\"Expected Record\"); }\n" <>
-  "    }\n" <>
-  "    pub fn as_record_mut(&mut self) -> &mut perceus_ptr::PerceusPtr<Record_a> {\n" <>
-  "        if let Value::Record(v) = self { v } else { panic!(\"Expected Record\"); }\n" <>
+  "        if let Value::Func(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } else { panic!(\"Expected Func\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" <>
   "        if let Value::Class(v) = self { v.downcast_ref::<T>().unwrap() } else { panic!(\"Expected Class\"); }\n" <>
   "    }\n" <>
   "    pub fn drop_explicit(self) {\n" <>
-  "        if let Value::Record(v) = self { v.drop_explicit(); }\n" <>
   "    }\n" <>
-  "    pub fn new(r: Record_a) -> Self {\n" <>
-  "        Value::Record(perceus_ptr::PerceusPtr::new(r))\n" <>
+  "    pub fn get_tag(&self) -> &'static str {\n" <>
+  "        if let Value::Record_a(r) = self { r.tag } else { panic!(\"Expected Record_a for tag\"); }\n" <>
   "    }\n" <>
+  getMethods <>
+  setMethods <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
@@ -154,16 +213,18 @@ codegenPrelude fields =
   "pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" <>
   "pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" <>
   "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" <>
+  "#[derive(Clone, Default)]\npub struct Thunk {\n" <>
+  "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
+  "}\n\n" <>
   "#[derive(Clone, Default)]\npub struct Record_a {\n" <>
   "    pub tag: &'static str,\n" <>
   "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
   "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
   Array.foldMap (\field ->
-    let
-      ignore = Set.fromFoldable ["unwrap", "clone", "as_ref", "tag", "vals", "call"]
-    in if Set.member field ignore then "" else "    pub " <> sanitizeIdent field <> ": Option<UnknownType>,\n"
-  ) (Array.fromFoldable fields) <>
-  "}\n\n"
+    "    pub " <> sanitizeIdent field <> ": Option<UnknownType>,\n"
+  ) validUniqueFields <>
+  "}\n\n" <>
+  recordStructs
     
 unwrapType :: ExprType -> ExprType
 unwrapType (ForAll _ t) = unwrapType t
@@ -786,16 +847,13 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
             aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
             valCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForProp false v
             valTy = inferTypeExprGlobal currentMod aritiesMap globalClassFields bound v
-        in "_mut." <> sanitizeIdent k <> " = Some(" <> boxUnbox currentMod Any valTy valCode <> ");"
+        in "_base.set_" <> sanitizeIdent k <> "(" <> boxUnbox currentMod Any valTy valCode <> ");"
       ) propsArr
       aliveForBase = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty propsArr)
     in
       "{\n" <>
       "    let mut _base = " <> codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n" <>
-      "    {\n" <>
-      "        let _mut = perceus_ptr::PerceusPtr::make_mut(_base.as_record_mut());\n" <>
-      "        " <> String.joinWith "\n        " propsCode <> "\n" <>
-      "    }\n" <>
+      "    " <> String.joinWith "\n    " propsCode <> "\n" <>
       "    _base\n" <>
       "}"
   Branch branches def ->
@@ -841,11 +899,12 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                    Just (Func _ _) -> true
                    _ -> false
                  suffix = if hasArgs then "(..)" else ""
+                 boxedA = boxUnbox currentMod (ADT className fqn []) aTy aStrRaw
                  debugComment = "/* OpIsTag Debug: " <> prefixedKey <> " -> " <> (case lookupRes of
                    Just t -> printType t
                    Nothing -> "Nothing") <> " */ "
-             in debugComment <> "matches!((" <> aStrRaw <> ").as_ref(), " <> enumName <> "::" <> cName <> suffix <> ")"
-          _ -> "(" <> boxUnbox currentMod Any aTy aStrRaw <> ".unwrap_record().tag == \"" <> ctorName <> "\")"
+             in debugComment <> "matches!((" <> boxedA <> ").as_ref(), " <> enumName <> "::" <> cName <> suffix <> ")"
+          _ -> "(" <> boxUnbox currentMod Any aTy aStrRaw <> ".get_tag() == \"" <> ctorName <> "\")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
@@ -919,7 +978,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         accCode = case unwrapType baseTy of
           ADT className fqn _ ->
             "(" <> baseStr <> ")." <> sanitizeIdent k <> ".clone()"
-          _ -> baseStr <> ".unwrap_record()." <> sanitizeIdent k <> ".clone().unwrap()"
+          _ -> "(" <> baseStr <> ").get_" <> sanitizeIdent k <> "()"
         actualTy = case unwrapType baseTy of
           ADT _ _ _ -> inferTypeExprGlobal currentMod aritiesMap globalClassFields bound (NeutralExpr syn)
           _ -> Any
@@ -1039,10 +1098,10 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
           "        if let crate::Value::Func(f) = &_val_eval {\n" <>
-          "            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
-          "        } else if let crate::Value::Record(r) = &_val_eval {\n" <>
+          "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
+          "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
-          "                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
+          "                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "            } else {\n" <>
           "                _val_eval\n" <>
           "            }\n" <>
@@ -1066,10 +1125,10 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
           "{\n" <>
           "        let _val_eval = " <> rawBodyCode <> ";\n" <>
           "        if let crate::Value::Func(f) = &_val_eval {\n" <>
-          "            f(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
-          "        } else if let crate::Value::Record(r) = &_val_eval {\n" <>
+          "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
+          "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
-          "                r.call.clone().unwrap()(crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
+          "                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "            } else {\n" <>
           "                _val_eval\n" <>
           "            }\n" <>
@@ -1108,6 +1167,8 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
       in "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
     LitRecord props ->
       let arrProps = props
+          shape = String.joinWith "_" (map sanitizeIdent (Array.sortBy compare (map (\(Prop k _) -> k) arrProps)))
+          structName = if String.null shape then "Record_a" else "Record_" <> shape
           fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
             let subsequent = Array.drop (i + 1) arrProps
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Prop _ sv) -> freeVariables sv) subsequent))
@@ -1116,7 +1177,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                 vFinal = boxUnbox currentMod Any vTy vCode
             in sanitizeIdent k <> ": Some(" <> vFinal <> ")"
           ) arrProps)
-      in "crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
+      in "crate::Value::" <> structName <> "(perceus_ptr::PerceusPtr::new(" <> structName <> " { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
   Abs params body -> 
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
@@ -1135,7 +1196,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
     in genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr Any body
-  PrimUndefined -> "crate::Value::Record(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
+  PrimUndefined -> "crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
   CtorSaturated (Qualified mbMod _) _ (ProperName tyNameStr) (Ident ctorName) fields ->
     let
       modPrefix = getTyPrefix currentMod (Qualified mbMod (Ident tyNameStr))
@@ -1207,7 +1268,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
       bindsArray = NonEmptyArray.toArray binds
       
       declCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "let mut " <> sanitizeIdent n <> " = crate::Value::Record(perceus_ptr::PerceusPtr::new(Record_a { ..Default::default() }));"
+          "let mut " <> sanitizeIdent n <> " = crate::Value::Thunk(perceus_ptr::PerceusPtr::new(crate::Thunk { ..Default::default() }));"
         ) bindsArray)
       
       evalCode = String.joinWith "\n    " (Array.mapWithIndex (\i (Tuple (Ident n) val) -> 
@@ -1280,7 +1341,10 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         ) bindsArray)
         
       mutCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "*(unsafe { perceus_ptr::PerceusPtr::force_mut(" <> sanitizeIdent n <> ".as_record_mut()) }) = crate::Record_a { call: Some((val_" <> sanitizeIdent n <> ").unwrap_func()), ..Default::default() };"
+          "if let crate::Value::Thunk(ref mut thunk) = " <> sanitizeIdent n <> " {\n" <>
+          "    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n" <>
+          "    mut_thunk.call = Some((val_" <> sanitizeIdent n <> ").unwrap_func());\n" <>
+          "} else { unreachable!() }"
         ) bindsArray)
         
       newMbLoop = case mbLoop of

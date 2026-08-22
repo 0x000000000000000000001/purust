@@ -260,15 +260,15 @@ main = launchAff_ do
     finalTcMap <- Ref.read tcRef
 
     
-    let allFields = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectFieldsModule mod)) Set.empty finalModules
-    let preludeRsContent = codegenPrelude allFields
+    let allShapes = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectRecordShapesModule mod)) Set.empty finalModules
+    let preludeRsContent = codegenPrelude allShapes
     
     let mainModuleSanitized = String.replaceAll (Pattern ".") (Replacement "_") mainModule
     let workspaceMembers = "\"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })))
     let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\n"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") rootCargoToml
     
-    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func())(purust_core::Value::Record(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func())(purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")
     
     let coreDir = outDir <> "/purust_core"
     coreExists <- FS.exists coreDir
