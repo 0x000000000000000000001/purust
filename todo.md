@@ -10,5 +10,9 @@ L'objectif de cette roadmap est de transformer `purust` d'un générateur dynami
 - [x] **Step 2 (Structs Natifs pour Type Classes) :** Utiliser les métadonnées de `classDecls` pour générer des `structs` Rust spécifiques et isolés pour les dictionnaires de classes de types (évite la pénalité de résolution de clés).
 - [x] **Step 3 (Records Anonymes) :** Remplacer le `Record_a` par des structs spécifiques pour les records anonymes purs (générés dynamiquement selon les types de row utilisés dans le programme).
 - [ ] **Step 4 (Unboxing des Closures) :** Remplacer les `Rc<dyn Fn>` par des fonctions natives, inlinées ou des pointeurs statiques lorsque c'est possible. Le recours au `Rc<dyn Fn>` (et donc à la heap) doit être l'exception, et non la règle.
+  - [ ] **Step 4.1 (Uncurrying) :** Analyser l'AST pour "aplatir" les appels et générer des fonctions multi-arguments (`a -> b -> c` devient `fn(a, b) -> c`).
+  - [ ] **Step 4.2 (Application Partielle) :** Gérer dynamiquement la création de "thunks" ou de closures si une fonction n'est appelée qu'avec une partie de ses arguments.
+  - [ ] **Step 4.3 (Typage strict de bout en bout) :** Propager les types réels du TAST jusqu'aux signatures des fonctions Rust, supprimant le filet de sécurité `UnknownType`.
+  - [ ] **Step 4.4 (Analyse des captures et Lifetimes) :** Détecter quand une closure capture son environnement et s'échappe de son scope, pour choisir la bonne allocation (`fn`, `impl Fn`, ou `Rc<dyn Fn>`).
 
 Note : tu peux tester à la fin de tes travaux si tout fonctionne avec bin/rust/run -c, dans altbak.pub
