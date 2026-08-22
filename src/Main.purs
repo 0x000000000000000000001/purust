@@ -23,6 +23,7 @@ import Data.List as List
 import Data.Set as Set
 import Data.Array as Array
 import Data.String as String
+import Data.String.CodeUnits as SCU
 import Data.Foldable (foldl)
 import Data.Tuple (Tuple(..))
 import Data.String.Pattern (Pattern(..), Replacement(..))
@@ -55,23 +56,8 @@ main = launchAff_ do
         let 
           modPrefix = String.replaceAll (Pattern ".") (Replacement "_") (unwrap mod.name) <> "_"
           
-          acc1 = foldl (\a (Tuple (Ident name) mbTy) -> 
-              case mbTy of
-                Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a
-                Nothing -> a
-            ) acc (Map.toUnfoldable mod.foreign :: Array (Tuple Ident (Maybe ExprType)))
-            
-          acc2 = foldl (\a decl -> 
-              foldl (\a2 ctor -> 
-                let retTy = ADT decl.name [] []
-                    ty = if Array.length ctor.fields > 0 then Func ctor.fields retTy else retTy
-                in Map.insert (modPrefix <> sanitizeIdent ctor.name) ty a2
-              ) a decl.constructors
-            ) acc1 mod.dataDecls
-            
           getTy (Ann ann) = ann.type
           
-          extractAnn :: Expr Ann -> Ann
           extractAnn = case _ of
             ExprVar ann _ -> ann
             ExprLit ann _ -> ann
@@ -100,8 +86,26 @@ main = launchAff_ do
                   Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a'
                   Nothing -> a'
               ) a binds
-              
-        in foldl processBind acc2 mod.decls
+
+          acc1 = foldl processBind acc mod.decls
+          
+          acc2 = foldl (\a (Tuple (Ident name) mbTy) -> 
+              case mbTy of
+                Just ty -> Map.insert (modPrefix <> sanitizeIdent name) ty a
+                Nothing -> a
+            ) acc1 (Map.toUnfoldable mod.foreign :: Array (Tuple Ident (Maybe ExprType)))
+            
+          acc3 = foldl (\a decl -> 
+              foldl (\a2 ctor -> 
+                let modPath = String.split (Pattern ".") (unwrap mod.name)
+                    fqn = Array.snoc modPath decl.name
+                    retTy = ADT decl.name fqn []
+                    ty = if Array.length ctor.fields > 0 then Func ctor.fields retTy else retTy
+                in Map.insert (modPrefix <> sanitizeIdent ctor.name) ty a2
+              ) a decl.constructors
+            ) acc2 mod.dataDecls
+            
+        in acc3
         
     buildGlobalTypes :: List.List (Module Ann) -> Set.Set String
     buildGlobalTypes modules = foldl processModule Set.empty modules
@@ -144,11 +148,9 @@ main = launchAff_ do
     , traceIdents: Set.empty
     , onPrepareModule: \_ (Module m) -> pure (Module m)
     , onSkipModule: \_ (Module coreFnMod) -> do
-        let modNameStr = unwrap coreFnMod.name
-        checkCache cacheVersion coreFnMod.path ("output/" <> modNameStr <> "/.purust-cache.json")
+        pure Nothing
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
-        writeCache cacheVersion ("output/" <> modNameStr <> "/.purust-cache.json") backendMod
         let rsFile = codegenModule globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
@@ -176,7 +178,7 @@ main = launchAff_ do
                           "bool" -> "false"
                           "char" -> "'\\0'"
                           "String" -> "String::new()"
-                          _ -> "UnknownType::new(Record_a { ..Default::default() })"
+                          _ -> "unimplemented!()"
                 in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> " <> retTyStr <> " { " <> defaultRet <> " }\n"
               else ""
 
@@ -200,11 +202,22 @@ main = launchAff_ do
               ) (Map.toUnfoldable foreignArr)
           
           let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
+          let extractModules s = Array.mapMaybe (\part -> 
+                case String.indexOf (Pattern "::") part of
+                  Just i -> 
+                    let mod = String.take i part
+                        isValid c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'
+                    in if String.length mod > 0 && String.length mod < 100 && Array.all isValid (SCU.toCharArray mod) then Just mod else Nothing
+                  Nothing -> Nothing
+              ) (Array.drop 1 (String.split (Pattern "Purs_") s))
+          let extractedModules = extractModules rsFile
+          let allModules = Array.concat [rawModules, extractedModules]
+          
           let coreImports = Array.nub (Array.mapMaybe (\n -> 
                 let nStr = String.replaceAll (Pattern ".") (Replacement "_") n
                     isSelf = nStr == modName
                 in if n == "Prim" || String.indexOf (Pattern "Prim.") n == Just 0 || isSelf then Nothing else Just nStr
-              ) rawModules)
+              ) allModules)
           let importsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") coreImports)
           let rustCode = "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" <> importsRust <> "\n\n" <> rsFile <> "\n\n" <> ffiContent <> "\n\n"
           Ref.modify_ (\acc -> Map.insert modName { code: rustCode, imports: coreImports } acc) modulesRef
