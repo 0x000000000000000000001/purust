@@ -4,7 +4,7 @@
 <br />
 <br />
 
-_Experimental WIP._
+_Experimental WIP. You can [find a complete devlog here](https://discourse.purescript.org/t/leveraging-modern-low-level-a-rust-backend-for-purescript/5932/7)._ 
 
 A super-optimized **PureScript-to-Rust compiler**, entirely written in PureScript, leveraging Rust's **blazing-fast execution**, **memory safety**, **zero-cost abstractions** and **huge ecosystem**. 
 
