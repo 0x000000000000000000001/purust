@@ -18865,16 +18865,17 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   };
   if (isEffectNode(v) && !inEffectBlock) {
     const freeVars = freeVariables(v);
-    const insideClonesCode = "// FREEVARS: " + joinWith(", ")(fromFoldableImpl(foldableSet.foldr, freeVars)) + "\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
-      (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
-      fromFoldableImpl(foldableSet.foldr, freeVars)
-    )));
+    const toCloneInside = filterImpl((v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity), fromFoldableImpl(foldableSet.foldr, freeVars));
+    const insideClonesCode = "// FREEVARS: " + joinWith(", ")(fromFoldableImpl(foldableSet.foldr, freeVars)) + "\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(toCloneInside));
     const toCloneOutside = filterImpl(
       (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
       fromFoldableImpl(foldableSet.foldr, unsafeIntersectionWith(ordString.compare, $$const, freeVars, alive))
     );
     const outsideClonesCode = joinWith("")(arrayMap((v1) => "let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n    ")(toCloneOutside));
     const bodyCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(freeVars)(true)(v);
+    if (toCloneInside.length === 0) {
+      return "{\n    " + outsideClonesCode + "crate::Value::Func1(purust_core::Func1::Static(|mut _u: crate::UnknownType| -> crate::UnknownType {\n        " + bodyCode + "\n    } as fn(crate::UnknownType) -> crate::UnknownType))\n}";
+    }
     if (toCloneOutside.length > 0) {
       return "{\n    " + outsideClonesCode + "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    })))\n}";
     }
@@ -19616,7 +19617,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       alive,
       freeVariables(v._4)
     ))(true)(realVal);
-    return "{\n    let mut " + name2 + " = " + boxUnbox(currentMod)(boundTy)(Any)(isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func1(purust_core::Func1::Shared(f)) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    drop(" + name2 + ");\n") + "    " + (isEffectNode(v._4) ? rawBodyCode : "{\n        let _val_eval = " + rawBodyCode + ";\n        if let crate::Value::Func1(purust_core::Func1::Shared(f)) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + "\n}";
+    return "{\n    let mut " + name2 + " = " + boxUnbox(currentMod)(boundTy)(Any)(isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func1(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    drop(" + name2 + ");\n") + "    " + (isEffectNode(v._4) ? rawBodyCode : "{\n        let _val_eval = " + rawBodyCode + ";\n        if let crate::Value::Func1(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + "\n}";
   }
   if (v.tag === "EffectPure") {
     return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1);
@@ -19851,7 +19852,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       return "std::rc::Rc::new(" + rustCtor + ")";
     }
     if (len <= 10) {
-      return "purust_core::Func" + showIntImpl(len) + "::Shared(std::rc::Rc::new(move |" + argsCode + "| -> " + retTyStr + " { " + innerCall + " }))";
+      return "purust_core::Func" + showIntImpl(len) + "::Static(|" + argsCode + "| -> " + retTyStr + " { " + innerCall + " } as fn(" + joinWith(", ")(arrayMap((i) => codegenExprType(currentMod)(false)(i >= 0 && i < argTys.length ? argTys[i] : Any))(rangeImpl(0, len - 1 | 0))) + ") -> " + retTyStr + ")";
     }
     return "/* ERROR: Ctor with > 10 fields */ std::rc::Rc::new(" + rustCtor + ")";
   }
@@ -19941,10 +19942,21 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         ]) + ") -> " + codegenExprType(currentMod)(true)(retType) + " {\n        loop {\n            break " + boxUnbox(currentMod)(retType)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(innerBound)(innerExpr))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)($Maybe(
           "Just",
           { name: sanitizeIdent(v1._1), params: dedupedParams }
-        ))(aritiesMap)(globalClassFields)(innerBound)(freeVariables(innerExpr))(false)(innerExpr)) + ";\n        }\n    }\n        " + boxUnbox(currentMod)(Any)(valTy)(arity > 0 && arity <= 10 ? "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v2) => "mut " + sanitizeIdent(v2._1) + ": " + codegenExprType(currentMod)(false)(v2._2))(paramPairs)) + "| -> " + codegenExprType(currentMod)(true)(retType) + " {\n        " + joinWith("\n        ")(arrayMap((c) => "let mut " + sanitizeIdent(c) + " = " + sanitizeIdent(c) + ".clone();")(capturedArr)) + "\n        " + fnName + "(" + joinWith(", ")([
-          ...arrayMap(sanitizeIdent)(capturedArr),
-          ...arrayMap(sanitizeIdent)(dedupedParams)
-        ]) + ")\n    }))" : 'unimplemented!("LetRec arity > 10")') + "\n    };";
+        ))(aritiesMap)(globalClassFields)(innerBound)(freeVariables(innerExpr))(false)(innerExpr)) + ";\n        }\n    }\n        " + boxUnbox(currentMod)(Any)(valTy)((() => {
+          if (arity > 0 && arity <= 10) {
+            const innerCall = fnName + "(" + joinWith(", ")([
+              ...arrayMap(sanitizeIdent)(capturedArr),
+              ...arrayMap(sanitizeIdent)(dedupedParams)
+            ]) + ")";
+            const clones = joinWith("\n        ")(arrayMap((c) => "let mut " + sanitizeIdent(c) + " = " + sanitizeIdent(c) + ".clone();")(capturedArr));
+            const argsDecl = joinWith(", ")(arrayMap((v2) => "mut " + sanitizeIdent(v2._1) + ": " + codegenExprType(currentMod)(false)(v2._2))(paramPairs));
+            if (capturedArr.length === 0) {
+              return "purust_core::Func" + showIntImpl(arity) + "::Static(|" + argsDecl + "| -> " + codegenExprType(currentMod)(true)(retType) + " {\n        " + innerCall + "\n    } as fn(" + joinWith(", ")(arrayMap((v2) => codegenExprType(currentMod)(false)(v2._2))(paramPairs)) + ") -> " + codegenExprType(currentMod)(true)(retType) + ")";
+            }
+            return "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + argsDecl + "| -> " + codegenExprType(currentMod)(true)(retType) + " {\n        " + clones + "\n        " + innerCall + "\n    }))";
+          }
+          return 'unimplemented!("LetRec arity > 10")';
+        })()) + "\n    };";
       }
       return "let val_" + sanitizeIdent(v1._1) + " = {\n        " + clonesCode + "\n        " + boxUnbox(currentMod)(Any)(valTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(aliveForVal)(false)(v1._2)) + "\n    };";
     })($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "if let crate::Value::Thunk(ref mut thunk) = " + sanitizeIdent(v1._1) + " {\n    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n    mut_thunk.call = Some((val_" + sanitizeIdent(v1._1) + ").unwrap_func1());\n} else { unreachable!() }")($0)) + "\n    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && anyImpl(
