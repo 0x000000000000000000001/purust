@@ -447,7 +447,7 @@ extractAbsParams 0 expr = Just (Tuple [] expr)
 extractAbsParams n (NeutralExpr (Typed _ expr)) = extractAbsParams n expr
 extractAbsParams n (NeutralExpr (Abs params body)) = 
   let pNames = map (\(Tuple mbId lvl) -> case mbId of
-                 Just (Ident x) -> x
+                 Just (Ident x) -> sanitizeIdent x
                  Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
       len = Array.length pNames
   in if n >= len then
@@ -918,11 +918,11 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         if Array.length toCloneOutside > 0 then
           "{\n    " <> outsideClonesCode <> "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
-          "    }))\n}"
+          "    })))\n}"
         else
           "{\n    crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
-          "    }))\n}"
+          "    })))\n}"
     else case syn of
   Typed ty innerRaw -> 
     let 
@@ -1305,7 +1305,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
-          "        if let crate::Value::Func1(purust_core::Func1::Shared(f) = &_val_eval {\n" <>
+          "        if let crate::Value::Func1(purust_core::Func1::Shared(f)) = &_val_eval {\n" <>
           "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
@@ -1332,7 +1332,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         bodyCode = if isEffectNode body then rawBodyCode else
           "{\n" <>
           "        let _val_eval = " <> rawBodyCode <> ";\n" <>
-          "        if let crate::Value::Func1(purust_core::Func1::Shared(f) = &_val_eval {\n" <>
+          "        if let crate::Value::Func1(purust_core::Func1::Shared(f)) = &_val_eval {\n" <>
           "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
