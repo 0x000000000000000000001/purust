@@ -18338,7 +18338,7 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
       const expArity = v2._1.length;
       const actArity = v1._1.length;
       if (expArity === actArity && expArity > 0 && expArity <= 10) {
-        return "purust_core::Func" + showIntImpl(expArity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(v1._2)("_f(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => boxUnbox(currentMod)(v3._2)(v3._1)("_a" + showIntImpl(i)))(zipWithImpl(
+        return "purust_core::Func" + showIntImpl(expArity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(v1._2)("_f(" + joinWith(", ")(mapWithIndexArray((i) => (v32) => boxUnbox(currentMod)(v32._2)(v32._1)("_a" + showIntImpl(i)))(zipWithImpl(
           Tuple,
           v2._1,
           v1._1
@@ -18350,7 +18350,7 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
           "Func",
           remainingActArgs,
           v1._2
-        ))("purust_core::Func" + showIntImpl(remainingActArgs.length) + "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " + joinWith(" ")(mapWithIndexArray((i) => (v3) => "let mut _a" + showIntImpl(i) + " = _a" + showIntImpl(i) + ".clone();")(v2._1)) + " move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(expArity + i | 0) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(remainingActArgs))) + "| -> " + codegenExprType(currentMod)(true)(v1._2) + " { _f2(" + joinWith(", ")(mapWithIndexArray((i) => (actTy) => boxUnbox(currentMod)(actTy)((() => {
+        ))("purust_core::Func" + showIntImpl(remainingActArgs.length) + "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " + joinWith(" ")(mapWithIndexArray((i) => (v32) => "let mut _a" + showIntImpl(i) + " = _a" + showIntImpl(i) + ".clone();")(v2._1)) + " move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(expArity + i | 0) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(remainingActArgs))) + "| -> " + codegenExprType(currentMod)(true)(v1._2) + " { _f2(" + joinWith(", ")(mapWithIndexArray((i) => (actTy) => boxUnbox(currentMod)(actTy)((() => {
           const $0 = [...v2._1, ...remainingActArgs];
           if (i >= 0 && i < $0.length) {
             return $0[i];
@@ -18364,15 +18364,15 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
           const idx = buildCall$a0, currentTy = buildCall$a1, accCode = buildCall$a2;
           if (idx >= expArity) {
             buildCall$c = false;
-            buildCall$r = accCode;
+            buildCall$r = $Tuple(currentTy, accCode);
             continue;
           }
-          const v3 = unwrapType(currentTy);
-          if (v3.tag === "Func") {
-            const $0 = v3._1;
+          const v32 = unwrapType(currentTy);
+          if (v32.tag === "Func") {
+            const $0 = v32._1;
             const stepArity = $0.length;
             buildCall$a0 = idx + stepArity | 0;
-            buildCall$a1 = v3._2;
+            buildCall$a1 = v32._2;
             buildCall$a2 = "(" + accCode + ")(" + joinWith(", ")(mapWithIndexArray((i) => (paramTy) => boxUnbox(currentMod)(i >= 0 && i < $0.length ? $0[i] : Any)(paramTy)("_a" + showIntImpl(idx + i | 0) + ".clone()"))(sliceImpl(
               idx,
               idx + stepArity | 0,
@@ -18386,11 +18386,8 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
         }
         return buildCall$r;
       };
-      return "purust_core::Func" + showIntImpl(expArity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(v1._2)(buildCall(0)($ExprType(
-        "Func",
-        v1._1,
-        v1._2
-      ))("_f")) + " } }))";
+      const v3 = buildCall(0)($ExprType("Func", v1._1, v1._2))("_f");
+      return "purust_core::Func" + showIntImpl(expArity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(v3._1)(v3._2) + " } }))";
     }
     const arity = v2._1.length;
     if ((actStr === "crate::UnknownType" || actStr === "crate::Value") && arity > 0 && arity <= 10) {
