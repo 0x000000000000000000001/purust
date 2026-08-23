@@ -486,7 +486,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                              in Tuple (if Array.length argTys > 1 then Func (Array.drop 1 argTys) nextRetTy else nextRetTy) ("(" <> accCode <> ")(" <> boxedArg <> ")")
                            _ -> 
                              let boxedArg = boxUnbox modNameStr Any argTy argCode
-                             in Tuple Any ("(" <> accCode <> ").unwrap_func()(" <> boxedArg <> ")")
+                             in Tuple Any ("(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")")
                        ) (Tuple fnTy fnCode) argsCodeAndType
                    in boxUnbox modNameStr retType actualRetTy callCode
             in { paramsCode: pCode, retCode: codegenExprType modNameStr true retType, bodyCode: bodyCodeRaw, isFunc: true }
@@ -793,9 +793,9 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
                toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
                clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
                
-               newCode = "std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
+               newCode = "purust_core::Func1::Shared(std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
                          clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
-                         "})"
+                         "}))"
             in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
           ) initialState (Array.mapWithIndex Tuple paramsArr)
         
@@ -835,11 +835,11 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound freeVars true expr
       in
         if Array.length toCloneOutside > 0 then
-          "{\n    " <> outsideClonesCode <> "crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    " <> outsideClonesCode <> "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    }))\n}"
         else
-          "{\n    crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    }))\n}"
     else case syn of
@@ -1155,7 +1155,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                in (case Array.foldr (\etaArg (Tuple i code) -> 
                    let prevEtas = Array.take i etaArgs
                        clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
-                   in Tuple (i - 1) ("crate::Value::Func(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " }))")
+                   in Tuple (i - 1) ("crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " }))")
                  ) (Tuple (expectedArgsLength - 1) boxedInnerCall) etaArgs of
                  Tuple _ res -> boxUnbox currentMod fnTy Any res)
           else
@@ -1217,7 +1217,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
-          "        if let crate::Value::Func(f) = &_val_eval {\n" <>
+          "        if let crate::Value::Func1(purust_core::Func1::Shared(f) = &_val_eval {\n" <>
           "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
@@ -1244,7 +1244,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         bodyCode = if isEffectNode body then rawBodyCode else
           "{\n" <>
           "        let _val_eval = " <> rawBodyCode <> ";\n" <>
-          "        if let crate::Value::Func(f) = &_val_eval {\n" <>
+          "        if let crate::Value::Func1(purust_core::Func1::Shared(f) = &_val_eval {\n" <>
           "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
@@ -1463,7 +1463,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
       mutCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
           "if let crate::Value::Thunk(ref mut thunk) = " <> sanitizeIdent n <> " {\n" <>
           "    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n" <>
-          "    mut_thunk.call = Some((val_" <> sanitizeIdent n <> ").unwrap_func());\n" <>
+          "    mut_thunk.call = Some((val_" <> sanitizeIdent n <> ").unwrap_func1());\n" <>
           "} else { unreachable!() }"
         ) bindsArray)
         
