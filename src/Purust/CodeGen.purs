@@ -950,7 +950,11 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         insideClonesCode = "// FREEVARS: " <> String.joinWith ", " (Array.fromFoldable freeVars) <> "\n" <> String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toCloneInside)
         bodyCode = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound freeVars true expr
       in
-        if Array.length toCloneOutside > 0 then
+        if Array.length toCloneInside == 0 then
+          "{\n    " <> outsideClonesCode <> "crate::Value::Func1(purust_core::Func1::Static(|mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "        " <> bodyCode <> "\n" <>
+          "    } as fn(crate::UnknownType) -> crate::UnknownType))\n}"
+        else if Array.length toCloneOutside > 0 then
           "{\n    " <> outsideClonesCode <> "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    })))\n}"
@@ -1328,7 +1332,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
-          "        if let crate::Value::Func1(purust_core::Func1::Shared(f)) = &_val_eval {\n" <>
+          "        if let crate::Value::Func1(f) = &_val_eval {\n" <>
           "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
@@ -1355,7 +1359,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         bodyCode = if isEffectNode body then rawBodyCode else
           "{\n" <>
           "        let _val_eval = " <> rawBodyCode <> ";\n" <>
-          "        if let crate::Value::Func1(purust_core::Func1::Shared(f)) = &_val_eval {\n" <>
+          "        if let crate::Value::Func1(f) = &_val_eval {\n" <>
           "            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n" <>
           "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
@@ -1488,7 +1492,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
           argsCode = String.joinWith ", " (Array.mapWithIndex (\i a -> "mut " <> a <> ": " <> codegenExprType currentMod false (fromMaybe Any (Array.index argTys i))) argNames)
           innerCall = "std::rc::Rc::new(" <> rustCtor <> "(" <> String.joinWith ", " (map (\a -> a <> ".clone()") argNames) <> "))"
       in if len == 0 then "std::rc::Rc::new(" <> rustCtor <> ")" 
-         else if len <= 10 then "purust_core::Func" <> show len <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " { " <> innerCall <> " }))"
+         else if len <= 10 then "purust_core::Func" <> show len <> "::Static(|" <> argsCode <> "| -> " <> retTyStr <> " { " <> innerCall <> " } as fn(" <> String.joinWith ", " (map (\i -> codegenExprType currentMod false (fromMaybe Any (Array.index argTys i))) (Array.range 0 (len - 1))) <> ") -> " <> retTyStr <> ")"
          else "/* ERROR: Ctor with > 10 fields */ std::rc::Rc::new(" <> rustCtor <> ")"
 
   LetRec _ binds body ->
@@ -1552,7 +1556,10 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                            clones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)
                            innerArgs = String.joinWith ", " (map sanitizeIdent capturedArr <> map sanitizeIdent dedupedParams)
                            innerCall = fnName <> "(" <> innerArgs <> ")"
-                       in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsDecl <> "| -> " <> codegenExprType currentMod true retType <> " {\n        " <> clones <> "\n        " <> innerCall <> "\n    }))"
+                       in if Array.length capturedArr == 0 then
+                            "purust_core::Func" <> show arity <> "::Static(|" <> argsDecl <> "| -> " <> codegenExprType currentMod true retType <> " {\n        " <> innerCall <> "\n    } as fn(" <> String.joinWith ", " (map (\(Tuple _ ty) -> codegenExprType currentMod false ty) paramPairs) <> ") -> " <> codegenExprType currentMod true retType <> ")"
+                          else
+                            "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsDecl <> "| -> " <> codegenExprType currentMod true retType <> " {\n        " <> clones <> "\n        " <> innerCall <> "\n    }))"
                      else "unimplemented!(\"LetRec arity > 10\")"
                      
                    finalBridgeCode = boxUnbox currentMod Any valTy bridgeCode

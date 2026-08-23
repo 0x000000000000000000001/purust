@@ -7,7 +7,7 @@ L'objectif de cette nouvelle roadmap est d'atteindre (voire dépasser) les perfo
 
 ## Prochaines étapes (Optimisation ciblée) :
 
-- [ ] **Step 1 (Heuristiques des fonctions et Closures) :**
+- [x] **Step 1 (Heuristiques des fonctions et Closures) :**
   - Le goulot d'étranglement majeur (ex: benchmark Polymorphism, Lazy) est l'utilisation pessimiste de `Func::Shared` qui alloue systématiquement un `Rc<dyn Fn>` sur le tas.
   - **Stratégie** : Utiliser des pointeurs de fonctions natifs (`Func::Static` via `fn(...) -> ...`) chaque fois qu'une fonction ne capture pas de contexte (fonctions pures, constructeurs, etc.). Zéro allocation, et cela ne casse pas Perceus (pas de refcount impliqué).
 
