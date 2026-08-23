@@ -187,9 +187,13 @@ codegenPrelude fields =
       let typeParams = String.joinWith ", " (Array.replicate (arity + 1) "UnknownType")
       in "    pub fn unwrap_func" <> show arity <> "(&self) -> Func" <> show arity <> "<" <> typeParams <> "> {\n" <>
          (if arity == 1 then 
-           "        if let Value::Func1(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } else { panic!(\"Expected Func1\"); }\n"
+           "        if let Value::Func1(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } " <>
+           String.joinWith " " (map (\a -> "else if let Value::Func" <> show a <> "(v) = self { let f = v.clone(); Func1::Shared(std::rc::Rc::new(move |a0: UnknownType| -> UnknownType { crate::Value::Func" <> show (a - 1) <> "(Func" <> show (a - 1) <> "::Shared(std::rc::Rc::new({ let f2 = f.clone(); move |" <> String.joinWith ", " (map (\i -> "mut a" <> show i <> ": UnknownType") (Array.range 1 (a - 1))) <> "| -> UnknownType { f2(a0.clone(), " <> String.joinWith ", " (map (\i -> "a" <> show i) (Array.range 1 (a - 1))) <> ") } }))) })) }") (Array.range 2 10)) <>
+           " else { panic!(\"Expected Func1\"); }\n"
           else 
-           "        if let Value::Func" <> show arity <> "(v) = self { v.clone() } else { panic!(\"Expected Func" <> show arity <> "\"); }\n"
+           let argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": UnknownType") (Array.replicate arity unit))
+               bodyInner = Array.foldl (\acc i -> acc <> ".unwrap_func1()(a" <> show i <> ")") "f(a0)" (Array.range 1 (arity - 1))
+           in "        if let Value::Func" <> show arity <> "(v) = self { v.clone() } else if let Value::Func1(v) = self { let f = v.clone(); Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsDecl <> "| -> UnknownType { " <> bodyInner <> " })) } else { panic!(\"Expected Func" <> show arity <> " or Func1 (curried) - got something else\"); }\n"
          ) <>
          "    }\n"
     ) (Array.range 1 10)
