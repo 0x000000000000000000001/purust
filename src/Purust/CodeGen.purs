@@ -856,7 +856,13 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection capturedVars alive))
         outsideClonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toCloneOutside)
         
-        closureCode = "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> letBindingsAndDrops <> "    " <> boxedBody <> "\n}))"
+        realCapturedVars = Set.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) capturedVars
+        
+        closureCode = if Set.isEmpty realCapturedVars then
+            "purust_core::Func" <> show arity <> "::Static(|" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> letBindingsAndDrops <> "    " <> boxedBody <> "\n} as fn(" <> String.joinWith ", " (map (\(Tuple i _) -> codegenExprType currentMod false (fromMaybe Any (Array.index expectedArgTys i))) (Array.mapWithIndex Tuple paramsArr)) <> ") -> " <> retTyStr <> ")"
+          else
+            "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> letBindingsAndDrops <> "    " <> boxedBody <> "\n}))"
+            
       in if Array.length toCloneOutside > 0 then
            "{\n" <> outsideClonesCode <> "    " <> closureCode <> "\n}"
          else closureCode
@@ -894,12 +900,18 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
                    else if pIsUsed then "    let mut " <> sanitizeIdent p <> " = _a0;\n"
                    else "    drop(_a0);\n"
                thisClosureCaptures = Set.delete p neededByInner
+               realThisClosureCaptures = Set.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) thisClosureCaptures
                toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
                clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
                
-               newCode = "purust_core::Func1::Shared(std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
-                         clonesCode <> letBindingAndDrop <> "    " <> st.code <> "\n" <>
-                         "}))"
+               newCode = if Set.isEmpty realThisClosureCaptures then
+                   "purust_core::Func1::Static(|" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
+                   clonesCode <> letBindingAndDrop <> "    " <> st.code <> "\n" <>
+                   "} as fn(" <> codegenExprType currentMod false pTy <> ") -> " <> retTyStr <> ")"
+                 else
+                   "purust_core::Func1::Shared(std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
+                   clonesCode <> letBindingAndDrop <> "    " <> st.code <> "\n" <>
+                   "}))"
             in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
         ) initialState (Array.mapWithIndex Tuple paramsArr)
         

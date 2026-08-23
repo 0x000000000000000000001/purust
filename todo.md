@@ -14,6 +14,6 @@ L'objectif de cette roadmap est de transformer `purust` d'un générateur dynami
   - [x] **Step 4.2 (Typage strict de bout en bout) :** Propager les types réels du TAST jusqu'aux signatures pour supprimer le filet de sécurité `UnknownType` et surtout connaître l'arité exacte de chaque fonction.
   - [x] **Step 4.3 (Uncurrying) :** Analyser l'AST avec les types pour "aplatir" les appels et utiliser la variante `Static` du Smart Wrapper quand on a tous les arguments.
   - [x] **Step 4.4 (Application Partielle) :** Gérer dynamiquement la création de "thunks" via la variante `Shared` du Smart Wrapper s'il manque des arguments.
-  - [ ] **Step 4.5 (Analyse des captures et Lifetimes) :** Détecter finement quand une closure capture son environnement pour optimiser les clonages de `Rc`.
+  - [x] **Step 4.5 (Analyse des captures et Lifetimes) :** Détecter finement quand une closure capture son environnement pour optimiser les clonages de `Rc`.
 
 Note : tu peux tester à la fin de tes travaux si tout fonctionne avec bin/rust/run -c, dans htdocs/altbak.pub-purust
