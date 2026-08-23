@@ -828,16 +828,27 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         
         argsCodeArr = Array.mapWithIndex (\i p -> "mut _a" <> show i <> ": " <> codegenExprType currentMod false (fromMaybe Any (Array.index expectedArgTys i))) paramsArr
         argsCode = String.joinWith ", " argsCodeArr
-        letBindings = String.joinWith "" (Array.mapWithIndex (\i p -> if p == "_" then "" else "    let mut " <> sanitizeIdent p <> " = _a" <> show i <> ";\n") paramsArr)
-        retTyStr = codegenExprType currentMod true innermostExpectedRetTy
         
-        unusedArgs = Array.filter (\p -> p /= "_" && not (Set.member p (freeVariables body))) paramsArr
-        dropsCode = String.joinWith "" (map (\p -> "    drop(" <> sanitizeIdent p <> ");\n") unusedArgs)
+        processParam (Tuple i p) st =
+            if p == "_" then
+                { code: st.code <> "    drop(_a" <> show i <> ");\n", bound: st.bound }
+            else if Set.member p st.bound then
+                { code: st.code <> "    drop(_a" <> show i <> ");\n", bound: st.bound }
+            else
+                let newBound = Set.insert p st.bound
+                in if Set.member p (freeVariables body) then
+                    { code: "    let mut " <> sanitizeIdent p <> " = _a" <> show i <> ";\n" <> st.code, bound: newBound }
+                else
+                    { code: st.code <> "    drop(_a" <> show i <> ");\n", bound: newBound }
+        
+        letBindingsAndDrops = (Array.foldr processParam { code: "", bound: Set.empty } (Array.mapWithIndex Tuple paramsArr)).code
+        
+        retTyStr = codegenExprType currentMod true innermostExpectedRetTy
         
         toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection capturedVars alive))
         outsideClonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toCloneOutside)
         
-        closureCode = "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> letBindings <> dropsCode <> "    " <> boxedBody <> "\n}))"
+        closureCode = "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> letBindingsAndDrops <> "    " <> boxedBody <> "\n}))"
       in if Array.length toCloneOutside > 0 then
            "{\n" <> outsideClonesCode <> "    " <> closureCode <> "\n}"
          else closureCode
@@ -863,21 +874,23 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
             let
                pTy = fromMaybe Any (Array.index expectedArgTys i)
                pCode = "mut _a0: " <> codegenExprType currentMod false pTy
-               letBinding = if p == "_" then "" else "    let mut " <> sanitizeIdent p <> " = _a0;\n"
-               
                remainingArgTys = Array.drop (i + 1) expectedArgTys
                thisRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys expectedRetTy else expectedRetTy
                retTyStr = codegenExprType currentMod true thisRetTy
                
                neededByInner = st.freeVars
                pIsUsed = Set.member p neededByInner
-               dropsCode = if p /= "_" && not pIsUsed then "    drop(" <> p <> ");\n" else ""
+               
+               letBindingAndDrop = 
+                   if p == "_" then "    drop(_a0);\n"
+                   else if pIsUsed then "    let mut " <> sanitizeIdent p <> " = _a0;\n"
+                   else "    drop(_a0);\n"
                thisClosureCaptures = Set.delete p neededByInner
                toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
                clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
                
                newCode = "purust_core::Func1::Shared(std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
-                         letBinding <> clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
+                         clonesCode <> letBindingAndDrop <> "    " <> st.code <> "\n" <>
                          "}))"
             in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
         ) initialState (Array.mapWithIndex Tuple paramsArr)

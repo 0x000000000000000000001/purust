@@ -18721,15 +18721,19 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     const remainingArgs = arity < 1 ? expectedArgTys : sliceImpl(arity, expectedArgTys.length, expectedArgTys);
     const outsideClonesCode2 = joinWith("")(arrayMap((v$2) => "    let mut " + sanitizeIdent(v$2) + " = " + sanitizeIdent(v$2) + ".clone();\n")(toCloneOutside2));
     const innermostExpectedRetTy = remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy;
-    const closureCode = "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (p) => "mut _a" + showIntImpl(i) + ": " + codegenExprType(currentMod)(false)(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any))(paramsArr)) + "| -> " + codegenExprType(currentMod)(true)(innermostExpectedRetTy) + " {\n" + joinWith("")(mapWithIndexArray((i) => (p) => {
-      if (p === "_") {
-        return "";
+    const closureCode = "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (p) => "mut _a" + showIntImpl(i) + ": " + codegenExprType(currentMod)(false)(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any))(paramsArr)) + "| -> " + codegenExprType(currentMod)(true)(innermostExpectedRetTy) + " {\n" + foldrArray((v$2) => (st) => {
+      if (v$2._2 === "_") {
+        return { code: st.code + "    drop(_a" + showIntImpl(v$2._1) + ");\n", bound: st.bound };
       }
-      return "    let mut " + sanitizeIdent(p) + " = _a" + showIntImpl(i) + ";\n";
-    })(paramsArr)) + joinWith("")(arrayMap((p) => "    drop(" + sanitizeIdent(p) + ");\n")(filterImpl(
-      (p) => p !== "_" && !member2(p)(freeVariables(body)),
-      paramsArr
-    ))) + "    " + boxUnbox(currentMod)(innermostExpectedRetTy)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
+      if (member2(v$2._2)(st.bound)) {
+        return { code: st.code + "    drop(_a" + showIntImpl(v$2._1) + ");\n", bound: st.bound };
+      }
+      const newBound1 = insert(ordString)(v$2._2)()(st.bound);
+      if (member2(v$2._2)(freeVariables(body))) {
+        return { code: "    let mut " + sanitizeIdent(v$2._2) + " = _a" + showIntImpl(v$2._1) + ";\n" + st.code, bound: newBound1 };
+      }
+      return { code: st.code + "    drop(_a" + showIntImpl(v$2._1) + ");\n", bound: newBound1 };
+    })({ code: "", bound: Leaf })(mapWithIndexArray(Tuple)(paramsArr)).code + "    " + boxUnbox(currentMod)(innermostExpectedRetTy)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
       const oldCaptured = globalCaptured.value;
       const $0 = globalCaptured.value;
       globalCaptured.value = unsafeUnionWith(ordString.compare, $$const, capturedVars, $0);
@@ -18747,14 +18751,23 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     return (st) => {
       const $2 = $0 + 1 | 0;
       const remainingArgTys = $2 < 1 ? expectedArgTys : sliceImpl($2, expectedArgTys.length, expectedArgTys);
+      const pIsUsed = member2($1)(st.freeVars);
       const thisClosureCaptures = $$delete(ordString)($1)(st.freeVars);
       return {
         freeVars: thisClosureCaptures,
         isInnermost: false,
-        code: "purust_core::Func1::Shared(std::rc::Rc::new(move |mut _a0: " + codegenExprType(currentMod)(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(currentMod)(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + ($1 === "_" ? "" : "    let mut " + sanitizeIdent($1) + " = _a0;\n") + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
+        code: "purust_core::Func1::Shared(std::rc::Rc::new(move |mut _a0: " + codegenExprType(currentMod)(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(currentMod)(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
           (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
           fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
-        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    drop(" + $1 + ");\n" : "") + "    " + st.code + "\n}))"
+        ))) + (() => {
+          if ($1 === "_") {
+            return "    drop(_a0);\n";
+          }
+          if (pIsUsed) {
+            return "    let mut " + sanitizeIdent($1) + " = _a0;\n";
+          }
+          return "    drop(_a0);\n";
+        })() + "    " + st.code + "\n}))"
       };
     };
   })({
