@@ -19808,52 +19808,25 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       }
       fail();
     })();
-    const v$1 = unwrapType(ctorTy);
-    const retTy = v$1.tag === "Func" ? v$1._2 : v$1;
-    const retTyStr = codegenExprType(currentMod)(true)(retTy);
-    const v$2 = unwrapType(ctorTy);
-    const argTys = v$2.tag === "Func" ? v$2._1 : [];
-    const genCurried = (v1) => (v2) => {
-      if (v1 === 0) {
-        return "std::rc::Rc::new(" + rustCtor + "(" + joinWith(", ")(arrayMap((a) => a + ".clone()")(v2)) + "))";
+    const retTyStr = codegenExprType(currentMod)(true)((() => {
+      const v$12 = unwrapType(ctorTy);
+      if (v$12.tag === "Func") {
+        return v$12._2;
       }
-      const argName = "a" + showIntImpl(len - v1 | 0);
-      return "std::rc::Rc::new(move |mut " + argName + ": " + codegenExprType(currentMod)(false)((() => {
-        const $1 = len - v1 | 0;
-        if ($1 >= 0 && $1 < argTys.length) {
-          return argTys[$1];
-        }
-        return Any;
-      })()) + "| -> " + (v1 === 1 ? retTyStr : "std::rc::Rc<dyn Fn(" + codegenExprType(currentMod)(false)((() => {
-        const $1 = (len - v1 | 0) + 1 | 0;
-        if ($1 >= 0 && $1 < argTys.length) {
-          return argTys[$1];
-        }
-        return Any;
-      })()) + ") -> " + codegenExprType(currentMod)(true)((() => {
-        if (v1 > 2) {
-          return $ExprType(
-            "Func",
-            (() => {
-              const $1 = (len - v1 | 0) + 2 | 0;
-              if ($1 < 1) {
-                return argTys;
-              }
-              return sliceImpl($1, argTys.length, argTys);
-            })(),
-            retTy
-          );
-        }
-        if (v1 === 2) {
-          return retTy;
-        }
-        return Any;
-      })()) + ">") + " { " + (v1 > 1 && v2.length > 0 ? joinWith(" ")(arrayMap((a) => "let mut " + a + " = " + a + ".clone();")(v2)) + " " : "") + genCurried(v1 - 1 | 0)(snoc(v2)(argName)) + " })";
-    };
+      return v$12;
+    })());
+    const v$1 = unwrapType(ctorTy);
+    const argTys = v$1.tag === "Func" ? v$1._1 : [];
+    const argNames = mapWithIndexArray((i) => (v1) => "a" + showIntImpl(i))(v._4);
+    const argsCode = joinWith(", ")(mapWithIndexArray((i) => (a) => "mut " + a + ": " + codegenExprType(currentMod)(false)(i >= 0 && i < argTys.length ? argTys[i] : Any))(argNames));
+    const innerCall = "std::rc::Rc::new(" + rustCtor + "(" + joinWith(", ")(arrayMap((a) => a + ".clone()")(argNames)) + "))";
     if (len === 0) {
       return "std::rc::Rc::new(" + rustCtor + ")";
     }
-    return genCurried(len)([]);
+    if (len <= 10) {
+      return "purust_core::Func" + showIntImpl(len) + "::Shared(std::rc::Rc::new(move |" + argsCode + "| -> " + retTyStr + " { " + innerCall + " }))";
+    }
+    return "/* ERROR: Ctor with > 10 fields */ std::rc::Rc::new(" + rustCtor + ")";
   }
   if (v.tag === "LetRec") {
     const $0 = v._2;
@@ -19925,6 +19898,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
             unsafeDifference(ordString.compare, freeVariables(v1._2), fromFoldable12(dedupedParams))
           )
         );
+        const arity = paramPairs.length;
         return "let val_" + sanitizeIdent(v1._1) + " = {\n        " + clonesCode + "\n        " + joinWith("\n        ")(arrayMap((c) => "let mut " + sanitizeIdent(c) + " = " + sanitizeIdent(c) + ".clone();")(capturedArr)) + "\n        fn " + fnName + "(" + joinWith(", ")([
           ...arrayMap((c) => "mut " + sanitizeIdent(c) + ": " + codegenExprType(currentMod)(false)((() => {
             const $2 = lookup5(c)(bound);
@@ -19940,20 +19914,10 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         ]) + ") -> " + codegenExprType(currentMod)(true)(retType) + " {\n        loop {\n            break " + boxUnbox(currentMod)(retType)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(innerBound)(innerExpr))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)($Maybe(
           "Just",
           { name: sanitizeIdent(v1._1), params: dedupedParams }
-        ))(aritiesMap)(globalClassFields)(innerBound)(freeVariables(innerExpr))(false)(innerExpr)) + ";\n        }\n    }\n        " + boxUnbox(currentMod)(Any)(valTy)(foldrArray((v2) => {
-          const $2 = v2._1;
-          const $3 = v2._2._1;
-          const $4 = v2._2._2;
-          return (st) => {
-            const $5 = $2 + 1 | 0;
-            const $6 = arrayMap((v3) => v3._2)(paramPairs);
-            const remainingArgTys = $5 < 1 ? $6 : sliceImpl($5, $6.length, $6);
-            return "std::rc::Rc::new(move |mut " + sanitizeIdent($3) + ": " + codegenExprType(currentMod)(false)($4) + "| -> " + codegenExprType(currentMod)(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, retType) : retType) + " {\n        " + joinWith("\n        ")(arrayMap((c) => "let mut " + sanitizeIdent(c) + " = " + sanitizeIdent(c) + ".clone();")([
-              ...capturedArr,
-              ...$2 < 1 ? [] : sliceImpl(0, $2, dedupedParams)
-            ])) + "\n        " + ($2 === (paramPairs.length - 1 | 0) ? fnName + "(" + joinWith(", ")([...arrayMap(sanitizeIdent)(capturedArr), ...arrayMap(sanitizeIdent)(dedupedParams)]) + ")" : st) + "\n    })";
-          };
-        })("")(mapWithIndexArray(Tuple)(paramPairs))) + "\n    };";
+        ))(aritiesMap)(globalClassFields)(innerBound)(freeVariables(innerExpr))(false)(innerExpr)) + ";\n        }\n    }\n        " + boxUnbox(currentMod)(Any)(valTy)(arity > 0 && arity <= 10 ? "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v2) => "mut " + sanitizeIdent(v2._1) + ": " + codegenExprType(currentMod)(false)(v2._2))(paramPairs)) + "| -> " + codegenExprType(currentMod)(true)(retType) + " {\n        " + joinWith("\n        ")(arrayMap((c) => "let mut " + sanitizeIdent(c) + " = " + sanitizeIdent(c) + ".clone();")(capturedArr)) + "\n        " + fnName + "(" + joinWith(", ")([
+          ...arrayMap(sanitizeIdent)(capturedArr),
+          ...arrayMap(sanitizeIdent)(dedupedParams)
+        ]) + ")\n    }))" : 'unimplemented!("LetRec arity > 10")') + "\n    };";
       }
       return "let val_" + sanitizeIdent(v1._1) + " = {\n        " + clonesCode + "\n        " + boxUnbox(currentMod)(Any)(valTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(aliveForVal)(false)(v1._2)) + "\n    };";
     })($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "if let crate::Value::Thunk(ref mut thunk) = " + sanitizeIdent(v1._1) + " {\n    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n    mut_thunk.call = Some((val_" + sanitizeIdent(v1._1) + ").unwrap_func1());\n} else { unreachable!() }")($0)) + "\n    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && anyImpl(

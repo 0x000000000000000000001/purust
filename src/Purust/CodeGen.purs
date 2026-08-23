@@ -1461,15 +1461,12 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
           argTys = extractAllArgTypes ctorTy
           retTy = extractFinalRetType ctorTy
           retTyStr = codegenExprType currentMod true retTy
-          genCurried 0 args = "std::rc::Rc::new(" <> rustCtor <> "(" <> String.joinWith ", " (map (\a -> a <> ".clone()") args) <> "))"
-          genCurried n args = 
-            let argName = "a" <> show (len - n)
-                argTy = fromMaybe Any (Array.index argTys (len - n))
-                argTyStr = codegenExprType currentMod false argTy
-                nextRetTyStr = if n == 1 then retTyStr else "std::rc::Rc<dyn Fn(" <> codegenExprType currentMod false (fromMaybe Any (Array.index argTys (len - n + 1))) <> ") -> " <> codegenExprType currentMod true (if n > 2 then Func (Array.drop (len - n + 2) argTys) retTy else if n == 2 then retTy else Any) <> ">"
-                clonesCode = if n > 1 && Array.length args > 0 then String.joinWith " " (map (\a -> "let mut " <> a <> " = " <> a <> ".clone();") args) <> " " else ""
-            in "std::rc::Rc::new(move |mut " <> argName <> ": " <> argTyStr <> "| -> " <> nextRetTyStr <> " { " <> clonesCode <> genCurried (n - 1) (Array.snoc args argName) <> " })"
-      in if len == 0 then "std::rc::Rc::new(" <> rustCtor <> ")" else genCurried len []
+          argNames = Array.mapWithIndex (\i _ -> "a" <> show i) fields
+          argsCode = String.joinWith ", " (Array.mapWithIndex (\i a -> "mut " <> a <> ": " <> codegenExprType currentMod false (fromMaybe Any (Array.index argTys i))) argNames)
+          innerCall = "std::rc::Rc::new(" <> rustCtor <> "(" <> String.joinWith ", " (map (\a -> a <> ".clone()") argNames) <> "))"
+      in if len == 0 then "std::rc::Rc::new(" <> rustCtor <> ")" 
+         else if len <= 10 then "purust_core::Func" <> show len <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " { " <> innerCall <> " }))"
+         else "/* ERROR: Ctor with > 10 fields */ std::rc::Rc::new(" <> rustCtor <> ")"
 
   LetRec _ binds body ->
     let
@@ -1525,19 +1522,15 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                    fnCode = "fn " <> fnName <> "(" <> allArgsCode <> ") -> " <> codegenExprType currentMod true retType <> " {\n        loop {\n            break " <> boxedBody <> ";\n        }\n    }"
                    
                    -- Bridge closure
-                   bridgeCode = Array.foldr (\(Tuple j (Tuple p ty)) st -> 
-                        let pTyStr = codegenExprType currentMod false ty
-                            capturedForThis = capturedArr <> Array.take j dedupedParams
-                            clones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedForThis)
-                            innerCall = if j == (Array.length paramPairs - 1) then
-                                            let innerArgs = String.joinWith ", " (map sanitizeIdent capturedArr <> map sanitizeIdent dedupedParams)
-                                            in fnName <> "(" <> innerArgs <> ")"
-                                        else st
-                            remainingArgTys = Array.drop (j + 1) (map (\(Tuple _ t) -> t) paramPairs)
-                            thisRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys retType else retType
-                            retTyStr = codegenExprType currentMod true thisRetTy
-                        in "std::rc::Rc::new(move |mut " <> sanitizeIdent p <> ": " <> pTyStr <> "| -> " <> retTyStr <> " {\n        " <> clones <> "\n        " <> innerCall <> "\n    })"
-                      ) "" (Array.mapWithIndex Tuple paramPairs)
+                   arity = Array.length paramPairs
+                   bridgeCode = if arity > 0 && arity <= 10 then
+                       let
+                           argsDecl = String.joinWith ", " (map (\(Tuple p ty) -> "mut " <> sanitizeIdent p <> ": " <> codegenExprType currentMod false ty) paramPairs)
+                           clones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)
+                           innerArgs = String.joinWith ", " (map sanitizeIdent capturedArr <> map sanitizeIdent dedupedParams)
+                           innerCall = fnName <> "(" <> innerArgs <> ")"
+                       in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsDecl <> "| -> " <> codegenExprType currentMod true retType <> " {\n        " <> clones <> "\n        " <> innerCall <> "\n    }))"
+                     else "unimplemented!(\"LetRec arity > 10\")"
                      
                    finalBridgeCode = boxUnbox currentMod Any valTy bridgeCode
                    capturedClones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)
