@@ -730,7 +730,7 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         ) bound (Array.mapWithIndex Tuple paramsArr)
 
       arity = Array.length paramsArr
-      isFuncN = arity > 0 && arity <= 10
+      isFuncN = arity > 0 && arity <= 10 && arity == Array.length expectedArgTys
     in if isFuncN then
       let
         bodyTy = inferTypeExprGlobal currentMod aritiesMap globalClassFields newBound body

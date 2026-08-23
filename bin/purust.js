@@ -18710,7 +18710,7 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   })(bound)(mapWithIndexArray(Tuple)(paramsArr));
   const capturedVars = unsafeDifference(ordString.compare, freeVariables(body), fromFoldable12(paramsArr));
   const arity = paramsArr.length;
-  if (arity > 0 && arity <= 10) {
+  if (arity > 0 && arity <= 10 && arity === expectedArgTys.length) {
     const toCloneOutside2 = filterImpl(
       (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
       fromFoldableImpl(foldableSet.foldr, unsafeIntersectionWith(ordString.compare, $$const, capturedVars, alive))
@@ -18743,10 +18743,10 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       return {
         freeVars: thisClosureCaptures,
         isInnermost: false,
-        code: ($1 === "_" ? "std::rc::Rc::new(move |" + $1 + ": " : "std::rc::Rc::new(move |mut " + $1 + ": ") + codegenExprType(currentMod)(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(currentMod)(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
+        code: ($1 === "_" ? "purust_core::Func1::Shared(std::rc::Rc::new(move |" + $1 + ": " : "purust_core::Func1::Shared(std::rc::Rc::new(move |mut " + $1 + ": ") + codegenExprType(currentMod)(false)($0 >= 0 && $0 < expectedArgTys.length ? expectedArgTys[$0] : Any) + "| -> " + codegenExprType(currentMod)(true)(remainingArgTys.length > 0 ? $ExprType("Func", remainingArgTys, expectedRetTy) : expectedRetTy) + " {\n" + joinWith("")(arrayMap((v1) => "    let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n")(filterImpl(
           (v1) => !member12(v1)(aritiesMap) && !member2(v1)(allZeroArity),
           fromFoldableImpl(foldableSet.foldr, thisClosureCaptures)
-        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    drop(" + $1 + ");\n" : "") + "    " + st.code + "\n})"
+        ))) + ($1 !== "_" && !member2($1)(st.freeVars) ? "    drop(" + $1 + ");\n" : "") + "    " + st.code + "\n}))"
       };
     };
   })({
@@ -18815,9 +18815,9 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
     const outsideClonesCode = joinWith("")(arrayMap((v1) => "let mut " + sanitizeIdent(v1) + " = " + sanitizeIdent(v1) + ".clone();\n    ")(toCloneOutside));
     const bodyCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(freeVars)(true)(v);
     if (toCloneOutside.length > 0) {
-      return "{\n    " + outsideClonesCode + "crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    }))\n}";
+      return "{\n    " + outsideClonesCode + "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    }))\n}";
     }
-    return "{\n    crate::Value::Func(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    }))\n}";
+    return "{\n    crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + insideClonesCode + "        " + bodyCode + "\n    }))\n}";
   }
   if (v.tag === "Typed") {
     const stripTyped = (stripTyped$a0$copy) => {
@@ -19446,7 +19446,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         const etaArgs = mapWithIndexArray((i) => (v3$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
         return boxUnbox(currentMod)(fnTy)(Any)(foldrArray((etaArg) => (v4) => $Tuple(
           v4._1 - 1 | 0,
-          "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v4._1 < 1 ? [] : sliceImpl(0, v4._1, etaArgs))) + " " + v4._2 + " }))"
+          "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v4._1 < 1 ? [] : sliceImpl(0, v4._1, etaArgs))) + " " + v4._2 + " }))"
         ))($Tuple(
           expectedArgsLength - 1 | 0,
           boxUnbox(currentMod)(Any)(extractFinalRetType(fnTy))(fullName + "(" + joinWith(", ")(mapWithIndexArray((i) => (eta) => boxUnbox(currentMod)(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any)(Any)(eta + ".clone()"))(etaArgs)) + ")")
@@ -19536,7 +19536,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       alive,
       freeVariables(v._4)
     ))(true)(realVal);
-    return "{\n    let mut " + name2 + " = " + boxUnbox(currentMod)(boundTy)(Any)(isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    drop(" + name2 + ");\n") + "    " + (isEffectNode(v._4) ? rawBodyCode : "{\n        let _val_eval = " + rawBodyCode + ";\n        if let crate::Value::Func(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + "\n}";
+    return "{\n    let mut " + name2 + " = " + boxUnbox(currentMod)(boundTy)(Any)(isUncurriedApp(realVal) ? rawValCode : "{\n        let _val_eval = " + rawValCode + ";\n        if let crate::Value::Func1(purust_core::Func1::Shared(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + ";\n" + (member2(name2)(freeVariables(v._4)) ? "" : "    drop(" + name2 + ");\n") + "    " + (isEffectNode(v._4) ? rawBodyCode : "{\n        let _val_eval = " + rawBodyCode + ";\n        if let crate::Value::Func1(purust_core::Func1::Shared(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }") + "\n}";
   }
   if (v.tag === "EffectPure") {
     return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1);
@@ -19898,7 +19898,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         })("")(mapWithIndexArray(Tuple)(paramPairs))) + "\n    };";
       }
       return "let val_" + sanitizeIdent(v1._1) + " = {\n        " + clonesCode + "\n        " + boxUnbox(currentMod)(Any)(valTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(aliveForVal)(false)(v1._2)) + "\n    };";
-    })($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "if let crate::Value::Thunk(ref mut thunk) = " + sanitizeIdent(v1._1) + " {\n    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n    mut_thunk.call = Some((val_" + sanitizeIdent(v1._1) + ").unwrap_func());\n} else { unreachable!() }")($0)) + "\n    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && anyImpl(
+    })($0)) + "\n    " + joinWith("\n    ")(arrayMap((v1) => "if let crate::Value::Thunk(ref mut thunk) = " + sanitizeIdent(v1._1) + " {\n    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n    mut_thunk.call = Some((val_" + sanitizeIdent(v1._1) + ").unwrap_func1());\n} else { unreachable!() }")($0)) + "\n    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && anyImpl(
       (v1) => sanitizeIdent(v1._1) === mbLoop._1.name,
       $0
     ) ? Nothing : mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inEffectBlock)($1) + "\n}";
@@ -19979,7 +19979,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
                   }
                   return $Tuple(
                     Any,
-                    "(" + $1 + ").unwrap_func()(" + boxUnbox(modNameStr)(Any)(v4._1)(v4._2) + ")"
+                    "(" + $1 + ").unwrap_func1()(" + boxUnbox(modNameStr)(Any)(v4._1)(v4._2) + ")"
                   );
                 };
               })($Tuple(
@@ -20010,7 +20010,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
                 }
                 return $Tuple(
                   Any,
-                  "(" + $1 + ").unwrap_func()(" + boxUnbox(modNameStr)(Any)(v4._1)(v4._2) + ")"
+                  "(" + $1 + ").unwrap_func1()(" + boxUnbox(modNameStr)(Any)(v4._1)(v4._2) + ")"
                 );
               };
             })($Tuple(
