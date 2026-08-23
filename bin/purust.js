@@ -17679,6 +17679,33 @@ var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
       return v._1;
     }
     if (v2.tag === "Func") {
+      if (v1.tag === "Func") {
+        const expArity = v2._1.length;
+        const countAbs = (v3) => {
+          if (v3.tag === "Abs") {
+            return v3._1.length + countAbs(v3._2) | 0;
+          }
+          if (v3.tag === "Typed") {
+            return countAbs(v3._2);
+          }
+          return 0;
+        };
+        const absCount = countAbs(v._2);
+        if (absCount > 0 && absCount < expArity) {
+          return $ExprType(
+            "Func",
+            (() => {
+              const $0 = expArity - absCount | 0;
+              if ($0 < 1) {
+                return v2._1;
+              }
+              return sliceImpl($0, v2._1.length, v2._1);
+            })(),
+            v2._2
+          );
+        }
+        return v._1;
+      }
       if (v1.tag === "Boolean") {
         return innerTy;
       }
@@ -18350,7 +18377,13 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
           "Func",
           remainingActArgs,
           v1._2
-        ))("purust_core::Func" + showIntImpl(remainingActArgs.length) + "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " + joinWith(" ")(mapWithIndexArray((i) => (v3) => "let mut _a" + showIntImpl(i) + " = _a" + showIntImpl(i) + ".clone();")(v2._1)) + " move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(expArity + i | 0) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(remainingActArgs))) + "| -> " + codegenExprType(currentMod)(true)(v1._2) + " { _f2(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "_a" + showIntImpl(i) + ".clone()")(v1._1)) + ") } }))") + " } }))";
+        ))("purust_core::Func" + showIntImpl(remainingActArgs.length) + "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " + joinWith(" ")(mapWithIndexArray((i) => (v3) => "let mut _a" + showIntImpl(i) + " = _a" + showIntImpl(i) + ".clone();")(v2._1)) + " move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(expArity + i | 0) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(remainingActArgs))) + "| -> " + codegenExprType(currentMod)(true)(v1._2) + " { _f2(" + joinWith(", ")(mapWithIndexArray((i) => (actTy) => boxUnbox(currentMod)(actTy)((() => {
+          const $0 = [...v2._1, ...remainingActArgs];
+          if (i >= 0 && i < $0.length) {
+            return $0[i];
+          }
+          return Any;
+        })())("_a" + showIntImpl(i) + ".clone()"))(v1._1)) + ") } }))") + " } }))";
       }
       return code;
     }
@@ -19458,7 +19491,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         const etaArgs = mapWithIndexArray((i) => (v3$1) => "eta_" + showIntImpl(i))(replicateImpl(expectedArgsLength, void 0));
         return boxUnbox(currentMod)(fnTy)(Any)(foldrArray((etaArg) => (v4) => $Tuple(
           v4._1 - 1 | 0,
-          "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v4._1 < 1 ? [] : sliceImpl(0, v4._1, etaArgs))) + " " + v4._2 + " }))"
+          "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType { " + joinWith(" ")(arrayMap((prev) => "let mut " + prev + " = " + prev + ".clone();")(v4._1 < 1 ? [] : sliceImpl(0, v4._1, etaArgs))) + " " + v4._2 + " })))"
         ))($Tuple(
           expectedArgsLength - 1 | 0,
           boxUnbox(currentMod)(Any)((() => {

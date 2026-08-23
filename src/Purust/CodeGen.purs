@@ -352,7 +352,10 @@ boxUnbox currentMod expected actual code =
                remArgsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show (expArity + i) <> ": " <> ty) remArgTypes)
                remRetStr = codegenExprType currentMod true actRet
                
-               allArgsCall = String.joinWith ", " (Array.mapWithIndex (\i _ -> "_a" <> show i <> ".clone()") actArgs)
+               allArgsCall = String.joinWith ", " (Array.mapWithIndex (\i actTy -> 
+                 let paramTy = fromMaybe Any (Array.index (expArgs <> remainingActArgs) i)
+                 in boxUnbox currentMod actTy paramTy ("_a" <> show i <> ".clone()")
+               ) actArgs)
                
                innerClosure = "purust_core::Func" <> show remArity <> "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " <> String.joinWith " " (Array.mapWithIndex (\i _ -> "let mut _a" <> show i <> " = _a" <> show i <> ".clone();") expArgs) <> " move |" <> remArgsDecl <> "| -> " <> remRetStr <> " { _f2(" <> allArgsCall <> ") } }))"
                
@@ -1210,7 +1213,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
                in (case Array.foldr (\etaArg (Tuple i code) -> 
                    let prevEtas = Array.take i etaArgs
                        clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
-                   in Tuple (i - 1) ("crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " }))")
+                   in Tuple (i - 1) ("crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " })))")
                  ) (Tuple (expectedArgsLength - 1) boxedInnerCall) etaArgs of
                  Tuple _ res -> boxUnbox currentMod fnTy Any res)
           else
@@ -1697,6 +1700,16 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
     in case unwrapType ty, unwrapType innerTy of
       Any, _ -> innerTy
       _, Any -> ty
+      Func expArgs expRet, Func _ _ ->
+        let countAbs :: NeutralExpr -> Int
+            countAbs (NeutralExpr (Abs params b)) = NonEmptyArray.length params + countAbs b
+            countAbs (NeutralExpr (Typed _ b)) = countAbs b
+            countAbs _ = 0
+            absCount = countAbs inner
+            expArity = Array.length expArgs
+        in if absCount > 0 && absCount < expArity then
+             Func (Array.drop (expArity - absCount) expArgs) expRet
+           else ty
       Func _ _, Boolean -> innerTy
       Func _ _, Int -> innerTy
       Func _ _, Number -> innerTy
