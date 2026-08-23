@@ -657,9 +657,10 @@ genApp modNameStr allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
                               innerCall = "_fn_ptr(" <> String.joinWith ", " innerArgs <> ")"
                               etaArgsDecl = String.joinWith ", " (Array.mapWithIndex (\i eta -> "mut " <> eta <> ": " <> codegenExprType modNameStr false (fromMaybe Any (Array.index missingEtasTypes i))) etaArgs)
                               retTyStr = codegenExprType modNameStr true retTy
-                              clonesCode = "    let mut _fn_ptr = (" <> accCode <> ").clone();\n" <> String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") evalArgs)
+                              letFnCode = "        let mut _fn_eval = (" <> accCode <> ");\n"
+                              clonesCode = "    let mut _fn_ptr = _fn_eval.clone();\n" <> String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") evalArgs)
                               closureCode = "purust_core::Func" <> show missingCount <> "::Shared(std::rc::Rc::new(move |" <> etaArgsDecl <> "| -> " <> retTyStr <> " {\n" <> clonesCode <> "    " <> innerCall <> "\n}))"
-                              blockCode = "{\n" <> String.joinWith "" letArgsCode <> "    " <> closureCode <> "\n}"
+                              blockCode = "{\n" <> letFnCode <> String.joinWith "" letArgsCode <> "    " <> closureCode <> "\n}"
                           in Tuple (Func missingEtasTypes retTy) blockCode
                    else
                      let argCode = fromMaybe "" (Array.index argsCodeArray idx)
