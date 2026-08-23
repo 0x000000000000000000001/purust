@@ -360,7 +360,36 @@ boxUnbox currentMod expected actual code =
                innerClosure = "purust_core::Func" <> show remArity <> "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " <> String.joinWith " " (Array.mapWithIndex (\i _ -> "let mut _a" <> show i <> " = _a" <> show i <> ".clone();") expArgs) <> " move |" <> remArgsDecl <> "| -> " <> remRetStr <> " { _f2(" <> allArgsCall <> ") } }))"
                
              in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet (Func remainingActArgs actRet) innerClosure <> " } }))"
-           else code
+           else
+             let
+               expArgTypes = map (codegenExprType currentMod false) expArgs
+               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
+               retStr = codegenExprType currentMod true expRet
+               
+               buildCall :: Int -> ExprType -> String -> String
+               buildCall idx currentTy accCode = 
+                 if idx >= expArity then accCode
+                 else 
+                   case unwrapType currentTy of
+                     Func actArgTys actRetTy ->
+                       let stepArity = Array.length actArgTys
+                           -- consume 'stepArity' arguments from expArgs
+                           argsToPass = Array.slice idx (idx + stepArity) expArgs
+                           argsStrs = Array.mapWithIndex (\i paramTy -> 
+                               let actArgTy = fromMaybe Any (Array.index actArgTys i)
+                               in boxUnbox currentMod actArgTy paramTy ("_a" <> show (idx + i) <> ".clone()")
+                             ) argsToPass
+                           nextCode = "(" <> accCode <> ")(" <> String.joinWith ", " argsStrs <> ")"
+                       in buildCall (idx + stepArity) actRetTy nextCode
+                     _ -> 
+                       -- currentTy is Any (Value), so it must be unwrapped
+                       let paramTy = fromMaybe Any (Array.index expArgs idx)
+                           boxedArg = boxUnbox currentMod Any paramTy ("_a" <> show idx <> ".clone()")
+                           nextCode = "(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")"
+                       in buildCall (idx + 1) Any nextCode
+                   
+               allArgsCall = buildCall 0 (Func actArgs actRet) "_f"
+             in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet Any allArgsCall <> " } }))"
       
       Func expArgs expRet, _ ->
         let arity = Array.length expArgs
@@ -1700,16 +1729,6 @@ inferTypeExpr currentMod aritiesMap bound (NeutralExpr expr) = case expr of
     in case unwrapType ty, unwrapType innerTy of
       Any, _ -> innerTy
       _, Any -> ty
-      Func expArgs expRet, Func _ _ ->
-        let countAbs :: NeutralExpr -> Int
-            countAbs (NeutralExpr (Abs params b)) = NonEmptyArray.length params + countAbs b
-            countAbs (NeutralExpr (Typed _ b)) = countAbs b
-            countAbs _ = 0
-            absCount = countAbs inner
-            expArity = Array.length expArgs
-        in if absCount > 0 && absCount < expArity then
-             Func (Array.drop (expArity - absCount) expArgs) expRet
-           else ty
       Func _ _, Boolean -> innerTy
       Func _ _, Int -> innerTy
       Func _ _, Number -> innerTy
