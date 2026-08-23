@@ -330,15 +330,33 @@ boxUnbox currentMod expected actual code =
     else if expStr == actStr then code
     else case unwrapType expected, unwrapType actual of
       Func expArgs expRet, Func actArgs actRet ->
-        let arity = Array.length expArgs
-        in if arity == Array.length actArgs && arity > 0 && arity <= 10 then
+        let expArity = Array.length expArgs
+            actArity = Array.length actArgs
+        in if expArity == actArity && expArity > 0 && expArity <= 10 then
              let
                expArgTypes = map (codegenExprType currentMod false) expArgs
                actArgTypes = map (codegenExprType currentMod false) actArgs
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
                argsCall = String.joinWith ", " (Array.mapWithIndex (\i (Tuple expTy actTy) -> boxUnbox currentMod actTy expTy ("_a" <> show i)) (Array.zip expArgs actArgs))
                retStr = codegenExprType currentMod true expRet
-             in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet actRet ("_f(" <> argsCall <> ")") <> " } }))"
+             in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet actRet ("_f(" <> argsCall <> ")") <> " } }))"
+           else if actArity > expArity && expArity > 0 && actArity <= 10 then
+             let
+               expArgTypes = map (codegenExprType currentMod false) expArgs
+               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
+               retStr = codegenExprType currentMod true expRet
+               
+               remainingActArgs = Array.drop expArity actArgs
+               remArity = Array.length remainingActArgs
+               remArgTypes = map (codegenExprType currentMod false) remainingActArgs
+               remArgsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show (expArity + i) <> ": " <> ty) remArgTypes)
+               remRetStr = codegenExprType currentMod true actRet
+               
+               allArgsCall = String.joinWith ", " (Array.mapWithIndex (\i _ -> "_a" <> show i <> ".clone()") actArgs)
+               
+               innerClosure = "purust_core::Func" <> show remArity <> "::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " <> String.joinWith " " (Array.mapWithIndex (\i _ -> "let mut _a" <> show i <> " = _a" <> show i <> ".clone();") expArgs) <> " move |" <> remArgsDecl <> "| -> " <> remRetStr <> " { _f2(" <> allArgsCall <> ") } }))"
+               
+             in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet (Func remainingActArgs actRet) innerClosure <> " } }))"
            else code
       
       Func expArgs expRet, _ ->
@@ -383,20 +401,14 @@ boxUnbox currentMod expected actual code =
         else code
 
 extractAllArgTypes :: ExprType -> Array ExprType
-extractAllArgTypes (ForAll _ t) = extractAllArgTypes t
-extractAllArgTypes (ConstrainedType cs t) = 
-  let csArgs = map (\(Tuple fqn args) -> 
-        let className = fromMaybe "" (Array.last fqn)
-        in ADT className fqn args) cs
-  in csArgs <> extractAllArgTypes t
-extractAllArgTypes (Func args t) = args <> extractAllArgTypes t
-extractAllArgTypes _ = []
+extractAllArgTypes ty = case unwrapType ty of
+  Func args _ -> args
+  _ -> []
 
 extractFinalRetType :: ExprType -> ExprType
-extractFinalRetType (ForAll _ t) = extractFinalRetType t
-extractFinalRetType (ConstrainedType _ t) = extractFinalRetType t
-extractFinalRetType (Func _ t) = extractFinalRetType t
-extractFinalRetType t = t
+extractFinalRetType ty = case unwrapType ty of
+  Func _ retTy -> retTy
+  other -> other
 
 extractAbsParams :: Int -> NeutralExpr -> Maybe (Tuple (Array String) NeutralExpr)
 extractAbsParams 0 expr = Just (Tuple [] expr)
@@ -475,19 +487,55 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                         bodyTy = inferTypeExpr modNameStr mergedArities bound body
                     in boxUnbox modNameStr retType bodyTy bodyRaw
                 Nothing -> 
-                   let fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing mergedArities globalClassFields bound Set.empty false innerExpr
-                       fnTy = inferTypeExpr modNameStr mergedArities bound innerExpr
+                   let shapeTypeToAST :: ExprType -> NeutralExpr -> ExprType
+                       shapeTypeToAST currentTy (NeutralExpr (Typed _ inner)) = shapeTypeToAST currentTy inner
+                       shapeTypeToAST currentTy (NeutralExpr (Abs params body)) = 
+                         let expectedArgs = extractAllArgTypes currentTy
+                             arity = NonEmptyArray.length params
+                             paramTys = Array.take arity expectedArgs
+                             restArgs = Array.drop arity expectedArgs
+                             retTy = extractFinalRetType currentTy
+                             bodyExpectedTy = if Array.length restArgs > 0 then Func restArgs retTy else retTy
+                         in Func paramTys (shapeTypeToAST bodyExpectedTy body)
+                       shapeTypeToAST currentTy (NeutralExpr (UncurriedAbs params body)) = 
+                         let expectedArgs = extractAllArgTypes currentTy
+                             arity = Array.length params
+                             paramTys = Array.take arity expectedArgs
+                             restArgs = Array.drop arity expectedArgs
+                             retTy = extractFinalRetType currentTy
+                             bodyExpectedTy = if Array.length restArgs > 0 then Func restArgs retTy else retTy
+                         in Func paramTys (shapeTypeToAST bodyExpectedTy body)
+                       shapeTypeToAST currentTy _ = currentTy
+                       
+                       fnCode = codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing mergedArities globalClassFields bound Set.empty false innerExpr
+                       fnTy = shapeTypeToAST inferredType innerExpr
                        argsCodeAndType = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in Tuple ty (sanitizeIdent p <> ".clone()")) deduped
-                       Tuple actualRetTy callCode = Array.foldl (\(Tuple currentTy accCode) (Tuple argTy argCode) ->
-                         case unwrapType currentTy of
-                           Func argTys nextRetTy ->
-                             let expectedArgTy = fromMaybe Any (Array.head argTys)
-                                 boxedArg = boxUnbox modNameStr expectedArgTy argTy argCode
-                             in Tuple (if Array.length argTys > 1 then Func (Array.drop 1 argTys) nextRetTy else nextRetTy) ("(" <> accCode <> ")(" <> boxedArg <> ")")
+                       
+                       buildCallBindingGroup :: ExprType -> String -> Int -> Tuple ExprType String
+                       buildCallBindingGroup accTy accCode idx = if idx >= Array.length argsCodeAndType then Tuple accTy accCode else
+                         case unwrapType accTy of
+                           Func argTys retTy ->
+                             let arity = Array.length argTys
+                             in if arity > 0 && arity <= 10 then
+                                  let availableArgsCount = Array.length argsCodeAndType - idx
+                                  in if availableArgsCount >= arity then
+                                       let passedArgs = Array.slice idx (idx + arity) argsCodeAndType
+                                           boxedArgs = Array.mapWithIndex (\i (Tuple argTy argCode) -> 
+                                               let expectedTy = fromMaybe Any (Array.index argTys i)
+                                               in boxUnbox modNameStr expectedTy argTy argCode
+                                             ) passedArgs
+                                           nextCode = "(" <> accCode <> ")(" <> String.joinWith ", " boxedArgs <> ")"
+                                       in buildCallBindingGroup retTy nextCode (idx + arity)
+                                     else
+                                       let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
+                                       in buildCallBindingGroup Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox modNameStr Any argTy argCode <> ")") (idx + 1)
+                                else
+                                  let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
+                                  in buildCallBindingGroup Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox modNameStr Any argTy argCode <> ")") (idx + 1)
                            _ -> 
-                             let boxedArg = boxUnbox modNameStr Any argTy argCode
-                             in Tuple Any ("(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")")
-                       ) (Tuple fnTy fnCode) argsCodeAndType
+                             let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
+                             in buildCallBindingGroup Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox modNameStr Any argTy argCode <> ")") (idx + 1)
+                       Tuple actualRetTy callCode = buildCallBindingGroup fnTy fnCode 0
                    in boxUnbox modNameStr retType actualRetTy callCode
             in { paramsCode: pCode, retCode: codegenExprType modNameStr true retType, bodyCode: bodyCodeRaw, isFunc: true }
           else 
@@ -852,17 +900,24 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
     in case inner of
       NeutralExpr (Abs params body) ->
         let
-          paramsArr = map (\(Tuple mbId lvl) -> case mbId of
-            Just (Ident n) -> sanitizeIdent n
-            Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
+          argTys = extractAllArgTypes ty
+          n = Array.length argTys
+          Tuple paramsArr innerBody = case extractAbsParams n innerRaw of
+            Just (Tuple p b) -> Tuple p b
+            Nothing -> 
+              -- Fallback if we couldn't extract all expected params
+              let p1 = map (\(Tuple mbId lvl) -> case mbId of
+                         Just (Ident name) -> sanitizeIdent name
+                         Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
+              in Tuple p1 body
+              
           actualTy = 
-            let argTys = extractAllArgTypes ty
-                retTy = extractFinalRetType ty
-                filledArgTys = Array.mapWithIndex (\i _ -> fromMaybe Any (Array.index argTys i)) paramsArr
-                remainingArgTys = Array.drop (Array.length paramsArr) argTys
-                finalRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys retTy else retTy
-            in Func filledArgTys finalRetTy
-        in "/* Typed Abs */" <> boxUnbox currentMod ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr ty body)
+                let retTy = extractFinalRetType ty
+                    filledArgTys = Array.mapWithIndex (\i _ -> fromMaybe Any (Array.index argTys i)) paramsArr
+                    remainingArgTys = Array.drop (Array.length paramsArr) argTys
+                    finalRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys retTy else retTy
+                in Func filledArgTys finalRetTy
+        in "/* Typed Abs */" <> boxUnbox currentMod ty actualTy (genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive paramsArr ty innerBody)
       NeutralExpr (UncurriedAbs params body) ->
         let
           paramsArr = map (\(Tuple mbId lvl) -> case mbId of
