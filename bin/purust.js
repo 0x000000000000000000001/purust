@@ -17322,6 +17322,7 @@ var now2 = (function() {
 })();
 
 // output-es/Purust.CodeGen/index.js
+var union = (m1) => (m2) => unsafeUnionWith(ordString.compare, $$const, m1, m2);
 var lookup5 = (k) => {
   const go = (go$a0$copy) => {
     let go$a0 = go$a0$copy, go$c = true, go$r;
@@ -17354,7 +17355,6 @@ var lookup5 = (k) => {
   };
   return go;
 };
-var union = (m1) => (m2) => unsafeUnionWith(ordString.compare, $$const, m1, m2);
 var fromFoldable12 = /* @__PURE__ */ foldlArray((m) => (a) => insert(ordString)(a)()(m))(Leaf);
 var member2 = (k) => {
   const go = (go$a0$copy) => {
@@ -17599,271 +17599,6 @@ var printAST = (v) => {
   }
   fail();
 };
-var inferTypeExpr = (currentMod) => (aritiesMap) => (bound) => (v) => {
-  if (v.tag === "App") {
-    const stripTyped = (stripTyped$a0$copy) => {
-      let stripTyped$a0 = stripTyped$a0$copy, stripTyped$c = true, stripTyped$r;
-      while (stripTyped$c) {
-        const v12 = stripTyped$a0;
-        if (v12.tag === "Typed") {
-          stripTyped$a0 = v12._2;
-          continue;
-        }
-        stripTyped$c = false;
-        stripTyped$r = v12;
-      }
-      return stripTyped$r;
-    };
-    const v1 = stripTyped(v._1);
-    if (v1.tag === "Var" && v1._1._2 === "not") {
-      return $$Boolean;
-    }
-    const v2 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1));
-    if (v2.tag === "Func") {
-      const providedCount = v._2.length;
-      if (v2._1.length > providedCount) {
-        return $ExprType("Func", providedCount < 1 ? v2._1 : sliceImpl(providedCount, v2._1.length, v2._1), v2._2);
-      }
-      return v2._2;
-    }
-    return Any;
-  }
-  if (v.tag === "UncurriedApp") {
-    const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1));
-    if (v1.tag === "Func") {
-      return v1._2;
-    }
-    return Any;
-  }
-  if (v.tag === "UncurriedEffectApp") {
-    const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1));
-    if (v1.tag === "Func") {
-      return v1._2;
-    }
-    return Any;
-  }
-  if (v.tag === "Abs") {
-    return $ExprType("Func", [Any], Any);
-  }
-  if (v.tag === "UncurriedAbs") {
-    return $ExprType(
-      "Func",
-      arrayMap((v1) => Any)(v._1),
-      Any
-    );
-  }
-  if (v.tag === "UncurriedEffectAbs") {
-    return $ExprType(
-      "Func",
-      arrayMap((v1) => Any)(v._1),
-      Any
-    );
-  }
-  if (v.tag === "LetRec") {
-    return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3);
-  }
-  if (v.tag === "EffectBind") {
-    return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._4);
-  }
-  if (v.tag === "EffectPure") {
-    return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1);
-  }
-  if (v.tag === "EffectDefer") {
-    return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._1);
-  }
-  if (v.tag === "Branch") {
-    const defTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
-    if (defTy.tag === "Any") {
-      return inferTypeExpr(currentMod)(aritiesMap)(bound)((() => {
-        if (0 < v._1.length) {
-          return v._1[0]._2;
-        }
-        fail();
-      })());
-    }
-    return defTy;
-  }
-  if (v.tag === "Typed") {
-    const innerTy = inferTypeExpr(currentMod)(aritiesMap)(bound)(v._2);
-    const v1 = unwrapType(innerTy);
-    const v2 = unwrapType(v._1);
-    if (v2.tag === "Any") {
-      return innerTy;
-    }
-    if (v1.tag === "Any") {
-      return v._1;
-    }
-    if (v2.tag === "Func") {
-      if (v1.tag === "Boolean") {
-        return innerTy;
-      }
-      if (v1.tag === "Int") {
-        return innerTy;
-      }
-      if (v1.tag === "Number") {
-        return innerTy;
-      }
-      if (v1.tag === "String") {
-        return innerTy;
-      }
-      if (v1.tag === "Char") {
-        return innerTy;
-      }
-      if (v1.tag === "ADT") {
-        return innerTy;
-      }
-    }
-    return v._1;
-  }
-  if (v.tag === "CtorSaturated") {
-    const modStr = (() => {
-      if (v._1._1.tag === "Just") {
-        return v._1._1._1;
-      }
-      if (v._1._1.tag === "Nothing") {
-        return currentMod;
-      }
-      fail();
-    })();
-    return $ExprType("ADT", modStr, [modStr, v._3], []);
-  }
-  if (v.tag === "CtorDef") {
-    const $0 = lookup5(currentMod + "_" + sanitizeIdent(v._3))(aritiesMap);
-    if ($0.tag === "Nothing") {
-      return Any;
-    }
-    if ($0.tag === "Just") {
-      return $0._1;
-    }
-    fail();
-  }
-  if (v.tag === "Var") {
-    const sName = sanitizeIdent(v._1._2);
-    const v1 = lookup5(sName)(bound);
-    if (v1.tag === "Just") {
-      return v1._1;
-    }
-    if (v1.tag === "Nothing") {
-      const v2 = lookup5((() => {
-        if (v._1._1.tag === "Just") {
-          return replaceAll(".")("_")(v._1._1._1) + "_" + sName;
-        }
-        if (v._1._1.tag === "Nothing") {
-          return replaceAll(".")("_")(currentMod) + "_" + sName;
-        }
-        fail();
-      })())(aritiesMap);
-      if (v2.tag === "Just") {
-        return v2._1;
-      }
-      if (v2.tag === "Nothing") {
-        return Any;
-      }
-    }
-    fail();
-  }
-  if (v.tag === "Local") {
-    const v1 = lookup5((() => {
-      if (v._1.tag === "Just") {
-        return sanitizeIdent(v._1._1);
-      }
-      if (v._1.tag === "Nothing") {
-        return "lvl_" + showIntImpl(v._2);
-      }
-      fail();
-    })())(bound);
-    if (v1.tag === "Just") {
-      return v1._1;
-    }
-    if (v1.tag === "Nothing") {
-      return Any;
-    }
-    fail();
-  }
-  if (v.tag === "Let") {
-    if (v._1.tag === "Just") {
-      return inferTypeExpr(currentMod)(aritiesMap)(insert(ordString)(sanitizeIdent(v._1._1))(inferTypeExpr(currentMod)(aritiesMap)(bound)(v._3))(bound))(v._4);
-    }
-    if (v._1.tag === "Nothing") {
-      return inferTypeExpr(currentMod)(aritiesMap)(bound)(v._4);
-    }
-    return Any;
-  }
-  if (v.tag === "PrimOp") {
-    if (v._1.tag === "Op1") {
-      if (v._1._1.tag === "OpBooleanNot") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpIntBitNot") {
-        return Int;
-      }
-      if (v._1._1.tag === "OpIntNegate") {
-        return Int;
-      }
-      if (v._1._1.tag === "OpNumberNegate") {
-        return $$Number;
-      }
-      if (v._1._1.tag === "OpArrayLength") {
-        return Int;
-      }
-      if (v._1._1.tag === "OpIsTag") {
-        return $$Boolean;
-      }
-      return Any;
-    }
-    if (v._1.tag === "Op2") {
-      if (v._1._1.tag === "OpIntNum") {
-        return Int;
-      }
-      if (v._1._1.tag === "OpNumberNum") {
-        return $$Number;
-      }
-      if (v._1._1.tag === "OpBooleanAnd") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpBooleanOr") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpBooleanOrd") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpIntOrd") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpNumberOrd") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpStringOrd") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpCharOrd") {
-        return $$Boolean;
-      }
-      if (v._1._1.tag === "OpStringAppend") {
-        return $$String;
-      }
-    }
-    return Any;
-  }
-  if (v.tag === "Lit") {
-    if (v._1.tag === "LitInt") {
-      return Int;
-    }
-    if (v._1.tag === "LitNumber") {
-      return $$Number;
-    }
-    if (v._1.tag === "LitString") {
-      return $$String;
-    }
-    if (v._1.tag === "LitChar") {
-      return Char;
-    }
-    if (v._1.tag === "LitBoolean") {
-      return $$Boolean;
-    }
-  }
-  return Any;
-};
 var globalConsumed = { value: Leaf };
 var globalCaptured = { value: Leaf };
 var getTyPrefix = (modNameStr) => (v) => {
@@ -18078,10 +17813,10 @@ var freeVariables = (v) => {
   }
   return Leaf;
 };
-var inferTypeExprGlobal = (currentMod) => (aritiesMap) => (globalClassFields) => (bound) => (v) => {
+var inferTypeExpr = (currentMod) => (aritiesMap) => (globalClassFields) => (bound) => (v) => {
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      const $0 = unwrapType(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1));
+      const $0 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1));
       if ($0.tag === "ADT") {
         const v2 = lookup5((() => {
           const $1 = $0._2.length - 1 | 0;
@@ -18137,8 +17872,271 @@ var inferTypeExprGlobal = (currentMod) => (aritiesMap) => (globalClassFields) =>
       }
       fail();
     }
+    return Any;
   }
-  return inferTypeExpr(currentMod)(aritiesMap)(bound)(v);
+  if (v.tag === "App") {
+    const stripTyped = (stripTyped$a0$copy) => {
+      let stripTyped$a0 = stripTyped$a0$copy, stripTyped$c = true, stripTyped$r;
+      while (stripTyped$c) {
+        const v12 = stripTyped$a0;
+        if (v12.tag === "Typed") {
+          stripTyped$a0 = v12._2;
+          continue;
+        }
+        stripTyped$c = false;
+        stripTyped$r = v12;
+      }
+      return stripTyped$r;
+    };
+    const v1 = stripTyped(v._1);
+    if (v1.tag === "Var" && v1._1._2 === "not") {
+      return $$Boolean;
+    }
+    const v2 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1));
+    if (v2.tag === "Func") {
+      const providedCount = v._2.length;
+      if (v2._1.length > providedCount) {
+        return $ExprType("Func", providedCount < 1 ? v2._1 : sliceImpl(providedCount, v2._1.length, v2._1), v2._2);
+      }
+      return v2._2;
+    }
+    return Any;
+  }
+  if (v.tag === "UncurriedApp") {
+    const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1));
+    if (v1.tag === "Func") {
+      return v1._2;
+    }
+    return Any;
+  }
+  if (v.tag === "UncurriedEffectApp") {
+    const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1));
+    if (v1.tag === "Func") {
+      return v1._2;
+    }
+    return Any;
+  }
+  if (v.tag === "Abs") {
+    return $ExprType("Func", [Any], Any);
+  }
+  if (v.tag === "UncurriedAbs") {
+    return $ExprType(
+      "Func",
+      arrayMap((v1) => Any)(v._1),
+      Any
+    );
+  }
+  if (v.tag === "UncurriedEffectAbs") {
+    return $ExprType(
+      "Func",
+      arrayMap((v1) => Any)(v._1),
+      Any
+    );
+  }
+  if (v.tag === "LetRec") {
+    return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._3);
+  }
+  if (v.tag === "EffectBind") {
+    return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._4);
+  }
+  if (v.tag === "EffectPure") {
+    return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1);
+  }
+  if (v.tag === "EffectDefer") {
+    return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1);
+  }
+  if (v.tag === "Branch") {
+    const defTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._2);
+    if (defTy.tag === "Any") {
+      return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)((() => {
+        if (0 < v._1.length) {
+          return v._1[0]._2;
+        }
+        fail();
+      })());
+    }
+    return defTy;
+  }
+  if (v.tag === "Typed") {
+    const innerTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._2);
+    const v1 = unwrapType(innerTy);
+    const v2 = unwrapType(v._1);
+    if (v2.tag === "Any") {
+      return innerTy;
+    }
+    if (v1.tag === "Any") {
+      return v._1;
+    }
+    if (v2.tag === "Func") {
+      if (v1.tag === "Boolean") {
+        return innerTy;
+      }
+      if (v1.tag === "Int") {
+        return innerTy;
+      }
+      if (v1.tag === "Number") {
+        return innerTy;
+      }
+      if (v1.tag === "String") {
+        return innerTy;
+      }
+      if (v1.tag === "Char") {
+        return innerTy;
+      }
+      if (v1.tag === "ADT") {
+        return innerTy;
+      }
+    }
+    return v._1;
+  }
+  if (v.tag === "CtorSaturated") {
+    const modStr = (() => {
+      if (v._1._1.tag === "Just") {
+        return v._1._1._1;
+      }
+      if (v._1._1.tag === "Nothing") {
+        return currentMod;
+      }
+      fail();
+    })();
+    return $ExprType("ADT", modStr, [modStr, v._3], []);
+  }
+  if (v.tag === "CtorDef") {
+    const $0 = lookup5(currentMod + "_" + sanitizeIdent(v._3))(aritiesMap);
+    if ($0.tag === "Nothing") {
+      return Any;
+    }
+    if ($0.tag === "Just") {
+      return $0._1;
+    }
+    fail();
+  }
+  if (v.tag === "Var") {
+    const sName = sanitizeIdent(v._1._2);
+    const v1 = lookup5(sName)(bound);
+    if (v1.tag === "Just") {
+      return v1._1;
+    }
+    if (v1.tag === "Nothing") {
+      const v2 = lookup5((() => {
+        if (v._1._1.tag === "Just") {
+          return replaceAll(".")("_")(v._1._1._1) + "_" + sName;
+        }
+        if (v._1._1.tag === "Nothing") {
+          return replaceAll(".")("_")(currentMod) + "_" + sName;
+        }
+        fail();
+      })())(aritiesMap);
+      if (v2.tag === "Just") {
+        return v2._1;
+      }
+      if (v2.tag === "Nothing") {
+        return Any;
+      }
+    }
+    fail();
+  }
+  if (v.tag === "Local") {
+    const v1 = lookup5((() => {
+      if (v._1.tag === "Just") {
+        return sanitizeIdent(v._1._1);
+      }
+      if (v._1.tag === "Nothing") {
+        return "lvl_" + showIntImpl(v._2);
+      }
+      fail();
+    })())(bound);
+    if (v1.tag === "Just") {
+      return v1._1;
+    }
+    if (v1.tag === "Nothing") {
+      return Any;
+    }
+    fail();
+  }
+  if (v.tag === "Let") {
+    if (v._1.tag === "Just") {
+      return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(insert(ordString)(sanitizeIdent(v._1._1))(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._3))(bound))(v._4);
+    }
+    if (v._1.tag === "Nothing") {
+      return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._4);
+    }
+    return Any;
+  }
+  if (v.tag === "PrimOp") {
+    if (v._1.tag === "Op1") {
+      if (v._1._1.tag === "OpBooleanNot") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpIntBitNot") {
+        return Int;
+      }
+      if (v._1._1.tag === "OpIntNegate") {
+        return Int;
+      }
+      if (v._1._1.tag === "OpNumberNegate") {
+        return $$Number;
+      }
+      if (v._1._1.tag === "OpArrayLength") {
+        return Int;
+      }
+      if (v._1._1.tag === "OpIsTag") {
+        return $$Boolean;
+      }
+      return Any;
+    }
+    if (v._1.tag === "Op2") {
+      if (v._1._1.tag === "OpIntNum") {
+        return Int;
+      }
+      if (v._1._1.tag === "OpNumberNum") {
+        return $$Number;
+      }
+      if (v._1._1.tag === "OpBooleanAnd") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpBooleanOr") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpBooleanOrd") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpIntOrd") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpNumberOrd") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpStringOrd") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpCharOrd") {
+        return $$Boolean;
+      }
+      if (v._1._1.tag === "OpStringAppend") {
+        return $$String;
+      }
+    }
+    return Any;
+  }
+  if (v.tag === "Lit") {
+    if (v._1.tag === "LitInt") {
+      return Int;
+    }
+    if (v._1.tag === "LitNumber") {
+      return $$Number;
+    }
+    if (v._1.tag === "LitString") {
+      return $$String;
+    }
+    if (v._1.tag === "LitChar") {
+      return Char;
+    }
+    if (v._1.tag === "LitBoolean") {
+      return $$Boolean;
+    }
+  }
+  return Any;
 };
 var extractAbsParams = (v) => (v1) => {
   if (v === 0) {
@@ -18510,7 +18508,7 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
           if (availableArgsCount >= arity) {
             const passedArgsTys2 = sliceImpl(idx, idx + arity | 0, argsArray);
             buildCall$a0 = v2._2;
-            buildCall$a1 = "(" + accCode + ")(" + joinWith(", ")(mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < v2._1.length ? v2._1[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(i >= 0 && i < passedArgsTys2.length ? passedArgsTys2[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(sliceImpl(
+            buildCall$a1 = "(" + accCode + ")(" + joinWith(", ")(mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < v2._1.length ? v2._1[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(i >= 0 && i < passedArgsTys2.length ? passedArgsTys2[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(sliceImpl(
               idx,
               idx + arity | 0,
               argsCodeArray
@@ -18527,7 +18525,7 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
           buildCall$c = false;
           buildCall$r = $Tuple(
             $ExprType("Func", missingEtasTypes, v2._2),
-            "{\n        let mut _fn_eval = (" + accCode + ");\n" + joinWith("")(mapWithIndexArray((i) => (boxedArg) => "        let mut eval_arg_" + showIntImpl(i) + " = " + boxedArg + ";\n")(mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < v2._1.length ? v2._1[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(i >= 0 && i < passedArgsTys.length ? passedArgsTys[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(passedArgs))) + "    purust_core::Func" + showIntImpl(missingCount) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (eta) => "mut " + eta + ": " + codegenExprType(modNameStr)(false)(i >= 0 && i < missingEtasTypes.length ? missingEtasTypes[i] : Any))(etaArgs)) + "| -> " + codegenExprType(modNameStr)(true)(v2._2) + " {\n    let mut _fn_ptr = _fn_eval.clone();\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")(evalArgs)) + "    _fn_ptr(" + joinWith(", ")([
+            "{\n        let mut _fn_eval = (" + accCode + ");\n" + joinWith("")(mapWithIndexArray((i) => (boxedArg) => "        let mut eval_arg_" + showIntImpl(i) + " = " + boxedArg + ";\n")(mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < v2._1.length ? v2._1[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(i >= 0 && i < passedArgsTys.length ? passedArgsTys[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(passedArgs))) + "    purust_core::Func" + showIntImpl(missingCount) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (eta) => "mut " + eta + ": " + codegenExprType(modNameStr)(false)(i >= 0 && i < missingEtasTypes.length ? missingEtasTypes[i] : Any))(etaArgs)) + "| -> " + codegenExprType(modNameStr)(true)(v2._2) + " {\n    let mut _fn_ptr = _fn_eval.clone();\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")(evalArgs)) + "    _fn_ptr(" + joinWith(", ")([
               ...evalArgs,
               ...mapWithIndexArray((i) => (eta) => eta + ".clone()")(etaArgs)
             ]) + ")\n}))\n}"
@@ -18536,7 +18534,7 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         }
       }
       buildCall$a0 = Any;
-      buildCall$a1 = "(" + accCode + ").unwrap_func1()(" + boxUnbox(modNameStr)(Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(idx >= 0 && idx < argsArray.length ? argsArray[idx] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(idx >= 0 && idx < argsCodeArray.length ? argsCodeArray[idx] : "") + ")";
+      buildCall$a1 = "(" + accCode + ").unwrap_func1()(" + boxUnbox(modNameStr)(Any)(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(idx >= 0 && idx < argsArray.length ? argsArray[idx] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(idx >= 0 && idx < argsCodeArray.length ? argsCodeArray[idx] : "") + ")";
       buildCall$a2 = idx + 1 | 0;
     }
     return buildCall$r;
@@ -18567,7 +18565,7 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
   if (v$1.tag === "Var") {
     const sName = sanitizeIdent(v$1._1._2);
     if (member12(sName)(bound)) {
-      const v12 = buildCall(inferTypeExprGlobal(modNameStr)(aritiesMap)(globalClassFields)(bound)(fn))(fnCode)(0);
+      const v12 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(fn))(fnCode)(0);
       return boxUnbox(modNameStr)(appTy)(v12._1)(v12._2);
     }
     const fullName = (() => {
@@ -18680,7 +18678,7 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
       })();
       const v$3 = unwrapType(fnTy);
       const expectedArgTys = v$3.tag === "Func" ? v$3._1 : [];
-      const boxedArgs = mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(i >= 0 && i < argsArray.length ? argsArray[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(argsCodeArray);
+      const boxedArgs = mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(i >= 0 && i < argsArray.length ? argsArray[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(argsCodeArray);
       if (n > 0) {
         if (m === n) {
           return fullName + "(" + joinWith(", ")(boxedArgs) + ")";
@@ -18699,18 +18697,18 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
             ...mapWithIndexArray((i) => (eta) => eta + ".clone()")(etaArgs)
           ]) + ")\n}))\n}");
         }
-        const v22 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(bound)(foldlArray((acc) => (v23) => $BackendSyntax(
+        const v22 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(foldlArray((acc) => (v23) => $BackendSyntax(
           "App",
           acc,
           [$BackendSyntax("Var", $Qualified(Nothing, ""))]
         ))(fn)(n < 1 ? [] : sliceImpl(0, n, argsArray))))(fullName + "(" + joinWith(", ")(n < 1 ? [] : sliceImpl(0, n, boxedArgs)) + ")")(n);
         return boxUnbox(modNameStr)(appTy)(v22._1)(v22._2);
       }
-      const v2 = buildCall(inferTypeExprGlobal(modNameStr)(aritiesMap)(globalClassFields)(bound)(fn))(fnCode)(0);
+      const v2 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(fn))(fnCode)(0);
       return boxUnbox(modNameStr)(appTy)(v2._1)(v2._2);
     }
   }
-  const v1 = buildCall(inferTypeExprGlobal(modNameStr)(aritiesMap)(globalClassFields)(bound)(fn))(fnCode)(0);
+  const v1 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound)(fn))(fnCode)(0);
   return boxUnbox(modNameStr)(appTy)(v1._1)(v1._2);
 };
 var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) => (aritiesMap) => (globalClassFields) => (bound) => (alive) => (paramsArr) => (fnTy) => (body) => {
@@ -18759,7 +18757,7 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     })({ code: "", bound: Leaf })(mapWithIndexArray(Tuple)(paramsArr)).code;
     const innermostExpectedRetTy = remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy;
     const retTyStr = codegenExprType(currentMod)(true)(innermostExpectedRetTy);
-    const boxedBody = boxUnbox(currentMod)(innermostExpectedRetTy)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
+    const boxedBody = boxUnbox(currentMod)(innermostExpectedRetTy)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
       const oldCaptured = globalCaptured.value;
       const $0 = globalCaptured.value;
       globalCaptured.value = unsafeUnionWith(ordString.compare, $$const, capturedVars, $0);
@@ -18818,7 +18816,7 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     code: (() => {
       const $0 = paramsArr.length;
       const remainingArgs = $0 < 1 ? expectedArgTys : sliceImpl($0, expectedArgTys.length, expectedArgTys);
-      return boxUnbox(currentMod)(remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
+      return boxUnbox(currentMod)(remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
         const oldCaptured = globalCaptured.value;
         const $1 = globalCaptured.value;
         globalCaptured.value = unsafeUnionWith(ordString.compare, $$const, capturedVars, $1);
@@ -19041,7 +19039,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         })());
         return (modName === currentMod ? "std::rc::Rc::new(crate::" + className + " { " : "std::rc::Rc::new(Purs_" + modName + "::" + className + " { ") + joinWith(", ")(mapWithIndexArray((i) => (v2) => {
           const $0 = v2._1;
-          const valTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2);
+          const valTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2);
           const $1 = unwrapType(v._1);
           const expectedTy = (() => {
             if ($1.tag === "ADT") {
@@ -19090,25 +19088,25 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           );
         })(propsArr)) + " })";
       }
-      const innerTy2 = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(inner);
+      const innerTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(inner);
       return "/* Typed " + codegenExprType(currentMod)(true)(v._1) + " <- " + codegenExprType(currentMod)(true)(innerTy2) + " : " + printAST(inner) + " */" + boxUnbox(currentMod)(v._1)(innerTy2)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inEffectBlock)(inner));
     }
-    const innerTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(inner);
-    return "/* Typed " + codegenExprType(currentMod)(true)(v._1) + " <- " + codegenExprType(currentMod)(true)(innerTy) + " : " + printAST(inner) + " */" + boxUnbox(currentMod)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
+    const innerTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(inner);
+    return "/* Typed " + codegenExprType(currentMod)(true)(v._1) + " <- " + codegenExprType(currentMod)(true)(innerTy) + " : " + printAST(inner) + " */" + boxUnbox(currentMod)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
       "Typed",
       v._1,
       inner
     )))(innerTy)(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inEffectBlock)(inner));
   }
   if (v.tag === "App") {
-    return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
+    return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
       "App",
       v._1,
       v._2
     )))(v._1)(v._2);
   }
   if (v.tag === "UncurriedApp") {
-    return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
+    return genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
       "UncurriedApp",
       v._1,
       v._2
@@ -19117,7 +19115,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   if (v.tag === "UncurriedEffectApp") {
     const $0 = v._2;
     const $1 = v._1;
-    const $2 = () => genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
+    const $2 = () => genApp(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound)(alive)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)($BackendSyntax(
       "UncurriedEffectApp",
       $1,
       $0
@@ -19164,7 +19162,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       $$const,
       alive,
       foldlArray((acc) => (v1) => unsafeUnionWith(ordString.compare, $$const, acc, freeVariables(v1._2)))(Leaf)($0)
-    ))(false)(v._1) + ";\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "_base.set_" + sanitizeIdent(v1._1) + "(" + boxUnbox(currentMod)(Any)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+    ))(false)(v._1) + ";\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => "_base.set_" + sanitizeIdent(v1._1) + "(" + boxUnbox(currentMod)(Any)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -19180,7 +19178,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   if (v.tag === "Branch") {
     const $0 = v._1;
     const $1 = v._2;
-    return joinWith(" else ")(mapWithIndexArray((i) => (v1) => "if " + boxUnbox(currentMod)($$Boolean)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._1))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+    return joinWith(" else ")(mapWithIndexArray((i) => (v1) => "if " + boxUnbox(currentMod)($$Boolean)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._1))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
       ordString.compare,
       $$const,
       alive,
@@ -19205,14 +19203,14 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   }
   if (v.tag === "PrimOp") {
     if (v._1.tag === "Op1") {
-      const aTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._2);
+      const aTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._2);
       const aStrRaw = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1._2);
       if (v._1._1.tag === "OpBooleanNot") {
         return "!(" + boxUnbox(currentMod)($$Boolean)(aTy)(aStrRaw) + " /* aTy: " + codegenExprType(currentMod)(true)(aTy) + ", a is " + printAST(v._1._2) + ", fn ty is " + (() => {
           if (v._1._2.tag === "App") {
             const v1 = lookup5("lvl_3")(bound);
             const v1$1 = lookup5("lvl_3")(aritiesMap);
-            return printType(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._2._1)) + ", lvl_3 in bound: " + (() => {
+            return printType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._2._1)) + ", lvl_3 in bound: " + (() => {
               if (v1.tag === "Just") {
                 return printType(v1._1);
               }
@@ -19286,13 +19284,13 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */";
     }
     if (v._1.tag === "Op2") {
-      const bTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._3);
+      const bTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._3);
       const bStrRaw = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1._3);
       const bStrStr = boxUnbox(currentMod)($$String)(bTy)(bStrRaw);
       const bStrNum = boxUnbox(currentMod)($$Number)(bTy)(bStrRaw);
       const bStrInt = boxUnbox(currentMod)(Int)(bTy)(bStrRaw);
       const bStrBool = boxUnbox(currentMod)($$Boolean)(bTy)(bStrRaw);
-      const aTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._2);
+      const aTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1._2);
       const aStrRaw = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
@@ -19474,9 +19472,9 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
   }
   if (v.tag === "Accessor") {
     if (v._2.tag === "GetProp") {
-      const baseTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1);
+      const baseTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1);
       const baseStr = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1);
-      return boxUnbox(currentMod)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v))(unwrapType(baseTy).tag === "ADT" ? inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v) : Any)(unwrapType(baseTy).tag === "ADT" ? "(" + baseStr + ")." + sanitizeIdent(v._2._1) + ".clone()" : "(" + baseStr + ").get_" + sanitizeIdent(v._2._1) + "()");
+      return boxUnbox(currentMod)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v))(unwrapType(baseTy).tag === "ADT" ? inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v) : Any)(unwrapType(baseTy).tag === "ADT" ? "(" + baseStr + ")." + sanitizeIdent(v._2._1) + ".clone()" : "(" + baseStr + ").get_" + sanitizeIdent(v._2._1) + "()");
     }
     if (v._2.tag === "GetCtorField") {
       const $0 = v._2._6;
@@ -19499,7 +19497,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         v._2._3,
         [modName, v._2._3],
         []
-      ))(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1)) + ").as_ref() { f.clone() } else { unreachable!() } }";
+      ))(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._1))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(alive)(false)(v._1)) + ").as_ref() { f.clone() } else { unreachable!() } }";
     }
     return "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " + printAST(v) + " */";
   }
@@ -19557,7 +19555,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       $$const,
       alive,
       bodyVars
-    ))(false)(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && mbLoop._1.name === name2 ? Nothing : mbLoop)(aritiesMap)(globalClassFields)(insert(ordString)(name2)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
+    ))(false)(v._3) + ";\n" + (member2(name2)(bodyVars) ? "" : "    drop(" + name2 + ");\n") + "    " + codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && mbLoop._1.name === name2 ? Nothing : mbLoop)(aritiesMap)(globalClassFields)(insert(ordString)(name2)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._3))(bound))(alive)(inEffectBlock)(v._4) + "\n}";
   }
   if (v.tag === "EffectBind") {
     const stripEffectDefer = (v12) => {
@@ -19609,7 +19607,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       }
       return v12.tag === "Typed" && isUncurriedApp(v12._2);
     };
-    const v1 = unwrapType(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v._3));
+    const v1 = unwrapType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v._3));
     const boundTy = v1.tag === "ADT" && v1._3.length === 1 ? v1._3[0] : Any;
     const rawBodyCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop.tag === "Just" && mbLoop._1.name === name2 ? Nothing : mbLoop)(aritiesMap)(globalClassFields)(insert(ordString)(name2)(boundTy)(bound))(alive)(inEffectBlock)(v._4);
     const rawValCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
@@ -19676,7 +19674,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
       const $0 = v._1._1;
       const shape = joinWith("_")(arrayMap(sanitizeIdent)(sortBy(ordString.compare)(arrayMap((v1) => v1._1)($0))));
       const structName = shape === "" ? "Record_a" : "Record_" + shape;
-      return "crate::Value::" + structName + "(perceus_ptr::PerceusPtr::new(" + structName + " { " + joinWith(", ")(mapWithIndexArray((i) => (v1) => sanitizeIdent(v1._1) + ": Some(" + boxUnbox(currentMod)(Any)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+      return "crate::Value::" + structName + "(perceus_ptr::PerceusPtr::new(" + structName + " { " + joinWith(", ")(mapWithIndexArray((i) => (v1) => sanitizeIdent(v1._1) + ": Some(" + boxUnbox(currentMod)(Any)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -19747,7 +19745,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
         const $1 = "field" + showIntImpl(i);
         if (i >= 0 && i < $0.length) {
           const v3 = $0[i];
-          return sanitizeIdent(v3._1) + ": " + boxUnbox(currentMod)(v3._2)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+          return sanitizeIdent(v3._1) + ": " + boxUnbox(currentMod)(v3._2)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
             ordString.compare,
             $$const,
             alive,
@@ -19760,7 +19758,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
             })()))
           ))(false)(v2._2));
         }
-        return sanitizeIdent($1) + ": " + boxUnbox(currentMod)(Any)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+        return sanitizeIdent($1) + ": " + boxUnbox(currentMod)(Any)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
           ordString.compare,
           $$const,
           alive,
@@ -19809,7 +19807,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
           return Any;
         }
         fail();
-      })())(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
+      })())(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v2._2))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(bound)(unsafeUnionWith(
         ordString.compare,
         $$const,
         alive,
@@ -19861,7 +19859,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
     const $0 = v._2;
     const $1 = v._3;
     return "{\n    " + joinWith("\n    ")(arrayMap((v1) => "let mut " + sanitizeIdent(v1._1) + " = crate::Value::Thunk(perceus_ptr::PerceusPtr::new(crate::Thunk { ..Default::default() }));")($0)) + "\n    " + joinWith("\n    ")(mapWithIndexArray((i) => (v1) => {
-      const valTy = inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._2);
+      const valTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound)(v1._2);
       const v$1 = unwrapType(valTy);
       const retType = v$1.tag === "Func" ? v$1._2 : v$1;
       const clonesCode = joinWith("\n        ")(arrayMap((v2) => "let mut " + sanitizeIdent(v2._1) + " = " + sanitizeIdent(v2._1) + ".clone();")($0));
@@ -19940,7 +19938,7 @@ var codegenExpr_ = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLo
             fail();
           })()))(capturedArr),
           ...arrayMap((v2) => "mut " + sanitizeIdent(v2._1) + ": " + codegenExprType(currentMod)(false)(v2._2))(paramPairs)
-        ]) + ") -> " + codegenExprType(currentMod)(true)(retType) + " {\n        loop {\n            break " + boxUnbox(currentMod)(retType)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(innerBound)(innerExpr))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)($Maybe(
+        ]) + ") -> " + codegenExprType(currentMod)(true)(retType) + " {\n        loop {\n            break " + boxUnbox(currentMod)(retType)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(innerBound)(innerExpr))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)($Maybe(
           "Just",
           { name: sanitizeIdent(v1._1), params: dedupedParams }
         ))(aritiesMap)(globalClassFields)(innerBound)(freeVariables(innerExpr))(false)(innerExpr)) + ";\n        }\n    }\n        " + boxUnbox(currentMod)(Any)(valTy)(arity > 0 && arity <= 10 ? "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(arrayMap((v2) => "mut " + sanitizeIdent(v2._1) + ": " + codegenExprType(currentMod)(false)(v2._2))(paramPairs)) + "| -> " + codegenExprType(currentMod)(true)(retType) + " {\n        " + joinWith("\n        ")(arrayMap((c) => "let mut " + sanitizeIdent(c) + " = " + sanitizeIdent(c) + ".clone();")(capturedArr)) + "\n        " + fnName + "(" + joinWith(", ")([
@@ -19974,7 +19972,10 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
     aritiesMap,
     fromFoldable33(arrayMap((v) => {
       const rawIdentName = sanitizeIdent(v._1);
-      return $Tuple(rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName, inferTypeExpr(modNameStr)(aritiesMap)(Leaf)(v._2));
+      return $Tuple(
+        rawIdentName === "main" ? "main" : modNameStr + "_" + rawIdentName,
+        inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(Leaf)(v._2)
+      );
     })(group2.bindings))
   );
   return {
@@ -20016,7 +20017,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
         })(paramPairs)) + ")" + (codegenExprType(modNameStr)(true)(retType) === "" ? "" : " -> " + codegenExprType(modNameStr)(true)(retType)) + " {\n    // AST: " + printAST(v._2) + "\n" + (() => {
           if (isSelfRecursive) {
             if (extracted.tag === "Just") {
-              return "    loop {\n        break " + boxUnbox(modNameStr)(retType)(inferTypeExpr(modNameStr)(mergedArities)(bound)(extracted._1._2))(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(mergedArities)(globalClassFields)(bound)(Leaf)(false)(extracted._1._2)) + ";\n    }";
+              return "    loop {\n        break " + boxUnbox(modNameStr)(retType)(inferTypeExpr(modNameStr)(mergedArities)(globalClassFields)(bound)(extracted._1._2))(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(mergedArities)(globalClassFields)(bound)(Leaf)(false)(extracted._1._2)) + ";\n    }";
             }
             if (extracted.tag === "Nothing") {
               const shapeTypeToAST = (v22) => (v3) => {
@@ -20097,7 +20098,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
             fail();
           }
           if (extracted.tag === "Just") {
-            return boxUnbox(modNameStr)(retType)(inferTypeExpr(modNameStr)(mergedArities)(bound)(extracted._1._2))(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(mergedArities)(globalClassFields)(bound)(Leaf)(false)(extracted._1._2));
+            return boxUnbox(modNameStr)(retType)(inferTypeExpr(modNameStr)(mergedArities)(globalClassFields)(bound)(extracted._1._2))(codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(mbLoop)(mergedArities)(globalClassFields)(bound)(Leaf)(false)(extracted._1._2));
           }
           if (extracted.tag === "Nothing") {
             const shapeTypeToAST = (v22) => (v3) => {

@@ -1,19 +1,21 @@
 # Roadmap d'Optimisation pour purust (Backend Rust)
 
-L'objectif de cette roadmap est de transformer `purust` d'un générateur dynamique (façon JavaScript) à un générateur typé et performant, en s'inspirant des techniques développées pour `gopurs` via le TAST (`tcorefn`).
+L'objectif de cette nouvelle roadmap est d'atteindre (voire dépasser) les performances de `gopurs` en tirant parti des fondations déjà posées, mais en résolvant les goulots d'étranglement majeurs identifiés par les benchmarks empiriques (allocations excessives et closures dynamiques).
 
-## Éradiquer le "God Struct" (`Record_a`) et le Virtual Dispatch (Priorité Absolue)
-**Constat (Benchmarking empirique) :** L'approche actuelle utilise un énorme struct global `Record_a` (~280 champs) pour chaque record anonyme. L'exécution de `AstTree` (Knot-tying `LetRec`) fonctionne à présent à 100%, mais les benchmarks (notamment Red-Black Tree avec ~2000 ms) mettent en évidence l'étranglement de l'allocateur mémoire dû à l'utilisation intensive de tableaux dynamiques génériques (`Value::Array`) pour stocker les ADT et à la désactivation temporaire de la réutilisation mémoire.
+> **Note sur le Typage et "UnknownType"** : 
+> Suite à une expérimentation approfondie, l'éradication globale de `UnknownType` via les génériques stricts de Rust s'est avérée impossible en AOT. Le TAST (PureScript) ne fournit pas les arguments génériques aux points d'appels (`Var`), ce qui provoque des erreurs d'inférence inévitables en Rust (`E0282`). Le type polymorphe dynamique (`Value`) est donc maintenu par nécessité architecturale.
 
-### Prochaines étapes (Explosion des performances) :
-- [x] **Step 1 (Enums Natifs pour ADTs) :** Utiliser les métadonnées de `dataDecls` (fournies par le TAST) pour générer des `enum` Rust structurés et stricts, remplaçant la sérialisation systématique dans des `Value::Array`. C'est la prochaine étape pour effondrer le temps d'exécution des arbres (Red-Black Tree, AST).
-- [x] **Step 2 (Structs Natifs pour Type Classes) :** Utiliser les métadonnées de `classDecls` pour générer des `structs` Rust spécifiques et isolés pour les dictionnaires de classes de types (évite la pénalité de résolution de clés).
-- [x] **Step 3 (Records Anonymes) :** Remplacer le `Record_a` par des structs spécifiques pour les records anonymes purs (générés dynamiquement selon les types de row utilisés dans le programme).
-- [ ] **Step 4 (Unboxing des Closures) :** Remplacer les `Rc<dyn Fn>` par des fonctions natives, inlinées ou des pointeurs statiques lorsque c'est possible. Le recours au `Rc<dyn Fn>` (et donc à la heap) doit être l'exception, et non la règle.
-  - [x] **Step 4.1 (Smart Function Wrapper) :** Introduire un type générique (ex: `enum Func<A, B>`) inspiré de Fable (`fable-library-rust`) avec deux variantes : `Static(fn)` et `Shared(Rc<dyn Fn>)`. Cela va nous servir de fondation/runtime pour les étapes suivantes.
-  - [x] **Step 4.2 (Typage strict de bout en bout) :** Propager les types réels du TAST jusqu'aux signatures pour supprimer le filet de sécurité `UnknownType` et surtout connaître l'arité exacte de chaque fonction.
-  - [x] **Step 4.3 (Uncurrying) :** Analyser l'AST avec les types pour "aplatir" les appels et utiliser la variante `Static` du Smart Wrapper quand on a tous les arguments.
-  - [x] **Step 4.4 (Application Partielle) :** Gérer dynamiquement la création de "thunks" via la variante `Shared` du Smart Wrapper s'il manque des arguments.
-  - [x] **Step 4.5 (Analyse des captures et Lifetimes) :** Détecter finement quand une closure capture son environnement pour optimiser les clonages de `Rc`.
+## Prochaines étapes (Optimisation ciblée) :
 
-Note : tu peux tester à la fin de tes travaux si tout fonctionne avec bin/rust/run -c, dans htdocs/altbak.pub-purust
+- [ ] **Step 1 (Heuristiques des fonctions et Closures) :**
+  - Le goulot d'étranglement majeur (ex: benchmark Polymorphism, Lazy) est l'utilisation pessimiste de `Func::Shared` qui alloue systématiquement un `Rc<dyn Fn>` sur le tas.
+  - **Stratégie** : Utiliser des pointeurs de fonctions natifs (`Func::Static` via `fn(...) -> ...`) chaque fois qu'une fonction ne capture pas de contexte (fonctions pures, constructeurs, etc.). Zéro allocation, et cela ne casse pas Perceus (pas de refcount impliqué).
+
+- [ ] **Step 2 (Passage par valeur pour Primitives et petits ADTs) :**
+  - Arrêter d'allouer systématiquement avec `Rc` pour les types primitifs (`Int`, `Number`, `Boolean`) et les enums sans payload (ex: `enum Color { R, B }`).
+  - **Stratégie** : Exploiter le trait `Copy` pour ces types afin de les allouer sur la pile (stack). Un `i64` est plus rapide à copier qu'à incrémenter via `Rc`. Ne casse pas Perceus.
+
+- [ ] **Step 3 (Mutation en place - Perceus) :**
+  - C'est le cœur des performances pour les structures récursives partagées (Listes, Arbres).
+  - Actuellement, les types complexes subissent un `.clone()` profond des pointeurs et des allocations constantes.
+  - **Stratégie** : Conserver obligatoirement le `Rc` pour les ADT complexes (comme `RBTree` ou `List`), et exploiter le comptage de références (`Rc::make_mut` ou `Rc::try_unwrap`) pour muter le nœud **sur place** sans réallocation si son `refcount` est à 1.
