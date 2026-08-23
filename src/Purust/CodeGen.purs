@@ -588,15 +588,19 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                   _ -> "_") (NonEmptyArray.toArray params)
                 deduped = dedupArgs paramsArr
                 mbLoop = if isSelfRecursive then Just { name: identName, params: deduped } else Nothing
-                pCode = String.joinWith ", " $ map (\pName ->
-                  let p = sanitizeIdent pName in
-                  (if p == "_" then "" else "mut ") <> p <> ": UnknownType") deduped
+                argTys = extractAllArgTypes inferredType
+                pCode = String.joinWith ", " $ Array.mapWithIndex (\i pName ->
+                  let p = sanitizeIdent pName 
+                      pt = fromMaybe Any (Array.index argTys i)
+                      ptStr = codegenExprType modNameStr false pt
+                  in (if p == "_" then "" else "mut ") <> p <> ": " <> ptStr) deduped
+                retCode = codegenExprType modNameStr true (extractFinalRetType inferredType)
                 bound = Map.empty
                 body = case innerExpr of
                   NeutralExpr (Abs _ b) -> b
                   _ -> unsafeCrashWith "impossible"
                 genResult = genAbs modNameStr allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound Set.empty deduped inferredType body
-              in { paramsCode: pCode, retCode: "UnknownType", bodyCode: genResult, isFunc: true }
+              in { paramsCode: pCode, retCode: retCode, bodyCode: genResult, isFunc: true }
             else
               { paramsCode: "", retCode: codegenExprType modNameStr true inferredType, bodyCode: codegenExpr_ modNameStr allZeroArity allMacroBindings Nothing aritiesMap globalClassFields Map.empty Set.empty false expr, isFunc: false }
         
@@ -1252,19 +1256,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
             if expectedArgsLength == 0 then
                fullName <> "()"
             else
-               let etaArgs = Array.mapWithIndex (\i _ -> "eta_" <> show i) (Array.replicate expectedArgsLength unit)
-                   fnTy = fromMaybe Any (Map.lookup key aritiesMap)
-                   expectedArgTys = extractAllArgTypes fnTy
-                   retTy = extractFinalRetType fnTy
-                   innerArgs = Array.mapWithIndex (\i eta -> boxUnbox currentMod (fromMaybe Any (Array.index expectedArgTys i)) Any (eta <> ".clone()")) etaArgs
-                   innerCall = fullName <> "(" <> String.joinWith ", " innerArgs <> ")"
-                   boxedInnerCall = boxUnbox currentMod Any retTy innerCall
-               in (case Array.foldr (\etaArg (Tuple i code) -> 
-                   let prevEtas = Array.take i etaArgs
-                       clonesCode = String.joinWith " " (map (\prev -> "let mut " <> prev <> " = " <> prev <> ".clone();") prevEtas)
-                   in Tuple (i - 1) ("crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType { " <> clonesCode <> " " <> code <> " })))")
-                 ) (Tuple (expectedArgsLength - 1) boxedInnerCall) etaArgs of
-                 Tuple _ res -> boxUnbox currentMod fnTy Any res)
+               "purust_core::Func" <> show expectedArgsLength <> "::Static(" <> fullName <> ")"
           else
             fullName
             
