@@ -826,8 +826,9 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
         boxedBody = boxUnbox currentMod innermostExpectedRetTy bodyTy rawCode
         
-        argsCodeArr = Array.mapWithIndex (\i p -> (if p == "_" then "" else "mut ") <> sanitizeIdent p <> ": " <> codegenExprType currentMod false (fromMaybe Any (Array.index expectedArgTys i))) paramsArr
+        argsCodeArr = Array.mapWithIndex (\i p -> "mut _a" <> show i <> ": " <> codegenExprType currentMod false (fromMaybe Any (Array.index expectedArgTys i))) paramsArr
         argsCode = String.joinWith ", " argsCodeArr
+        letBindings = String.joinWith "" (Array.mapWithIndex (\i p -> if p == "_" then "" else "    let mut " <> sanitizeIdent p <> " = _a" <> show i <> ";\n") paramsArr)
         retTyStr = codegenExprType currentMod true innermostExpectedRetTy
         
         unusedArgs = Array.filter (\p -> p /= "_" && not (Set.member p (freeVariables body))) paramsArr
@@ -836,7 +837,7 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection capturedVars alive))
         outsideClonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toCloneOutside)
         
-        closureCode = "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> dropsCode <> "    " <> boxedBody <> "\n}))"
+        closureCode = "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> letBindings <> dropsCode <> "    " <> boxedBody <> "\n}))"
       in if Array.length toCloneOutside > 0 then
            "{\n" <> outsideClonesCode <> "    " <> closureCode <> "\n}"
          else closureCode
@@ -861,7 +862,8 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
         finalState = Array.foldr (\(Tuple i p) st -> 
             let
                pTy = fromMaybe Any (Array.index expectedArgTys i)
-               pCode = (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType currentMod false pTy
+               pCode = "mut _a0: " <> codegenExprType currentMod false pTy
+               letBinding = if p == "_" then "" else "    let mut " <> sanitizeIdent p <> " = _a0;\n"
                
                remainingArgTys = Array.drop (i + 1) expectedArgTys
                thisRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys expectedRetTy else expectedRetTy
@@ -875,10 +877,10 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
                clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
                
                newCode = "purust_core::Func1::Shared(std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
-                         clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
+                         letBinding <> clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
                          "}))"
             in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
-          ) initialState (Array.mapWithIndex Tuple paramsArr)
+        ) initialState (Array.mapWithIndex Tuple paramsArr)
         
         toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection finalState.freeVars alive))
         outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n    ") toCloneOutside)
