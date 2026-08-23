@@ -18233,34 +18233,19 @@ var codegenPrelude = (fields) => {
     fromFoldableImpl(foldableSet.foldr, fromFoldable12(arrayBind(shapes)((shape) => split(",")(shape))))
   );
   const validShapes = filterImpl((shape) => shape !== "", shapes);
-  return "#![allow(warnings)]\n\nuse perceus_ptr::PerceusPtr;\n\n#[derive(Clone)]\npub enum Void {}\n\n#[derive(Clone)]\npub enum Value {\n    Int(i64),\n    Number(f64),\n    Bool(bool),\n    String(String),\n    Char(char),\n    Array(std::rc::Rc<Vec<UnknownType>>),\n    Func(std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>),\n    Class(std::rc::Rc<dyn std::any::Any>),\n    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + foldMap7((shape) => {
+  return "#![allow(warnings)]\n\nuse perceus_ptr::PerceusPtr;\n\n#[derive(Clone)]\npub enum Void {}\n\n#[derive(Clone)]\npub enum Value {\n    Int(i64),\n    Number(f64),\n    Bool(bool),\n    String(String),\n    Char(char),\n    Array(std::rc::Rc<Vec<UnknownType>>),\n" + foldMap7((arity) => "    Func" + showIntImpl(arity) + "(Func" + showIntImpl(arity) + "<" + joinWith(", ")(replicateImpl(
+    arity + 1 | 0,
+    "UnknownType"
+  )) + ">),\n")(rangeImpl(1, 10)) + "    Class(std::rc::Rc<dyn std::any::Any>),\n    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + foldMap7((shape) => {
     const structName = "Record_" + joinWith("_")(arrayMap(sanitizeIdent)(sortBy(ordString.compare)(split(",")(shape))));
     return "    " + structName + "(perceus_ptr::PerceusPtr<" + structName + ">),\n";
-  })(validShapes) + `}
-
-impl Value {
-    pub fn unwrap_int(&self) -> i64 {
-        if let Value::Int(v) = self { *v } else { panic!("Expected Int"); }
-    }
-    pub fn unwrap_number(&self) -> f64 {
-        if let Value::Number(v) = self { *v } else { panic!("Expected Number"); }
-    }
-    pub fn unwrap_bool(&self) -> bool {
-        if let Value::Bool(v) = self { *v } else { panic!("Expected Bool"); }
-    }
-    pub fn unwrap_string(&self) -> String {
-        if let Value::String(v) = self { v.clone() } else { panic!("Expected String"); }
-    }
-    pub fn unwrap_char(&self) -> char {
-        if let Value::Char(v) = self { *v } else { panic!("Expected Char"); }
-    }
-    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {
-        if let Value::Array(v) = self { v.clone() } else { panic!("Expected Array"); }
-    }
-    pub fn unwrap_func(&self) -> std::rc::Rc<dyn Fn(UnknownType) -> UnknownType> {
-        if let Value::Func(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } else { panic!("Expected Func"); }
-    }
-    pub fn unwrap_class<T: 'static>(&self) -> &T {
+  })(validShapes) + '}\n\nimpl Value {\n    pub fn unwrap_int(&self) -> i64 {\n        if let Value::Int(v) = self { *v } else { panic!("Expected Int"); }\n    }\n    pub fn unwrap_number(&self) -> f64 {\n        if let Value::Number(v) = self { *v } else { panic!("Expected Number"); }\n    }\n    pub fn unwrap_bool(&self) -> bool {\n        if let Value::Bool(v) = self { *v } else { panic!("Expected Bool"); }\n    }\n    pub fn unwrap_string(&self) -> String {\n        if let Value::String(v) = self { v.clone() } else { panic!("Expected String"); }\n    }\n    pub fn unwrap_char(&self) -> char {\n        if let Value::Char(v) = self { *v } else { panic!("Expected Char"); }\n    }\n    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n        if let Value::Array(v) = self { v.clone() } else { panic!("Expected Array"); }\n    }\n' + foldMap7((arity) => "    pub fn unwrap_func" + showIntImpl(arity) + "(&self) -> Func" + showIntImpl(arity) + "<" + joinWith(", ")(replicateImpl(
+    arity + 1 | 0,
+    "UnknownType"
+  )) + "> {\n" + (arity === 1 ? '        if let Value::Func1(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } else { panic!("Expected Func1"); }\n' : "        if let Value::Func" + showIntImpl(arity) + '(v) = self { v.clone() } else { panic!("Expected Func' + showIntImpl(arity) + '"); }\n') + "    }\n")(rangeImpl(
+    1,
+    10
+  )) + `    pub fn unwrap_class<T: 'static>(&self) -> &T {
         if let Value::Class(v) = self { v.downcast_ref::<T>().unwrap() } else { panic!("Expected Class"); }
     }
     pub fn drop_explicit(self) {
@@ -18286,10 +18271,18 @@ impl Value {
       }
       return "";
     })(validShapes) + "            Value::Record_a(r) => {\n                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n                mut_r." + sf + ' = Some(val);\n            },\n            _ => panic!("Expected record with field ' + sf + '"),\n        }\n    }\n';
-  })(validUniqueFields) + "}\n\npub type UnknownType = Value;\n\npub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\npub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\npub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\npub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\npub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\npub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n#[derive(Clone, Default)]\npub struct Thunk {\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n}\n\n#[derive(Clone, Default)]\npub struct Record_a {\n    pub tag: &'static str,\n    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" + foldMap7((field) => "    pub " + sanitizeIdent(field) + ": Option<UnknownType>,\n")(validUniqueFields) + "}\n\n" + foldMap7((shape) => "#[derive(Clone, Default)]\npub struct Record_" + joinWith("_")(arrayMap(sanitizeIdent)(sortBy(ordString.compare)(split(",")(shape)))) + " {\n" + foldMap7((f) => "    pub " + sanitizeIdent(f) + ": Option<UnknownType>,\n")(filterImpl(
+  })(validUniqueFields) + "}\n\npub type UnknownType = Value;\n\npub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\npub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\npub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\npub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\npub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\npub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n#[derive(Clone, Default)]\npub struct Thunk {\n    pub call: Option<Func1<UnknownType, UnknownType>>,\n}\n\n#[derive(Clone, Default)]\npub struct Record_a {\n    pub tag: &'static str,\n    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + foldMap7((field) => "    pub " + sanitizeIdent(field) + ": Option<UnknownType>,\n")(validUniqueFields) + "}\n\n" + foldMap7((shape) => "#[derive(Clone, Default)]\npub struct Record_" + joinWith("_")(arrayMap(sanitizeIdent)(sortBy(ordString.compare)(split(",")(shape)))) + " {\n" + foldMap7((f) => "    pub " + sanitizeIdent(f) + ": Option<UnknownType>,\n")(filterImpl(
     (f) => f !== "",
     split(",")(shape)
-  )) + "}\n\n")(validShapes);
+  )) + "}\n\n")(validShapes) + "\n\n" + foldMap7((arity) => {
+    const typeParamsList = arrayMap((i) => "T" + showIntImpl(i))(rangeImpl(1, arity));
+    const typeParamsWithRet = joinWith(", ")(typeParamsList) + ", R";
+    const args = joinWith(", ")(typeParamsList);
+    return "#[derive(Clone)]\npub enum Func" + showIntImpl(arity) + "<" + typeParamsWithRet + "> {\n    Static(fn(" + args + ") -> R),\n    Shared(std::rc::Rc<dyn Fn(" + args + ") -> R>),\n}\n\nimpl<" + joinWith(", ")(arrayMap((p) => p + ": 'static")([
+      ...typeParamsList,
+      "R"
+    ])) + "> std::ops::Deref for Func" + showIntImpl(arity) + "<" + typeParamsWithRet + "> {\n    type Target = dyn Fn(" + args + ") -> R;\n    #[inline(always)]\n    fn deref(&self) -> &Self::Target {\n        match self {\n            Func" + showIntImpl(arity) + "::Static(f) => f,\n            Func" + showIntImpl(arity) + "::Shared(rc) => rc.as_ref(),\n        }\n    }\n}\n\n";
+  })(rangeImpl(1, 10));
 };
 var codegenExprType = (currentMod) => (isRet) => (ty) => {
   const v = unwrapType(ty);
@@ -18360,7 +18353,11 @@ var codegenExprType = (currentMod) => (isRet) => (ty) => {
     return "std::rc::Rc<Purs_" + modName + "::" + sanitizeIdent(actualClassName) + ">";
   }
   if (v.tag === "Func") {
-    return "std::rc::Rc<dyn Fn(" + codegenExprType(currentMod)(false)(0 < v._1.length ? v._1[0] : Any) + ") -> " + (v._1.length > 1 ? codegenExprType(currentMod)(true)($ExprType("Func", sliceImpl(1, v._1.length, v._1), v._2)) : codegenExprType(currentMod)(true)(v._2)) + ">";
+    const arity = v._1.length;
+    const typeArgs = joinWith(", ")([...arrayMap(codegenExprType(currentMod)(false))(v._1), codegenExprType(currentMod)(true)(v._2)]);
+    if (arity > 0 && arity <= 10) {
+      return "purust_core::Func" + showIntImpl(arity) + "<" + typeArgs + ">";
+    }
   }
   return "crate::UnknownType";
 };
@@ -18384,40 +18381,26 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
   const v2 = unwrapType(expected);
   if (v2.tag === "Func") {
     if (v1.tag === "Func") {
-      const expRetRem2 = v2._1.length > 1 ? $ExprType("Func", sliceImpl(1, v2._1.length, v2._1), v2._2) : v2._2;
-      if (0 < v2._1.length) {
-        return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(currentMod)(false)(v2._1[0]) + "| -> " + codegenExprType(currentMod)(true)(expRetRem2) + " { " + boxUnbox(currentMod)(expRetRem2)(v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2)("_f(" + boxUnbox(currentMod)(0 < v1._1.length ? v1._1[0] : Any)(v2._1[0])("_a") + ")") + " } })";
-      }
-      return "std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: " + codegenExprType(currentMod)(false)(Any) + "| -> " + codegenExprType(currentMod)(true)(expRetRem2) + " { " + boxUnbox(currentMod)(expRetRem2)(v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2)("_f(" + boxUnbox(currentMod)(0 < v1._1.length ? v1._1[0] : Any)(Any)("_a") + ")") + " } })";
-    }
-    const expRetRem = v2._1.length > 1 ? $ExprType("Func", sliceImpl(1, v2._1.length, v2._1), v2._2) : v2._2;
-    if (0 < v2._1.length) {
-      if (actStr === "crate::UnknownType" || actStr === "crate::Value") {
-        return "std::rc::Rc::new({ let _f = (" + code + ").unwrap_func(); move |mut _a: " + codegenExprType(currentMod)(false)(v2._1[0]) + "| -> " + codegenExprType(currentMod)(true)(expRetRem) + " { " + boxUnbox(currentMod)(expRetRem)(Any)("_f(" + boxUnbox(currentMod)(Any)(v2._1[0])("_a") + ")") + " } })";
+      const arity2 = v2._1.length;
+      if (arity2 === v1._1.length && arity2 > 0 && arity2 <= 10) {
+        return "purust_core::Func" + showIntImpl(arity2) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(v1._2)("_f(" + joinWith(", ")(mapWithIndexArray((i) => (v3) => boxUnbox(currentMod)(v3._2)(v3._1)("_a" + showIntImpl(i)))(zipWithImpl(
+          Tuple,
+          v2._1,
+          v1._1
+        ))) + ")") + " } }))";
       }
       return code;
     }
-    if (actStr === "crate::UnknownType" || actStr === "crate::Value") {
-      return "std::rc::Rc::new({ let _f = (" + code + ").unwrap_func(); move |mut _a: " + codegenExprType(currentMod)(false)(Any) + "| -> " + codegenExprType(currentMod)(true)(expRetRem) + " { " + boxUnbox(currentMod)(expRetRem)(Any)("_f(" + boxUnbox(currentMod)(Any)(Any)("_a") + ")") + " } })";
+    const arity = v2._1.length;
+    if ((actStr === "crate::UnknownType" || actStr === "crate::Value") && arity > 0 && arity <= 10) {
+      return "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").unwrap_func" + showIntImpl(arity) + "(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(Any)("_f(" + joinWith(", ")(mapWithIndexArray((i) => (expTy) => boxUnbox(currentMod)(Any)(expTy)("_a" + showIntImpl(i)))(v2._1)) + ")") + " } }))";
     }
     return code;
   }
   if (v1.tag === "Func") {
-    const actRetRem = v1._1.length > 1 ? $ExprType("Func", sliceImpl(1, v1._1.length, v1._1), v1._2) : v1._2;
-    if (0 < v1._1.length) {
-      if (expStr === "crate::UnknownType" || expStr === "crate::Value") {
-        return _trace(
-          "BOXUNBOX: expected=" + printType(expected) + ", actual=" + printType(actual) + ", expStr=" + expStr + ", code=" + code,
-          (v3) => "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(currentMod)(Any)(actRetRem)("_f(" + boxUnbox(currentMod)(v1._1[0])(Any)("_a") + ")") + " } }))"
-        );
-      }
-      return code;
-    }
-    if (expStr === "crate::UnknownType" || expStr === "crate::Value") {
-      return _trace(
-        "BOXUNBOX: expected=" + printType(expected) + ", actual=" + printType(actual) + ", expStr=" + expStr + ", code=" + code,
-        (v3) => "crate::Value::Func(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " + boxUnbox(currentMod)(Any)(actRetRem)("_f(" + boxUnbox(currentMod)(Any)(Any)("_a") + ")") + " } }))"
-      );
+    const arity = v1._1.length;
+    if ((expStr === "crate::UnknownType" || expStr === "crate::Value") && arity > 0 && arity <= 10) {
+      return "crate::Value::Func" + showIntImpl(arity) + "(purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (v3) => "mut _a" + showIntImpl(i) + ": crate::UnknownType")(v1._1)) + "| -> crate::UnknownType { " + boxUnbox(currentMod)(Any)(v1._2)("_f(" + joinWith(", ")(mapWithIndexArray((i) => (actTy) => boxUnbox(currentMod)(actTy)(Any)("_a" + showIntImpl(i)))(v1._1)) + ")") + " } })))";
     }
     return code;
   }
@@ -18497,30 +18480,41 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
         buildCall$r = $Tuple(accTy, accCode);
         continue;
       }
-      const argTy = inferTypeExpr(modNameStr)(aritiesMap)(bound)(idx >= 0 && idx < argsArray.length ? argsArray[idx] : $BackendSyntax("Var", $Qualified(Nothing, "")));
-      if (idx >= 0 && idx < argsCodeArray.length) {
-        const argCode = argsCodeArray[idx];
-        const v3 = unwrapType(accTy);
-        if (v3.tag === "Func") {
-          buildCall$a0 = v3._1.length > 1 ? $ExprType("Func", sliceImpl(1, v3._1.length, v3._1), v3._2) : v3._2;
-          buildCall$a1 = "(" + accCode + ")(" + boxUnbox(modNameStr)(0 < v3._1.length ? v3._1[0] : Any)(argTy)(argCode) + ")";
-          buildCall$a2 = idx + 1 | 0;
-          continue;
-        }
-        buildCall$a0 = Any;
-        buildCall$a1 = "(" + accCode + ").unwrap_func()(" + boxUnbox(modNameStr)(Any)(argTy)(argCode) + ")";
-        buildCall$a2 = idx + 1 | 0;
-        continue;
-      }
       const v2 = unwrapType(accTy);
       if (v2.tag === "Func") {
-        buildCall$a0 = v2._1.length > 1 ? $ExprType("Func", sliceImpl(1, v2._1.length, v2._1), v2._2) : v2._2;
-        buildCall$a1 = "(" + accCode + ")(" + boxUnbox(modNameStr)(0 < v2._1.length ? v2._1[0] : Any)(argTy)("") + ")";
-        buildCall$a2 = idx + 1 | 0;
-        continue;
+        const arity = v2._1.length;
+        if (arity > 0 && arity <= 10) {
+          const availableArgsCount = argsCodeArray.length - idx | 0;
+          if (availableArgsCount >= arity) {
+            const passedArgsTys2 = sliceImpl(idx, idx + arity | 0, argsArray);
+            buildCall$a0 = v2._2;
+            buildCall$a1 = "(" + accCode + ")(" + joinWith(", ")(mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < v2._1.length ? v2._1[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(i >= 0 && i < passedArgsTys2.length ? passedArgsTys2[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(sliceImpl(
+              idx,
+              idx + arity | 0,
+              argsCodeArray
+            ))) + ")";
+            buildCall$a2 = idx + arity | 0;
+            continue;
+          }
+          const passedArgsTys = sliceImpl(idx, argsCodeArray.length, argsArray);
+          const passedArgs = sliceImpl(idx, argsCodeArray.length, argsCodeArray);
+          const missingEtasTypes = availableArgsCount < 1 ? v2._1 : sliceImpl(availableArgsCount, v2._1.length, v2._1);
+          const missingCount = arity - availableArgsCount | 0;
+          const evalArgs = mapWithIndexArray((i) => (v12) => "eval_arg_" + showIntImpl(i))(passedArgs);
+          const etaArgs = mapWithIndexArray((i) => (v12) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
+          buildCall$c = false;
+          buildCall$r = $Tuple(
+            $ExprType("Func", missingEtasTypes, v2._2),
+            "{\n" + joinWith("")(mapWithIndexArray((i) => (boxedArg) => "        let mut eval_arg_" + showIntImpl(i) + " = " + boxedArg + ";\n")(mapWithIndexArray((i) => (argCode) => boxUnbox(modNameStr)(i >= 0 && i < v2._1.length ? v2._1[i] : Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(i >= 0 && i < passedArgsTys.length ? passedArgsTys[i] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(argCode))(passedArgs))) + "    purust_core::Func" + showIntImpl(missingCount) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (eta) => "mut " + eta + ": " + codegenExprType(modNameStr)(false)(i >= 0 && i < missingEtasTypes.length ? missingEtasTypes[i] : Any))(etaArgs)) + "| -> " + codegenExprType(modNameStr)(true)(v2._2) + " {\n    let mut _fn_ptr = (" + accCode + ").clone();\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")(evalArgs)) + "    _fn_ptr(" + joinWith(", ")([
+              ...evalArgs,
+              ...mapWithIndexArray((i) => (eta) => eta + ".clone()")(etaArgs)
+            ]) + ")\n}))\n}"
+          );
+          continue;
+        }
       }
       buildCall$a0 = Any;
-      buildCall$a1 = "(" + accCode + ").unwrap_func()(" + boxUnbox(modNameStr)(Any)(argTy)("") + ")";
+      buildCall$a1 = "(" + accCode + ").unwrap_func1()(" + boxUnbox(modNameStr)(Any)(inferTypeExpr(modNameStr)(aritiesMap)(bound)(idx >= 0 && idx < argsArray.length ? argsArray[idx] : $BackendSyntax("Var", $Qualified(Nothing, ""))))(idx >= 0 && idx < argsCodeArray.length ? argsCodeArray[idx] : "") + ")";
       buildCall$a2 = idx + 1 | 0;
     }
     return buildCall$r;
@@ -18669,24 +18663,16 @@ var genApp = (modNameStr) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
           return fullName + "(" + joinWith(", ")(boxedArgs) + ")";
         }
         if (m < n) {
+          const retTy = extractFinalRetType(fnTy);
           const missingCount = n - m | 0;
           const $1 = extractAllArgTypes(fnTy);
           const missingEtasTypes = m < 1 ? $1 : sliceImpl(m, $1.length, $1);
           const evalArgs = mapWithIndexArray((i) => (v23) => "eval_arg_" + showIntImpl(i))(argsCodeArray);
           const etaArgs = mapWithIndexArray((i) => (v23) => "eta_" + showIntImpl(i))(replicateImpl(missingCount, void 0));
-          return boxUnbox(modNameStr)(appTy)(Any)("{\n" + joinWith("")(mapWithIndexArray((i) => (boxedArg) => "        let mut eval_arg_" + showIntImpl(i) + " = " + boxedArg + ";\n")(boxedArgs)) + "    " + foldrArray((etaArg) => (v3) => $Tuple(
-            v3._1 - 1 | 0,
-            "crate::Value::Func(std::rc::Rc::new(move |mut " + etaArg + ": UnknownType| -> UnknownType {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")([
-              ...evalArgs,
-              ...v3._1 < 1 ? [] : sliceImpl(0, v3._1, etaArgs)
-            ])) + "    " + v3._2 + "\n}))"
-          ))($Tuple(
-            missingCount - 1 | 0,
-            boxUnbox(modNameStr)(Any)(extractFinalRetType(fnTy))(fullName + "(" + joinWith(", ")([
-              ...evalArgs,
-              ...mapWithIndexArray((i) => (eta) => boxUnbox(modNameStr)(i >= 0 && i < missingEtasTypes.length ? missingEtasTypes[i] : Any)(Any)(eta + ".clone()"))(etaArgs)
-            ]) + ")")
-          ))(etaArgs)._2 + "\n}");
+          return boxUnbox(modNameStr)(appTy)($ExprType("Func", missingEtasTypes, retTy))("{\n" + joinWith("")(mapWithIndexArray((i) => (boxedArg) => "        let mut eval_arg_" + showIntImpl(i) + " = " + boxedArg + ";\n")(boxedArgs)) + "    purust_core::Func" + showIntImpl(missingCount) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (eta) => "mut " + eta + ": " + codegenExprType(modNameStr)(false)(i >= 0 && i < missingEtasTypes.length ? missingEtasTypes[i] : Any))(etaArgs)) + "| -> " + codegenExprType(modNameStr)(true)(retTy) + " {\n" + joinWith("")(arrayMap((arg) => "    let mut " + arg + " = " + arg + ".clone();\n")(evalArgs)) + "    " + fullName + "(" + joinWith(", ")([
+            ...evalArgs,
+            ...mapWithIndexArray((i) => (eta) => eta + ".clone()")(etaArgs)
+          ]) + ")\n}))\n}");
         }
         const v22 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(bound)(foldlArray((acc) => (v23) => $BackendSyntax(
           "App",
@@ -18723,6 +18709,30 @@ var genAbs = (currentMod) => (allZeroArity) => (allMacroBindings) => (mbLoop) =>
     };
   })(bound)(mapWithIndexArray(Tuple)(paramsArr));
   const capturedVars = unsafeDifference(ordString.compare, freeVariables(body), fromFoldable12(paramsArr));
+  const arity = paramsArr.length;
+  if (arity > 0 && arity <= 10) {
+    const toCloneOutside2 = filterImpl(
+      (v) => !member12(v)(aritiesMap) && !member2(v)(allZeroArity),
+      fromFoldableImpl(foldableSet.foldr, unsafeIntersectionWith(ordString.compare, $$const, capturedVars, alive))
+    );
+    const remainingArgs = arity < 1 ? expectedArgTys : sliceImpl(arity, expectedArgTys.length, expectedArgTys);
+    const outsideClonesCode2 = joinWith("")(arrayMap((v) => "    let mut " + sanitizeIdent(v) + " = " + sanitizeIdent(v) + ".clone();\n")(toCloneOutside2));
+    const innermostExpectedRetTy = remainingArgs.length > 0 ? $ExprType("Func", remainingArgs, expectedRetTy) : expectedRetTy;
+    const closureCode = "purust_core::Func" + showIntImpl(arity) + "::Shared(std::rc::Rc::new(move |" + joinWith(", ")(mapWithIndexArray((i) => (p) => (p === "_" ? "" : "mut ") + sanitizeIdent(p) + ": " + codegenExprType(currentMod)(false)(i >= 0 && i < expectedArgTys.length ? expectedArgTys[i] : Any))(paramsArr)) + "| -> " + codegenExprType(currentMod)(true)(innermostExpectedRetTy) + " {\n" + joinWith("")(arrayMap((p) => "    drop(" + sanitizeIdent(p) + ");\n")(filterImpl(
+      (p) => p !== "_" && !member2(p)(freeVariables(body)),
+      paramsArr
+    ))) + "    " + boxUnbox(currentMod)(innermostExpectedRetTy)(inferTypeExprGlobal(currentMod)(aritiesMap)(globalClassFields)(newBound)(body))((() => {
+      const oldCaptured = globalCaptured.value;
+      const $0 = globalCaptured.value;
+      globalCaptured.value = unsafeUnionWith(ordString.compare, $$const, capturedVars, $0);
+      globalCaptured.value = oldCaptured;
+      return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing)(aritiesMap)(globalClassFields)(newBound)(capturedVars)(false)(body);
+    })()) + "\n}))";
+    if (toCloneOutside2.length > 0) {
+      return "{\n" + outsideClonesCode2 + "    " + closureCode + "\n}";
+    }
+    return closureCode;
+  }
   const finalState = foldrArray((v) => {
     const $0 = v._1;
     const $1 = v._2;

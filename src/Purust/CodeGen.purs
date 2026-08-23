@@ -155,6 +155,45 @@ codegenPrelude fields =
          "    }\n"
     ) validUniqueFields
     
+    funcWrappers = Array.foldMap (\arity -> 
+      let 
+        typeParamsList = map (\i -> "T" <> show i) (Array.range 1 arity)
+        typeParams = String.joinWith ", " typeParamsList
+        typeParamsWithRet = typeParams <> ", R"
+        typeParamsWithBounds = String.joinWith ", " (map (\p -> p <> ": 'static") (typeParamsList <> ["R"]))
+        args = String.joinWith ", " typeParamsList
+      in
+        "#[derive(Clone)]\npub enum Func" <> show arity <> "<" <> typeParamsWithRet <> "> {\n" <>
+        "    Static(fn(" <> args <> ") -> R),\n" <>
+        "    Shared(std::rc::Rc<dyn Fn(" <> args <> ") -> R>),\n" <>
+        "}\n\n" <>
+        "impl<" <> typeParamsWithBounds <> "> std::ops::Deref for Func" <> show arity <> "<" <> typeParamsWithRet <> "> {\n" <>
+        "    type Target = dyn Fn(" <> args <> ") -> R;\n" <>
+        "    #[inline(always)]\n" <>
+        "    fn deref(&self) -> &Self::Target {\n" <>
+        "        match self {\n" <>
+        "            Func" <> show arity <> "::Static(f) => f,\n" <>
+        "            Func" <> show arity <> "::Shared(rc) => rc.as_ref(),\n" <>
+        "        }\n" <>
+        "    }\n" <>
+        "}\n\n"
+    ) (Array.range 1 10)
+    funcVariants = Array.foldMap (\arity -> 
+      let typeParams = String.joinWith ", " (Array.replicate (arity + 1) "UnknownType")
+      in "    Func" <> show arity <> "(Func" <> show arity <> "<" <> typeParams <> ">),\n"
+    ) (Array.range 1 10)
+    
+    funcUnwraps = Array.foldMap (\arity -> 
+      let typeParams = String.joinWith ", " (Array.replicate (arity + 1) "UnknownType")
+      in "    pub fn unwrap_func" <> show arity <> "(&self) -> Func" <> show arity <> "<" <> typeParams <> "> {\n" <>
+         (if arity == 1 then 
+           "        if let Value::Func1(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } else { panic!(\"Expected Func1\"); }\n"
+          else 
+           "        if let Value::Func" <> show arity <> "(v) = self { v.clone() } else { panic!(\"Expected Func" <> show arity <> "\"); }\n"
+         ) <>
+         "    }\n"
+    ) (Array.range 1 10)
+
   in
   "#![allow(warnings)]\n\n" <>
   "use perceus_ptr::PerceusPtr;\n\n" <>
@@ -167,7 +206,7 @@ codegenPrelude fields =
   "    String(String),\n" <>
   "    Char(char),\n" <>
   "    Array(std::rc::Rc<Vec<UnknownType>>),\n" <>
-  "    Func(std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>),\n" <>
+  funcVariants <>
   "    Class(std::rc::Rc<dyn std::any::Any>),\n" <>
   "    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" <>
   "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
@@ -192,9 +231,7 @@ codegenPrelude fields =
   "    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" <>
   "        if let Value::Array(v) = self { v.clone() } else { panic!(\"Expected Array\"); }\n" <>
   "    }\n" <>
-  "    pub fn unwrap_func(&self) -> std::rc::Rc<dyn Fn(UnknownType) -> UnknownType> {\n" <>
-  "        if let Value::Func(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } else { panic!(\"Expected Func\"); }\n" <>
-  "    }\n" <>
+  funcUnwraps <>
   "    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" <>
   "        if let Value::Class(v) = self { v.downcast_ref::<T>().unwrap() } else { panic!(\"Expected Class\"); }\n" <>
   "    }\n" <>
@@ -214,17 +251,19 @@ codegenPrelude fields =
   "pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" <>
   "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" <>
   "#[derive(Clone, Default)]\npub struct Thunk {\n" <>
-  "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
+  "    pub call: Option<Func1<UnknownType, UnknownType>>,\n" <>
   "}\n\n" <>
   "#[derive(Clone, Default)]\npub struct Record_a {\n" <>
   "    pub tag: &'static str,\n" <>
   "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
-  "    pub call: Option<std::rc::Rc<dyn Fn(UnknownType) -> UnknownType>>,\n" <>
+  "    pub call: Option<Func1<UnknownType, UnknownType>>,\n" <>
   Array.foldMap (\field ->
     "    pub " <> sanitizeIdent field <> ": Option<UnknownType>,\n"
   ) validUniqueFields <>
   "}\n\n" <>
-  recordStructs
+  recordStructs <>
+  "\n\n" <>
+  funcWrappers
     
 unwrapType :: ExprType -> ExprType
 unwrapType (ForAll _ t) = unwrapType t
@@ -271,8 +310,12 @@ codegenExprType currentMod isRet ty = case unwrapType ty of
            else if modName == currentMod then "std::rc::Rc<crate::" <> sanitizeIdent actualClassName <> ">"
            else "std::rc::Rc<Purs_" <> modName <> "::" <> sanitizeIdent actualClassName <> ">"
   Func args ret -> 
-    let retStr = if Array.length args > 1 then codegenExprType currentMod true (Func (Array.drop 1 args) ret) else codegenExprType currentMod true ret
-    in "std::rc::Rc<dyn Fn(" <> codegenExprType currentMod false (fromMaybe Any (Array.head args)) <> ") -> " <> retStr <> ">"
+    let arity = Array.length args
+        argStrs = map (codegenExprType currentMod false) args
+        retStr = codegenExprType currentMod true ret
+        typeArgs = String.joinWith ", " (argStrs <> [retStr])
+    in if arity > 0 && arity <= 10 then "purust_core::Func" <> show arity <> "<" <> typeArgs <> ">"
+       else "crate::UnknownType"
   _ -> "crate::UnknownType"
 
 boxUnbox :: String -> ExprType -> ExprType -> String -> String
@@ -287,27 +330,36 @@ boxUnbox currentMod expected actual code =
     else if expStr == actStr then code
     else case unwrapType expected, unwrapType actual of
       Func expArgs expRet, Func actArgs actRet ->
-        let expArg = fromMaybe Any (Array.head expArgs)
-            actArg = fromMaybe Any (Array.head actArgs)
-            expRetRem = if Array.length expArgs > 1 then Func (Array.drop 1 expArgs) expRet else expRet
-            actRetRem = if Array.length actArgs > 1 then Func (Array.drop 1 actArgs) actRet else actRet
-        in "std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |mut _a: " <> codegenExprType currentMod false expArg <> "| -> " <> codegenExprType currentMod true expRetRem <> " { " <> boxUnbox currentMod expRetRem actRetRem ("_f(" <> boxUnbox currentMod actArg expArg "_a" <> ")") <> " } })"
+        let arity = Array.length expArgs
+        in if arity == Array.length actArgs && arity > 0 && arity <= 10 then
+             let
+               expArgTypes = map (codegenExprType currentMod false) expArgs
+               actArgTypes = map (codegenExprType currentMod false) actArgs
+               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
+               argsCall = String.joinWith ", " (Array.mapWithIndex (\i (Tuple expTy actTy) -> boxUnbox currentMod actTy expTy ("_a" <> show i)) (Array.zip expArgs actArgs))
+               retStr = codegenExprType currentMod true expRet
+             in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet actRet ("_f(" <> argsCall <> ")") <> " } }))"
+           else code
       
       Func expArgs expRet, _ ->
-        let expArg = fromMaybe Any (Array.head expArgs)
-            expRetRem = if Array.length expArgs > 1 then Func (Array.drop 1 expArgs) expRet else expRet
-            res = if actStr == "crate::UnknownType" || actStr == "crate::Value" then
-              "std::rc::Rc::new({ let _f = (" <> code <> ").unwrap_func(); move |mut _a: " <> codegenExprType currentMod false expArg <> "| -> " <> codegenExprType currentMod true expRetRem <> " { " <> boxUnbox currentMod expRetRem Any ("_f(" <> boxUnbox currentMod Any expArg "_a" <> ")") <> " } })"
-            else code
-        in res
+        let arity = Array.length expArgs
+        in if (actStr == "crate::UnknownType" || actStr == "crate::Value") && arity > 0 && arity <= 10 then
+             let
+               expArgTypes = map (codegenExprType currentMod false) expArgs
+               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
+               argsCall = String.joinWith ", " (Array.mapWithIndex (\i expTy -> boxUnbox currentMod Any expTy ("_a" <> show i)) expArgs)
+               retStr = codegenExprType currentMod true expRet
+             in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").unwrap_func" <> show arity <> "(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet Any ("_f(" <> argsCall <> ")") <> " } }))"
+           else code
 
       _, Func actArgs actRet ->
-        let actArg = fromMaybe Any (Array.head actArgs)
-            actRetRem = if Array.length actArgs > 1 then Func (Array.drop 1 actArgs) actRet else actRet
-        in if expStr == "crate::UnknownType" || expStr == "crate::Value" then
-          Debug.trace ("BOXUNBOX: expected=" <> printType expected <> ", actual=" <> printType actual <> ", expStr=" <> expStr <> ", code=" <> code) \_ ->
-            "crate::Value::Func(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |mut _a: crate::UnknownType| -> crate::UnknownType { " <> boxUnbox currentMod Any actRetRem ("_f(" <> boxUnbox currentMod actArg Any "_a" <> ")") <> " } }))"
-        else code
+        let arity = Array.length actArgs
+        in if (expStr == "crate::UnknownType" || expStr == "crate::Value") && arity > 0 && arity <= 10 then
+             let
+               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut _a" <> show i <> ": crate::UnknownType") actArgs)
+               argsCall = String.joinWith ", " (Array.mapWithIndex (\i actTy -> boxUnbox currentMod actTy Any ("_a" <> show i)) actArgs)
+             in "crate::Value::Func" <> show arity <> "(purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> crate::UnknownType { " <> boxUnbox currentMod Any actRet ("_f(" <> argsCall <> ")") <> " } })))"
+           else code
 
       _, _ ->
         let isActADT = case unwrapType actual of 
@@ -491,18 +543,56 @@ genApp :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, 
 genApp modNameStr allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn argsArray =
     let buildCall :: ExprType -> String -> Int -> Tuple ExprType String
         buildCall accTy accCode idx = if idx >= Array.length argsCodeArray then Tuple accTy accCode else
-            let argCode = fromMaybe "" (Array.index argsCodeArray idx)
-                argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray idx)
-                argTy = inferTypeExpr modNameStr aritiesMap bound argExpr
-            in case unwrapType accTy of
+            case unwrapType accTy of
               Func argTys retTy ->
-                let expectedArgTy = fromMaybe Any (Array.head argTys)
-                    nextRetTy = if Array.length argTys > 1 then Func (Array.drop 1 argTys) retTy else retTy
-                    boxedArg = boxUnbox modNameStr expectedArgTy argTy argCode
-                in buildCall nextRetTy ("(" <> accCode <> ")(" <> boxedArg <> ")") (idx + 1)
+                let arity = Array.length argTys
+                in if arity > 0 && arity <= 10 then
+                     let availableArgsCount = Array.length argsCodeArray - idx
+                     in if availableArgsCount >= arity then
+                          let passedArgs = Array.slice idx (idx + arity) argsCodeArray
+                              passedArgsTys = Array.slice idx (idx + arity) argsArray
+                              boxedArgs = Array.mapWithIndex (\i argCode -> 
+                                  let argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index passedArgsTys i)
+                                      argTy = inferTypeExpr modNameStr aritiesMap bound argExpr
+                                      expectedTy = fromMaybe Any (Array.index argTys i)
+                                  in boxUnbox modNameStr expectedTy argTy argCode
+                                ) passedArgs
+                              nextCode = "(" <> accCode <> ")(" <> String.joinWith ", " boxedArgs <> ")"
+                          in buildCall retTy nextCode (idx + arity)
+                        else
+                          let missingCount = arity - availableArgsCount
+                              passedArgs = Array.slice idx (Array.length argsCodeArray) argsCodeArray
+                              passedArgsTys = Array.slice idx (Array.length argsCodeArray) argsArray
+                              boxedPassedArgs = Array.mapWithIndex (\i argCode -> 
+                                  let argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index passedArgsTys i)
+                                      argTy = inferTypeExpr modNameStr aritiesMap bound argExpr
+                                      expectedTy = fromMaybe Any (Array.index argTys i)
+                                  in boxUnbox modNameStr expectedTy argTy argCode
+                                ) passedArgs
+                              etaArgs = Array.mapWithIndex (\i _ -> "eta_" <> show i) (Array.replicate missingCount unit)
+                              evalArgs = Array.mapWithIndex (\i _ -> "eval_arg_" <> show i) passedArgs
+                              letArgsCode = Array.mapWithIndex (\i boxedArg -> "        let mut eval_arg_" <> show i <> " = " <> boxedArg <> ";\n") boxedPassedArgs
+                              missingEtasTypes = Array.drop availableArgsCount argTys
+                              innerArgs = evalArgs <> Array.mapWithIndex (\i eta -> eta <> ".clone()") etaArgs
+                              innerCall = "_fn_ptr(" <> String.joinWith ", " innerArgs <> ")"
+                              etaArgsDecl = String.joinWith ", " (Array.mapWithIndex (\i eta -> "mut " <> eta <> ": " <> codegenExprType modNameStr false (fromMaybe Any (Array.index missingEtasTypes i))) etaArgs)
+                              retTyStr = codegenExprType modNameStr true retTy
+                              clonesCode = "    let mut _fn_ptr = (" <> accCode <> ").clone();\n" <> String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") evalArgs)
+                              closureCode = "purust_core::Func" <> show missingCount <> "::Shared(std::rc::Rc::new(move |" <> etaArgsDecl <> "| -> " <> retTyStr <> " {\n" <> clonesCode <> "    " <> innerCall <> "\n}))"
+                              blockCode = "{\n" <> String.joinWith "" letArgsCode <> "    " <> closureCode <> "\n}"
+                          in Tuple (Func missingEtasTypes retTy) blockCode
+                   else
+                     let argCode = fromMaybe "" (Array.index argsCodeArray idx)
+                         argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray idx)
+                         argTy = inferTypeExpr modNameStr aritiesMap bound argExpr
+                         boxedArg = boxUnbox modNameStr Any argTy argCode
+                     in buildCall Any ("(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")") (idx + 1)
               _ ->
-                let boxedArg = boxUnbox modNameStr Any argTy argCode
-                in buildCall Any ("(" <> accCode <> ").unwrap_func()(" <> boxedArg <> ")") (idx + 1)
+                let argCode = fromMaybe "" (Array.index argsCodeArray idx)
+                    argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray idx)
+                    argTy = inferTypeExpr modNameStr aritiesMap bound argExpr
+                    boxedArg = boxUnbox modNameStr Any argTy argCode
+                in buildCall Any ("(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")") (idx + 1)
         getInner :: NeutralExpr -> NeutralExpr
         getInner (NeutralExpr (Typed _ inner)) = getInner inner
         getInner e = e
@@ -603,18 +693,16 @@ genApp modNameStr allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
                                      missingEtasTypes = Array.drop m expectedArgTys
                                      retTy = extractFinalRetType fnTy
 
-                                     innerArgs = evalArgs <> Array.mapWithIndex (\i eta -> boxUnbox modNameStr (fromMaybe Any (Array.index missingEtasTypes i)) Any (eta <> ".clone()")) etaArgs
+                                     innerArgs = evalArgs <> Array.mapWithIndex (\i eta -> eta <> ".clone()") etaArgs
                                      innerCall = fullName <> "(" <> String.joinWith ", " innerArgs <> ")"
-                                     boxedInnerCall = boxUnbox modNameStr Any retTy innerCall
-
-                                     closuresCode = case Array.foldr (\etaArg (Tuple i accCode) ->
-                                         let prevEtas = Array.take i etaArgs
-                                             clonesCode = String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") (evalArgs <> prevEtas))
-                                         in Tuple (i - 1) ("crate::Value::Func(std::rc::Rc::new(move |mut " <> etaArg <> ": UnknownType| -> UnknownType {\n" <> clonesCode <> "    " <> accCode <> "\n}))")
-                                       ) (Tuple (missingCount - 1) boxedInnerCall) etaArgs of
-                                       Tuple _ res -> res
-                                     blockCode = "{\n" <> String.joinWith "" letArgsCode <> "    " <> closuresCode <> "\n}"
-                                 in boxUnbox modNameStr appTy Any blockCode
+                                     
+                                     etaArgsDecl = String.joinWith ", " (Array.mapWithIndex (\i eta -> "mut " <> eta <> ": " <> codegenExprType modNameStr false (fromMaybe Any (Array.index missingEtasTypes i))) etaArgs)
+                                     retTyStr = codegenExprType modNameStr true retTy
+                                     clonesCode = String.joinWith "" (map (\arg -> "    let mut " <> arg <> " = " <> arg <> ".clone();\n") evalArgs)
+                                     closureCode = "purust_core::Func" <> show missingCount <> "::Shared(std::rc::Rc::new(move |" <> etaArgsDecl <> "| -> " <> retTyStr <> " {\n" <> clonesCode <> "    " <> innerCall <> "\n}))"
+                                     
+                                     blockCode = "{\n" <> String.joinWith "" letArgsCode <> "    " <> closureCode <> "\n}"
+                                 in boxUnbox modNameStr appTy (Func missingEtasTypes retTy) blockCode
                                else
                                  let firstNArgs = Array.take n boxedArgs
                                      baseCall = fullName <> "(" <> String.joinWith ", " firstNArgs <> ")"
@@ -641,50 +729,82 @@ genAbs currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFie
           in if p == "_" then b else Map.insert (sanitizeIdent p) pTy b
         ) bound (Array.mapWithIndex Tuple paramsArr)
 
-      initialState = { 
-        freeVars: freeVariables body, 
-        isInnermost: true, 
-        code: 
-          let bodyTy = inferTypeExprGlobal currentMod aritiesMap globalClassFields newBound body
-              rawCode = unsafePerformEffect do
-                oldCaptured <- Ref.read globalCaptured
-                _ <- Ref.modify (Set.union capturedVars) globalCaptured
-                let res = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
-                Ref.write oldCaptured globalCaptured
-                pure res
-              remainingArgs = Array.drop (Array.length paramsArr) expectedArgTys
-              innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
-          in boxUnbox currentMod innermostExpectedRetTy bodyTy rawCode
-      }
-      
-      finalState = Array.foldr (\(Tuple i p) st -> 
-          let
-             pTy = fromMaybe Any (Array.index expectedArgTys i)
-             pCode = (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType currentMod false pTy
-             
-             remainingArgTys = Array.drop (i + 1) expectedArgTys
-             thisRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys expectedRetTy else expectedRetTy
-             retTyStr = codegenExprType currentMod true thisRetTy
-             
-             neededByInner = st.freeVars
-             pIsUsed = Set.member p neededByInner
-             dropsCode = if p /= "_" && not pIsUsed then "    drop(" <> p <> ");\n" else ""
-             thisClosureCaptures = Set.delete p neededByInner
-             toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
-             clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
-             
-             newCode = "std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
-                       clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
-                       "})"
-          in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
-        ) initialState (Array.mapWithIndex Tuple paramsArr)
-      
-      toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection finalState.freeVars alive))
-      outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n    ") toCloneOutside)
-      wrappedCode = if Array.length toCloneOutside > 0 then
-          "{\n    " <> outsideClonesCode <> finalState.code <> "\n}"
-        else finalState.code
-    in wrappedCode
+      arity = Array.length paramsArr
+      isFuncN = arity > 0 && arity <= 10
+    in if isFuncN then
+      let
+        bodyTy = inferTypeExprGlobal currentMod aritiesMap globalClassFields newBound body
+        rawCode = unsafePerformEffect do
+          oldCaptured <- Ref.read globalCaptured
+          _ <- Ref.modify (Set.union capturedVars) globalCaptured
+          let res = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
+          Ref.write oldCaptured globalCaptured
+          pure res
+        
+        remainingArgs = Array.drop arity expectedArgTys
+        innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
+        boxedBody = boxUnbox currentMod innermostExpectedRetTy bodyTy rawCode
+        
+        argsCodeArr = Array.mapWithIndex (\i p -> (if p == "_" then "" else "mut ") <> sanitizeIdent p <> ": " <> codegenExprType currentMod false (fromMaybe Any (Array.index expectedArgTys i))) paramsArr
+        argsCode = String.joinWith ", " argsCodeArr
+        retTyStr = codegenExprType currentMod true innermostExpectedRetTy
+        
+        unusedArgs = Array.filter (\p -> p /= "_" && not (Set.member p (freeVariables body))) paramsArr
+        dropsCode = String.joinWith "" (map (\p -> "    drop(" <> sanitizeIdent p <> ");\n") unusedArgs)
+        
+        toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection capturedVars alive))
+        outsideClonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toCloneOutside)
+        
+        closureCode = "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsCode <> "| -> " <> retTyStr <> " {\n" <> dropsCode <> "    " <> boxedBody <> "\n}))"
+      in if Array.length toCloneOutside > 0 then
+           "{\n" <> outsideClonesCode <> "    " <> closureCode <> "\n}"
+         else closureCode
+    else
+      let
+        initialState = { 
+          freeVars: freeVariables body, 
+          isInnermost: true, 
+          code: 
+            let bodyTy = inferTypeExprGlobal currentMod aritiesMap globalClassFields newBound body
+                rawCode = unsafePerformEffect do
+                  oldCaptured <- Ref.read globalCaptured
+                  _ <- Ref.modify (Set.union capturedVars) globalCaptured
+                  let res = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields newBound capturedVars false body
+                  Ref.write oldCaptured globalCaptured
+                  pure res
+                remainingArgs = Array.drop (Array.length paramsArr) expectedArgTys
+                innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
+            in boxUnbox currentMod innermostExpectedRetTy bodyTy rawCode
+        }
+        
+        finalState = Array.foldr (\(Tuple i p) st -> 
+            let
+               pTy = fromMaybe Any (Array.index expectedArgTys i)
+               pCode = (if p == "_" then "" else "mut ") <> p <> ": " <> codegenExprType currentMod false pTy
+               
+               remainingArgTys = Array.drop (i + 1) expectedArgTys
+               thisRetTy = if Array.length remainingArgTys > 0 then Func remainingArgTys expectedRetTy else expectedRetTy
+               retTyStr = codegenExprType currentMod true thisRetTy
+               
+               neededByInner = st.freeVars
+               pIsUsed = Set.member p neededByInner
+               dropsCode = if p /= "_" && not pIsUsed then "    drop(" <> p <> ");\n" else ""
+               thisClosureCaptures = Set.delete p neededByInner
+               toClone = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable thisClosureCaptures)
+               clonesCode = String.joinWith "" (map (\v -> "    let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n") toClone)
+               
+               newCode = "std::rc::Rc::new(move |" <> pCode <> "| -> " <> retTyStr <> " {\n" <>
+                         clonesCode <> dropsCode <> "    " <> st.code <> "\n" <>
+                         "})"
+            in { freeVars: thisClosureCaptures, isInnermost: false, code: newCode }
+          ) initialState (Array.mapWithIndex Tuple paramsArr)
+        
+        toCloneOutside = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable (Set.intersection finalState.freeVars alive))
+        outsideClonesCode = String.joinWith "" (map (\v -> "let mut " <> sanitizeIdent v <> " = " <> sanitizeIdent v <> ".clone();\n    ") toCloneOutside)
+        wrappedCode = if Array.length toCloneOutside > 0 then
+            "{\n    " <> outsideClonesCode <> finalState.code <> "\n}"
+          else finalState.code
+      in wrappedCode
 
 codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
 codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive expr =
