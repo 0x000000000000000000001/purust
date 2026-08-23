@@ -46,7 +46,12 @@ main = launchAff_ do
                      Nothing -> "Main"
   liftEffect $ log $ "Generating Rust code for " <> mainModule
   
-  finalModules <- coreFnModulesFromOutput "output"
+  let sourceDir = case Array.findIndex (_ == "--source") args of
+                     Just idx -> case Array.index args (idx + 1) of
+                                   Just s -> s
+                                   Nothing -> "output"
+                     Nothing -> "output"
+  finalModules <- coreFnModulesFromOutput sourceDir
   
   let
     buildGlobalArities :: List.List (Module Ann) -> Map.Map String ExprType
@@ -225,7 +230,11 @@ main = launchAff_ do
     finalModules
     
   liftEffect do
-    let outDir = "output/purust_output"
+    let outDir = case Array.findIndex (_ == "--out") args of
+                     Just idx -> case Array.index args (idx + 1) of
+                                   Just o -> o
+                                   Nothing -> "output/purust_output"
+                     Nothing -> "output/purust_output"
     srcExists <- FS.exists (outDir <> "/src")
     when (not srcExists) do
       FS.mkdir outDir
@@ -268,7 +277,7 @@ main = launchAff_ do
     let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\n"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") rootCargoToml
     
-    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func())(purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")
     
     let coreDir = outDir <> "/purust_core"
     coreExists <- FS.exists coreDir

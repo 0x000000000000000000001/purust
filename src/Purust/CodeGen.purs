@@ -366,9 +366,9 @@ boxUnbox currentMod expected actual code =
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
                retStr = codegenExprType currentMod true expRet
                
-               buildCall :: Int -> ExprType -> String -> String
+               buildCall :: Int -> ExprType -> String -> Tuple ExprType String
                buildCall idx currentTy accCode = 
-                 if idx >= expArity then accCode
+                 if idx >= expArity then Tuple currentTy accCode
                  else 
                    case unwrapType currentTy of
                      Func actArgTys actRetTy ->
@@ -388,8 +388,8 @@ boxUnbox currentMod expected actual code =
                            nextCode = "(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")"
                        in buildCall (idx + 1) Any nextCode
                    
-               allArgsCall = buildCall 0 (Func actArgs actRet) "_f"
-             in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet Any allArgsCall <> " } }))"
+               Tuple finalActRet allArgsCall = buildCall 0 (Func actArgs actRet) "_f"
+             in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox currentMod expRet finalActRet allArgsCall <> " } }))"
       
       Func expArgs expRet, _ ->
         let arity = Array.length expArgs
@@ -520,7 +520,7 @@ codegenBindingGroup modName modNameStr allZeroArity allMacroBindings aritiesMap 
                     in boxUnbox modNameStr retType bodyTy bodyRaw
                 Nothing -> 
                    let shapeTypeToAST :: ExprType -> NeutralExpr -> ExprType
-                       shapeTypeToAST currentTy (NeutralExpr (Typed _ inner)) = shapeTypeToAST currentTy inner
+                       shapeTypeToAST currentTy (NeutralExpr (Typed ty _)) = ty
                        shapeTypeToAST currentTy (NeutralExpr (Abs params body)) = 
                          let expectedArgs = extractAllArgTypes currentTy
                              arity = NonEmptyArray.length params

@@ -18386,7 +18386,7 @@ var boxUnbox = (currentMod) => (expected) => (actual) => (code) => {
         }
         return buildCall$r;
       };
-      return "purust_core::Func" + showIntImpl(expArity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(Any)(buildCall(0)($ExprType(
+      return "purust_core::Func" + showIntImpl(expArity) + "::Shared(std::rc::Rc::new({ let _f = (" + code + ").clone(); move |" + joinWith(", ")(mapWithIndexArray((i) => (ty) => "mut _a" + showIntImpl(i) + ": " + ty)(arrayMap(codegenExprType(currentMod)(false))(v2._1))) + "| -> " + codegenExprType(currentMod)(true)(v2._2) + " { " + boxUnbox(currentMod)(v2._2)(v1._2)(buildCall(0)($ExprType(
         "Func",
         v1._1,
         v1._2
@@ -20031,7 +20031,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
             if (extracted.tag === "Nothing") {
               const shapeTypeToAST = (v22) => (v3) => {
                 if (v3.tag === "Typed") {
-                  return shapeTypeToAST(v22)(v3._2);
+                  return v3._1;
                 }
                 if (v3.tag === "Abs") {
                   const v$3 = unwrapType(v22);
@@ -20112,7 +20112,7 @@ var codegenBindingGroup = (modName) => (modNameStr) => (allZeroArity) => (allMac
           if (extracted.tag === "Nothing") {
             const shapeTypeToAST = (v22) => (v3) => {
               if (v3.tag === "Typed") {
-                return shapeTypeToAST(v22)(v3._2);
+                return v3._1;
               }
               if (v3.tag === "Abs") {
                 const v$3 = unwrapType(v22);
@@ -20347,7 +20347,20 @@ var main = /* @__PURE__ */ (() => {
         }
         fail();
       })();
-      return _bind(_liftEffect(log2("Generating Rust code for " + mainModule)))(() => _bind(coreFnModulesFromOutput("output"))((finalModules) => {
+      return _bind(_liftEffect(log2("Generating Rust code for " + mainModule)))(() => _bind(coreFnModulesFromOutput((() => {
+        const v$1 = findIndexImpl(Just, Nothing, (v1) => v1 === "--source", args);
+        if (v$1.tag === "Just") {
+          const $02 = v$1._1 + 1 | 0;
+          if ($02 >= 0 && $02 < args.length) {
+            return args[$02];
+          }
+          return "output";
+        }
+        if (v$1.tag === "Nothing") {
+          return "output";
+        }
+        fail();
+      })()))((finalModules) => {
         const go = (go$a0$copy) => (go$a1$copy) => {
           let go$a0 = go$a0$copy, go$a1 = go$a1$copy, go$c = true, go$r;
           while (go$c) {
@@ -20643,135 +20656,153 @@ var main = /* @__PURE__ */ (() => {
               };
             })());
           }
-        })(finalModules))(() => _liftEffect(() => {
-          const srcExists = existsSync("output/purust_output/src");
-          const $02 = mkdir("output/purust_output");
-          if (!srcExists) {
-            $02();
-            mkdir("output/purust_output/src")();
-          }
-          const allModules = modulesRef.value;
-          let tcRef = Leaf;
-          foldlArray((eff) => (v$1) => {
-            const $12 = insert(ordString)(v$1._1)(fromFoldable8(v$1._2.imports));
-            return () => {
-              eff();
-              const $2 = tcRef;
-              tcRef = $12($2);
-            };
-          })(() => {
-          })(toUnfoldable3(allModules))();
-          const loop = () => {
-            let changed = false;
-            const currMap = tcRef;
-            foldlArray((eff) => (v$1) => {
-              const newImps = foldlArray((acc) => (i) => {
-                const v1 = lookup6(i)(currMap);
-                if (v1.tag === "Just") {
-                  return unsafeUnionWith(ordString.compare, $$const, acc, v1._1);
-                }
-                if (v1.tag === "Nothing") {
-                  return acc;
-                }
-                fail();
-              })(v$1._2)(toUnfoldable13(v$1._2));
-              const $12 = (() => {
-                if (newImps.tag === "Leaf") {
-                  return 0;
-                }
-                if (newImps.tag === "Node") {
-                  return newImps._2;
-                }
-                fail();
-              })() > (() => {
-                if (v$1._2.tag === "Leaf") {
-                  return 0;
-                }
-                if (v$1._2.tag === "Node") {
-                  return v$1._2._2;
-                }
-                fail();
-              })() ? (() => {
-                changed = true;
-                const $13 = tcRef;
-                tcRef = insert(ordString)(v$1._1)(newImps)($13);
-              }) : () => {
-              };
+        })(finalModules))(() => _liftEffect((() => {
+          const v$1 = findIndexImpl(Just, Nothing, (v1) => v1 === "--out", args);
+          const outDir = (() => {
+            if (v$1.tag === "Just") {
+              const $03 = v$1._1 + 1 | 0;
+              if ($03 >= 0 && $03 < args.length) {
+                return args[$03];
+              }
+              return "output/purust_output";
+            }
+            if (v$1.tag === "Nothing") {
+              return "output/purust_output";
+            }
+            fail();
+          })();
+          const $02 = outDir + "/src";
+          return () => {
+            const srcExists = existsSync($02);
+            const $1 = mkdir(outDir);
+            if (!srcExists) {
+              $1();
+              mkdir(outDir + "/src")();
+            }
+            const allModules = modulesRef.value;
+            let tcRef = Leaf;
+            foldlArray((eff) => (v$2) => {
+              const $22 = insert(ordString)(v$2._1)(fromFoldable8(v$2._2.imports));
               return () => {
                 eff();
-                return $12();
+                const $3 = tcRef;
+                tcRef = $22($3);
               };
             })(() => {
-            })(toUnfoldable3(currMap))();
-            const isChanged = changed;
-            if (isChanged) {
-              return loop();
+            })(toUnfoldable3(allModules))();
+            const loop = () => {
+              let changed = false;
+              const currMap = tcRef;
+              foldlArray((eff) => (v$2) => {
+                const newImps = foldlArray((acc) => (i) => {
+                  const v1 = lookup6(i)(currMap);
+                  if (v1.tag === "Just") {
+                    return unsafeUnionWith(ordString.compare, $$const, acc, v1._1);
+                  }
+                  if (v1.tag === "Nothing") {
+                    return acc;
+                  }
+                  fail();
+                })(v$2._2)(toUnfoldable13(v$2._2));
+                const $22 = (() => {
+                  if (newImps.tag === "Leaf") {
+                    return 0;
+                  }
+                  if (newImps.tag === "Node") {
+                    return newImps._2;
+                  }
+                  fail();
+                })() > (() => {
+                  if (v$2._2.tag === "Leaf") {
+                    return 0;
+                  }
+                  if (v$2._2.tag === "Node") {
+                    return v$2._2._2;
+                  }
+                  fail();
+                })() ? (() => {
+                  changed = true;
+                  const $23 = tcRef;
+                  tcRef = insert(ordString)(v$2._1)(newImps)($23);
+                }) : () => {
+                };
+                return () => {
+                  eff();
+                  return $22();
+                };
+              })(() => {
+              })(toUnfoldable3(currMap))();
+              const isChanged = changed;
+              if (isChanged) {
+                return loop();
+              }
+            };
+            loop();
+            const finalTcMap = tcRef;
+            const mainModuleSanitized = replaceAll(".")("_")(mainModule);
+            writeTextFile(UTF8)(outDir + "/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$2) => '"Purs_' + v$2._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\n')();
+            writeTextFile(UTF8)(outDir + "/src/main.rs")("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" + mainModuleSanitized + "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")();
+            const coreDir = outDir + "/purust_core";
+            const coreExists = existsSync(coreDir);
+            const $2 = mkdir(coreDir);
+            if (!coreExists) {
+              $2();
+              mkdir(coreDir + "/src")();
             }
+            writeTextFile(UTF8)(coreDir + "/Cargo.toml")('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n')();
+            writeTextFile(UTF8)(coreDir + "/src/lib.rs")(codegenPrelude((() => {
+              const go$2 = (go$2$a0$copy) => (go$2$a1$copy) => {
+                let go$2$a0 = go$2$a0$copy, go$2$a1 = go$2$a1$copy, go$2$c = true, go$2$r;
+                while (go$2$c) {
+                  const b = go$2$a0, v$2 = go$2$a1;
+                  if (v$2.tag === "Nil") {
+                    go$2$c = false;
+                    go$2$r = b;
+                    continue;
+                  }
+                  if (v$2.tag === "Cons") {
+                    go$2$a0 = unsafeUnionWith(ordString.compare, $$const, b, collectRecordShapesModule(v$2._1));
+                    go$2$a1 = v$2._2;
+                    continue;
+                  }
+                  fail();
+                }
+                return go$2$r;
+              };
+              return go$2(Leaf)(finalModules);
+            })()))();
+            foldlArray((eff) => (v$2) => {
+              const $3 = v$2._1;
+              const $4 = v$2._2.code;
+              const modDir = outDir + "/Purs_" + $3;
+              return () => {
+                eff();
+                const modExists = existsSync(modDir);
+                const $5 = mkdir(modDir);
+                if (!modExists) {
+                  $5();
+                  mkdir(modDir + "/src")();
+                }
+                writeTextFile(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $3 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')((() => {
+                  const $6 = lookup6($3)(finalTcMap);
+                  if ($6.tag === "Just") {
+                    return toUnfoldable13($6._1);
+                  }
+                  return [];
+                })())))();
+                return writeTextFile(UTF8)(modDir + "/src/lib.rs")(replace("use purust_core::*;\n")("use purust_core::*;\n" + joinWith("\n")(arrayMap((i) => "use Purs_" + i + "::*;")((() => {
+                  const $6 = lookup6($3)(finalTcMap);
+                  if ($6.tag === "Just") {
+                    return toUnfoldable13($6._1);
+                  }
+                  return [];
+                })())) + "\n")($4))();
+              };
+            })(() => {
+            })(toUnfoldable3(allModules))();
+            return log2("Successfully generated Rust code.")();
           };
-          loop();
-          const finalTcMap = tcRef;
-          const mainModuleSanitized = replaceAll(".")("_")(mainModule);
-          writeTextFile(UTF8)("output/purust_output/Cargo.toml")('[workspace]\nmembers = [\n  "purust_core", ' + joinWith(", ")(arrayMap((v$1) => '"Purs_' + v$1._1 + '"')(toUnfoldable3(allModules))) + '\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + mainModuleSanitized + ' = { path = "Purs_' + mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\n')();
-          writeTextFile(UTF8)("output/purust_output/src/main.rs")("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" + mainModuleSanitized + "::main();\n    (_effect.unwrap_func())(purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n")();
-          const coreExists = existsSync("output/purust_output/purust_core");
-          const $1 = mkdir("output/purust_output/purust_core");
-          if (!coreExists) {
-            $1();
-            mkdir("output/purust_output/purust_core/src")();
-          }
-          writeTextFile(UTF8)("output/purust_output/purust_core/Cargo.toml")('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n')();
-          writeTextFile(UTF8)("output/purust_output/purust_core/src/lib.rs")(codegenPrelude((() => {
-            const go$2 = (go$2$a0$copy) => (go$2$a1$copy) => {
-              let go$2$a0 = go$2$a0$copy, go$2$a1 = go$2$a1$copy, go$2$c = true, go$2$r;
-              while (go$2$c) {
-                const b = go$2$a0, v$1 = go$2$a1;
-                if (v$1.tag === "Nil") {
-                  go$2$c = false;
-                  go$2$r = b;
-                  continue;
-                }
-                if (v$1.tag === "Cons") {
-                  go$2$a0 = unsafeUnionWith(ordString.compare, $$const, b, collectRecordShapesModule(v$1._1));
-                  go$2$a1 = v$1._2;
-                  continue;
-                }
-                fail();
-              }
-              return go$2$r;
-            };
-            return go$2(Leaf)(finalModules);
-          })()))();
-          foldlArray((eff) => (v$1) => {
-            const $2 = v$1._1;
-            const $3 = v$1._2.code;
-            const modDir = "output/purust_output/Purs_" + $2;
-            return () => {
-              eff();
-              const modExists = existsSync(modDir);
-              const $4 = mkdir(modDir);
-              if (!modExists) {
-                $4();
-                mkdir(modDir + "/src")();
-              }
-              writeTextFile(UTF8)(modDir + "/Cargo.toml")('[package]\nname = "Purs_' + $2 + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\npurust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(arrayMap((i) => "Purs_" + i + ' = { path = "../Purs_' + i + '" }')((() => {
-                const $5 = lookup6($2)(finalTcMap);
-                if ($5.tag === "Just") {
-                  return toUnfoldable13($5._1);
-                }
-                return [];
-              })())))();
-              return writeTextFile(UTF8)(modDir + "/src/lib.rs")(replace("use purust_core::*;\n")("use purust_core::*;\n" + joinWith("\n")(arrayMap((i) => "use Purs_" + i + "::*;")((() => {
-                const $5 = lookup6($2)(finalTcMap);
-                if ($5.tag === "Just") {
-                  return toUnfoldable13($5._1);
-                }
-                return [];
-              })())) + "\n")($3))();
-            };
-          })(() => {
-          })(toUnfoldable3(allModules))();
-          return log2("Successfully generated Rust code.")();
-        }))));
+        })()))));
       }));
     })
   );
