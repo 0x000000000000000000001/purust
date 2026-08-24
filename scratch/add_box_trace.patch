@@ -1,0 +1,11 @@
+--- src/Purust/CodeGen.purs
++++ src/Purust/CodeGen.purs
+@@ -226,6 +226,7 @@
+   let
+     expStr = codegenExprType currentMod true expected
+     actStr = codegenExprType currentMod true actual
+-    _ = if expStr == "crate::UnknownType" && actStr == "std::rc::Rc<dyn Fn(crate::UnknownType) -> crate::UnknownType>" then Debug.trace ("BOXUNBOX DEBUG: expStr=" <> expStr <> " actStr=" <> actStr <> " expTy=" <> printType expected <> " actTy=" <> printType actual <> " expStr==actStr is " <> show (expStr == actStr)) \_ -> unit else unit
++    _ = if currentMod == "Purs_Data_Either" && String.indexOf (Pattern "Purs_Data_Semigroup::Semigroup") code == Just 17 then Debug.trace ("BOXUNBOX EITHER: expStr=" <> expStr <> " actStr=" <> actStr) \_ -> unit else unit
++    _ = if currentMod == "Purs_Data_Either" && String.indexOf (Pattern "/* Typed Abs */") code == Just 0 then Debug.trace ("BOXUNBOX EITHER ABS: expStr=" <> expStr <> " actStr=" <> actStr <> "\nCODE: " <> String.take 100 code) \_ -> unit else unit
+   in
+     if String.indexOf (Pattern "unimplemented!()") code == Just 0 || (String.indexOf (Pattern "/* Typed ") code == Just 0 && String.contains (Pattern "*/unimplemented!()") code) then code
