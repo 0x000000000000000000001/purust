@@ -1,0 +1,13 @@
+package:
+  name: hello
+  dependencies:
+    - console
+    - effect
+    - prelude
+  test:
+    main: Test.Main
+    dependencies: []
+workspace:
+  packageSet:
+    registry: 80.8.0
+  extraPackages: {}

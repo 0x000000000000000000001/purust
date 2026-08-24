@@ -4255,7 +4255,7 @@ var decodeConstraint = (j) => {
   }
   fail();
 };
-var decodeAnn = (_path) => (json) => {
+var decodeAnn = (typeTable) => (_path) => (json) => {
   const $0 = decodeJObject(json);
   if ($0.tag === "Left") {
     return $Either("Left", $0._1);
@@ -4266,12 +4266,36 @@ var decodeAnn = (_path) => (json) => {
       return $Either("Left", $1._1);
     }
     if ($1.tag === "Right") {
-      const $2 = getFieldOptional$p(decodeExprType)($0._1)("type");
+      const $2 = getFieldOptional$p(decodeInt2)($0._1)("typeId");
       if ($2.tag === "Left") {
         return $Either("Left", $2._1);
       }
       if ($2.tag === "Right") {
-        return $Either("Right", { span: emptySpan, meta: $1._1, type: $2._1 });
+        const $3 = getFieldOptional$p(decodeExprType)($0._1)("type");
+        if ($3.tag === "Left") {
+          return $Either("Left", $3._1);
+        }
+        if ($3.tag === "Right") {
+          return $Either(
+            "Right",
+            {
+              span: emptySpan,
+              meta: $1._1,
+              type: (() => {
+                if ($2._1.tag === "Just") {
+                  if ($2._1._1 >= 0 && $2._1._1 < typeTable.length) {
+                    return $Maybe("Just", typeTable[$2._1._1]);
+                  }
+                  return Nothing;
+                }
+                if ($2._1.tag === "Nothing") {
+                  return $3._1;
+                }
+                fail();
+              })()
+            }
+          );
+        }
       }
     }
   }
@@ -5010,131 +5034,157 @@ var decodeModule$p = (decodeAnn$p) => (json) => {
     return $Either("Left", $0._1);
   }
   if ($0.tag === "Right") {
-    const $1 = getField(decodeModuleName)($0._1)("moduleName");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getField(decodeString)($0._1)("modulePath");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
+    const $1 = getFieldOptional$p(decodeArray2(decodeExprType))($0._1)("typeTable");
+    const $2 = (() => {
+      if ($1.tag === "Left") {
+        return $Either("Left", $1._1);
       }
-      if ($2.tag === "Right") {
-        const $3 = getField(decodeSourceSpan($2._1))($0._1)("sourceSpan");
-        if ($3.tag === "Left") {
-          return $Either("Left", $3._1);
-        }
-        if ($3.tag === "Right") {
-          const $4 = getField(decodeArray2(decodeImport(decodeAnn$p($2._1))))($0._1)("imports");
-          if ($4.tag === "Left") {
-            return $Either("Left", $4._1);
-          }
-          if ($4.tag === "Right") {
-            const $5 = getField(decodeArray2(decodeString))($0._1)("exports");
-            if ($5.tag === "Left") {
-              return $Either("Left", $5._1);
+      if ($1.tag === "Right") {
+        return $Either(
+          "Right",
+          (() => {
+            if ($1._1.tag === "Nothing") {
+              return [];
             }
-            if ($5.tag === "Right") {
-              const $6 = getField(decodeReExports)($0._1)("reExports");
-              if ($6.tag === "Left") {
-                return $Either("Left", $6._1);
+            if ($1._1.tag === "Just") {
+              return $1._1._1;
+            }
+            fail();
+          })()
+        );
+      }
+      fail();
+    })();
+    if ($2.tag === "Left") {
+      return $Either("Left", $2._1);
+    }
+    if ($2.tag === "Right") {
+      const $3 = getField(decodeModuleName)($0._1)("moduleName");
+      if ($3.tag === "Left") {
+        return $Either("Left", $3._1);
+      }
+      if ($3.tag === "Right") {
+        const $4 = getField(decodeString)($0._1)("modulePath");
+        if ($4.tag === "Left") {
+          return $Either("Left", $4._1);
+        }
+        if ($4.tag === "Right") {
+          const $5 = getField(decodeSourceSpan($4._1))($0._1)("sourceSpan");
+          if ($5.tag === "Left") {
+            return $Either("Left", $5._1);
+          }
+          if ($5.tag === "Right") {
+            const $6 = getField(decodeArray2(decodeImport(decodeAnn$p($2._1)($4._1))))($0._1)("imports");
+            if ($6.tag === "Left") {
+              return $Either("Left", $6._1);
+            }
+            if ($6.tag === "Right") {
+              const $7 = getField(decodeArray2(decodeString))($0._1)("exports");
+              if ($7.tag === "Left") {
+                return $Either("Left", $7._1);
               }
-              if ($6.tag === "Right") {
-                const $7 = getFieldOptional$p(decodeArray2(decodeDataDecl))($0._1)("dataDecls");
-                if ($7.tag === "Left") {
-                  return $Either("Left", $7._1);
+              if ($7.tag === "Right") {
+                const $8 = getField(decodeReExports)($0._1)("reExports");
+                if ($8.tag === "Left") {
+                  return $Either("Left", $8._1);
                 }
-                if ($7.tag === "Right") {
-                  const dataDecls = (() => {
-                    if ($7._1.tag === "Nothing") {
-                      return [];
-                    }
-                    if ($7._1.tag === "Just") {
-                      return $7._1._1;
-                    }
-                    fail();
-                  })();
-                  const $8 = getFieldOptional$p(decodeArray2(decodeClassDecl))($0._1)("classDecls");
-                  if ($8.tag === "Left") {
-                    return $Either("Left", $8._1);
+                if ($8.tag === "Right") {
+                  const $9 = getFieldOptional$p(decodeArray2(decodeDataDecl))($0._1)("dataDecls");
+                  if ($9.tag === "Left") {
+                    return $Either("Left", $9._1);
                   }
-                  if ($8.tag === "Right") {
-                    const classDecls = (() => {
-                      if ($8._1.tag === "Nothing") {
+                  if ($9.tag === "Right") {
+                    const dataDecls = (() => {
+                      if ($9._1.tag === "Nothing") {
                         return [];
                       }
-                      if ($8._1.tag === "Just") {
-                        return $8._1._1;
+                      if ($9._1.tag === "Just") {
+                        return $9._1._1;
                       }
                       fail();
                     })();
-                    const $9 = getField(decodeArray2(decodeBind(decodeAnn$p($2._1))))($0._1)("decls");
-                    if ($9.tag === "Left") {
-                      return $Either("Left", $9._1);
+                    const $10 = getFieldOptional$p(decodeArray2(decodeClassDecl))($0._1)("classDecls");
+                    if ($10.tag === "Left") {
+                      return $Either("Left", $10._1);
                     }
-                    if ($9.tag === "Right") {
-                      const $10 = getField(decodeArray2(decodeString))($0._1)("foreign");
-                      if ($10.tag === "Left") {
-                        return $Either("Left", $10._1);
-                      }
-                      if ($10.tag === "Right") {
-                        const $11 = getFieldOptional$p(decodeJObject)($0._1)("foreignAnnotations");
-                        if ($11.tag === "Left") {
-                          return $Either("Left", $11._1);
+                    if ($10.tag === "Right") {
+                      const classDecls = (() => {
+                        if ($10._1.tag === "Nothing") {
+                          return [];
                         }
-                        if ($11.tag === "Right") {
-                          const $12 = (() => {
-                            if ($11._1.tag === "Nothing") {
-                              return empty;
-                            }
-                            if ($11._1.tag === "Just") {
-                              return $11._1._1;
-                            }
-                            fail();
-                          })();
-                          const $13 = traverse((v) => {
-                            const v1 = _lookup(Nothing, Just, v, $12);
-                            if (v1.tag === "Just") {
-                              const $132 = decodeAnn($2._1)(v1._1);
-                              if ($132.tag === "Left") {
-                                return $Either("Left", $132._1);
-                              }
-                              if ($132.tag === "Right") {
-                                return $Either("Right", $Tuple(v, $132._1.type));
-                              }
-                              fail();
-                            }
-                            if (v1.tag === "Nothing") {
-                              return $Either("Right", $Tuple(v, Nothing));
-                            }
-                            fail();
-                          })($10._1);
+                        if ($10._1.tag === "Just") {
+                          return $10._1._1;
+                        }
+                        fail();
+                      })();
+                      const $11 = getField(decodeArray2(decodeBind(decodeAnn$p($2._1)($4._1))))($0._1)("decls");
+                      if ($11.tag === "Left") {
+                        return $Either("Left", $11._1);
+                      }
+                      if ($11.tag === "Right") {
+                        const $12 = getField(decodeArray2(decodeString))($0._1)("foreign");
+                        if ($12.tag === "Left") {
+                          return $Either("Left", $12._1);
+                        }
+                        if ($12.tag === "Right") {
+                          const $13 = getFieldOptional$p(decodeJObject)($0._1)("foreignAnnotations");
                           if ($13.tag === "Left") {
                             return $Either("Left", $13._1);
                           }
                           if ($13.tag === "Right") {
-                            const foreignMap = fromFoldable2($13._1);
-                            const $14 = getField(decodeArray2(decodeComment))($0._1)("comments");
-                            if ($14.tag === "Left") {
-                              return $Either("Left", $14._1);
-                            }
-                            if ($14.tag === "Right") {
-                              return $Either(
-                                "Right",
-                                {
-                                  name: $1._1,
-                                  path: $2._1,
-                                  span: $3._1,
-                                  imports: $4._1,
-                                  exports: $5._1,
-                                  reExports: $6._1,
-                                  dataDecls,
-                                  classDecls,
-                                  decls: $9._1,
-                                  foreign: foreignMap,
-                                  comments: $14._1
+                            const $14 = (() => {
+                              if ($13._1.tag === "Nothing") {
+                                return empty;
+                              }
+                              if ($13._1.tag === "Just") {
+                                return $13._1._1;
+                              }
+                              fail();
+                            })();
+                            const $15 = traverse((v) => {
+                              const v1 = _lookup(Nothing, Just, v, $14);
+                              if (v1.tag === "Just") {
+                                const $152 = decodeAnn($2._1)($4._1)(v1._1);
+                                if ($152.tag === "Left") {
+                                  return $Either("Left", $152._1);
                                 }
-                              );
+                                if ($152.tag === "Right") {
+                                  return $Either("Right", $Tuple(v, $152._1.type));
+                                }
+                                fail();
+                              }
+                              if (v1.tag === "Nothing") {
+                                return $Either("Right", $Tuple(v, Nothing));
+                              }
+                              fail();
+                            })($12._1);
+                            if ($15.tag === "Left") {
+                              return $Either("Left", $15._1);
+                            }
+                            if ($15.tag === "Right") {
+                              const foreignMap = fromFoldable2($15._1);
+                              const $16 = getField(decodeArray2(decodeComment))($0._1)("comments");
+                              if ($16.tag === "Left") {
+                                return $Either("Left", $16._1);
+                              }
+                              if ($16.tag === "Right") {
+                                return $Either(
+                                  "Right",
+                                  {
+                                    name: $3._1,
+                                    path: $4._1,
+                                    span: $5._1,
+                                    imports: $6._1,
+                                    exports: $7._1,
+                                    reExports: $8._1,
+                                    dataDecls,
+                                    classDecls,
+                                    decls: $11._1,
+                                    foreign: foreignMap,
+                                    comments: $16._1
+                                  }
+                                );
+                              }
                             }
                           }
                         }
