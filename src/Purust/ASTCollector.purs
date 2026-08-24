@@ -32,6 +32,7 @@ collectRecordShapesExpr expr =
       ExprAccessor ty _ _ -> collectRecordShapesType (getTy ty)
       ExprUpdate ty _ _ -> collectRecordShapesType (getTy ty)
       ExprAbs ty _ _ -> collectRecordShapesType (getTy ty)
+      ExprTypeApp ty _ _ -> collectRecordShapesType (getTy ty)
       ExprApp ty _ _ -> collectRecordShapesType (getTy ty)
       ExprCase ty _ _ -> collectRecordShapesType (getTy ty)
       ExprLet ty _ _ -> collectRecordShapesType (getTy ty)
@@ -40,6 +41,7 @@ collectRecordShapesExpr expr =
       ExprLit _ lit -> collectRecordShapesLiteral collectRecordShapesExpr lit
       ExprConstructor _ _ _ _ -> Set.empty
       ExprAccessor _ e _ -> collectRecordShapesExpr e
+      ExprTypeApp _ e _ -> collectRecordShapesExpr e
       ExprUpdate _ e props -> Set.union (collectRecordShapesExpr e) (Array.foldl (\acc (Prop _ v) -> Set.union acc (collectRecordShapesExpr v)) Set.empty props)
       ExprAbs _ _ e -> collectRecordShapesExpr e
       ExprApp _ e1 e2 -> Set.union (collectRecordShapesExpr e1) (collectRecordShapesExpr e2)
@@ -99,6 +101,7 @@ collectModulesExpr = case _ of
   ExprVar _ _ -> Set.empty
   ExprLit _ lit -> collectModulesLiteral collectModulesExpr lit
   ExprConstructor _ _ _ _ -> Set.empty
+  ExprTypeApp _ expr _ -> collectModulesExpr expr
   ExprAccessor _ expr _ -> Set.insert "Record.Unsafe" (collectModulesExpr expr)
   ExprUpdate _ expr props -> Set.insert "Record.Unsafe" (Set.union (collectModulesExpr expr) (Array.foldl (\acc (Prop _ v) -> Set.union acc (collectModulesExpr v)) Set.empty props))
   ExprAbs _ _ expr -> collectModulesExpr expr

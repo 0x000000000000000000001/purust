@@ -4839,6 +4839,22 @@ var decodeExpr = (decAnn) => (json) => {
           }
           fail();
         }
+        if ($2._1 === "TypeApp") {
+          const $3 = getField(decodeExpr(decAnn))($0._1)("expression");
+          if ($3.tag === "Left") {
+            return $Either("Left", $3._1);
+          }
+          if ($3.tag === "Right") {
+            const $4 = getField(decodeExprType)($0._1)("typeArgument");
+            if ($4.tag === "Left") {
+              return $Either("Left", $4._1);
+            }
+            if ($4.tag === "Right") {
+              return $Either("Right", $Expr("ExprTypeApp", $1._1, $3._1, $4._1));
+            }
+          }
+          fail();
+        }
         if ($2._1 === "Case") {
           const $3 = getField(decodeArray2(decodeExpr(decAnn)))($0._1)("caseExpressions");
           if ($3.tag === "Left") {
@@ -14505,6 +14521,9 @@ var isTypeClassDictionaryWithProps = (expr) => {
   if (expr.tag === "ExprLet") {
     return isTypeClassDictionaryWithProps(expr._3);
   }
+  if (expr.tag === "ExprTypeApp") {
+    return isTypeClassDictionaryWithProps(expr._2);
+  }
   if (expr.tag === "ExprApp" && expr._3.tag === "ExprLit" && expr._3._2.tag === "LitRecord") {
     const $0 = getConstructorMeta(expr._2);
     if ($0.tag === "Just" && (eqMeta.eq($0._1)(IsTypeClassConstructor) || eqMeta.eq($0._1)(IsNewtype))) {
@@ -14734,6 +14753,9 @@ var inferExprType = (v) => {
         return v._2._1;
       }
       if (v._2.tag === "ExprLet") {
+        return v._2._1;
+      }
+      if (v._2.tag === "ExprTypeApp") {
         return v._2._1;
       }
       fail();
@@ -15238,6 +15260,230 @@ var binderToPattern = (v) => {
   fail();
 };
 var toBackendExprWithType = (mbTy) => (expr) => {
+  const go = (go$a0$copy) => {
+    let go$a0 = go$a0$copy, go$c = true, go$r;
+    while (go$c) {
+      const v = go$a0;
+      if (v.tag === "ExprVar") {
+        const $02 = v._2;
+        go$c = false;
+        go$r = (x) => {
+          const $12 = x.currentModule;
+          const $2 = x.toLevel;
+          const v2 = (v3) => {
+            const v4 = (v5) => {
+              if ($02._2 === "undefined" && $02._1.tag === "Just") {
+                if ($02._1._1 === "Prim") {
+                  return buildM(PrimUndefined);
+                }
+                return buildM($BackendSyntax("Var", $02));
+              }
+              if ($02._1.tag === "Nothing") {
+                return buildM($BackendSyntax("Var", $Qualified($Maybe("Just", $12), $02._2)));
+              }
+              return buildM($BackendSyntax("Var", $02));
+            };
+            if ($02._1.tag === "Just" && $02._1._1 === $12) {
+              const $3 = lookup42($02._2)($2);
+              if ($3.tag === "Just") {
+                return buildM($BackendSyntax("Local", $Maybe("Just", $02._2), $3._1));
+              }
+            }
+            return v4(true);
+          };
+          if ($02._1.tag === "Nothing") {
+            const $3 = lookup42($02._2)($2);
+            if ($3.tag === "Just") {
+              return build(getCtx(x))($BackendSyntax(
+                "Local",
+                $Maybe("Just", $02._2),
+                $3._1
+              ));
+            }
+          }
+          return v2(true)(x);
+        };
+        continue;
+      }
+      if (v.tag === "ExprLit") {
+        const $02 = traverse3(toBackendExpr)(v._2);
+        go$c = false;
+        go$r = (x) => build(getCtx(x))($BackendSyntax("Lit", $02(x)));
+        continue;
+      }
+      if (v.tag === "ExprConstructor") {
+        const $02 = v._4;
+        const $12 = v._3;
+        const $2 = v._2;
+        go$c = false;
+        go$r = (x) => build(getCtx(x))($BackendSyntax(
+          "CtorDef",
+          (() => {
+            const v2 = lookup4($2)(x.dataTypes);
+            if (v2.tag === "Just" && (() => {
+              if (v2._1.constructors.tag === "Leaf") {
+                return false;
+              }
+              if (v2._1.constructors.tag === "Node") {
+                return v2._1.constructors._2 === 1;
+              }
+              fail();
+            })()) {
+              return ProductType;
+            }
+            return SumType;
+          })(),
+          $2,
+          $12,
+          $02
+        ));
+        continue;
+      }
+      if (v.tag === "ExprAccessor") {
+        const $02 = toBackendExpr(v._2);
+        go$c = false;
+        go$r = (x) => build(getCtx(x))($BackendSyntax(
+          "Accessor",
+          $02(x),
+          $BackendAccessor("GetProp", v._3)
+        ));
+        continue;
+      }
+      if (v.tag === "ExprUpdate") {
+        const $02 = toBackendExpr(v._2);
+        const $12 = traverse1(traversableProp.traverse(applicativeFn)(toBackendExpr))(v._3);
+        go$c = false;
+        go$r = (x) => build(getCtx(x))($BackendSyntax("Update", $02(x), $12(x)));
+        continue;
+      }
+      if (v.tag === "ExprAbs") {
+        const $02 = v._2;
+        const $12 = v._3;
+        go$c = false;
+        go$r = (x) => make($BackendSyntax(
+          "Abs",
+          [$Tuple($Maybe("Just", $02), x.currentLevel)],
+          intro(foldableArray)([$02])(x.currentLevel)(toBackendExpr($12))
+        ))(x);
+        continue;
+      }
+      if (v.tag === "ExprApp" && v._2.tag === "ExprVar" && v._2._1.meta.tag === "Just" && v._2._1.meta._1.tag === "IsNewtype") {
+        go$c = false;
+        go$r = toBackendExpr(v._3);
+        continue;
+      }
+      if (v.tag === "ExprApp") {
+        go$c = false;
+        go$r = make($BackendSyntax("App", toBackendExpr(v._2), [toBackendExpr(v._3)]));
+        continue;
+      }
+      if (v.tag === "ExprLet") {
+        go$c = false;
+        go$r = foldrArray((bind$p) => (next) => {
+          if (bind$p.tag === "NonRec") {
+            return makeLet2($Maybe("Just", bind$p._1._2))(toBackendExpr(bind$p._1._3))((v3) => next);
+          }
+          if (bind$p.tag === "Rec" && bind$p._1.length > 0) {
+            const $02 = bind$p._1;
+            return (x) => {
+              const idents = arrayMap((v4) => v4._2)($02);
+              return build(getCtx(x))($BackendSyntax(
+                "LetRec",
+                x.currentLevel,
+                intro(foldableArray)(idents)(x.currentLevel)(traverse32(toBackendBinding)($02))(x),
+                intro(foldableArray)(idents)(x.currentLevel)(next)(x)
+              ));
+            };
+          }
+          if (bind$p.tag === "Rec") {
+            return _crashWith("CoreFn empty Rec binding group");
+          }
+          fail();
+        })(toBackendExpr(v._3))(v._2);
+        continue;
+      }
+      if (v.tag === "ExprTypeApp") {
+        go$a0 = v._2;
+        continue;
+      }
+      if (v.tag === "ExprCase") {
+        const $02 = v._3;
+        const v3 = 0 < $02.length ? $Maybe("Just", $02[0]) : Nothing;
+        const firstBinders = (() => {
+          if (v3.tag === "Just") {
+            return v3._1._1;
+          }
+          if (v3.tag === "Nothing") {
+            return [];
+          }
+          fail();
+        })();
+        go$c = false;
+        go$r = foldrArray((v3$1) => {
+          const $12 = v3$1._2;
+          const $2 = v3$1._1;
+          return (next) => (idents) => makeLet2(Nothing)(toBackendExprWithType((() => {
+            if ($2 >= 0 && $2 < firstBinders.length) {
+              if (firstBinders[$2].tag === "BinderNull") {
+                return firstBinders[$2]._1.type;
+              }
+              if (firstBinders[$2].tag === "BinderVar") {
+                return firstBinders[$2]._1.type;
+              }
+              if (firstBinders[$2].tag === "BinderNamed") {
+                return firstBinders[$2]._1.type;
+              }
+              if (firstBinders[$2].tag === "BinderLit") {
+                return firstBinders[$2]._1.type;
+              }
+              if (firstBinders[$2].tag === "BinderConstructor") {
+                return firstBinders[$2]._1.type;
+              }
+              fail();
+            }
+            return Nothing;
+          })())($12))((tmp) => next(snoc(idents)(tmp)));
+        })((idents) => foldrArray((v$1) => {
+          const $12 = v$1._1;
+          const $2 = v$1._2;
+          return (mainCb) => (caseRows) => {
+            const $3 = zipWithA2((ident) => (b) => {
+              const $32 = binderToPattern(b);
+              return (x) => ({ column: ident, pattern: $32(x) });
+            })(idents)($12);
+            return (x) => {
+              const $4 = $3(x);
+              const args = sortBy(ordString.compare)(foldMap22(patternVars)($4));
+              if ($2.tag === "Unconditional") {
+                const $5 = $2._1;
+                return makeLet2(Nothing)(makeUncurriedAbs(args)((v1) => toBackendExpr($5)))((tmp) => mainCb(snoc(caseRows)({
+                  patterns: $4,
+                  guardFn: $CaseRowGuardedExpr("UnconditionalFn", tmp),
+                  vars: Leaf
+                })))(x);
+              }
+              if ($2.tag === "Guarded") {
+                return foldrArray((v1) => {
+                  const $5 = v1._2;
+                  const $6 = v1._1;
+                  return (cb) => (xs) => makeLet2(Nothing)(makeUncurriedAbs(args)((v2) => toBackendExpr($5)))((tmp) => cb(snoc(xs)($Tuple($6, tmp))));
+                })((xs) => {
+                  if (xs.length > 0) {
+                    return mainCb(snoc(caseRows)({ patterns: $4, guardFn: $CaseRowGuardedExpr("GuardedFn", xs), vars: Leaf }));
+                  }
+                  return _crashWith("CoreFn empty Guarded");
+                })($2._1)([])(x);
+              }
+              fail();
+            };
+          };
+        })((caseRows) => buildCaseTreeFromRows(caseRows))($02)([]))(mapWithIndexArray(Tuple)(v._2))([]);
+        continue;
+      }
+      fail();
+    }
+    return go$r;
+  };
   const $0 = (() => {
     if (expr.tag === "ExprVar") {
       return expr._1;
@@ -15266,203 +15512,12 @@ var toBackendExprWithType = (mbTy) => (expr) => {
     if (expr.tag === "ExprLet") {
       return expr._1;
     }
-    fail();
-  })();
-  const $1 = (() => {
-    if (expr.tag === "ExprVar") {
-      const $12 = expr._2;
-      return (x) => {
-        const $2 = x.currentModule;
-        const $3 = x.toLevel;
-        const v2 = (v3) => {
-          const v4 = (v5) => {
-            if ($12._2 === "undefined" && $12._1.tag === "Just") {
-              if ($12._1._1 === "Prim") {
-                return buildM(PrimUndefined);
-              }
-              return buildM($BackendSyntax("Var", $12));
-            }
-            if ($12._1.tag === "Nothing") {
-              return buildM($BackendSyntax("Var", $Qualified($Maybe("Just", $2), $12._2)));
-            }
-            return buildM($BackendSyntax("Var", $12));
-          };
-          if ($12._1.tag === "Just" && $12._1._1 === $2) {
-            const $4 = lookup42($12._2)($3);
-            if ($4.tag === "Just") {
-              return buildM($BackendSyntax("Local", $Maybe("Just", $12._2), $4._1));
-            }
-          }
-          return v4(true);
-        };
-        if ($12._1.tag === "Nothing") {
-          const $4 = lookup42($12._2)($3);
-          if ($4.tag === "Just") {
-            return build(getCtx(x))($BackendSyntax(
-              "Local",
-              $Maybe("Just", $12._2),
-              $4._1
-            ));
-          }
-        }
-        return v2(true)(x);
-      };
-    }
-    if (expr.tag === "ExprLit") {
-      const $12 = traverse3(toBackendExpr)(expr._2);
-      return (x) => build(getCtx(x))($BackendSyntax("Lit", $12(x)));
-    }
-    if (expr.tag === "ExprConstructor") {
-      const $12 = expr._4;
-      const $2 = expr._3;
-      const $3 = expr._2;
-      return (x) => build(getCtx(x))($BackendSyntax(
-        "CtorDef",
-        (() => {
-          const v2 = lookup4($3)(x.dataTypes);
-          if (v2.tag === "Just" && (() => {
-            if (v2._1.constructors.tag === "Leaf") {
-              return false;
-            }
-            if (v2._1.constructors.tag === "Node") {
-              return v2._1.constructors._2 === 1;
-            }
-            fail();
-          })()) {
-            return ProductType;
-          }
-          return SumType;
-        })(),
-        $3,
-        $2,
-        $12
-      ));
-    }
-    if (expr.tag === "ExprAccessor") {
-      const $12 = toBackendExpr(expr._2);
-      return (x) => build(getCtx(x))($BackendSyntax(
-        "Accessor",
-        $12(x),
-        $BackendAccessor("GetProp", expr._3)
-      ));
-    }
-    if (expr.tag === "ExprUpdate") {
-      const $12 = toBackendExpr(expr._2);
-      const $2 = traverse1(traversableProp.traverse(applicativeFn)(toBackendExpr))(expr._3);
-      return (x) => build(getCtx(x))($BackendSyntax("Update", $12(x), $2(x)));
-    }
-    if (expr.tag === "ExprAbs") {
-      const $12 = expr._2;
-      const $2 = expr._3;
-      return (x) => make($BackendSyntax(
-        "Abs",
-        [$Tuple($Maybe("Just", $12), x.currentLevel)],
-        intro(foldableArray)([$12])(x.currentLevel)(toBackendExpr($2))
-      ))(x);
-    }
-    if (expr.tag === "ExprApp" && expr._2.tag === "ExprVar" && expr._2._1.meta.tag === "Just" && expr._2._1.meta._1.tag === "IsNewtype") {
-      return toBackendExpr(expr._3);
-    }
-    if (expr.tag === "ExprApp") {
-      return make($BackendSyntax("App", toBackendExpr(expr._2), [toBackendExpr(expr._3)]));
-    }
-    if (expr.tag === "ExprLet") {
-      return foldrArray((bind$p) => (next) => {
-        if (bind$p.tag === "NonRec") {
-          return makeLet2($Maybe("Just", bind$p._1._2))(toBackendExpr(bind$p._1._3))((v3) => next);
-        }
-        if (bind$p.tag === "Rec" && bind$p._1.length > 0) {
-          const $12 = bind$p._1;
-          return (x) => {
-            const idents = arrayMap((v4) => v4._2)($12);
-            return build(getCtx(x))($BackendSyntax(
-              "LetRec",
-              x.currentLevel,
-              intro(foldableArray)(idents)(x.currentLevel)(traverse32(toBackendBinding)($12))(x),
-              intro(foldableArray)(idents)(x.currentLevel)(next)(x)
-            ));
-          };
-        }
-        if (bind$p.tag === "Rec") {
-          return _crashWith("CoreFn empty Rec binding group");
-        }
-        fail();
-      })(toBackendExpr(expr._3))(expr._2);
-    }
-    if (expr.tag === "ExprCase") {
-      const $12 = expr._3;
-      const v3 = 0 < $12.length ? $Maybe("Just", $12[0]) : Nothing;
-      const firstBinders = (() => {
-        if (v3.tag === "Just") {
-          return v3._1._1;
-        }
-        if (v3.tag === "Nothing") {
-          return [];
-        }
-        fail();
-      })();
-      return foldrArray((v3$1) => {
-        const $2 = v3$1._2;
-        const $3 = v3$1._1;
-        return (next) => (idents) => makeLet2(Nothing)(toBackendExprWithType((() => {
-          if ($3 >= 0 && $3 < firstBinders.length) {
-            if (firstBinders[$3].tag === "BinderNull") {
-              return firstBinders[$3]._1.type;
-            }
-            if (firstBinders[$3].tag === "BinderVar") {
-              return firstBinders[$3]._1.type;
-            }
-            if (firstBinders[$3].tag === "BinderNamed") {
-              return firstBinders[$3]._1.type;
-            }
-            if (firstBinders[$3].tag === "BinderLit") {
-              return firstBinders[$3]._1.type;
-            }
-            if (firstBinders[$3].tag === "BinderConstructor") {
-              return firstBinders[$3]._1.type;
-            }
-            fail();
-          }
-          return Nothing;
-        })())($2))((tmp) => next(snoc(idents)(tmp)));
-      })((idents) => foldrArray((v) => {
-        const $2 = v._1;
-        const $3 = v._2;
-        return (mainCb) => (caseRows) => {
-          const $4 = zipWithA2((ident) => (b) => {
-            const $42 = binderToPattern(b);
-            return (x) => ({ column: ident, pattern: $42(x) });
-          })(idents)($2);
-          return (x) => {
-            const $5 = $4(x);
-            const args = sortBy(ordString.compare)(foldMap22(patternVars)($5));
-            if ($3.tag === "Unconditional") {
-              const $6 = $3._1;
-              return makeLet2(Nothing)(makeUncurriedAbs(args)((v1) => toBackendExpr($6)))((tmp) => mainCb(snoc(caseRows)({
-                patterns: $5,
-                guardFn: $CaseRowGuardedExpr("UnconditionalFn", tmp),
-                vars: Leaf
-              })))(x);
-            }
-            if ($3.tag === "Guarded") {
-              return foldrArray((v1) => {
-                const $6 = v1._2;
-                const $7 = v1._1;
-                return (cb) => (xs) => makeLet2(Nothing)(makeUncurriedAbs(args)((v2) => toBackendExpr($6)))((tmp) => cb(snoc(xs)($Tuple($7, tmp))));
-              })((xs) => {
-                if (xs.length > 0) {
-                  return mainCb(snoc(caseRows)({ patterns: $5, guardFn: $CaseRowGuardedExpr("GuardedFn", xs), vars: Leaf }));
-                }
-                return _crashWith("CoreFn empty Guarded");
-              })($3._1)([])(x);
-            }
-            fail();
-          };
-        };
-      })((caseRows) => buildCaseTreeFromRows(caseRows))($12)([]))(mapWithIndexArray(Tuple)(expr._2))([]);
+    if (expr.tag === "ExprTypeApp") {
+      return expr._1;
     }
     fail();
   })();
+  const $1 = go(expr);
   return (x) => {
     const $2 = $1(x);
     const v1 = (() => {
@@ -17054,6 +17109,17 @@ var collectRecordShapesExpr = (expr) => unsafeUnionWith(
         fail();
       })());
     }
+    if (expr.tag === "ExprTypeApp") {
+      return collectRecordShapesType((() => {
+        if (expr._1.type.tag === "Nothing") {
+          return Any;
+        }
+        if (expr._1.type.tag === "Just") {
+          return expr._1.type._1;
+        }
+        fail();
+      })());
+    }
     if (expr.tag === "ExprApp") {
       return collectRecordShapesType((() => {
         if (expr._1.type.tag === "Nothing") {
@@ -17100,6 +17166,9 @@ var collectRecordShapesExpr = (expr) => unsafeUnionWith(
       return Leaf;
     }
     if (expr.tag === "ExprAccessor") {
+      return collectRecordShapesExpr(expr._2);
+    }
+    if (expr.tag === "ExprTypeApp") {
       return collectRecordShapesExpr(expr._2);
     }
     if (expr.tag === "ExprUpdate") {
@@ -17217,6 +17286,9 @@ var collectModulesExpr = (v) => {
   }
   if (v.tag === "ExprConstructor") {
     return Leaf;
+  }
+  if (v.tag === "ExprTypeApp") {
+    return collectModulesExpr(v._2);
   }
   if (v.tag === "ExprAccessor") {
     return insert(ordString)("Record.Unsafe")()(collectModulesExpr(v._2));
@@ -20418,6 +20490,9 @@ var main = /* @__PURE__ */ (() => {
                         if (v1._1._3.tag === "ExprApp") {
                           return v1._1._3._1.type;
                         }
+                        if (v1._1._3.tag === "ExprTypeApp") {
+                          return v1._1._3._1.type;
+                        }
                         if (v1._1._3.tag === "ExprLet") {
                           return v1._1._3._1.type;
                         }
@@ -20461,6 +20536,9 @@ var main = /* @__PURE__ */ (() => {
                             return v2._3._1.type;
                           }
                           if (v2._3.tag === "ExprApp") {
+                            return v2._3._1.type;
+                          }
+                          if (v2._3.tag === "ExprTypeApp") {
                             return v2._3._1.type;
                           }
                           if (v2._3.tag === "ExprLet") {

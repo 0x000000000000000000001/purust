@@ -68,6 +68,7 @@ main = launchAff_ do
             ExprLit ann _ -> ann
             ExprAbs ann _ _ -> ann
             ExprApp ann _ _ -> ann
+            ExprTypeApp ann _ _ -> ann
             ExprLet ann _ _ -> ann
             ExprCase ann _ _ -> ann
             ExprConstructor ann _ _ _ -> ann
