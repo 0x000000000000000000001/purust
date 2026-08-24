@@ -2,20 +2,21 @@
 
 L'objectif de cette nouvelle roadmap est d'atteindre (voire dépasser) les performances de `gopurs` en tirant parti des fondations déjà posées, mais en résolvant les goulots d'étranglement majeurs identifiés par les benchmarks empiriques (allocations excessives et closures dynamiques).
 
-> **Note sur le Typage et "UnknownType"** : 
-> Suite à une expérimentation approfondie, l'éradication globale de `UnknownType` via les génériques stricts de Rust s'est avérée impossible en AOT. Le TAST (PureScript) ne fournit pas les arguments génériques aux points d'appels (`Var`), ce qui provoque des erreurs d'inférence inévitables en Rust (`E0282`). Le type polymorphe dynamique (`Value`) est donc maintenu par nécessité architecturale.
+> **Nouvelle ère : Le TAST v2 et `TypeApp`** : 
+> Historiquement, l'éradication de `UnknownType` (l'équivalent de `interface{}`) en AOT semblait impossible car les types génériques étaient effacés aux points d'appel. 
+> **C'est fini.** Le nouveau TAST (v2) fournit explicitement les `TypeApp` à chaque appel. On connaît désormais les types exacts partout. Cela débloque la monomorphisation stricte (via `Monomorphize.purs` ou les génériques natifs Rust `::<T>`). L'enum `Value` peut être totalement éradiquée.
 
 ## Prochaines étapes (Optimisation ciblée) :
 
-- [x] **Step 1 (Heuristiques des fonctions et Closures) :**
-  - Le goulot d'étranglement majeur (ex: benchmark Polymorphism, Lazy) est l'utilisation pessimiste de `Func::Shared` qui alloue systématiquement un `Rc<dyn Fn>` sur le tas.
-  - **Stratégie** : Utiliser des pointeurs de fonctions natifs (`Func::Static` via `fn(...) -> ...`) chaque fois qu'une fonction ne capture pas de contexte (fonctions pures, constructeurs, etc.). Zéro allocation, et cela ne casse pas Perceus (pas de refcount impliqué).
+- [ ] **Step 1 (Heuristiques des fonctions et Closures) :**
+  - *Statut partiel* : L'utilisation de pointeurs de fonctions natifs (`Func::Static` via `fn(...) -> ...`) a été implémentée pour les fonctions pures sans capture.
+  - **Nouvelle Stratégie avec `TypeApp`** : Activer `Monomorphize.purs` pour `purust` (ou générer des génériques natifs). Cela permet d'éliminer définitivement le polymorphisme dynamique (`Rc<dyn Fn>`) même pour les closures capturant du contexte, car tout sera strictement typé (`impl Fn(i64) -> i64`).
 
 - [ ] **Step 2 (Passage par valeur pour Primitives et petits ADTs) :**
   - Arrêter d'allouer systématiquement avec `Rc` pour les types primitifs (`Int`, `Number`, `Boolean`) et les enums sans payload (ex: `enum Color { R, B }`).
-  - **Stratégie** : Exploiter le trait `Copy` pour ces types afin de les allouer sur la pile (stack). Un `i64` est plus rapide à copier qu'à incrémenter via `Rc`. Ne casse pas Perceus.
+  - **Nouvelle Stratégie avec `TypeApp`** : Grâce aux types exacts, le compilateur sait qu'il manipule un `Int`. Il faut forcer l'allocation sur la pile (passage par valeur `i64` natif via le trait `Copy`) et bannir l'enrobage dans un `Rc` pour ces primitives.
 
 - [ ] **Step 3 (Mutation en place - Perceus) :**
   - C'est le cœur des performances pour les structures récursives partagées (Listes, Arbres).
   - Actuellement, les types complexes subissent un `.clone()` profond des pointeurs et des allocations constantes.
-  - **Stratégie** : Conserver obligatoirement le `Rc` pour les ADT complexes (comme `RBTree` ou `List`), et exploiter le comptage de références (`Rc::make_mut` ou `Rc::try_unwrap`) pour muter le nœud **sur place** sans réallocation si son `refcount` est à 1.
+  - **Stratégie** : Les ADTs auront désormais un typage fort (ex: `Rc<List_i64>`). Conserver le `Rc` pour ces structures complexes, et exploiter le comptage de références (`Rc::make_mut`) pour muter le nœud **sur place** sans réallocation si son `refcount` est à 1.
