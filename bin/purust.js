@@ -3791,6 +3791,46 @@ var decodeMeta = (json) => {
   }
   fail();
 };
+var decodeAnn = (typeTable) => (_path) => (json) => {
+  const $0 = decodeJObject(json);
+  if ($0.tag === "Left") {
+    return $Either("Left", $0._1);
+  }
+  if ($0.tag === "Right") {
+    const $1 = getFieldOptional$p(decodeMeta)($0._1)("meta");
+    if ($1.tag === "Left") {
+      return $Either("Left", $1._1);
+    }
+    if ($1.tag === "Right") {
+      const $2 = getFieldOptional$p(decodeInt2)($0._1)("type");
+      if ($2.tag === "Left") {
+        return $Either("Left", $2._1);
+      }
+      if ($2.tag === "Right") {
+        return $Either(
+          "Right",
+          {
+            span: emptySpan,
+            meta: $1._1,
+            type: (() => {
+              if ($2._1.tag === "Just") {
+                if ($2._1._1 >= 0 && $2._1._1 < typeTable.length) {
+                  return $Maybe("Just", typeTable[$2._1._1]);
+                }
+                return Nothing;
+              }
+              if ($2._1.tag === "Nothing") {
+                return Nothing;
+              }
+              fail();
+            })()
+          }
+        );
+      }
+    }
+  }
+  fail();
+};
 var decodeQualified = (k) => (json) => {
   const $0 = decodeJObject(json);
   if ($0.tag === "Left") {
@@ -4250,52 +4290,6 @@ var decodeConstraint = (j) => {
       }
       if ($2.tag === "Right") {
         return $Either("Right", $Tuple($1._1, $2._1));
-      }
-    }
-  }
-  fail();
-};
-var decodeAnn = (typeTable) => (_path) => (json) => {
-  const $0 = decodeJObject(json);
-  if ($0.tag === "Left") {
-    return $Either("Left", $0._1);
-  }
-  if ($0.tag === "Right") {
-    const $1 = getFieldOptional$p(decodeMeta)($0._1)("meta");
-    if ($1.tag === "Left") {
-      return $Either("Left", $1._1);
-    }
-    if ($1.tag === "Right") {
-      const $2 = getFieldOptional$p(decodeInt2)($0._1)("typeId");
-      if ($2.tag === "Left") {
-        return $Either("Left", $2._1);
-      }
-      if ($2.tag === "Right") {
-        const $3 = getFieldOptional$p(decodeExprType)($0._1)("type");
-        if ($3.tag === "Left") {
-          return $Either("Left", $3._1);
-        }
-        if ($3.tag === "Right") {
-          return $Either(
-            "Right",
-            {
-              span: emptySpan,
-              meta: $1._1,
-              type: (() => {
-                if ($2._1.tag === "Just") {
-                  if ($2._1._1 >= 0 && $2._1._1 < typeTable.length) {
-                    return $Maybe("Just", typeTable[$2._1._1]);
-                  }
-                  return Nothing;
-                }
-                if ($2._1.tag === "Nothing") {
-                  return $3._1;
-                }
-                fail();
-              })()
-            }
-          );
-        }
       }
     }
   }
