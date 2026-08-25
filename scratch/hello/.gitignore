@@ -3,6 +3,7 @@ bower_components/
 node_modules/
 .pulp-cache/
 output/
+output.bak/
 output-es/
 generated-docs/
 .psc-package/
