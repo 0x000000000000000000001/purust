@@ -4,6 +4,7 @@ import Debug as Debug
 
 import Prelude
 import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..), BackendAccessor(..), BackendOperator(..), BackendOperator1(..), BackendOperator2(..), BackendOperatorNum(..), BackendOperatorOrd(..), Pair(..), Level(..))
+import PureScript.Backend.Optimizer.Syntax as Syn
 import PureScript.Backend.Optimizer.Convert (BackendModule, BackendBindingGroup)
 import Debug as Debug
 import Effect (Effect)
@@ -11,6 +12,7 @@ import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
+import PureScript.Backend.Optimizer.CoreFn as CoreFn
 import Debug as Debug
 import Data.String as String
 import Data.Array as Array
@@ -271,7 +273,8 @@ codegenPrelude fields =
     
 unwrapType :: ExprType -> ExprType
 unwrapType (ForAll _ t) = unwrapType t
-unwrapType (TypeApp t _) = unwrapType t
+unwrapType (CoreFn.TypeApp t _) = unwrapType t
+unwrapType (TypeVar _) = Any
 unwrapType (ConstrainedType cs t) = 
   let csArgs = map (\(Tuple fqn args) -> 
         let className = fromMaybe "" (Array.last fqn)
@@ -290,7 +293,7 @@ printType :: ExprType -> String
 printType (Func _ _) = "Func"
 printType (ForAll _ t) = "ForAll(" <> printType t <> ")"
 printType (ConstrainedType _ t) = "ConstrainedType(" <> printType t <> ")"
-printType (TypeApp a _) = "TypeApp(" <> printType a <> ", [...])"
+printType (CoreFn.TypeApp a _) = "TypeApp(" <> printType a <> ", [...])"
 printType (TypeVar n) = "TypeVar"
 printType (Int) = "Int"
 printType (Boolean) = "Boolean"
@@ -963,6 +966,9 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    })))\n}"
     else case syn of
+  Syn.TypeApp a ty ->
+    codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock a
+
   Typed ty innerRaw -> 
     let 
       stripTyped :: NeutralExpr -> NeutralExpr
@@ -1590,6 +1596,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
 
 printAST :: NeutralExpr -> String
 printAST (NeutralExpr expr) = case expr of
+  Syn.TypeApp a _ -> "TypeApp(" <> printAST a <> ")"
   App fn _ -> "App(" <> printAST fn <> ")"
   Lit _ -> "Lit"
   Var _ -> "Var(...)"
@@ -1617,6 +1624,7 @@ printAST (NeutralExpr expr) = case expr of
 
 freeVariables :: NeutralExpr -> Set String
 freeVariables (NeutralExpr expr) = case expr of
+  Syn.TypeApp a _ -> freeVariables a
   Var (Qualified mbMod (Ident name)) -> 
     let modPrefix = case mbMod of
           Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
@@ -1680,6 +1688,7 @@ freeVariables (NeutralExpr expr) = case expr of
 
 inferTypeExpr :: String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> NeutralExpr -> ExprType
 inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr expr) = case expr of
+  Syn.TypeApp _ ty -> ty
   Accessor base (GetProp k) -> 
     let baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
         findFieldTy (ADT _ fqn _) =
