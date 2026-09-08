@@ -1,9 +1,9 @@
-module Purust.DataLayout (ValueEnums, isNullaryEnum, valueEnumsForModule, isValueEnum) where
+module Purust.DataLayout (ValueEnums, isNullaryEnum, valueEnumsForModule, valueEnumsForModules, isValueEnum) where
 
 import Prelude
 
 import Data.Array as Array
-import Data.Foldable (all)
+import Data.Foldable (class Foldable, all, foldl)
 import Data.Newtype (unwrap)
 import Data.Set (Set)
 import Data.Set as Set
@@ -22,6 +22,10 @@ valueEnumsForModule :: forall a. Module a -> ValueEnums
 valueEnumsForModule (Module mod) =
   Set.fromFoldable $ map (\decl -> Tuple (moduleKey (unwrap mod.name)) decl.name)
     (Array.filter isNullaryEnum mod.dataDecls)
+
+-- All modules, including FFI signatures, must share the same representation.
+valueEnumsForModules :: forall f a. Foldable f => f (Module a) -> ValueEnums
+valueEnumsForModules = foldl (\acc mod -> Set.union acc (valueEnumsForModule mod)) Set.empty
 
 isValueEnum :: ValueEnums -> String -> String -> Boolean
 isValueEnum enums modName typeName = Set.member (Tuple (moduleKey modName) typeName) enums

@@ -15,7 +15,8 @@ import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModule, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprType)
+import Purust.CodeGen (codegenModuleWithValueEnums, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
+import Purust.DataLayout (valueEnumsForModules)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
@@ -142,6 +143,7 @@ main = launchAff_ do
   let globalArities = buildGlobalArities finalModules
   let globalTypes = buildGlobalTypes finalModules
   let globalClassFields = buildGlobalClassFields finalModules
+  let globalValueEnums = valueEnumsForModules finalModules
   
   directives <- loadDirectives
   
@@ -158,7 +160,7 @@ main = launchAff_ do
         pure Nothing
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
-        let rsFile = codegenModule globalArities globalClassFields (Module coreFnMod) backendMod
+        let rsFile = codegenModuleWithValueEnums globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
           let foreignArr = coreFnMod.foreign
@@ -176,9 +178,9 @@ main = launchAff_ do
             genFallback name ty =
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let argTypes = extractAllArgTypes ty
-                    args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprType modName true argTy) argTypes
+                    args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprTypeWithValueEnums globalValueEnums modName true argTy) argTypes
                     _ = Debug.trace ("genFallback " <> unwrap name <> " args: " <> show args) \_ -> unit
-                    retTyStr = codegenExprType modName true (extractFinalRetType ty)
+                    retTyStr = codegenExprTypeWithValueEnums globalValueEnums modName true (extractFinalRetType ty)
                     defaultRet = case retTyStr of
                           "i64" -> "0"
                           "f64" -> "0.0"

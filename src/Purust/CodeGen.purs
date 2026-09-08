@@ -45,8 +45,8 @@ globalConsumed = unsafePerformEffect (Ref.new Set.empty)
 globalCaptured :: Ref.Ref (Set.Set String)
 globalCaptured = unsafePerformEffect (Ref.new Set.empty)
 
--- The default entry point retains the current ABI until module/FFI layout
--- propagation is integrated. Explicit contexts exercise native value enums.
+-- Callers without declaration metadata retain the Rc layout. The CLI supplies
+-- a global enum context to codegenModuleWithValueEnums for every module.
 codegenModule :: Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
 codegenModule = codegenModuleWithValueEnums Set.empty
 
