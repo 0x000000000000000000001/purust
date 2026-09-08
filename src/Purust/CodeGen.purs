@@ -568,8 +568,10 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity allMacroBindings 
                          in Func paramTys (shapeTypeToAST bodyExpectedTy body)
                        shapeTypeToAST currentTy _ = currentTy
                        
-                       fnCode = codegenExpr_ valueEnums modNameStr allZeroArity allMacroBindings Nothing mergedArities globalClassFields bound Set.empty false innerExpr
-                       fnTy = shapeTypeToAST inferredType innerExpr
+                       -- Eta expansion needs the binding's parameter types,
+                       -- including when only one Typed wrapper remains.
+                       fnCode = codegenExpr_ valueEnums modNameStr allZeroArity allMacroBindings Nothing mergedArities globalClassFields bound Set.empty false expr
+                       fnTy = shapeTypeToAST inferredType expr
                        argsCodeAndType = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in Tuple ty (sanitizeIdent p <> ".clone()")) deduped
                        
                        buildCallBindingGroup :: ExprType -> String -> Int -> Tuple ExprType String

@@ -7,23 +7,20 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as Type from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
-import { isClosedType, substituteType } from '../../output/PureScript.Backend.Optimizer.CoreFn.TypeInstantiation/index.js';
+import { substitute } from '../../output/PureScript.Backend.Optimizer.TypeSubstitution/index.js';
+import { singleton } from '../../output/Data.Map/index.js';
 import { Just } from '../../output/Data.Maybe/index.js';
 import { Tuple } from '../../output/Data.Tuple/index.js';
 
-// Open arguments must remain generic, and quantified inner variables must not
-// be captured when a closed argument is substituted through structural types.
+// Use PBO's shared capture-avoiding substitution, including for open row types.
+const substituteType = name => replacement => substitute(singleton(name)(replacement));
 const a = new Type.TypeVar('a');
 const b = new Type.TypeVar('b');
 const r = new Type.TypeVar('r');
-assert.equal(isClosedType(a), false);
-assert.equal(isClosedType(Type.Any.value), false);
 const row = new Type.Row([new Tuple('z', new Type.Array(a)), new Tuple('a', b)], new Just(r));
-assert.equal(isClosedType(new Type.Record(row)), false);
 assert.deepEqual(substituteType('a')(Type.Int.value)(new Type.Record(row)), new Type.Record(
   new Type.Row([new Tuple('z', new Type.Array(Type.Int.value)), new Tuple('a', b)], new Just(r))));
 const shadow = new Type.ForAll(['a'], new Type.Func([a], a));
-assert.equal(isClosedType(shadow), true);
 assert.deepEqual(substituteType('a')(Type.Int.value)(shadow), shadow);
 assert.deepEqual(substituteType('a')(Type.Number.value)(new Type.ForAll(['b'], new Type.Func([a, b], a))),
   new Type.ForAll(['b'], new Type.Func([Type.Number.value, b], Type.Number.value)));
@@ -31,6 +28,7 @@ assert.deepEqual(substituteType('a')(Type.Number.value)(new Type.ForAll(['b'], n
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const fixtures = fileURLToPath(new URL('fixtures/type-instantiation/', import.meta.url));
 const prelude = fileURLToPath(new URL('../../../purust-prelude/src/', import.meta.url));
+const partial = fileURLToPath(new URL('../../../purust-partial/src/', import.meta.url));
 const directory = mkdtempSync(join(tmpdir(), 'purust-type-instantiation-'));
 function run(command, args) {
   const result = spawnSync(command, args, { cwd: directory, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
@@ -39,7 +37,7 @@ function run(command, args) {
 }
 try {
   const output = join(directory, 'output');
-  run(process.env.PURS ?? 'purs', ['compile', join(prelude, '**/*.purs'),
+  run(process.env.PURS ?? 'purs', ['compile', join(prelude, '**/*.purs'), join(partial, '**/*.purs'),
     ...['Array', 'PolyLoop', 'PolyConsumer'].map(name => join(fixtures, `${name}.purs`)),
     '--codegen', 'corefn', '--output', output]);
   const json = JSON.parse(readFileSync(join(output, 'PolyLoop/corefn.json'), 'utf8'));
@@ -90,6 +88,7 @@ use purust_core::*;
 use Purs_PolyLoop::*;
 use Purs_PolyConsumer::*;
 fn main() {
+    assert_eq!(PolyLoop_partialComposed(PolyLoop_Present(mk_int(42))), 42);
     for n in [0_i64, 1, 2, 7, 1000] {
         for initial in [-42_i64, 0, 17] {
             let number = initial as f64 + 0.25;

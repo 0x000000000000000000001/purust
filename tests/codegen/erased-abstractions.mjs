@@ -33,6 +33,14 @@ const generated = codegenModule(emptyMap)(emptyMap)(
   // binder and returns the captured function for the remaining argument.
   binding('partialBinders', fn1, new Typed(new Func([Int.value, Int.value], Int.value),
     new Abs([param('x', 1)], local('captured', 0)))),
+  // Top-level eta expansion must keep the parameter annotation even when
+  // PBO deduplicates the root Typed wrapper.
+  ...[false, true].map(repeated => {
+    const type = new Func([fn1, Int.value], Int.value);
+    const body = new Typed(type, new Abs([param('captured', 0)], local('captured', 0)));
+    return new Tuple(repeated ? 'topPartialRepeated' : 'topPartial',
+      repeated ? new Typed(type, body) : body);
+  }),
 ] }] });
 
 const runtime = fileURLToPath(new URL('../runtime/perceus_ptr/src/lib.rs', import.meta.url));
@@ -51,6 +59,9 @@ fn main() {
     }
     let f = ErasedAbs_partialBinders(Func1::Static(|x| x + 1)).unwrap_func2();
     assert_eq!(f(mk_int(999), mk_int(41)).unwrap_int(), 42);
+    for apply in [ErasedAbs_topPartial, ErasedAbs_topPartialRepeated] {
+        assert_eq!(apply(Func1::Static(|x| x + 1), 41), 42);
+    }
 }
 `;
 

@@ -1,6 +1,17 @@
 module PolyLoop where
 
 import Prelude
+import Partial.Unsafe (unsafePartial)
+
+data Box a = Empty | Present a
+
+fromPresent :: forall a. Partial => Box a -> a
+fromPresent (Present value) = value
+
+-- The compiler inserts a synthetic dictionary application into this partial
+-- pattern match. Its result must not retain the consumed Partial constraint.
+partialComposed :: Box Int -> Int
+partialComposed = unsafePartial (fromPresent <<< identity)
 
 class Monoidish a where
   mempty_ :: a
