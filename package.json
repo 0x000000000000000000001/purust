@@ -9,6 +9,7 @@
   "scripts": {
     "build": "spago build && spago bundle --module Main --platform node --outfile bin/purust.js --bundle-type app",
     "test:codegen": "node --test tests/codegen/*.mjs",
+    "test:tast": "node --test tests/tast/*.mjs",
     "prepare": "npm run build"
   },
   "dependencies": {
