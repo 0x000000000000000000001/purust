@@ -78,11 +78,13 @@ Les chiffres des prototypes initiaux provenaient de 15 mesures par variante à `
 
 Constat : dans la boucle chaude, l'appel de dictionnaire est déjà remplacé par `+ 1`, mais l'accumulateur reste un `Value` avec `unwrap_int` et `mk_int` à chaque tour. `mk_int` est une variante immédiate, pas une allocation sur le tas. Gain à mesurer sur ce benchmark représentant désormais 21,2 % du total après l'intégration de Unit natif.
 
-- [ ] Tracer l'instanciation `polyLoop<Int>` depuis `TypeApp` jusqu'au type de l'accumulateur d'une récursion locale minimale.
+- [x] Tracer l'instanciation `polyLoop<Int>` depuis `TypeApp` jusqu'au type de l'accumulateur d'une récursion locale minimale. Cas minimal avec deux instanciations (`Int`, `Number`) et chemin générique ; la première passe d'optimisation PBO retire les applications de type sans spécialiser les annotations de la récursion développée.
 - [ ] Préserver cette spécialisation dans la boucle et émettre un accumulateur `i64`, avec conversions uniquement aux frontières qui les nécessitent.
 - [ ] Couvrir plusieurs instanciations et le cas polymorphe restant, puis mesurer Polymorphism.
 
-Point à examiner : la branche `Syn.TypeApp a ty` de `CodeGen.purs` descend actuellement dans `a` sans exploiter directement `ty` à cet endroit ; vérifier ce qui est déjà transmis par les annotations et PBO avant de modifier cette étape.
+Diagnostic du 8 septembre 2026 : le TAST et le décodage PBO transmettent `TypeApp Int` / `TypeApp Number`. Après la première passe de PBO, ces applications ont disparu et la récursion locale conserve `Int -> a -> a` ; Purust reçoit donc encore `TypeVar a` pour l'accumulateur. Examiner d'abord l'instanciation du corps dans `Semantics.purs` (`evalApp` et les chemins d'inlining), avant la branche `Syn.TypeApp` de Purust. La correction devra être propre à chaque appel et conserver le chemin générique.
+
+Le prototype isolé change seulement l'accumulateur du Rust réel en `i64`, avec les conversions aux frontières. Sur sept paires alternées, même O1 et mimalloc : **38,433 ms → environ 0,10 µs** pour l'effet `act`. L'assembleur confirme que LLVM remplace toute la boucle par une addition ; ce n'est pas uniquement le coût des conversions évité. **60 assertions** passent sur le cas minimal (`Int`, `Number`, dictionnaires génériques), et chaque processus du prototype contrôle **18 cas paramétrés** ainsi que les résultats chronométrés. Le README officiel indique Polymorphism **38,940 ms**, total **190,94 ms**. Aucun changement n'est intégré au générateur et aucun nouveau total du runner n'est revendiqué. [Rapport, traces et reproduction](../../altbak.pub-purust/scratch/rust-poly-i64-20260908/REPORT.md).
 
 ## 5. RBTree : factoriser les motifs imbriqués
 
