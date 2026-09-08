@@ -950,6 +950,18 @@ codegenExpr :: String -> Set.Set String -> Set.Set String -> Maybe { name :: Str
 codegenExpr currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive expr =
   codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive false expr
 
+-- Native ADT reads borrow their Rc receiver. Representation-changing wrappers
+-- and non-locals still need the normal ownership path when evaluating the base.
+isBorrowableLocal :: (NeutralExpr -> String) -> NeutralExpr -> Boolean
+isBorrowableLocal operandType operand =
+  String.indexOf (Pattern "std::rc::Rc<") (operandType operand) == Just 0 && go operand
+  where
+  go (NeutralExpr (Local _ _)) = true
+  go wrapped@(NeutralExpr (Typed _ inner)) =
+    operandType wrapped == operandType inner && go inner
+  go (NeutralExpr (Syn.TypeApp inner _)) = go inner
+  go _ = false
+
 codegenExpr_ :: String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) = 
   let
@@ -1156,7 +1168,13 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
       String.joinWith " else " branchCode <> " else " <> defCode
   PrimOp (Op1 op a) ->
     let aTy = inferTypeExpr currentMod aritiesMap globalClassFields bound a
-        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false a
+        operandType operand = codegenExprType currentMod false
+          (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+        aliveForA = case op, unwrapType aTy of
+          OpIsTag _, ADT _ _ _
+            | isBorrowableLocal operandType a -> Set.difference alive (freeVariables a)
+          _, _ -> alive
+        aStrRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForA false a
     in case op of
       OpBooleanNot -> "!(" <> boxUnbox currentMod Boolean aTy aStrRaw <> " /* aTy: " <> codegenExprType currentMod true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of
         NeutralExpr (App fn _) -> printType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) <> ", lvl_3 in bound: " <> (case Map.lookup "lvl_3" bound of
@@ -1271,7 +1289,12 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
           _ -> Any
     in boxUnbox currentMod (inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr syn)) actualTy accCode
   Accessor base (GetCtorField (Qualified mbMod _) _ (ProperName tyNameStr) (Ident ctorName) _ fieldIdx) ->
-    let baseRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound alive false base
+    let operandType operand = codegenExprType currentMod false
+          (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+        aliveForBase = if isBorrowableLocal operandType base
+          then Set.difference alive (freeVariables base)
+          else alive
+        baseRaw = codegenExpr_ currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForBase false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
         modName = case mbMod of
           Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn
@@ -1281,6 +1304,7 @@ codegenExpr_ currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalCl
         matchArgs = String.joinWith ", " (map (\i -> if i == fieldIdx then "ref f" else "_") (Array.range 0 fieldIdx)) <> (if fieldIdx >= 0 then ", .." else "")
         expectedBaseTy = ADT tyNameStr [modName, tyNameStr] []
         baseStr = boxUnbox currentMod expectedBaseTy baseTy baseRaw
+    -- The extracted child must remain owned after the parent borrow ends.
     in "{ if let " <> enumName <> "::" <> cName <> "(" <> matchArgs <> ") = (" <> baseStr <> ").as_ref() { f.clone() } else { unreachable!() } }"
   Var (Qualified mbMod (Ident name)) ->
         let

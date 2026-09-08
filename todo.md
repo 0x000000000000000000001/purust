@@ -1,10 +1,10 @@
 # Roadmap d'Optimisation pour purust (Backend Rust)
 
-Priorités issues de l'[audit du Rust généré du 8 septembre 2026](../../altbak.pub-purust/scratch/rust-audit-20260908/REPORT.md). La représentation de `Unit` sans allocation est maintenant intégrée et [validée dans le runner complet](../../altbak.pub-purust/scratch/rust-unit-20260908/REPORT.md). Les autres optimisations restent des prototypes ou des pistes à mesurer.
+Priorités issues de l'[audit du Rust généré du 8 septembre 2026](../../altbak.pub-purust/scratch/rust-audit-20260908/REPORT.md). La représentation de `Unit` sans allocation est intégrée et [validée dans le runner complet](../../altbak.pub-purust/scratch/rust-unit-20260908/REPORT.md). Les emprunts des parents locaux natifs sont intégrés pour les [tests de constructeur](../../altbak.pub-purust/scratch/rust-tag-borrow-20260908/REPORT.md) et les [extractions de champs](../../altbak.pub-purust/scratch/rust-field-borrow-20260908/REPORT.md). Les autres optimisations restent des prototypes ou des pistes à mesurer.
 
 ## Repères et validation
 
-| Benchmark | Baseline officielle Rust | Avant Unit natif | Après Unit natif |
+| Benchmark | Baseline officielle Rust relevée lors de l'audit | Avant Unit natif | Après Unit natif |
 | --- | ---: | ---: | ---: |
 | LazyEvaluation | 319,209 ms | 220,394 ms | 67,315 ms |
 | RBTree | 67,125 ms | 57,558 ms | 57,541 ms |
@@ -12,7 +12,7 @@ Priorités issues de l'[audit du Rust généré du 8 septembre 2026](../../altba
 | Church | 24,331 ms | 11,036 ms | 11,086 ms |
 | Total | 452,29 ms | 330,603 ms | 174,147 ms |
 
-Baselines : [README officiel d'altbak.pub](../../altbak.pub/README.md#rust). Les mesures actuelles sont les médianes de trois exécutions du runner, chacune retenant le meilleur de dix essais ; le total est la somme des médianes. L'écart historique ne permet pas d'attribuer un gain à un changement particulier.
+Baselines : [README officiel d'altbak.pub](../../altbak.pub/README.md#rust). Le tableau conserve les valeurs historiques de l'audit initial ; lors de la validation des extractions de champs, le README indique désormais **62,425 ms pour RBTree** et **190,94 ms au total**. Les mesures avant/après sont les médianes de trois exécutions du runner, chacune retenant le meilleur de dix essais ; le total est la somme des médianes. L'écart historique ne permet pas d'attribuer un gain à un changement particulier.
 
 Pour chaque baby step : partir d'un cas minimal, modifier le générateur, vérifier le Rust émis et les régressions pertinentes, puis lancer `bin/rust/run -c` depuis `altbak.pub-purust`. Vérifier les 14 résultats et mesurer avant/après avec le même allocateur et le même profil. Comparer aussi aux baselines officielles ; conserver les observations dans l'audit. Mesurer les allocations séparément des temps pour éviter le biais de l'instrumentation.
 
@@ -37,13 +37,17 @@ Après intégration, le même test exige **zéro allocation** pour 1 000 constru
 
 ## 2. RBTree : emprunter lors des lectures de motifs
 
-Constat : les tests et extractions clonent fréquemment le pointeur parent avant de le lire. Remplacer `(parent.clone()).as_ref()` par `parent.as_ref()` sur une variable locale fait passer le noyau extrait de **55,928 à 47,642 ms**, soit **14,8 % de temps en moins**, sans changer la représentation des ADT.
+Constat initial : les tests et extractions clonent fréquemment le pointeur parent avant de le lire. Remplacer `(parent.clone()).as_ref()` par `parent.as_ref()` sur une variable locale fait passer le noyau extrait de **55,928 à 47,642 ms**, soit **14,8 % de temps en moins**, sans changer la représentation des ADT. Ce prototype combine tests de constructeur et extractions de champs ; les deux parties sont maintenant intégrées.
 
-- [ ] Traiter d'abord `OpIsTag` sur une variable locale ; vérifier le Rust émis et les utilisations ultérieures du parent.
-- [ ] Étendre aux extractions de champs en conservant les clones des enfants nécessaires au partage structurel.
-- [ ] Vérifier les motifs imbriqués, les déplacements après emprunt et les branches alternatives ; mesurer RBTree dans le runner complet.
+- [x] Traiter d'abord `OpIsTag` sur une variable locale ; vérifier le Rust émis et les utilisations ultérieures du parent. Les locaux `Rc<ADT>` sont empruntés sous les wrappers `Typed` / `TypeApp` qui préservent leur représentation. Les conversions et les opérandes non locaux conservent le chemin précédent. Test : [tag-borrows.mjs](tests/codegen/tag-borrows.mjs).
+- [x] Étendre aux extractions de champs en conservant les clones des enfants nécessaires au partage structurel. `GetCtorField` réutilise la règle d'emprunt d'`OpIsTag` ; `f.clone()` reste inchangé. Test : [field-borrows.mjs](tests/codegen/field-borrows.mjs).
+- [x] Vérifier les motifs imbriqués, les déplacements après emprunt et les branches alternatives ; mesurer RBTree dans le runner complet. Les tests couvrent aussi les enfants survivant au parent, les conversions et les bases non locales évaluées une seule fois. Le noyau RBTree régénéré passe les contrôles d'ordre, de hauteur noire, de rouges consécutifs, de doublons et de persistance.
 
 Points de départ : `src/Purust/CodeGen.purs`, émission d'`OpIsTag` et des accesseurs de constructeurs.
+
+Validation d'OpIsTag du 8 septembre 2026 : **12 tests passent**, `bin/rust/run -c` réussit avec **14 résultats corrects**. Les tests ciblés couvrent la réutilisation du parent dans les branches, les lectures répétées, le partage et les appels évalués une seule fois. RBTree perd **14 occurrences statiques de `.clone()`**. Sur trois runs avant/après : **60,445 → 57,148 ms (−5,5 %)** pour RBTree ; total **180,281 → 179,837 ms**, globalement stable. Il s'agit d'une nouvelle série de mesures, distincte de celle d'Unit natif ci-dessus ; détails et logs dans le [rapport OpIsTag](../../altbak.pub-purust/scratch/rust-tag-borrow-20260908/REPORT.md).
+
+Validation des extractions de champs du 8 septembre 2026 : **13 tests passent**, `bin/rust/run -c` réussit avec **14 résultats corrects**. RBTree perd **149 clones de parents supplémentaires** (426 → 277 occurrences statiques), tout en conservant ses **260 clones de champs**. Sur trois nouveaux runs avant/après : RBTree **54,426 → 45,978 ms (−15,5 %)** ; total **170,980 → 163,252 ms (−4,5 %)**. Les autres gros benchmarks restent proches de leur référence dans cette série. Les écarts des séries successives ne s'additionnent pas ; détails et scripts dans le [rapport GetCtorField](../../altbak.pub-purust/scratch/rust-field-borrow-20260908/REPORT.md).
 
 ## 3. RBTree : enums sans charge utile en valeur
 
