@@ -1,25 +1,98 @@
 # Roadmap d'Optimisation pour purust (Backend Rust)
 
-L'objectif de cette roadmap est d'exploiter à 100% le plein potentiel du compilateur Rust (`rustc`) pour atteindre les performances du code natif ("cheatcode"). L'intégration récente du **TAST v3** et de l'optimiseur centralisé (`purescript-backend-optimizer`) a déjà éradiqué le surcoût des dictionnaires de Type Classes via la monomorphisation.
+Priorités issues de l'[audit du Rust généré du 8 septembre 2026](../../altbak.pub-purust/scratch/rust-audit-20260908/REPORT.md). La représentation de `Unit` sans allocation est maintenant intégrée et [validée dans le runner complet](../../altbak.pub-purust/scratch/rust-unit-20260908/REPORT.md). Les autres optimisations restent des prototypes ou des pistes à mesurer.
 
-> **L'ère du TAST v3 et de `TypeApp`** : 
-> Historiquement, le polymorphisme forçait l'utilisation de pointeurs dynamiques ou de génériques opaques. Grâce aux `TypeApp` fournis par le TAST v3, nous connaissons le type exact de chaque expression à son point d'appel. Cela débloque la génération de code Rust parfaitement typé et statique (Zero-Cost Abstraction).
+## Repères et validation
 
-## État des lieux (Accompli) :
-- [x] **Monomorphisation des Type Classes** : Les dictionnaires dynamiques (v-tables) ont été éliminés. Les résolutions d'instances se font de manière statique au moment de la compilation via `purescript-backend-optimizer`. Le benchmark Polymorphism tourne désormais de manière optimale (sous les 40 ms).
-- [x] **Unification du pipeline de Build** : Migration vers `spago bundle` et branchement direct à l'AST v3.
+| Benchmark | Baseline officielle Rust | Avant Unit natif | Après Unit natif |
+| --- | ---: | ---: | ---: |
+| LazyEvaluation | 319,209 ms | 220,394 ms | 67,315 ms |
+| RBTree | 67,125 ms | 57,558 ms | 57,541 ms |
+| Polymorphism | 38,663 ms | 39,948 ms | 36,842 ms |
+| Church | 24,331 ms | 11,036 ms | 11,086 ms |
+| Total | 452,29 ms | 330,603 ms | 174,147 ms |
 
-## Prochaines étapes (Optimisation ciblée) :
+Baselines : [README officiel d'altbak.pub](../../altbak.pub/README.md#rust). Les mesures actuelles sont les médianes de trois exécutions du runner, chacune retenant le meilleur de dix essais ; le total est la somme des médianes. L'écart historique ne permet pas d'attribuer un gain à un changement particulier.
 
-- [ ] **Step 1 (Exploitation du Turbofish `::<T>`) :**
-  - **Action** : Profiter des `TypeApp` présents dans le TAST v3 pour injecter explicitement les types lors de l'appel de fonctions génériques (ex: `mempty::<i32>()`).
-  - **Bénéfice** : Soulager massivement l'inférence de `rustc`, accélérer drastiquement les temps de compilation Rust, et éviter les erreurs fatales "type annotations needed" sur des expressions fortement polymorphes.
+Pour chaque baby step : partir d'un cas minimal, modifier le générateur, vérifier le Rust émis et les régressions pertinentes, puis lancer `bin/rust/run -c` depuis `altbak.pub-purust`. Vérifier les 14 résultats et mesurer avant/après avec le même allocateur et le même profil. Comparer aussi aux baselines officielles ; conserver les observations dans l'audit. Mesurer les allocations séparément des temps pour éviter le biais de l'instrumentation.
 
-- [ ] **Step 2 (Unboxing : Primitives natives) :**
-  - **Action** : Le TAST v3 certifiant l'utilisation d'un type primitif natif, la génération de code doit forcer l'allocation sur la pile (passage par valeur native `i64`, `f64`, `bool`).
-  - **Bénéfice** : Bannir l'enrobage (boxing) dans un `Rc` ou un pointeur sur la heap pour ces primitives. Tirer pleinement parti du trait `Copy` natif de Rust.
+Travailler avec `altbak.pub-purust` et `purescript-backend-optimizer-purust`, en conservant les checkouts habituels d'altbak.pub et PBO intacts. Purust reste dans ce checkout.
 
-- [ ] **Step 3 (Mutation en place - Algorithme Perceus) :**
-  - C'est le cœur des performances pour les structures de données fonctionnelles (Listes, Arbres).
-  - **Action** : Puisque les ADTs ont désormais un typage fort, il faut exploiter au maximum le comptage de références (`Rc`) en utilisant `Rc::make_mut`.
-  - **Bénéfice** : Muter les nœuds **sur place** sans réallocation si leur `refcount` est strictement égal à 1. Cela élimine les allocations inutiles lors des modifications d'arbres ou de listes, atteignant des vitesses similaires aux structures impératives.
+Le TAST fournit `ann.type`, `dataDecls`, `classDecls` et les instanciations `TypeApp` de la v3. S'appuyer sur ces informations pour définir des règles générales de génération, sans exception propre aux benchmarks. RBTree utilise déjà des ADT natifs, des clés `i64`, des appels directs et une boucle pour `buildTree`.
+
+## 1. Unit sans allocation répétée — priorité pour le temps total
+
+Constat initial : `Data_Unit_unit` construisait un `Record_a` dynamique de **6 408 octets**. LazyEvaluation en allouait **1 001 000** par passage. Le prototype partageant `Unit` passait de **235,337 à 85,204 ms**, soit **63,8 % de temps en moins** sur neuf mesures par variante. Il conservait les thunks et leur forçage. L'intégration utilise maintenant `()` dans le code typé et `Value::Unit` aux frontières dynamiques, sans cache ni allocation.
+
+- [x] Reproduire la construction et le passage de `Unit` dans un petit module ; compter les allocations et couvrir les valeurs renvoyées par une continuation. Test : [unit-values.mjs](tests/codegen/unit-values.mjs), lancé avec `node --test tests/codegen/unit-values.mjs` après le build.
+- [x] Introduire une représentation dédiée sans allocation : `()` dans le code typé, `Value::Unit` dans le runtime dynamique, conversions `mk_unit` / `unwrap_unit`, construction et FFI cohérentes. Les tableaux convertissent aussi leurs éléments natifs en `Value`.
+- [x] Vérifier les passages par `Effect`, les fonctions polymorphes et les FFI, puis régénérer et mesurer LazyEvaluation avec le runner complet : **11 tests passent**, `bin/rust/run -c` réussit, **14 résultats corrects**. Sur trois runs avant/après : LazyEvaluation **220,394 → 67,315 ms (−69,5 %)** ; total **330,603 → 174,147 ms (−47,3 %)**.
+- [ ] Après cette intégration, mesurer les allocations restantes avant de reprendre les adaptateurs de thunks.
+
+La suppression des allocations de `Unit` économise environ **6,42 Go d'octets demandés cumulés** par passage dans le prototype, pas 6,42 Go de mémoire simultanément résidente.
+
+Premier baby step validé le 8 septembre 2026 : le test génère un module `UnitValues`, compile son Rust avec la vraie FFI `Data.Unit`, puis vérifie identité, réutilisation, nombre d'appels et résultats des continuations (entiers, booléen et fonction renvoyée sans exécution prématurée). Sur 1 000 constructions : **1 000 allocations, 56 000 octets demandés et 1 000 libérations** ; transmettre 1 000 fois une valeur déjà construite n'alloue rien. Le runtime minimal a un `Record_a` de 48 octets, contre 6 408 dans altbak.pub, où davantage de champs sont collectés. Ce test établit la référence avant le changement de représentation ; il ne fixe pas les allocations actuelles comme résultat à conserver.
+
+Après intégration, le même test exige **zéro allocation** pour 1 000 constructions, passages et allers-retours `()` / `Value`. Il couvre aussi `[unit]`, les records vides distincts de `Unit`, les effets différés et rejouables, les continuations polymorphes et les FFI d'assertion. Les témoins de contraintes `Partial` restent des records vides. Aucun changement de l'algorithme de thunks n'a été intégré.
+
+## 2. RBTree : emprunter lors des lectures de motifs
+
+Constat : les tests et extractions clonent fréquemment le pointeur parent avant de le lire. Remplacer `(parent.clone()).as_ref()` par `parent.as_ref()` sur une variable locale fait passer le noyau extrait de **55,928 à 47,642 ms**, soit **14,8 % de temps en moins**, sans changer la représentation des ADT.
+
+- [ ] Traiter d'abord `OpIsTag` sur une variable locale ; vérifier le Rust émis et les utilisations ultérieures du parent.
+- [ ] Étendre aux extractions de champs en conservant les clones des enfants nécessaires au partage structurel.
+- [ ] Vérifier les motifs imbriqués, les déplacements après emprunt et les branches alternatives ; mesurer RBTree dans le runner complet.
+
+Points de départ : `src/Purust/CodeGen.purs`, émission d'`OpIsTag` et des accesseurs de constructeurs.
+
+## 3. RBTree : enums sans charge utile en valeur
+
+Constat : `Color = R | B` devient un `Rc<Color>`. Le prototype utilisant un enum `Copy` en valeur élimine **499 934 allocations** et passe de **55,928 à 46,493 ms** (**−16,9 %**). Combiné aux emprunts : **41,349 ms**, soit **−26,1 %**. Ces gains ne s'additionnent pas. La taille mesurée de `Tree` reste 32 octets.
+
+- [ ] Déterminer depuis `dataDecls` l'éligibilité des enums dont tous les constructeurs sont sans charge utile ; couvrir `Color` dans un cas minimal.
+- [ ] Émettre une représentation en valeur et `Copy` ; aligner déclarations, signatures, champs, constructeurs et tests de motifs.
+- [ ] Vérifier les échanges entre modules et les conversions aux frontières dynamiques et FFI.
+- [ ] Mesurer séparément puis avec les emprunts ; contrôler ordre des clés, hauteurs noires, absence de rouges consécutifs, doublons et conservation d'une ancienne version de l'arbre.
+
+Les chiffres RBTree proviennent de 15 mesures par variante, à `opt-level=1` avec mimalloc, pour 100 000 insertions, le parcours et la destruction. Ils ne remplacent pas le score du runner complet à 61,729 ms.
+
+## 4. Polymorphism : garder l'accumulateur spécialisé en i64
+
+Constat : dans la boucle chaude, l'appel de dictionnaire est déjà remplacé par `+ 1`, mais l'accumulateur reste un `Value` avec `unwrap_int` et `mk_int` à chaque tour. `mk_int` est une variante immédiate, pas une allocation sur le tas. Gain à mesurer sur ce benchmark représentant désormais 21,2 % du total après l'intégration de Unit natif.
+
+- [ ] Tracer l'instanciation `polyLoop<Int>` depuis `TypeApp` jusqu'au type de l'accumulateur d'une récursion locale minimale.
+- [ ] Préserver cette spécialisation dans la boucle et émettre un accumulateur `i64`, avec conversions uniquement aux frontières qui les nécessitent.
+- [ ] Couvrir plusieurs instanciations et le cas polymorphe restant, puis mesurer Polymorphism.
+
+Point à examiner : la branche `Syn.TypeApp a ty` de `CodeGen.purs` descend actuellement dans `a` sans exploiter directement `ty` à cet endroit ; vérifier ce qui est déjà transmis par les annotations et PBO avant de modifier cette étape.
+
+## 5. RBTree : factoriser les motifs imbriqués
+
+Constat : les quatre rotations du source deviennent environ 790 lignes et 379 occurrences statiques de `.clone()` dans `balance`. Une version factorisée donne **48,814 ms** contre **55,928 ms** ; avec couleurs en valeur, **42,546 ms**. Son gain recouvre une partie de celui des emprunts.
+
+- [ ] Isoler un motif à deux niveaux avec deux branches et localiser la duplication entre PBO et Purust.
+- [ ] Générer une déconstruction empruntée réutilisant les champs et tests déjà établis, en préservant l'ordre des branches.
+- [ ] Vérifier les quatre rotations et la persistance, puis mesurer le gain supplémentaire après les étapes 2 et 3.
+
+## 6. Church : éviter les adaptateurs de fonctions inverses
+
+Constat : des allers-retours `Func1<i64, i64>` → `Func1<Value, Value>` → `Func1<i64, i64>` apparaissent dans les constructions des numéraux. Gain non mesuré ; Church représente désormais 6,4 % du total après l'intégration de Unit natif.
+
+- [ ] Reproduire un aller-retour sur une fonction typée et suivre les arguments `TypeApp` et les conversions émises.
+- [ ] Préserver la signature instanciée ou supprimer les adaptateurs inverses lorsque leurs sémantiques le permettent.
+- [ ] Vérifier ordre d'évaluation, effets et applications partielles, puis mesurer Church.
+
+## 7. RBTree : réutiliser une racine unique
+
+Constat : après le passage des couleurs en valeur, le prototype de recoloration via `Rc::make_mut` économise **100 000 allocations supplémentaires**. Son gain temporel est modeste dans la série exploratoire à O3 : **47,0 à 45,3 ms**. La réutilisation générale des nœuds reste à étudier.
+
+- [ ] Isoler la reconstruction de racine dans `makeBlack` / `insert` et établir les conditions permettant une réutilisation.
+- [ ] Générer la mutation d'une racine unique avec copie lorsqu'elle est partagée ; vérifier qu'une ancienne version reste intacte.
+- [ ] Mesurer le gain supplémentaire après les autres changements avant d'élargir aux rotations ou à d'autres ADT.
+
+La FFI optimisée à 16,700 ms dans le README utilise une arène préallouée et des indices, avec des durées de vie différentes. Ce score reste un repère, pas une promesse de gain pour l'arbre persistant.
+
+## Pistes à réévaluer seulement sur nouvelles preuves
+
+- **Simplification des thunks :** le prototype à un seul thunk par étape ralentit LazyEvaluation de **230,252 à 300,579 ms**. Ne pas intégrer cette réécriture en l'état ; reprendre la mesure après le travail sur `Unit`.
+- **Profil Rust :** O3 seul n'améliore pas le noyau RBTree étudié (**55,3 ms à O1 contre 59,8 ms à O3** dans la série exploratoire). LTO et le nombre d'unités de codegen restent non mesurés. Tester chaque option séparément sur la suite complète avant de changer les valeurs par défaut.

@@ -681,7 +681,7 @@
         "path": "../../gopurs/gopurs-assert"
       },
       "backend-optimizer": {
-        "path": "../../purescript-backend-optimizer"
+        "path": "../../purescript-backend-optimizer-purust"
       },
       "st": {
         "path": "../../gopurs/gopurs-st"
@@ -827,7 +827,7 @@
     },
     "backend-optimizer": {
       "type": "local",
-      "path": "../../purescript-backend-optimizer",
+      "path": "../../purescript-backend-optimizer-purust",
       "dependencies": [
         "argonaut",
         "arrays",
@@ -844,6 +844,9 @@
         "lists",
         "maybe",
         "newtype",
+        "node-buffer",
+        "node-fs",
+        "nullable",
         "ordered-collections",
         "partial",
         "prelude",

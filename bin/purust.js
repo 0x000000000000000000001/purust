@@ -110,10 +110,10 @@ var map = function(dict) {
   return dict.map;
 };
 var mapFlipped = function(dictFunctor) {
-  var map116 = map(dictFunctor);
+  var map117 = map(dictFunctor);
   return function(fa) {
     return function(f) {
-      return map116(f)(fa);
+      return map117(f)(fa);
     };
   };
 };
@@ -121,17 +121,17 @@ var $$void = function(dictFunctor) {
   return map(dictFunctor)($$const(unit));
 };
 var voidLeft = function(dictFunctor) {
-  var map116 = map(dictFunctor);
+  var map117 = map(dictFunctor);
   return function(f) {
     return function(x) {
-      return map116($$const(x))(f);
+      return map117($$const(x))(f);
     };
   };
 };
 var voidRight = function(dictFunctor) {
-  var map116 = map(dictFunctor);
+  var map117 = map(dictFunctor);
   return function(x) {
-    return map116($$const(x));
+    return map117($$const(x));
   };
 };
 var functorFn = {
@@ -166,29 +166,29 @@ var apply = function(dict) {
 };
 var applyFirst = function(dictApply) {
   var apply1 = apply(dictApply);
-  var map40 = map(dictApply.Functor0());
+  var map41 = map(dictApply.Functor0());
   return function(a) {
     return function(b) {
-      return apply1(map40($$const)(a))(b);
+      return apply1(map41($$const)(a))(b);
     };
   };
 };
 var applySecond = function(dictApply) {
   var apply1 = apply(dictApply);
-  var map40 = map(dictApply.Functor0());
+  var map41 = map(dictApply.Functor0());
   return function(a) {
     return function(b) {
-      return apply1(map40($$const(identity2))(a))(b);
+      return apply1(map41($$const(identity2))(a))(b);
     };
   };
 };
 var lift2 = function(dictApply) {
   var apply1 = apply(dictApply);
-  var map40 = map(dictApply.Functor0());
+  var map41 = map(dictApply.Functor0());
   return function(f) {
     return function(a) {
       return function(b) {
-        return apply1(map40(f)(a))(b);
+        return apply1(map41(f)(a))(b);
       };
     };
   };
@@ -576,9 +576,9 @@ var semigroupRecordCons = function(dictIsSymbol) {
               return function(rb) {
                 var tail3 = appendRecord1($$Proxy.value)(ra)(rb);
                 var key = reflectSymbol2($$Proxy.value);
-                var insert18 = unsafeSet(key);
+                var insert19 = unsafeSet(key);
                 var get = unsafeGet(key);
-                return insert18(append15(get(ra))(get(rb)))(tail3);
+                return insert19(append15(get(ra))(get(rb)))(tail3);
               };
             };
           }
@@ -940,9 +940,9 @@ var semiringRecordCons = function(dictIsSymbol) {
               return function(rb) {
                 var tail3 = addRecord1($$Proxy.value)(ra)(rb);
                 var key = reflectSymbol2($$Proxy.value);
-                var insert18 = unsafeSet(key);
+                var insert19 = unsafeSet(key);
                 var get = unsafeGet(key);
-                return insert18(add1(get(ra))(get(rb)))(tail3);
+                return insert19(add1(get(ra))(get(rb)))(tail3);
               };
             };
           },
@@ -951,9 +951,9 @@ var semiringRecordCons = function(dictIsSymbol) {
               return function(rb) {
                 var tail3 = mulRecord1($$Proxy.value)(ra)(rb);
                 var key = reflectSymbol2($$Proxy.value);
-                var insert18 = unsafeSet(key);
+                var insert19 = unsafeSet(key);
                 var get = unsafeGet(key);
-                return insert18(mul1(get(ra))(get(rb)))(tail3);
+                return insert19(mul1(get(ra))(get(rb)))(tail3);
               };
             };
           },
@@ -961,16 +961,16 @@ var semiringRecordCons = function(dictIsSymbol) {
             return function(v1) {
               var tail3 = oneRecord1($$Proxy.value)($$Proxy.value);
               var key = reflectSymbol2($$Proxy.value);
-              var insert18 = unsafeSet(key);
-              return insert18(one1)(tail3);
+              var insert19 = unsafeSet(key);
+              return insert19(one1)(tail3);
             };
           },
           zeroRecord: function(v) {
             return function(v1) {
               var tail3 = zeroRecord1($$Proxy.value)($$Proxy.value);
               var key = reflectSymbol2($$Proxy.value);
-              var insert18 = unsafeSet(key);
-              return insert18(zero1)(tail3);
+              var insert19 = unsafeSet(key);
+              return insert19(zero1)(tail3);
             };
           }
         };
@@ -1210,10 +1210,10 @@ var bottom = function(dict) {
 
 // output/Data.Functor.Invariant/index.js
 var imapF = function(dictFunctor) {
-  var map40 = map(dictFunctor);
+  var map41 = map(dictFunctor);
   return function(f) {
     return function(v) {
-      return map40(f);
+      return map41(f);
     };
   };
 };
@@ -1420,11 +1420,11 @@ var Just = /* @__PURE__ */ (function() {
   return Just2;
 })();
 var showMaybe = function(dictShow) {
-  var show11 = show(dictShow);
+  var show14 = show(dictShow);
   return {
     show: function(v) {
       if (v instanceof Just) {
-        return "(Just " + (show11(v.value0) + ")");
+        return "(Just " + (show14(v.value0) + ")");
       }
       ;
       if (v instanceof Nothing) {
@@ -1459,11 +1459,11 @@ var semigroupMaybe = function(dictSemigroup) {
 };
 var optional = function(dictAlt) {
   var alt6 = alt(dictAlt);
-  var map116 = map(dictAlt.Functor0());
+  var map117 = map(dictAlt.Functor0());
   return function(dictApplicative) {
     var pure9 = pure(dictApplicative);
     return function(a) {
-      return alt6(map116(Just.create)(a))(pure9(Nothing.value));
+      return alt6(map117(Just.create)(a))(pure9(Nothing.value));
     };
   };
 };
@@ -1783,17 +1783,17 @@ var Right = /* @__PURE__ */ (function() {
   return Right2;
 })();
 var showEither = function(dictShow) {
-  var show11 = show(dictShow);
+  var show14 = show(dictShow);
   return function(dictShow1) {
-    var show14 = show(dictShow1);
+    var show15 = show(dictShow1);
     return {
       show: function(v) {
         if (v instanceof Left) {
-          return "(Left " + (show11(v.value0) + ")");
+          return "(Left " + (show14(v.value0) + ")");
         }
         ;
         if (v instanceof Right) {
-          return "(Right " + (show14(v.value0) + ")");
+          return "(Right " + (show15(v.value0) + ")");
         }
         ;
         throw new Error("Failed pattern match at Data.Either (line 173, column 1 - line 175, column 46): " + [v.constructor.name]);
@@ -1999,10 +1999,10 @@ var isLeft = /* @__PURE__ */ either(/* @__PURE__ */ $$const(true))(/* @__PURE__ 
 var isRight = /* @__PURE__ */ either(/* @__PURE__ */ $$const(false))(/* @__PURE__ */ $$const(true));
 var choose = function(dictAlt) {
   var alt6 = alt(dictAlt);
-  var map116 = map(dictAlt.Functor0());
+  var map117 = map(dictAlt.Functor0());
   return function(a) {
     return function(b) {
-      return alt6(map116(Left.create)(a))(map116(Right.create)(b));
+      return alt6(map117(Left.create)(a))(map117(Right.create)(b));
     };
   };
 };
@@ -2193,8 +2193,8 @@ var monoidRecordCons = function(dictIsSymbol) {
           memptyRecord: function(v) {
             var tail3 = memptyRecord1($$Proxy.value);
             var key = reflectSymbol2($$Proxy.value);
-            var insert18 = unsafeSet(key);
-            return insert18(mempty12)(tail3);
+            var insert19 = unsafeSet(key);
+            return insert19(mempty12)(tail3);
           },
           SemigroupRecord0: function() {
             return semigroupRecordCons1;
@@ -2751,12 +2751,12 @@ var snd = function(v) {
   return v.value1;
 };
 var showTuple = function(dictShow) {
-  var show11 = show(dictShow);
+  var show14 = show(dictShow);
   return function(dictShow1) {
-    var show14 = show(dictShow1);
+    var show15 = show(dictShow1);
     return {
       show: function(v) {
-        return "(Tuple " + (show11(v.value0) + (" " + (show14(v.value1) + ")")));
+        return "(Tuple " + (show14(v.value0) + (" " + (show15(v.value1) + ")")));
       }
     };
   };
@@ -3626,7 +3626,7 @@ var traverseArrayImpl = /* @__PURE__ */ (function() {
     };
   }
   return function(apply9) {
-    return function(map40) {
+    return function(map41) {
       return function(pure9) {
         return function(f) {
           return function(array) {
@@ -3635,14 +3635,14 @@ var traverseArrayImpl = /* @__PURE__ */ (function() {
                 case 0:
                   return pure9([]);
                 case 1:
-                  return map40(array1)(f(array[bot]));
+                  return map41(array1)(f(array[bot]));
                 case 2:
-                  return apply9(map40(array2)(f(array[bot])))(f(array[bot + 1]));
+                  return apply9(map41(array2)(f(array[bot])))(f(array[bot + 1]));
                 case 3:
-                  return apply9(apply9(map40(array3)(f(array[bot])))(f(array[bot + 1])))(f(array[bot + 2]));
+                  return apply9(apply9(map41(array3)(f(array[bot])))(f(array[bot + 1])))(f(array[bot + 2]));
                 default:
                   var pivot = bot + Math.floor((top2 - bot) / 4) * 2;
-                  return apply9(map40(concat22)(go(bot, pivot)))(go(pivot, top2));
+                  return apply9(map41(concat22)(go(bot, pivot)))(go(pivot, top2));
               }
             }
             return go(0, array.length);
@@ -3754,17 +3754,17 @@ var traverse = function(dict) {
 };
 var traversableTuple = {
   traverse: function(dictApplicative) {
-    var map40 = map(dictApplicative.Apply0().Functor0());
+    var map41 = map(dictApplicative.Apply0().Functor0());
     return function(f) {
       return function(v) {
-        return map40(Tuple.create(v.value0))(f(v.value1));
+        return map41(Tuple.create(v.value0))(f(v.value1));
       };
     };
   },
   sequence: function(dictApplicative) {
-    var map40 = map(dictApplicative.Apply0().Functor0());
+    var map41 = map(dictApplicative.Apply0().Functor0());
     return function(v) {
-      return map40(Tuple.create(v.value0))(v.value1);
+      return map41(Tuple.create(v.value0))(v.value1);
     };
   },
   Functor0: function() {
@@ -3906,12 +3906,12 @@ var foldl1 = function(dict) {
 var foldMap1DefaultL = function(dictFoldable1) {
   var foldl112 = foldl1(dictFoldable1);
   return function(dictFunctor) {
-    var map40 = map(dictFunctor);
+    var map41 = map(dictFunctor);
     return function(dictSemigroup) {
       var append8 = append(dictSemigroup);
       return function(f) {
         var $162 = foldl112(append8);
-        var $163 = map40(f);
+        var $163 = map41(f);
         return function($164) {
           return $162($163($164));
         };
@@ -4406,11 +4406,11 @@ var foldMapWithIndex = function(dict) {
 // output/Data.TraversableWithIndex/index.js
 var traverseWithIndexDefault = function(dictTraversableWithIndex) {
   var sequence5 = sequence(dictTraversableWithIndex.Traversable2());
-  var mapWithIndex6 = mapWithIndex(dictTraversableWithIndex.FunctorWithIndex0());
+  var mapWithIndex7 = mapWithIndex(dictTraversableWithIndex.FunctorWithIndex0());
   return function(dictApplicative) {
     var sequence13 = sequence5(dictApplicative);
     return function(f) {
-      var $174 = mapWithIndex6(f);
+      var $174 = mapWithIndex7(f);
       return function($175) {
         return sequence13($174($175));
       };
@@ -4473,33 +4473,33 @@ var singleton3 = function(dictPlus) {
   };
 };
 var showNonEmpty = function(dictShow) {
-  var show11 = show(dictShow);
+  var show14 = show(dictShow);
   return function(dictShow1) {
-    var show14 = show(dictShow1);
+    var show15 = show(dictShow1);
     return {
       show: function(v) {
-        return "(NonEmpty " + (show11(v.value0) + (" " + (show14(v.value1) + ")")));
+        return "(NonEmpty " + (show14(v.value0) + (" " + (show15(v.value1) + ")")));
       }
     };
   };
 };
 var functorNonEmpty = function(dictFunctor) {
-  var map211 = map(dictFunctor);
+  var map212 = map(dictFunctor);
   return {
     map: function(f) {
       return function(m) {
-        return new NonEmpty(f(m.value0), map211(f)(m.value1));
+        return new NonEmpty(f(m.value0), map212(f)(m.value1));
       };
     }
   };
 };
 var functorWithIndex = function(dictFunctorWithIndex) {
-  var mapWithIndex6 = mapWithIndex(dictFunctorWithIndex);
+  var mapWithIndex7 = mapWithIndex(dictFunctorWithIndex);
   var functorNonEmpty1 = functorNonEmpty(dictFunctorWithIndex.Functor0());
   return {
     mapWithIndex: function(f) {
       return function(v) {
-        return new NonEmpty(f(Nothing.value)(v.value0), mapWithIndex6(function($245) {
+        return new NonEmpty(f(Nothing.value)(v.value0), mapWithIndex7(function($245) {
           return f(Just.create($245));
         })(v.value1));
       };
@@ -4588,20 +4588,20 @@ var traversableNonEmpty = function(dictTraversable) {
     sequence: function(dictApplicative) {
       var Apply0 = dictApplicative.Apply0();
       var apply9 = apply(Apply0);
-      var map211 = map(Apply0.Functor0());
+      var map212 = map(Apply0.Functor0());
       var sequence13 = sequence5(dictApplicative);
       return function(v) {
-        return apply9(map211(NonEmpty.create)(v.value0))(sequence13(v.value1));
+        return apply9(map212(NonEmpty.create)(v.value0))(sequence13(v.value1));
       };
     },
     traverse: function(dictApplicative) {
       var Apply0 = dictApplicative.Apply0();
       var apply9 = apply(Apply0);
-      var map211 = map(Apply0.Functor0());
+      var map212 = map(Apply0.Functor0());
       var traverse17 = traverse9(dictApplicative);
       return function(f) {
         return function(v) {
-          return apply9(map211(NonEmpty.create)(f(v.value0)))(traverse17(f)(v.value1));
+          return apply9(map212(NonEmpty.create)(f(v.value0)))(traverse17(f)(v.value1));
         };
       };
     },
@@ -4622,11 +4622,11 @@ var traversableWithIndexNonEmpty = function(dictTraversableWithIndex) {
     traverseWithIndex: function(dictApplicative) {
       var Apply0 = dictApplicative.Apply0();
       var apply9 = apply(Apply0);
-      var map211 = map(Apply0.Functor0());
+      var map212 = map(Apply0.Functor0());
       var traverseWithIndex1 = traverseWithIndex4(dictApplicative);
       return function(f) {
         return function(v) {
-          return apply9(map211(NonEmpty.create)(f(Nothing.value)(v.value0)))(traverseWithIndex1(function($249) {
+          return apply9(map212(NonEmpty.create)(f(Nothing.value)(v.value0)))(traverseWithIndex1(function($249) {
             return f(Just.create($249));
           })(v.value1));
         };
@@ -5086,33 +5086,33 @@ var semigroupNonEmptyList = {
   }
 };
 var showList = function(dictShow) {
-  var show11 = show(dictShow);
+  var show14 = show(dictShow);
   return {
     show: function(v) {
       if (v instanceof Nil) {
         return "Nil";
       }
       ;
-      return "(" + (intercalate3(" : ")(map7(show11)(v)) + " : Nil)");
+      return "(" + (intercalate3(" : ")(map7(show14)(v)) + " : Nil)");
     }
   };
 };
 var showNonEmptyList = function(dictShow) {
-  var show11 = show(showNonEmpty(dictShow)(showList(dictShow)));
+  var show14 = show(showNonEmpty(dictShow)(showList(dictShow)));
   return {
     show: function(v) {
-      return "(NonEmptyList " + (show11(v) + ")");
+      return "(NonEmptyList " + (show14(v) + ")");
     }
   };
 };
 var traversableList = {
   traverse: function(dictApplicative) {
     var Apply0 = dictApplicative.Apply0();
-    var map116 = map(Apply0.Functor0());
+    var map117 = map(Apply0.Functor0());
     var lift22 = lift2(Apply0);
     var pure16 = pure(dictApplicative);
     return function(f) {
-      var $301 = map116(foldl3(flip(Cons.create))(Nil.value));
+      var $301 = map117(foldl3(flip(Cons.create))(Nil.value));
       var $302 = foldl3(function(acc) {
         var $304 = lift22(flip(Cons.create))(acc);
         return function($305) {
@@ -5138,12 +5138,12 @@ var traversableNonEmptyList = /* @__PURE__ */ traversableNonEmpty(traversableLis
 var traversableWithIndexList = {
   traverseWithIndex: function(dictApplicative) {
     var Apply0 = dictApplicative.Apply0();
-    var map116 = map(Apply0.Functor0());
+    var map117 = map(Apply0.Functor0());
     var lift22 = lift2(Apply0);
     var pure16 = pure(dictApplicative);
     return function(f) {
       var rev = foldl3(flip(Cons.create))(Nil.value);
-      var $306 = map116(rev);
+      var $306 = map117(rev);
       var $307 = foldlWithIndex1(function(i) {
         return function(acc) {
           var $309 = lift22(flip(Cons.create))(acc);
@@ -5171,11 +5171,11 @@ var traversableWithIndexList = {
 var traverseWithIndex2 = /* @__PURE__ */ traverseWithIndex(/* @__PURE__ */ traversableWithIndexNonEmpty(traversableWithIndexList));
 var traversableWithIndexNonEmptyList = {
   traverseWithIndex: function(dictApplicative) {
-    var map116 = map(dictApplicative.Apply0().Functor0());
+    var map117 = map(dictApplicative.Apply0().Functor0());
     var traverseWithIndex1 = traverseWithIndex2(dictApplicative);
     return function(f) {
       return function(v) {
-        return map116(NonEmptyList)(traverseWithIndex1((function() {
+        return map117(NonEmptyList)(traverseWithIndex1((function() {
           var $312 = maybe(0)(add2(1));
           return function($313) {
             return f($312($313));
@@ -5595,7 +5595,7 @@ var traversable1NonEmptyList = {
     var Functor0 = dictApply.Functor0();
     var mapFlipped3 = mapFlipped(Functor0);
     var lift22 = lift2(dictApply);
-    var map116 = map(Functor0);
+    var map117 = map(Functor0);
     return function(f) {
       return function(v) {
         return mapFlipped3(foldl3(function(acc) {
@@ -5603,7 +5603,7 @@ var traversable1NonEmptyList = {
           return function($318) {
             return $317(f($318));
           };
-        })(map116(pure2)(f(v.value0)))(v.value1))(function(v1) {
+        })(map117(pure2)(f(v.value0)))(v.value1))(function(v1) {
           return foldl3(flip(nelCons))(pure2(v1.value0))(v1.value1);
         });
       };
@@ -6691,7 +6691,7 @@ var showMap = function(dictShow) {
   };
 };
 var isSubmap = function(dictOrd) {
-  var lookup13 = lookup2(dictOrd);
+  var lookup14 = lookup2(dictOrd);
   return function(dictEq) {
     var eq111 = eq(dictEq);
     var go = function(m1) {
@@ -6701,7 +6701,7 @@ var isSubmap = function(dictOrd) {
         }
         ;
         if (m1 instanceof Node) {
-          var v1 = lookup13(m1.value2)(m2);
+          var v1 = lookup14(m1.value2)(m2);
           if (v1 instanceof Nothing) {
             return false;
           }
@@ -6981,7 +6981,7 @@ var traversableMap = {
     var pure9 = pure(dictApplicative);
     var Apply0 = dictApplicative.Apply0();
     var apply9 = apply(Apply0);
-    var map116 = map(Apply0.Functor0());
+    var map117 = map(Apply0.Functor0());
     return function(f) {
       var go = function(v) {
         if (v instanceof Leaf) {
@@ -6989,7 +6989,7 @@ var traversableMap = {
         }
         ;
         if (v instanceof Node) {
-          return apply9(apply9(map116(function(l$prime) {
+          return apply9(apply9(map117(function(l$prime) {
             return function(v$prime) {
               return function(r$prime) {
                 return new Node(v.value0, v.value1, v.value2, v$prime, l$prime, r$prime);
@@ -7018,7 +7018,7 @@ var traversableWithIndexMap = {
     var pure9 = pure(dictApplicative);
     var Apply0 = dictApplicative.Apply0();
     var apply9 = apply(Apply0);
-    var map116 = map(Apply0.Functor0());
+    var map117 = map(Apply0.Functor0());
     return function(f) {
       var go = function(v) {
         if (v instanceof Leaf) {
@@ -7026,7 +7026,7 @@ var traversableWithIndexMap = {
         }
         ;
         if (v instanceof Node) {
-          return apply9(apply9(map116(function(l$prime) {
+          return apply9(apply9(map117(function(l$prime) {
             return function(v$prime) {
               return function(r$prime) {
                 return new Node(v.value0, v.value1, v.value2, v$prime, l$prime, r$prime);
@@ -7431,11 +7431,11 @@ var empty2 = /* @__PURE__ */ (function() {
   return Leaf.value;
 })();
 var fromFoldable2 = function(dictOrd) {
-  var insert18 = insert(dictOrd);
+  var insert19 = insert(dictOrd);
   return function(dictFoldable) {
     return foldl(dictFoldable)(function(m) {
       return function(v) {
-        return insert18(v.value0)(v.value1)(m);
+        return insert19(v.value0)(v.value1)(m);
       };
     })(empty2);
   };
@@ -7455,12 +7455,12 @@ var fromFoldableWith = function(dictOrd) {
   };
 };
 var fromFoldableWithIndex = function(dictOrd) {
-  var insert18 = insert(dictOrd);
+  var insert19 = insert(dictOrd);
   return function(dictFoldableWithIndex) {
     return foldlWithIndex(dictFoldableWithIndex)(function(k) {
       return function(m) {
         return function(v) {
-          return insert18(k)(v)(m);
+          return insert19(k)(v)(m);
         };
       };
     })(empty2);
@@ -7586,13 +7586,13 @@ var applyMap = function(dictOrd) {
 };
 var bindMap = function(dictOrd) {
   var mapMaybeWithKey1 = mapMaybeWithKey(dictOrd);
-  var lookup13 = lookup2(dictOrd);
+  var lookup14 = lookup2(dictOrd);
   var applyMap1 = applyMap(dictOrd);
   return {
     bind: function(m) {
       return function(f) {
         return mapMaybeWithKey1(function(k) {
-          var $788 = lookup13(k);
+          var $788 = lookup14(k);
           return function($789) {
             return $788(f($789));
           };
@@ -7767,10 +7767,10 @@ var intersection2 = function(dictOrd) {
   return coerce3(intersection(dictOrd));
 };
 var insert2 = function(dictOrd) {
-  var insert18 = insert(dictOrd);
+  var insert19 = insert(dictOrd);
   return function(a) {
     return function(v) {
-      return insert18(a)(unit)(v);
+      return insert19(a)(unit)(v);
     };
   };
 };
@@ -7809,21 +7809,21 @@ var empty3 = empty2;
 var fromFoldable4 = function(dictFoldable) {
   var foldl22 = foldl(dictFoldable);
   return function(dictOrd) {
-    var insert18 = insert2(dictOrd);
+    var insert19 = insert2(dictOrd);
     return foldl22(function(m) {
       return function(a) {
-        return insert18(a)(m);
+        return insert19(a)(m);
       };
     })(empty3);
   };
 };
 var mapMaybe3 = function(dictOrd) {
-  var insert18 = insert2(dictOrd);
+  var insert19 = insert2(dictOrd);
   return function(f) {
     return foldr1(function(a) {
       return function(acc) {
         return maybe(acc)(function(b) {
-          return insert18(b)(acc);
+          return insert19(b)(acc);
         })(f(a));
       };
     })(empty3);
@@ -9318,10 +9318,10 @@ var catchError = function(dict) {
 var $$try = function(dictMonadError) {
   var catchError1 = catchError(dictMonadError);
   var Monad0 = dictMonadError.MonadThrow0().Monad0();
-  var map40 = map(Monad0.Bind1().Apply0().Functor0());
+  var map41 = map(Monad0.Bind1().Apply0().Functor0());
   var pure9 = pure(Monad0.Applicative0());
   return function(a) {
-    return catchError1(map40(Right.create)(a))(function($52) {
+    return catchError1(map41(Right.create)(a))(function($52) {
       return pure9(Left.create($52));
     });
   };
@@ -10193,9 +10193,9 @@ var traverse1Impl = /* @__PURE__ */ (function() {
     }
     return arr;
   }
-  return function(apply9, map40, f) {
+  return function(apply9, map41, f) {
     var buildFrom = function(x, ys) {
-      return apply9(map40(consList)(f(x)))(ys);
+      return apply9(map41(consList)(f(x)))(ys);
     };
     var go = function(acc, currentLen, xs) {
       if (currentLen === 0) {
@@ -10209,12 +10209,12 @@ var traverse1Impl = /* @__PURE__ */ (function() {
       }
     };
     return function(array) {
-      var acc = map40(finalCell)(f(array[array.length - 1]));
+      var acc = map41(finalCell)(f(array[array.length - 1]));
       var result = go(acc, array.length - 1, array);
       while (result instanceof Cont) {
         result = result.fn();
       }
-      return map40(listToArray)(result);
+      return map41(listToArray)(result);
     };
   };
 })();
@@ -10227,10 +10227,10 @@ var unfoldable1NonEmptyArray = unfoldable1Array;
 var traversableWithIndexNonEmptyArray = traversableWithIndexArray;
 var traversableNonEmptyArray = traversableArray;
 var showNonEmptyArray = function(dictShow) {
-  var show11 = show(showArray(dictShow));
+  var show14 = show(showArray(dictShow));
   return {
     show: function(v) {
-      return "(NonEmptyArray " + (show11(v) + ")");
+      return "(NonEmptyArray " + (show14(v) + ")");
     }
   };
 };
@@ -10257,9 +10257,9 @@ var foldable1NonEmptyArray = {
 var traversable1NonEmptyArray = {
   traverse1: function(dictApply) {
     var apply9 = apply(dictApply);
-    var map40 = map(dictApply.Functor0());
+    var map41 = map(dictApply.Functor0());
     return function(f) {
-      return traverse1Impl(apply9, map40, f);
+      return traverse1Impl(apply9, map41, f);
     };
   },
   sequence1: function(dictApply) {
@@ -10365,6 +10365,9 @@ var unsafeAdapt = function(f) {
 };
 var cons2 = function(x) {
   return unsafeAdapt(cons(x));
+};
+var mapWithIndex5 = function(f) {
+  return unsafeAdapt(mapWithIndex2(f));
 };
 var unsafeIndex2 = function() {
   return adaptAny(unsafeIndex12);
@@ -13043,6 +13046,7 @@ var decodeTypeTableST = function(typeTableJson) {
 };
 
 // output/PureScript.Backend.Optimizer.CoreFn.Json/index.js
+var lmap3 = /* @__PURE__ */ lmap(bifunctorEither);
 var map17 = /* @__PURE__ */ map(functorEither);
 var coerce4 = /* @__PURE__ */ coerce();
 var discard2 = /* @__PURE__ */ discard(discardUnit);
@@ -13073,12 +13077,12 @@ var getFieldOptional$prime2 = function(decode) {
         }
         ;
         if (otherwise) {
-          return map17(Just.create)(decode(v.value0));
+          return lmap3(AtKey.create(prop))(map17(Just.create)(decode(v.value0)));
         }
         ;
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 456, column 3 - line 463, column 31): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 457, column 3 - line 464, column 51): " + [v.constructor.name]);
     };
   };
 };
@@ -13091,10 +13095,10 @@ var getField2 = function(decode) {
       }
       ;
       if (v instanceof Just) {
-        return decode(v.value0);
+        return lmap3(AtKey.create(prop))(decode(v.value0));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 448, column 3 - line 452, column 18): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 449, column 3 - line 453, column 38): " + [v.constructor.name]);
     };
   };
 };
@@ -13148,8 +13152,8 @@ var decodeArray3 = function(decoder) {
           while (con) {
             (function __do2() {
               var ix$prime = ix;
-              var $64 = ix$prime === len;
-              if ($64) {
+              var $65 = ix$prime === len;
+              if ($65) {
                 var out$prime = unsafeFreeze(out)();
                 con = false;
                 res = new Right(out$prime);
@@ -13169,7 +13173,7 @@ var decodeArray3 = function(decoder) {
                 return unit;
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 435, column 9 - line 443, column 22): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 436, column 9 - line 444, column 22): " + [v1.constructor.name]);
             })();
           }
           ;
@@ -13179,19 +13183,19 @@ var decodeArray3 = function(decoder) {
       })();
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 418, column 28 - line 444, column 19): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 419, column 28 - line 445, column 19): " + [v.constructor.name]);
   };
 };
 var decodeModuleName = /* @__PURE__ */ (function() {
-  var $104 = map17((function() {
-    var $107 = intercalate(foldableArray)(monoidString)(".");
-    return function($108) {
-      return ModuleName($107($108));
+  var $105 = map17((function() {
+    var $108 = intercalate(foldableArray)(monoidString)(".");
+    return function($109) {
+      return ModuleName($108($109));
     };
   })());
-  var $105 = decodeArray3(decodeString3);
-  return function($106) {
-    return $104($105($106));
+  var $106 = decodeArray3(decodeString3);
+  return function($107) {
+    return $105($106($107));
   };
 })();
 var bind5 = function(a) {
@@ -13204,7 +13208,7 @@ var bind5 = function(a) {
       return k(a.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 53, column 12 - line 57, column 9): " + [a.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 54, column 12 - line 58, column 9): " + [a.constructor.name]);
   };
 };
 var decodeConstructorType = function(json) {
@@ -13235,8 +13239,8 @@ var decodeInt3 = function(json) {
   return bind5(decodeNumber3(json))(function(num) {
     var v = fromNumber(num);
     if (v instanceof Nothing) {
-      var $74 = num === 2147483648;
-      if ($74) {
+      var $75 = num === 2147483648;
+      if ($75) {
         return new Right(bottom2);
       }
       ;
@@ -13247,14 +13251,14 @@ var decodeInt3 = function(json) {
       return new Right(v.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 508, column 3 - line 515, column 16): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 509, column 3 - line 516, column 16): " + [v.constructor.name]);
   });
 };
 var decodeCodePoint2 = /* @__PURE__ */ composeKleisliFlipped(bindEither)(/* @__PURE__ */ (function() {
-  var $109 = note(new TypeMismatch("CodePoint"));
-  var $110 = toEnum(boundedEnumCodePoint);
-  return function($111) {
-    return $109($110($111));
+  var $110 = note(new TypeMismatch("CodePoint"));
+  var $111 = toEnum(boundedEnumCodePoint);
+  return function($112) {
+    return $110($111($112));
   };
 })())(decodeInt3);
 var decodeCodePointArray = /* @__PURE__ */ decodeArray3(decodeCodePoint2);
@@ -13323,7 +13327,7 @@ var decodeAnn = function(typeTable) {
                 return Nothing.value;
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 177, column 15 - line 179, column 35): " + [typeId.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 178, column 15 - line 180, column 35): " + [typeId.constructor.name]);
             })();
             return pure12({
               span: emptySpan,
@@ -13424,7 +13428,7 @@ var decodeTypeTable = function(json) {
       return new Right(v.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 123, column 3 - line 125, column 27): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 124, column 3 - line 126, column 27): " + [v.constructor.name]);
   });
 };
 var alt2 = function(a) {
@@ -13437,7 +13441,7 @@ var alt2 = function(a) {
       return a;
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 46, column 11 - line 48, column 15): " + [a.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 47, column 11 - line 49, column 15): " + [a.constructor.name]);
   };
 };
 var decodeComment = function(json) {
@@ -13514,8 +13518,8 @@ var decodeRecord = /* @__PURE__ */ (function() {
       });
     };
   };
-  return function($112) {
-    return decodeArray3(decodeProp($112));
+  return function($113) {
+    return decodeArray3(decodeProp($113));
   };
 })();
 var decodeLiteral = function(dec) {
@@ -13790,7 +13794,7 @@ var decodeModule$prime = function(decodeAnn$prime) {
                                   return pure12(new Tuple(v, Nothing.value));
                                 }
                                 ;
-                                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 238, column 5 - line 243, column 35): " + [v1.constructor.name]);
+                                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.Json (line 239, column 5 - line 244, column 35): " + [v1.constructor.name]);
                               })(foreign_arr))(function(foreign_list) {
                                 var foreignMap = fromFoldable5(foreign_list);
                                 return bind5(getField2(decodeArray3(decodeComment))(obj)("comments"))(function(comments) {
@@ -17512,7 +17516,6 @@ var foldl6 = /* @__PURE__ */ foldl(foldableArray);
 var lookup5 = /* @__PURE__ */ lookup2(ordLevel);
 var append5 = /* @__PURE__ */ append(semigroupBackendAnalysis);
 var foldr7 = /* @__PURE__ */ foldr(foldableArray);
-var toUnfoldable5 = /* @__PURE__ */ toUnfoldable4(unfoldableArray);
 var lessThanOrEq2 = /* @__PURE__ */ lessThanOrEq(ordComplexity);
 var lessThanOrEq22 = /* @__PURE__ */ lessThanOrEq(ordCapture);
 var or2 = /* @__PURE__ */ or(foldableArray)(heytingAlgebraBoolean);
@@ -17535,7 +17538,7 @@ var map63 = /* @__PURE__ */ map(functorTuple);
 var map73 = /* @__PURE__ */ map(functorPair);
 var comparing2 = /* @__PURE__ */ comparing(ordString);
 var append13 = /* @__PURE__ */ append(semigroupArray);
-var toUnfoldable12 = /* @__PURE__ */ toUnfoldable3(unfoldableArray);
+var toUnfoldable5 = /* @__PURE__ */ toUnfoldable3(unfoldableArray);
 var fromFoldable6 = /* @__PURE__ */ fromFoldable3(foldableArray);
 var div4 = /* @__PURE__ */ div(euclideanRingInt);
 var mod4 = /* @__PURE__ */ mod(euclideanRingInt);
@@ -17548,11 +17551,12 @@ var map82 = /* @__PURE__ */ map(functorLiteral);
 var map92 = /* @__PURE__ */ map(functorBackendOperator);
 var map102 = /* @__PURE__ */ map(functorBackendEffect);
 var insert7 = /* @__PURE__ */ insert(ordInt);
+var fromFoldable1 = /* @__PURE__ */ fromFoldable(foldableList);
 var identity11 = /* @__PURE__ */ identity(categoryFn);
 var show5 = /* @__PURE__ */ show(showInt);
 var bindFlipped2 = /* @__PURE__ */ bindFlipped(bindMaybe);
 var lookup22 = /* @__PURE__ */ lookup(foldableNonEmptyArray)(eqIdent);
-var toUnfoldable22 = /* @__PURE__ */ toUnfoldable(unfoldableList);
+var toUnfoldable12 = /* @__PURE__ */ toUnfoldable(unfoldableList);
 var max3 = /* @__PURE__ */ max(ordInt);
 var foldl12 = /* @__PURE__ */ foldl(foldableNonEmptyArray);
 var foldMap24 = /* @__PURE__ */ foldMap(foldableMaybe)(monoidString);
@@ -18466,7 +18470,6 @@ var hasAnalysisBackendExpr = {
   }
 };
 var analysisOf2 = /* @__PURE__ */ analysisOf(hasAnalysisBackendExpr);
-var resultOf2 = /* @__PURE__ */ resultOf(hasAnalysisBackendExpr);
 var eqUnpackOp = function(dictEq) {
   var eq192 = eq(eqArray(eqProp(dictEq)));
   var eq202 = eq(dictEq);
@@ -18785,16 +18788,16 @@ var simplifyCondIsTag = function(v) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1592, column 1 - line 1592, column 81): " + [v.constructor.name, v1.constructor.name, def.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1625, column 1 - line 1625, column 81): " + [v.constructor.name, v1.constructor.name, def.constructor.name]);
       };
-      var $820 = untypedExpr(v1.value0);
-      if ($820 instanceof ExprSyntax && ($820.value1 instanceof PrimOp && ($820.value1.value0 instanceof Op1 && $820.value1.value0.value0 instanceof OpIsTag))) {
-        var $821 = untypedExpr(v1.value1);
-        if ($821 instanceof ExprSyntax && ($821.value1 instanceof Lit && ($821.value1.value0 instanceof LitBoolean && !$821.value1.value0.value0))) {
-          var $822 = untypedExpr(def);
-          if ($822 instanceof ExprSyntax && ($822.value1 instanceof PrimOp && ($822.value1.value0 instanceof Op1 && $822.value1.value0.value0 instanceof OpIsTag))) {
-            var $823 = eq182($820.value1.value0.value1)($822.value1.value0.value1);
-            if ($823) {
+      var $826 = untypedExpr(v1.value0);
+      if ($826 instanceof ExprSyntax && ($826.value1 instanceof PrimOp && ($826.value1.value0 instanceof Op1 && $826.value1.value0.value0 instanceof OpIsTag))) {
+        var $827 = untypedExpr(v1.value1);
+        if ($827 instanceof ExprSyntax && ($827.value1 instanceof Lit && ($827.value1.value0 instanceof LitBoolean && !$827.value1.value0.value0))) {
+          var $828 = untypedExpr(def);
+          if ($828 instanceof ExprSyntax && ($828.value1 instanceof PrimOp && ($828.value1.value0 instanceof Op1 && $828.value1.value0.value0 instanceof OpIsTag))) {
+            var $829 = eq182($826.value1.value0.value1)($828.value1.value0.value1);
+            if ($829) {
               return new Just(def);
             }
             ;
@@ -18820,12 +18823,12 @@ var shouldUnpackUpdate = function(ident) {
           return Nothing.value;
         };
         if (binding instanceof ExprSyntax && binding.value1 instanceof Update) {
-          var $844 = lookup5(level)(v.usages);
-          if ($844 instanceof Just) {
-            var $845 = $844.value0.total === ($844.value0.access + $844.value0.update | 0);
-            if ($845) {
-              var analysis = updated(level)(append5(analysisOf2(binding.value1.value0))(foldr7(function($2454) {
-                return append5(analysisOf2(propValue($2454)));
+          var $850 = lookup5(level)(v.usages);
+          if ($850 instanceof Just) {
+            var $851 = $850.value0.total === ($850.value0.access + $850.value0.update | 0);
+            if ($851) {
+              var analysis = updated(level)(append5(analysisOf2(binding.value1.value0))(foldr7(function($2513) {
+                return append5(analysisOf2(propValue($2513)));
               })(complex(NonTrivial.value)(bound(level)(v)))(binding.value1.value1)));
               return new Just(new ExprRewrite(withRewrite(analysis), new RewriteUnpackOp(ident, level, new UnpackUpdate(binding.value1.value0, binding.value1.value1), body)));
             }
@@ -18850,12 +18853,12 @@ var shouldUnpackRecord = function(ident) {
           return Nothing.value;
         };
         if (binding instanceof ExprSyntax && (binding.value1 instanceof Lit && binding.value1.value0 instanceof LitRecord)) {
-          var $853 = lookup5(level)(v.usages);
-          if ($853 instanceof Just) {
-            var $854 = $853.value0.total === ($853.value0.access + $853.value0.update | 0);
-            if ($854) {
-              var analysis = foldr7(function($2455) {
-                return append5(analysisOf2(propValue($2455)));
+          var $859 = lookup5(level)(v.usages);
+          if ($859 instanceof Just) {
+            var $860 = $859.value0.total === ($859.value0.access + $859.value0.update | 0);
+            if ($860) {
+              var analysis = foldr7(function($2514) {
+                return append5(analysisOf2(propValue($2514)));
               })(complex(NonTrivial.value)(bound(level)(v)))(binding.value1.value0.value0);
               return new Just(new ExprRewrite(withRewrite(analysis), new RewriteUnpackOp(ident, level, new UnpackRecord(binding.value1.value0.value0), body)));
             }
@@ -18880,12 +18883,12 @@ var shouldUnpackCtor = function(ident) {
           return Nothing.value;
         };
         if (a instanceof ExprSyntax && a.value1 instanceof CtorSaturated) {
-          var $862 = lookup5(level)(v.usages);
-          if ($862 instanceof Just) {
-            var $863 = $862.value0.total === ($862.value0.access + $862["value0"]["case"] | 0);
-            if ($863) {
-              var analysis = foldr7(function($2456) {
-                return append5(analysisOf2(snd($2456)));
+          var $868 = lookup5(level)(v.usages);
+          if ($868 instanceof Just) {
+            var $869 = $868.value0.total === ($868.value0.access + $868["value0"]["case"] | 0);
+            if ($869) {
+              var analysis = foldr7(function($2515) {
+                return append5(analysisOf2(snd($2515)));
               })(complex(NonTrivial.value)(bound(level)(v)))(a.value1.value4);
               return new Just(new ExprRewrite(withRewrite(analysis), new RewriteUnpackOp(ident, level, new UnpackData(a.value1.value0, a.value1.value1, a.value1.value2, a.value1.value3, a.value1.value4), body)));
             }
@@ -18910,12 +18913,12 @@ var shouldUnpackArray = function(ident) {
           return Nothing.value;
         };
         if (binding instanceof ExprSyntax && (binding.value1 instanceof Lit && binding.value1.value0 instanceof LitArray)) {
-          var $874 = lookup5(level)(v.usages);
-          if ($874 instanceof Just) {
-            var $875 = $874.value0.total === $874.value0.access;
-            if ($875) {
-              var analysis = foldr7(function($2457) {
-                return append5(analysisOf2($2457));
+          var $880 = lookup5(level)(v.usages);
+          if ($880 instanceof Just) {
+            var $881 = $880.value0.total === $880.value0.access;
+            if ($881) {
+              var analysis = foldr7(function($2516) {
+                return append5(analysisOf2($2516));
               })(complex(NonTrivial.value)(bound(level)(v)))(binding.value1.value0.value0);
               return new Just(new ExprRewrite(withRewrite(analysis), new RewriteUnpackOp(ident, level, new UnpackArray(binding.value1.value0.value0), body)));
             }
@@ -18931,35 +18934,11 @@ var shouldUnpackArray = function(ident) {
     };
   };
 };
-var shouldUncurryAbs = function(ident) {
-  return function(level) {
-    return function(a) {
-      return function(b) {
-        var v = analysisOf2(b);
-        var v1 = function(v2) {
-          return Nothing.value;
-        };
-        if (a instanceof ExprSyntax && a.value1 instanceof Abs) {
-          var $883 = lookup5(level)(v.usages);
-          if ($883 instanceof Just) {
-            var $884 = toUnfoldable5($883.value0.arities);
-            if ($884.length === 1) {
-              var $885 = $884[0] === length5(a.value1.value0);
-              if ($885) {
-                var analysis = withResult(resultOf2(b))(bump(complex(NonTrivial.value)(append5(analysisOf2(a))(bound(level)(analysisOf2(b))))));
-                return new Just(new ExprRewrite(withRewrite(analysis), new RewriteUncurry(ident, level, a.value1.value0, a.value1.value1, b)));
-              }
-              ;
-              return v1(true);
-            }
-            ;
-            return v1(true);
-          }
-          ;
-          return v1(true);
-        }
-        ;
-        return v1(true);
+var shouldUncurryAbs = function(v) {
+  return function(v1) {
+    return function(v2) {
+      return function(v3) {
+        return Nothing.value;
       };
     };
   };
@@ -19000,7 +18979,7 @@ var shouldInlineExternLiteral = function(v) {
     return $$null(v.value0);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1905, column 29 - line 1912, column 30): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1923, column 29 - line 1930, column 30): " + [v.constructor.name]);
 };
 var shouldInlineExternAppArg = function(v) {
   return function(v1) {
@@ -19046,12 +19025,12 @@ var shouldEtaReduce = function(level1) {
         return Nothing.value;
       };
       if (v instanceof ExprSyntax && (v.value1 instanceof Abs && (v.value1.value1 instanceof ExprSyntax && (v.value1.value1.value1 instanceof App2 && (v.value1.value1.value1.value0 instanceof ExprSyntax && v.value1.value1.value1.value0.value1 instanceof Local))))) {
-        var $924 = eq63(level1)(v.value1.value1.value1.value0.value1.value1);
-        if ($924) {
-          var $925 = length5(v.value1.value0) === length5(v.value1.value1.value1.value1);
-          if ($925) {
-            var $926 = and2(zipWith3(isSameArg)(v.value1.value0)(v.value1.value1.value1.value1));
-            if ($926) {
+        var $919 = eq63(level1)(v.value1.value1.value1.value0.value1.value1);
+        if ($919) {
+          var $920 = length5(v.value1.value0) === length5(v.value1.value1.value1.value1);
+          if ($920) {
+            var $921 = and2(zipWith3(isSameArg)(v.value1.value0)(v.value1.value1.value1.value1));
+            if ($921) {
               return new Just(binding);
             }
             ;
@@ -19078,14 +19057,14 @@ var shouldDistributeBranches = function(ident) {
           return Nothing.value;
         };
         if (v1 instanceof ExprSyntax && v1.value1 instanceof Branch) {
-          var $941 = v.size <= 128;
-          if ($941) {
-            var $942 = eq123(v1.value0.result)(KnownNeutral.value);
-            if ($942) {
-              var $943 = lookup5(level)(v.usages);
-              if ($943 instanceof Just) {
-                var $944 = $943.value0.total === ($943.value0.access + $943["value0"]["case"] | 0);
-                if ($944) {
+          var $936 = v.size <= 128;
+          if ($936) {
+            var $937 = eq123(v1.value0.result)(KnownNeutral.value);
+            if ($937) {
+              var $938 = lookup5(level)(v.usages);
+              if ($938 instanceof Just) {
+                var $939 = $938.value0.total === ($938.value0.access + $938["value0"]["case"] | 0);
+                if ($939) {
                   var analysis = append5(analysisOf2(a))(bound(level)(analysisOf2(body)));
                   return new Just(new ExprRewrite(withRewrite(analysis), new RewriteDistBranchesLet(ident, level, v1.value1.value0, v1.value1.value1, body)));
                 }
@@ -19111,14 +19090,14 @@ var shouldDistributeBranchUncurriedApps = function(analysis1) {
   return function(branches) {
     return function(def) {
       return function(spine) {
-        var $950 = all2(function($2458) {
+        var $945 = all2(function($2517) {
           return (function(v) {
             return lessThanOrEq2(v)(Deref.value);
           })((function(v) {
             return v.complexity;
-          })(unwrap4(analysisOf2($2458))));
+          })(unwrap4(analysisOf2($2517))));
         })(spine);
-        if ($950) {
+        if ($945) {
           var analysis = append5(analysis1)(foldMap8(analysisOf2)(spine));
           return new Just(new ExprRewrite(withRewrite(analysis), new RewriteDistBranchesOp(branches, def, new DistUncurriedApp(spine))));
         }
@@ -19133,8 +19112,8 @@ var shouldDistributeBranchPrimOp2R = function(analysis1) {
     return function(def) {
       return function(lhs) {
         return function(op2) {
-          var $951 = lessThanOrEq2(unwrap4(analysisOf2(lhs)).complexity)(Deref.value);
-          if ($951) {
+          var $946 = lessThanOrEq2(unwrap4(analysisOf2(lhs)).complexity)(Deref.value);
+          if ($946) {
             var analysis = bump(append5(analysis1)(analysisOf2(lhs)));
             return new Just(new ExprRewrite(withRewrite(analysis), new RewriteDistBranchesOp(branches, def, new DistPrimOp2R(lhs, op2))));
           }
@@ -19150,8 +19129,8 @@ var shouldDistributeBranchPrimOp2L = function(analysis1) {
     return function(def) {
       return function(op2) {
         return function(rhs) {
-          var $952 = lessThanOrEq2(unwrap4(analysisOf2(rhs)).complexity)(Deref.value);
-          if ($952) {
+          var $947 = lessThanOrEq2(unwrap4(analysisOf2(rhs)).complexity)(Deref.value);
+          if ($947) {
             var analysis = bump(append5(analysis1)(analysisOf2(rhs)));
             return new Just(new ExprRewrite(withRewrite(analysis), new RewriteDistBranchesOp(branches, def, new DistPrimOp2L(op2, rhs))));
           }
@@ -19176,14 +19155,14 @@ var shouldDistributeBranchApps = function(analysis1) {
   return function(branches) {
     return function(def) {
       return function(spine) {
-        var $953 = all5(function($2459) {
+        var $948 = all5(function($2518) {
           return (function(v) {
             return lessThanOrEq2(v)(Deref.value);
           })((function(v) {
             return v.complexity;
-          })(unwrap4(analysisOf2($2459))));
+          })(unwrap4(analysisOf2($2518))));
         })(spine);
-        if ($953) {
+        if ($948) {
           var analysis = append5(analysis1)(foldMap16(analysisOf2)(spine));
           return new Just(new ExprRewrite(withRewrite(analysis), new RewriteDistBranchesOp(branches, def, new DistApp(spine))));
         }
@@ -19218,7 +19197,7 @@ var rewriteInline = function(ident) {
             return s2;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1666, column 19 - line 1671, column 11): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1699, column 19 - line 1704, column 11): " + [v.constructor.name]);
         })();
         return new ExprRewrite(withRewrite(bound(level)(powAnalysis)), new RewriteInline(ident, level, binding, body));
       };
@@ -19259,7 +19238,7 @@ var purely = function(v) {
     return v;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1386, column 1 - line 1386, column 21): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1419, column 1 - line 1419, column 21): " + [v.constructor.name]);
 };
 var primOpOrdNot = function(v) {
   if (v instanceof OpEq) {
@@ -19286,7 +19265,7 @@ var primOpOrdNot = function(v) {
     return OpLt.value;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1031, column 16 - line 1037, column 16): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1036, column 16 - line 1042, column 16): " + [v.constructor.name]);
 };
 var nextLevel = function(v) {
   return new Tuple(v.currentLevel, {
@@ -19329,8 +19308,8 @@ var lookupLocal = function(v) {
     return lookup1(v1)(v.locals);
   };
 };
-var liftString = function($2460) {
-  return NeutLit.create(LitString.create($2460));
+var liftString = function($2519) {
+  return NeutLit.create(LitString.create($2519));
 };
 var liftOp2 = function(op) {
   return function(a) {
@@ -19344,14 +19323,14 @@ var liftOp1 = function(op) {
     return new NeutPrimOp(new Op1(op, a));
   };
 };
-var liftNumber = function($2461) {
-  return NeutLit.create(LitNumber.create($2461));
+var liftNumber = function($2520) {
+  return NeutLit.create(LitNumber.create($2520));
 };
-var liftInt = function($2462) {
-  return NeutLit.create(LitInt.create($2462));
+var liftInt = function($2521) {
+  return NeutLit.create(LitInt.create($2521));
 };
-var liftBoolean = function($2463) {
-  return NeutLit.create(LitBoolean.create($2463));
+var liftBoolean = function($2522) {
+  return NeutLit.create(LitBoolean.create($2522));
 };
 var isSimplePredicate = function(e) {
   var v = untypedExpr(e);
@@ -19411,7 +19390,7 @@ var isNotTypeApp = function(v) {
   ;
   return true;
 };
-var isKnownEffect = function($2464) {
+var isKnownEffect = function($2523) {
   return (function(v) {
     if (v instanceof Just && v.value0 instanceof PrimEffect) {
       return true;
@@ -19430,7 +19409,7 @@ var isKnownEffect = function($2464) {
     }
     ;
     return false;
-  })(syntaxOf2($2464));
+  })(syntaxOf2($2523));
 };
 var isAssocPrimOp = function(v) {
   if (v instanceof OpIntNum && v.value0 instanceof OpAdd) {
@@ -19455,7 +19434,7 @@ var isAssocPrimOp = function(v) {
   ;
   return false;
 };
-var isAbs = function($2465) {
+var isAbs = function($2524) {
   return (function(v) {
     if (v instanceof Just && v.value0 instanceof Abs) {
       return true;
@@ -19474,7 +19453,7 @@ var isAbs = function($2465) {
     }
     ;
     return false;
-  })(syntaxOf2($2465));
+  })(syntaxOf2($2524));
 };
 var shouldInlineLet = function(level) {
   return function(a) {
@@ -19490,7 +19469,7 @@ var shouldInlineLet = function(level) {
         return eq133(v.complexity)(Trivial.value) || (eq142(v2.value0.captured)(CaptureNone.value) && v2.value0.total === 1 || (lessThanOrEq22(v2.value0.captured)(CaptureBranch.value) && (lessThanOrEq2(v.complexity)(Deref.value) && v.size < 5) || (eq133(v.complexity)(Deref.value) && v2.value0.call === v2.value0.total || (eq133(v.complexity)(KnownSize.value) && v2.value0.total === 1 || (isAbs(a) && (v2.value0.total === 1 || (isEmpty(v.usages) || v.size < 16)) || isKnownEffect(a) && v2.value0.total === 1)))));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1839, column 3 - line 1849, column 43): " + [v2.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1857, column 3 - line 1867, column 43): " + [v2.constructor.name]);
     };
   };
 };
@@ -19523,8 +19502,8 @@ var guardFailOver = function(dictFoldable) {
           ;
           return Nothing.value;
         };
-        var v = findMap4(function($2466) {
-          return toFail(f($2466));
+        var v = findMap4(function($2525) {
+          return toFail(f($2525));
         })(as);
         if (v instanceof Just) {
           return v.value0;
@@ -19534,7 +19513,7 @@ var guardFailOver = function(dictFoldable) {
           return k(as);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2144, column 3 - line 2146, column 20): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2162, column 3 - line 2164, column 20): " + [v.constructor.name]);
       };
     };
   };
@@ -19589,7 +19568,7 @@ var foldBackendExpr = function(foldSyntax) {
               return foldSyntax(new Let(v.value1.value0, v.value1.value1, foldSyntax(new CtorSaturated(v.value1.value2.value0, v.value1.value2.value1, v.value1.value2.value2, v.value1.value2.value3, map43(map63(go))(v.value1.value2.value4))), go(v.value1.value3)));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2074, column 11 - line 2082, column 117): " + [v.value1.value2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2092, column 11 - line 2100, column 117): " + [v.value1.value2.constructor.name]);
           }
           ;
           if (v.value1 instanceof RewriteDistBranchesLet) {
@@ -19622,14 +19601,14 @@ var foldBackendExpr = function(foldSyntax) {
               return foldSyntax(new PrimOp(new Op2(v.value1.value2.value1, go(v.value1.value2.value0), branches$prime)));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2087, column 11 - line 2099, column 63): " + [v.value1.value2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2105, column 11 - line 2117, column 63): " + [v.value1.value2.constructor.name]);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2066, column 7 - line 2099, column 63): " + [v.value1.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2084, column 7 - line 2117, column 63): " + [v.value1.constructor.name]);
         })());
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2062, column 8 - line 2099, column 63): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2080, column 8 - line 2117, column 63): " + [v.constructor.name]);
     };
     return go;
   };
@@ -19653,7 +19632,7 @@ var $lazy_floatLetWith = /* @__PURE__ */ $runtime_lazy6("floatLetWith", "PureScr
           var $tco_result;
           function $tco_loop(f, ident1, binding1, k1) {
             if (binding1 instanceof SemLet) {
-              $tco_var_f = $lazy_makeLet(778);
+              $tco_var_f = $lazy_makeLet(783);
               $tco_var_ident1 = binding1.value0;
               $tco_var_binding1 = binding1.value1;
               $copy_k1 = function(nextBinding2) {
@@ -19665,7 +19644,7 @@ var $lazy_floatLetWith = /* @__PURE__ */ $runtime_lazy6("floatLetWith", "PureScr
             if (binding1 instanceof SemLetRec) {
               $tco_done = true;
               return new SemLetRec(binding1.value0, function(nextBindings) {
-                return $lazy_makeLet(782)(ident1)(binding1.value1(nextBindings))(k1);
+                return $lazy_makeLet(787)(ident1)(binding1.value1(nextBindings))(k1);
               });
             }
             ;
@@ -19721,10 +19700,10 @@ var $lazy_makeLet = /* @__PURE__ */ $runtime_lazy6("makeLet", "PureScript.Backen
       };
     };
   };
-  return $lazy_floatLetWith(746)(go);
+  return $lazy_floatLetWith(751)(go);
 });
-var floatLetWith = /* @__PURE__ */ $lazy_floatLetWith(768);
-var makeLet = /* @__PURE__ */ $lazy_makeLet(745);
+var floatLetWith = /* @__PURE__ */ $lazy_floatLetWith(773);
+var makeLet = /* @__PURE__ */ $lazy_makeLet(750);
 var floatLet = /* @__PURE__ */ (function() {
   return floatLetWith($$const(applyFlipped))(Nothing.value);
 })();
@@ -19740,7 +19719,7 @@ var $lazy_makeEffectBind = /* @__PURE__ */ $runtime_lazy6("makeEffectBind", "Pur
           if (binding1 instanceof SemLet) {
             $tco_done = true;
             return makeLet(binding1.value0)(binding1.value1)(function(nextBinding2) {
-              return $lazy_makeEffectBind(733)(ident1)(binding1.value2(nextBinding2))(k1);
+              return $lazy_makeEffectBind(738)(ident1)(binding1.value2(nextBinding2))(k1);
             });
           }
           ;
@@ -19748,7 +19727,7 @@ var $lazy_makeEffectBind = /* @__PURE__ */ $runtime_lazy6("makeEffectBind", "Pur
             $tco_var_ident1 = binding1.value0;
             $tco_var_binding1 = binding1.value1;
             $copy_k1 = function(nextBinding2) {
-              return $lazy_makeEffectBind(736)(ident1)(binding1.value2(nextBinding2))(k1);
+              return $lazy_makeEffectBind(741)(ident1)(binding1.value2(nextBinding2))(k1);
             };
             return;
           }
@@ -19756,7 +19735,7 @@ var $lazy_makeEffectBind = /* @__PURE__ */ $runtime_lazy6("makeEffectBind", "Pur
           if (binding1 instanceof SemEffectDefer) {
             $tco_done = true;
             return new SemEffectDefer(floatLet(binding1.value0)(function(nextBinding2) {
-              return $lazy_makeEffectBind(739)(ident1)(nextBinding2)(k1);
+              return $lazy_makeEffectBind(744)(ident1)(nextBinding2)(k1);
             }));
           }
           ;
@@ -19776,7 +19755,7 @@ var $lazy_makeEffectBind = /* @__PURE__ */ $runtime_lazy6("makeEffectBind", "Pur
   };
   return go;
 });
-var makeEffectBind = /* @__PURE__ */ $lazy_makeEffectBind(727);
+var makeEffectBind = /* @__PURE__ */ $lazy_makeEffectBind(732);
 var evalUpdate = function(lhs) {
   return function(props) {
     return floatLet(lhs)(function(v) {
@@ -19824,7 +19803,7 @@ var evalUncurriedBeta = function(fn) {
           }
           ;
           if (v instanceof MkFnApplied) {
-            return fn(v.value0)(toUnfoldable12(v1));
+            return fn(v.value0)(toUnfoldable5(v1));
           }
           ;
           throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 594, column 8 - line 605, column 36): " + [v.constructor.name, v1.constructor.name]);
@@ -19861,7 +19840,7 @@ var evalPrimOpOrdNumber = function(op) {
         return x <= y;
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 958, column 30 - line 964, column 18): " + [op.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 963, column 30 - line 969, column 18): " + [op.constructor.name]);
     };
   };
 };
@@ -19900,7 +19879,7 @@ var evalPrimOpOrd = function(dictOrd) {
           return lessThanOrEq4(x)(y);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 946, column 24 - line 952, column 18): " + [op.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 951, column 24 - line 957, column 18): " + [op.constructor.name]);
       };
     };
   };
@@ -19942,7 +19921,7 @@ var evalPrimOpNot = function(v) {
     return liftOp1(OpBooleanNot.value)(liftOp2(v.value0)(v.value1)(v.value2));
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1007, column 17 - line 1027, column 46): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1012, column 17 - line 1032, column 46): " + [v.constructor.name]);
 };
 var evalEvalRef = function(v) {
   if (v instanceof EvalExtern) {
@@ -19953,7 +19932,7 @@ var evalEvalRef = function(v) {
     return new NeutLocal(v.value0, v.value1);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1123, column 15 - line 1127, column 24): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1128, column 15 - line 1132, column 24): " + [v.constructor.name]);
 };
 var $$eval = function(dict) {
   return dict["eval"];
@@ -19984,7 +19963,7 @@ var effectfully = function(v) {
     };
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1380, column 1 - line 1380, column 26): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1413, column 1 - line 1413, column 26): " + [v.constructor.name]);
 };
 var deref = function($copy_v) {
   var $tco_done = false;
@@ -20068,10 +20047,10 @@ var evalBranches = function(v) {
                   return force(def);
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 702, column 7 - line 706, column 20): " + [v2.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 707, column 7 - line 711, column 20): " + [v2.constructor.name]);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 690, column 22 - line 706, column 20): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 695, column 22 - line 711, column 20): " + [v1.constructor.name]);
             }
             ;
             while (!$tco_done) {
@@ -20094,16 +20073,16 @@ var evalPrimOpNumInt = function(op) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 981, column 1 - line 981, column 105): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 986, column 1 - line 986, column 105): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
       };
-      var $1213 = deref(x);
-      if ($1213 instanceof NeutLit && $1213.value0 instanceof LitInt) {
-        var $1214 = deref(y);
-        if ($1214 instanceof NeutLit && $1214.value0 instanceof LitInt) {
+      var $1208 = deref(x);
+      if ($1208 instanceof NeutLit && $1208.value0 instanceof LitInt) {
+        var $1209 = deref(y);
+        if ($1209 instanceof NeutLit && $1209.value0 instanceof LitInt) {
           if (op instanceof OpAdd) {
-            var res = $1213.value0.value0 + $1214.value0.value0 | 0;
-            var $1216 = $1214.value0.value0 > 0 && res < $1213.value0.value0 || $1214.value0.value0 < 0 && res > $1213.value0.value0;
-            if ($1216) {
+            var res = $1208.value0.value0 + $1209.value0.value0 | 0;
+            var $1211 = $1209.value0.value0 > 0 && res < $1208.value0.value0 || $1209.value0.value0 < 0 && res > $1208.value0.value0;
+            if ($1211) {
               return Nothing.value;
             }
             ;
@@ -20111,9 +20090,9 @@ var evalPrimOpNumInt = function(op) {
           }
           ;
           if (op instanceof OpMultiply) {
-            var res = $1213.value0.value0 * $1214.value0.value0 | 0;
-            var $1217 = $1213.value0.value0 !== div4(res)($1214.value0.value0);
-            if ($1217) {
+            var res = $1208.value0.value0 * $1209.value0.value0 | 0;
+            var $1212 = $1208.value0.value0 !== div4(res)($1209.value0.value0);
+            if ($1212) {
               return Nothing.value;
             }
             ;
@@ -20121,9 +20100,9 @@ var evalPrimOpNumInt = function(op) {
           }
           ;
           if (op instanceof OpSubtract) {
-            var res = $1213.value0.value0 - $1214.value0.value0 | 0;
-            var $1218 = $1214.value0.value0 > 0 && res > $1213.value0.value0 || $1214.value0.value0 < 0 && res < $1213.value0.value0;
-            if ($1218) {
+            var res = $1208.value0.value0 - $1209.value0.value0 | 0;
+            var $1213 = $1209.value0.value0 > 0 && res > $1208.value0.value0 || $1209.value0.value0 < 0 && res < $1208.value0.value0;
+            if ($1213) {
               return Nothing.value;
             }
             ;
@@ -20131,14 +20110,14 @@ var evalPrimOpNumInt = function(op) {
           }
           ;
           if (op instanceof OpDivide) {
-            return new Just(liftInt(div4($1213.value0.value0)($1214.value0.value0)));
+            return new Just(liftInt(div4($1208.value0.value0)($1209.value0.value0)));
           }
           ;
           if (op instanceof OpMod) {
-            return new Just(liftInt(mod4($1213.value0.value0)($1214.value0.value0)));
+            return new Just(liftInt(mod4($1208.value0.value0)($1209.value0.value0)));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 985, column 7 - line 1001, column 37): " + [op.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 990, column 7 - line 1006, column 37): " + [op.constructor.name]);
         }
         ;
         return v(true);
@@ -20156,34 +20135,34 @@ var evalPrimOpNumNumber = function(op) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 967, column 1 - line 967, column 108): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 972, column 1 - line 972, column 108): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
       };
-      var $1229 = deref(x);
-      if ($1229 instanceof NeutLit && $1229.value0 instanceof LitNumber) {
-        var $1230 = deref(y);
-        if ($1230 instanceof NeutLit && $1230.value0 instanceof LitNumber) {
+      var $1224 = deref(x);
+      if ($1224 instanceof NeutLit && $1224.value0 instanceof LitNumber) {
+        var $1225 = deref(y);
+        if ($1225 instanceof NeutLit && $1225.value0 instanceof LitNumber) {
           return new Just(liftNumber((function() {
             if (op instanceof OpAdd) {
-              return $1229.value0.value0 + $1230.value0.value0;
+              return $1224.value0.value0 + $1225.value0.value0;
             }
             ;
             if (op instanceof OpMultiply) {
-              return $1229.value0.value0 * $1230.value0.value0;
+              return $1224.value0.value0 * $1225.value0.value0;
             }
             ;
             if (op instanceof OpSubtract) {
-              return $1229.value0.value0 - $1230.value0.value0;
+              return $1224.value0.value0 - $1225.value0.value0;
             }
             ;
             if (op instanceof OpDivide) {
-              return $1229.value0.value0 / $1230.value0.value0;
+              return $1224.value0.value0 / $1225.value0.value0;
             }
             ;
             if (op instanceof OpMod) {
               return 0;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 971, column 25 - line 976, column 21): " + [op.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 976, column 25 - line 981, column 21): " + [op.constructor.name]);
           })()));
         }
         ;
@@ -20219,7 +20198,7 @@ var evalRefSpine = function(env) {
             return new SemTypeApp(v.value0, force(sem));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1109, column 34 - line 1119, column 30): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1114, column 34 - line 1124, column 30): " + [v.constructor.name]);
         };
       };
     };
@@ -20237,9 +20216,9 @@ var evalRef = function(v) {
             }));
           };
           if (ref instanceof EvalExtern) {
-            var $1248 = v.evalExternSpine(v)(ref.value0)(spine$prime);
-            if ($1248 instanceof Just) {
-              return $1248.value0;
+            var $1243 = v.evalExternSpine(v)(ref.value0)(spine$prime);
+            if ($1243 instanceof Just) {
+              return $1243.value0;
             }
             ;
             return v1(true);
@@ -20272,16 +20251,16 @@ var evalPrimOp = function(env) {
                     }
                     ;
                     return floatLet(v.value1)((function() {
-                      var $2467 = Op1.create(v.value0);
-                      return function($2468) {
-                        return NeutPrimOp.create($2467($2468));
+                      var $2526 = Op1.create(v.value0);
+                      return function($2527) {
+                        return NeutPrimOp.create($2526($2527));
                       };
                     })());
                   };
                   if (v.value0 instanceof OpNumberNegate) {
-                    var $1260 = deref(v.value1);
-                    if ($1260 instanceof NeutLit && $1260.value0 instanceof LitNumber) {
-                      return liftNumber(-$1260.value0.value0);
+                    var $1255 = deref(v.value1);
+                    if ($1255 instanceof NeutLit && $1255.value0 instanceof LitNumber) {
+                      return liftNumber(-$1255.value0.value0);
                     }
                     ;
                     return v13(true);
@@ -20290,9 +20269,9 @@ var evalPrimOp = function(env) {
                   return v13(true);
                 };
                 if (v.value0 instanceof OpIntNegate) {
-                  var $1265 = deref(v.value1);
-                  if ($1265 instanceof NeutLit && $1265.value0 instanceof LitInt) {
-                    return liftInt(-$1265.value0.value0 | 0);
+                  var $1260 = deref(v.value1);
+                  if ($1260 instanceof NeutLit && $1260.value0 instanceof LitInt) {
+                    return liftInt(-$1260.value0.value0 | 0);
                   }
                   ;
                   return v11(true);
@@ -20301,9 +20280,9 @@ var evalPrimOp = function(env) {
                 return v11(true);
               };
               if (v.value0 instanceof OpArrayLength) {
-                var $1270 = deref(v.value1);
-                if ($1270 instanceof NeutLit && $1270.value0 instanceof LitArray) {
-                  return liftInt(length($1270.value0.value0));
+                var $1265 = deref(v.value1);
+                if ($1265 instanceof NeutLit && $1265.value0 instanceof LitArray) {
+                  return liftInt(length($1265.value0.value0));
                 }
                 ;
                 return v9(true);
@@ -20312,9 +20291,9 @@ var evalPrimOp = function(env) {
               return v9(true);
             };
             if (v.value0 instanceof OpIsTag) {
-              var $1275 = deref(v.value1);
-              if ($1275 instanceof NeutData) {
-                return liftBoolean(eq17(v.value0.value0)($1275.value0));
+              var $1270 = deref(v.value1);
+              if ($1270 instanceof NeutData) {
+                return liftBoolean(eq17(v.value0.value0)($1270.value0));
               }
               ;
               return v7(true);
@@ -20323,9 +20302,9 @@ var evalPrimOp = function(env) {
             return v7(true);
           };
           if (v.value0 instanceof OpIntBitNot) {
-            var $1284 = deref(v.value1);
-            if ($1284 instanceof NeutLit && $1284.value0 instanceof LitInt) {
-              return liftInt(~$1284.value0.value0);
+            var $1279 = deref(v.value1);
+            if ($1279 instanceof NeutLit && $1279.value0 instanceof LitInt) {
+              return liftInt(~$1279.value0.value0);
             }
             ;
             return v5(true);
@@ -20344,9 +20323,9 @@ var evalPrimOp = function(env) {
         return v3(true);
       };
       if (v.value0 instanceof OpBooleanNot) {
-        var $1293 = deref(v.value1);
-        if ($1293 instanceof NeutLit && $1293.value0 instanceof LitBoolean) {
-          return liftBoolean(!$1293.value0.value0);
+        var $1288 = deref(v.value1);
+        if ($1288 instanceof NeutLit && $1288.value0 instanceof LitBoolean) {
+          return liftBoolean(!$1288.value0.value0);
         }
         ;
         return v1(true);
@@ -20417,8 +20396,8 @@ var evalPrimOp = function(env) {
                                                             ;
                                                             return floatLet(v.value1)(function(x$prime) {
                                                               return floatLet(v.value2)(function(y$prime) {
-                                                                var $1311 = isAssocPrimOp(v.value0);
-                                                                if ($1311) {
+                                                                var $1306 = isAssocPrimOp(v.value0);
+                                                                if ($1306) {
                                                                   return evalAssocOp(env)(new Right(v.value0))(x$prime)(y$prime);
                                                                 }
                                                                 ;
@@ -20451,11 +20430,11 @@ var evalPrimOp = function(env) {
                                                         return v51(true);
                                                       };
                                                       if (v.value0 instanceof OpStringOrd) {
-                                                        var $1324 = deref(v.value1);
-                                                        if ($1324 instanceof NeutLit && $1324.value0 instanceof LitString) {
-                                                          var $1325 = deref(v.value2);
-                                                          if ($1325 instanceof NeutLit && $1325.value0 instanceof LitString) {
-                                                            return liftBoolean(evalPrimOpOrd1(v.value0.value0)($1324.value0.value0)($1325.value0.value0));
+                                                        var $1319 = deref(v.value1);
+                                                        if ($1319 instanceof NeutLit && $1319.value0 instanceof LitString) {
+                                                          var $1320 = deref(v.value2);
+                                                          if ($1320 instanceof NeutLit && $1320.value0 instanceof LitString) {
+                                                            return liftBoolean(evalPrimOpOrd1(v.value0.value0)($1319.value0.value0)($1320.value0.value0));
                                                           }
                                                           ;
                                                           return v49(true);
@@ -20467,11 +20446,11 @@ var evalPrimOp = function(env) {
                                                       return v49(true);
                                                     };
                                                     if (v.value0 instanceof OpNumberOrd) {
-                                                      var $1332 = deref(v.value1);
-                                                      if ($1332 instanceof NeutLit && $1332.value0 instanceof LitNumber) {
-                                                        var $1333 = deref(v.value2);
-                                                        if ($1333 instanceof NeutLit && $1333.value0 instanceof LitNumber) {
-                                                          return liftBoolean(evalPrimOpOrdNumber(v.value0.value0)($1332.value0.value0)($1333.value0.value0));
+                                                      var $1327 = deref(v.value1);
+                                                      if ($1327 instanceof NeutLit && $1327.value0 instanceof LitNumber) {
+                                                        var $1328 = deref(v.value2);
+                                                        if ($1328 instanceof NeutLit && $1328.value0 instanceof LitNumber) {
+                                                          return liftBoolean(evalPrimOpOrdNumber(v.value0.value0)($1327.value0.value0)($1328.value0.value0));
                                                         }
                                                         ;
                                                         return v47(true);
@@ -20483,9 +20462,9 @@ var evalPrimOp = function(env) {
                                                     return v47(true);
                                                   };
                                                   if (v.value0 instanceof OpNumberNum) {
-                                                    var $1340 = evalPrimOpNumNumber(v.value0.value0)(v.value1)(v.value2);
-                                                    if ($1340 instanceof Just) {
-                                                      return $1340.value0;
+                                                    var $1335 = evalPrimOpNumNumber(v.value0.value0)(v.value1)(v.value2);
+                                                    if ($1335 instanceof Just) {
+                                                      return $1335.value0;
                                                     }
                                                     ;
                                                     return v45(true);
@@ -20494,8 +20473,8 @@ var evalPrimOp = function(env) {
                                                   return v45(true);
                                                 };
                                                 if (v.value0 instanceof OpNumberNum && v.value0.value0 instanceof OpSubtract) {
-                                                  var $1344 = deref(v.value1);
-                                                  if ($1344 instanceof NeutLit && ($1344.value0 instanceof LitNumber && $1344.value0.value0 === 0)) {
+                                                  var $1339 = deref(v.value1);
+                                                  if ($1339 instanceof NeutLit && ($1339.value0 instanceof LitNumber && $1339.value0.value0 === 0)) {
                                                     return evalPrimOp(env)(new Op1(OpNumberNegate.value, v.value2));
                                                   }
                                                   ;
@@ -20505,11 +20484,11 @@ var evalPrimOp = function(env) {
                                                 return v43(true);
                                               };
                                               if (v.value0 instanceof OpIntOrd) {
-                                                var $1349 = deref(v.value1);
-                                                if ($1349 instanceof NeutLit && $1349.value0 instanceof LitInt) {
-                                                  var $1350 = deref(v.value2);
-                                                  if ($1350 instanceof NeutLit && $1350.value0 instanceof LitInt) {
-                                                    return liftBoolean(evalPrimOpOrd2(v.value0.value0)($1349.value0.value0)($1350.value0.value0));
+                                                var $1344 = deref(v.value1);
+                                                if ($1344 instanceof NeutLit && $1344.value0 instanceof LitInt) {
+                                                  var $1345 = deref(v.value2);
+                                                  if ($1345 instanceof NeutLit && $1345.value0 instanceof LitInt) {
+                                                    return liftBoolean(evalPrimOpOrd2(v.value0.value0)($1344.value0.value0)($1345.value0.value0));
                                                   }
                                                   ;
                                                   return v41(true);
@@ -20521,9 +20500,9 @@ var evalPrimOp = function(env) {
                                               return v41(true);
                                             };
                                             if (v.value0 instanceof OpIntNum) {
-                                              var $1357 = evalPrimOpNumInt(v.value0.value0)(v.value1)(v.value2);
-                                              if ($1357 instanceof Just) {
-                                                return $1357.value0;
+                                              var $1352 = evalPrimOpNumInt(v.value0.value0)(v.value1)(v.value2);
+                                              if ($1352 instanceof Just) {
+                                                return $1352.value0;
                                               }
                                               ;
                                               return v39(true);
@@ -20532,8 +20511,8 @@ var evalPrimOp = function(env) {
                                             return v39(true);
                                           };
                                           if (v.value0 instanceof OpIntNum && v.value0.value0 instanceof OpSubtract) {
-                                            var $1361 = deref(v.value1);
-                                            if ($1361 instanceof NeutLit && ($1361.value0 instanceof LitInt && $1361.value0.value0 === 0)) {
+                                            var $1356 = deref(v.value1);
+                                            if ($1356 instanceof NeutLit && ($1356.value0 instanceof LitInt && $1356.value0.value0 === 0)) {
                                               return evalPrimOp(env)(new Op1(OpIntNegate.value, v.value2));
                                             }
                                             ;
@@ -20543,11 +20522,11 @@ var evalPrimOp = function(env) {
                                           return v37(true);
                                         };
                                         if (v.value0 instanceof OpIntBitZeroFillShiftRight) {
-                                          var $1366 = deref(v.value1);
-                                          if ($1366 instanceof NeutLit && $1366.value0 instanceof LitInt) {
-                                            var $1367 = deref(v.value2);
-                                            if ($1367 instanceof NeutLit && $1367.value0 instanceof LitInt) {
-                                              return liftInt($1366.value0.value0 >>> $1367.value0.value0);
+                                          var $1361 = deref(v.value1);
+                                          if ($1361 instanceof NeutLit && $1361.value0 instanceof LitInt) {
+                                            var $1362 = deref(v.value2);
+                                            if ($1362 instanceof NeutLit && $1362.value0 instanceof LitInt) {
+                                              return liftInt($1361.value0.value0 >>> $1362.value0.value0);
                                             }
                                             ;
                                             return v35(true);
@@ -20559,11 +20538,11 @@ var evalPrimOp = function(env) {
                                         return v35(true);
                                       };
                                       if (v.value0 instanceof OpIntBitXor) {
-                                        var $1373 = deref(v.value1);
-                                        if ($1373 instanceof NeutLit && $1373.value0 instanceof LitInt) {
-                                          var $1374 = deref(v.value2);
-                                          if ($1374 instanceof NeutLit && $1374.value0 instanceof LitInt) {
-                                            return liftInt($1373.value0.value0 ^ $1374.value0.value0);
+                                        var $1368 = deref(v.value1);
+                                        if ($1368 instanceof NeutLit && $1368.value0 instanceof LitInt) {
+                                          var $1369 = deref(v.value2);
+                                          if ($1369 instanceof NeutLit && $1369.value0 instanceof LitInt) {
+                                            return liftInt($1368.value0.value0 ^ $1369.value0.value0);
                                           }
                                           ;
                                           return v33(true);
@@ -20575,11 +20554,11 @@ var evalPrimOp = function(env) {
                                       return v33(true);
                                     };
                                     if (v.value0 instanceof OpIntBitShiftRight) {
-                                      var $1380 = deref(v.value1);
-                                      if ($1380 instanceof NeutLit && $1380.value0 instanceof LitInt) {
-                                        var $1381 = deref(v.value2);
-                                        if ($1381 instanceof NeutLit && $1381.value0 instanceof LitInt) {
-                                          return liftInt($1380.value0.value0 >> $1381.value0.value0);
+                                      var $1375 = deref(v.value1);
+                                      if ($1375 instanceof NeutLit && $1375.value0 instanceof LitInt) {
+                                        var $1376 = deref(v.value2);
+                                        if ($1376 instanceof NeutLit && $1376.value0 instanceof LitInt) {
+                                          return liftInt($1375.value0.value0 >> $1376.value0.value0);
                                         }
                                         ;
                                         return v31(true);
@@ -20591,11 +20570,11 @@ var evalPrimOp = function(env) {
                                     return v31(true);
                                   };
                                   if (v.value0 instanceof OpIntBitShiftLeft) {
-                                    var $1387 = deref(v.value1);
-                                    if ($1387 instanceof NeutLit && $1387.value0 instanceof LitInt) {
-                                      var $1388 = deref(v.value2);
-                                      if ($1388 instanceof NeutLit && $1388.value0 instanceof LitInt) {
-                                        return liftInt($1387.value0.value0 << $1388.value0.value0);
+                                    var $1382 = deref(v.value1);
+                                    if ($1382 instanceof NeutLit && $1382.value0 instanceof LitInt) {
+                                      var $1383 = deref(v.value2);
+                                      if ($1383 instanceof NeutLit && $1383.value0 instanceof LitInt) {
+                                        return liftInt($1382.value0.value0 << $1383.value0.value0);
                                       }
                                       ;
                                       return v29(true);
@@ -20607,11 +20586,11 @@ var evalPrimOp = function(env) {
                                   return v29(true);
                                 };
                                 if (v.value0 instanceof OpIntBitOr) {
-                                  var $1394 = deref(v.value1);
-                                  if ($1394 instanceof NeutLit && $1394.value0 instanceof LitInt) {
-                                    var $1395 = deref(v.value2);
-                                    if ($1395 instanceof NeutLit && $1395.value0 instanceof LitInt) {
-                                      return liftInt($1394.value0.value0 | $1395.value0.value0);
+                                  var $1389 = deref(v.value1);
+                                  if ($1389 instanceof NeutLit && $1389.value0 instanceof LitInt) {
+                                    var $1390 = deref(v.value2);
+                                    if ($1390 instanceof NeutLit && $1390.value0 instanceof LitInt) {
+                                      return liftInt($1389.value0.value0 | $1390.value0.value0);
                                     }
                                     ;
                                     return v27(true);
@@ -20623,11 +20602,11 @@ var evalPrimOp = function(env) {
                                 return v27(true);
                               };
                               if (v.value0 instanceof OpIntBitAnd) {
-                                var $1401 = deref(v.value1);
-                                if ($1401 instanceof NeutLit && $1401.value0 instanceof LitInt) {
-                                  var $1402 = deref(v.value2);
-                                  if ($1402 instanceof NeutLit && $1402.value0 instanceof LitInt) {
-                                    return liftInt($1401.value0.value0 & $1402.value0.value0);
+                                var $1396 = deref(v.value1);
+                                if ($1396 instanceof NeutLit && $1396.value0 instanceof LitInt) {
+                                  var $1397 = deref(v.value2);
+                                  if ($1397 instanceof NeutLit && $1397.value0 instanceof LitInt) {
+                                    return liftInt($1396.value0.value0 & $1397.value0.value0);
                                   }
                                   ;
                                   return v25(true);
@@ -20639,11 +20618,11 @@ var evalPrimOp = function(env) {
                               return v25(true);
                             };
                             if (v.value0 instanceof OpCharOrd) {
-                              var $1408 = deref(v.value1);
-                              if ($1408 instanceof NeutLit && $1408.value0 instanceof LitChar) {
-                                var $1409 = deref(v.value2);
-                                if ($1409 instanceof NeutLit && $1409.value0 instanceof LitChar) {
-                                  return liftBoolean(evalPrimOpOrd3(v.value0.value0)($1408.value0.value0)($1409.value0.value0));
+                              var $1403 = deref(v.value1);
+                              if ($1403 instanceof NeutLit && $1403.value0 instanceof LitChar) {
+                                var $1404 = deref(v.value2);
+                                if ($1404 instanceof NeutLit && $1404.value0 instanceof LitChar) {
+                                  return liftBoolean(evalPrimOpOrd3(v.value0.value0)($1403.value0.value0)($1404.value0.value0));
                                 }
                                 ;
                                 return v23(true);
@@ -20655,11 +20634,11 @@ var evalPrimOp = function(env) {
                             return v23(true);
                           };
                           if (v.value0 instanceof OpBooleanOrd) {
-                            var $1416 = deref(v.value1);
-                            if ($1416 instanceof NeutLit && $1416.value0 instanceof LitBoolean) {
-                              var $1417 = deref(v.value2);
-                              if ($1417 instanceof NeutLit && $1417.value0 instanceof LitBoolean) {
-                                return liftBoolean(evalPrimOpOrd4(v.value0.value0)($1416.value0.value0)($1417.value0.value0));
+                            var $1411 = deref(v.value1);
+                            if ($1411 instanceof NeutLit && $1411.value0 instanceof LitBoolean) {
+                              var $1412 = deref(v.value2);
+                              if ($1412 instanceof NeutLit && $1412.value0 instanceof LitBoolean) {
+                                return liftBoolean(evalPrimOpOrd4(v.value0.value0)($1411.value0.value0)($1412.value0.value0));
                               }
                               ;
                               return v21(true);
@@ -20671,9 +20650,9 @@ var evalPrimOp = function(env) {
                           return v21(true);
                         };
                         if (v.value0 instanceof OpBooleanOrd && v.value0.value0 instanceof OpEq) {
-                          var $1424 = deref(v.value2);
-                          if ($1424 instanceof NeutLit && $1424.value0 instanceof LitBoolean) {
-                            if ($1424.value0.value0) {
+                          var $1419 = deref(v.value2);
+                          if ($1419 instanceof NeutLit && $1419.value0 instanceof LitBoolean) {
+                            if ($1419.value0.value0) {
                               return v.value1;
                             }
                             ;
@@ -20686,9 +20665,9 @@ var evalPrimOp = function(env) {
                         return v19(true);
                       };
                       if (v.value0 instanceof OpBooleanOrd && v.value0.value0 instanceof OpEq) {
-                        var $1430 = deref(v.value1);
-                        if ($1430 instanceof NeutLit && $1430.value0 instanceof LitBoolean) {
-                          if ($1430.value0.value0) {
+                        var $1425 = deref(v.value1);
+                        if ($1425 instanceof NeutLit && $1425.value0 instanceof LitBoolean) {
+                          if ($1425.value0.value0) {
                             return v.value2;
                           }
                           ;
@@ -20701,8 +20680,8 @@ var evalPrimOp = function(env) {
                       return v17(true);
                     };
                     if (v.value0 instanceof OpBooleanOr) {
-                      var $1436 = deref(v.value2);
-                      if ($1436 instanceof NeutLit && ($1436.value0 instanceof LitBoolean && $1436.value0.value0)) {
+                      var $1431 = deref(v.value2);
+                      if ($1431 instanceof NeutLit && ($1431.value0 instanceof LitBoolean && $1431.value0.value0)) {
                         return v.value2;
                       }
                       ;
@@ -20712,8 +20691,8 @@ var evalPrimOp = function(env) {
                     return v15(true);
                   };
                   if (v.value0 instanceof OpBooleanOr) {
-                    var $1440 = deref(v.value1);
-                    if ($1440 instanceof NeutLit && ($1440.value0 instanceof LitBoolean && $1440.value0.value0)) {
+                    var $1435 = deref(v.value1);
+                    if ($1435 instanceof NeutLit && ($1435.value0 instanceof LitBoolean && $1435.value0.value0)) {
                       return v.value1;
                     }
                     ;
@@ -20723,8 +20702,8 @@ var evalPrimOp = function(env) {
                   return v13(true);
                 };
                 if (v.value0 instanceof OpBooleanOr) {
-                  var $1444 = deref(v.value2);
-                  if ($1444 instanceof NeutLit && ($1444.value0 instanceof LitBoolean && !$1444.value0.value0)) {
+                  var $1439 = deref(v.value2);
+                  if ($1439 instanceof NeutLit && ($1439.value0 instanceof LitBoolean && !$1439.value0.value0)) {
                     return v.value1;
                   }
                   ;
@@ -20734,8 +20713,8 @@ var evalPrimOp = function(env) {
                 return v11(true);
               };
               if (v.value0 instanceof OpBooleanOr) {
-                var $1448 = deref(v.value1);
-                if ($1448 instanceof NeutLit && ($1448.value0 instanceof LitBoolean && !$1448.value0.value0)) {
+                var $1443 = deref(v.value1);
+                if ($1443 instanceof NeutLit && ($1443.value0 instanceof LitBoolean && !$1443.value0.value0)) {
                   return v.value2;
                 }
                 ;
@@ -20745,8 +20724,8 @@ var evalPrimOp = function(env) {
               return v9(true);
             };
             if (v.value0 instanceof OpBooleanAnd) {
-              var $1452 = deref(v.value2);
-              if ($1452 instanceof NeutLit && ($1452.value0 instanceof LitBoolean && $1452.value0.value0)) {
+              var $1447 = deref(v.value2);
+              if ($1447 instanceof NeutLit && ($1447.value0 instanceof LitBoolean && $1447.value0.value0)) {
                 return v.value1;
               }
               ;
@@ -20756,8 +20735,8 @@ var evalPrimOp = function(env) {
             return v7(true);
           };
           if (v.value0 instanceof OpBooleanAnd) {
-            var $1456 = deref(v.value1);
-            if ($1456 instanceof NeutLit && ($1456.value0 instanceof LitBoolean && $1456.value0.value0)) {
+            var $1451 = deref(v.value1);
+            if ($1451 instanceof NeutLit && ($1451.value0 instanceof LitBoolean && $1451.value0.value0)) {
               return v.value2;
             }
             ;
@@ -20767,8 +20746,8 @@ var evalPrimOp = function(env) {
           return v5(true);
         };
         if (v.value0 instanceof OpBooleanAnd) {
-          var $1460 = deref(v.value2);
-          if ($1460 instanceof NeutLit && ($1460.value0 instanceof LitBoolean && !$1460.value0.value0)) {
+          var $1455 = deref(v.value2);
+          if ($1455 instanceof NeutLit && ($1455.value0 instanceof LitBoolean && !$1455.value0.value0)) {
             return v.value2;
           }
           ;
@@ -20778,8 +20757,8 @@ var evalPrimOp = function(env) {
         return v3(true);
       };
       if (v.value0 instanceof OpBooleanAnd) {
-        var $1464 = deref(v.value1);
-        if ($1464 instanceof NeutLit && ($1464.value0 instanceof LitBoolean && !$1464.value0.value0)) {
+        var $1459 = deref(v.value1);
+        if ($1459 instanceof NeutLit && ($1459.value0 instanceof LitBoolean && !$1459.value0.value0)) {
           return v.value1;
         }
         ;
@@ -20789,7 +20768,7 @@ var evalPrimOp = function(env) {
       return v1(true);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 800, column 18 - line 942, column 45): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 805, column 18 - line 947, column 45): " + [v.constructor.name]);
   };
 };
 var evalAssocOp$prime = function(v) {
@@ -20806,14 +20785,14 @@ var evalAssocOp$prime = function(v) {
             return new SemAssocOp(op, cons$prime(a)([b]));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1087, column 5 - line 1091, column 52): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1092, column 5 - line 1096, column 52): " + [v1.constructor.name]);
         }
         ;
         if (op instanceof Right) {
           return evalPrimOp(v)(new Op2(op.value0, a, b));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1085, column 35 - line 1093, column 36): " + [op.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1090, column 35 - line 1098, column 36): " + [op.constructor.name]);
       };
     };
   };
@@ -20866,10 +20845,10 @@ var evalAssocOp = function($copy_env) {
             return new SemAssocOp(op1, cons$prime(v)([v1]));
           };
           if (v instanceof SemAssocOp && v1 instanceof SemAssocOp) {
-            var $1499 = eq162(op1)(v.value0);
-            if ($1499) {
-              var $1500 = eq162(v.value0)(v1.value0);
-              if ($1500) {
+            var $1494 = eq162(op1)(v.value0);
+            if ($1494) {
+              var $1495 = eq162(v.value0)(v1.value0);
+              if ($1495) {
                 var v3 = evalAssocOp$prime(env)(op1)(last3(v.value1))(head2(v1.value1));
                 if (v3 instanceof SemAssocOp && eq162(v1.value0)(v3.value0)) {
                   $tco_done = true;
@@ -20921,17 +20900,39 @@ var evalAccessor = function(env) {
           var v3 = function(v42) {
             var v5 = function(v6) {
               var v7 = function(v82) {
-                if (v instanceof NeutFail) {
-                  return new NeutFail(v.value0);
+                var v9 = function(v10) {
+                  var v11 = function(v12) {
+                    if (v instanceof NeutFail) {
+                      return new NeutFail(v.value0);
+                    }
+                    ;
+                    return new NeutAccessor(v, accessor);
+                  };
+                  if (v instanceof NeutData && v.value4.length === 1) {
+                    if (accessor instanceof GetIndex) {
+                      return evalAccessor(env)(v["value4"][0].value1)(accessor);
+                    }
+                    ;
+                    return v11(true);
+                  }
+                  ;
+                  return v11(true);
+                };
+                if (v instanceof NeutData && v.value4.length === 1) {
+                  if (accessor instanceof GetProp) {
+                    return evalAccessor(env)(v["value4"][0].value1)(accessor);
+                  }
+                  ;
+                  return v9(true);
                 }
                 ;
-                return new NeutAccessor(v, accessor);
+                return v9(true);
               };
               if (v instanceof NeutData) {
                 if (accessor instanceof GetCtorField) {
-                  var $1520 = index(v.value4)(accessor.value5);
-                  if ($1520 instanceof Just) {
-                    return $1520.value0.value1;
+                  var $1537 = index(v.value4)(accessor.value5);
+                  if ($1537 instanceof Just) {
+                    return $1537.value0.value1;
                   }
                   ;
                   return v7(true);
@@ -20944,9 +20945,9 @@ var evalAccessor = function(env) {
             };
             if (v instanceof NeutLit && v.value0 instanceof LitArray) {
               if (accessor instanceof GetIndex) {
-                var $1537 = index(v.value0.value0)(accessor.value0);
-                if ($1537 instanceof Just) {
-                  return $1537.value0;
+                var $1554 = index(v.value0.value0)(accessor.value0);
+                if ($1554 instanceof Just) {
+                  return $1554.value0;
                 }
                 ;
                 return v5(true);
@@ -20980,11 +20981,11 @@ var evalAccessor = function(env) {
         };
         if (v instanceof NeutLit && v.value0 instanceof LitRecord) {
           if (accessor instanceof GetProp) {
-            var $1557 = findMap2(function(v2) {
+            var $1574 = findMap2(function(v2) {
               return voidLeft3(guard4(v2.value0 === accessor.value0))(v2.value1);
             })(v.value0.value0);
-            if ($1557 instanceof Just) {
-              return $1557.value0;
+            if ($1574 instanceof Just) {
+              return $1574.value0;
             }
             ;
             return v1(true);
@@ -21050,8 +21051,8 @@ var build = function(ctx) {
                                       return buildDefault(ctx)(v);
                                     };
                                     if (v instanceof EffectDefer) {
-                                      var $1603 = unwrapBackendExpr(v.value0);
-                                      if ($1603 instanceof ExprSyntax && $1603.value1 instanceof EffectDefer) {
+                                      var $1620 = unwrapBackendExpr(v.value0);
+                                      if ($1620 instanceof ExprSyntax && $1620.value1 instanceof EffectDefer) {
                                         return v.value0;
                                       }
                                       ;
@@ -21061,12 +21062,12 @@ var build = function(ctx) {
                                     return v33(true);
                                   };
                                   if (v instanceof EffectBind) {
-                                    var $1609 = unwrapBackendExpr(v.value3);
-                                    if ($1609 instanceof ExprSyntax && $1609.value1 instanceof EffectPure) {
-                                      var $1610 = unwrapBackendExpr($1609.value1.value0);
-                                      if ($1610 instanceof ExprSyntax && $1610.value1 instanceof Local) {
-                                        var $1611 = eq63(v.value1)($1610.value1.value1);
-                                        if ($1611) {
+                                    var $1626 = unwrapBackendExpr(v.value3);
+                                    if ($1626 instanceof ExprSyntax && $1626.value1 instanceof EffectPure) {
+                                      var $1627 = unwrapBackendExpr($1626.value1.value0);
+                                      if ($1627 instanceof ExprSyntax && $1627.value1 instanceof Local) {
+                                        var $1628 = eq63(v.value1)($1627.value1.value1);
+                                        if ($1628) {
                                           return v.value2;
                                         }
                                         ;
@@ -21082,9 +21083,9 @@ var build = function(ctx) {
                                   return v31(true);
                                 };
                                 if (v instanceof EffectBind) {
-                                  var $1624 = unwrapBackendExpr(v.value3);
-                                  if ($1624 instanceof ExprSyntax && $1624.value1 instanceof EffectDefer) {
-                                    return build(ctx)(new EffectBind(v.value0, v.value1, v.value2, $1624.value1.value0));
+                                  var $1641 = unwrapBackendExpr(v.value3);
+                                  if ($1641 instanceof ExprSyntax && $1641.value1 instanceof EffectDefer) {
+                                    return build(ctx)(new EffectBind(v.value0, v.value1, v.value2, $1641.value1.value0));
                                   }
                                   ;
                                   return v29(true);
@@ -21093,9 +21094,9 @@ var build = function(ctx) {
                                 return v29(true);
                               };
                               if (v instanceof EffectBind) {
-                                var $1633 = unwrapBackendExpr(v.value2);
-                                if ($1633 instanceof ExprSyntax && $1633.value1 instanceof EffectDefer) {
-                                  return build(ctx)(new EffectBind(v.value0, v.value1, $1633.value1.value0, v.value3));
+                                var $1650 = unwrapBackendExpr(v.value2);
+                                if ($1650 instanceof ExprSyntax && $1650.value1 instanceof EffectDefer) {
+                                  return build(ctx)(new EffectBind(v.value0, v.value1, $1650.value1.value0, v.value3));
                                 }
                                 ;
                                 return v27(true);
@@ -21104,11 +21105,11 @@ var build = function(ctx) {
                               return v27(true);
                             };
                             if (v instanceof PrimOp && v.value0 instanceof Op2) {
-                              var $1642 = untypedExpr(v.value0.value2);
-                              if ($1642 instanceof ExprSyntax && $1642.value1 instanceof Branch) {
-                                var $1643 = shouldDistributeBranchPrimOp2R(analysisOf2(v.value0.value2))($1642.value1.value0)($1642.value1.value1)(v.value0.value1)(v.value0.value0);
-                                if ($1643 instanceof Just) {
-                                  return $1643.value0;
+                              var $1659 = untypedExpr(v.value0.value2);
+                              if ($1659 instanceof ExprSyntax && $1659.value1 instanceof Branch) {
+                                var $1660 = shouldDistributeBranchPrimOp2R(analysisOf2(v.value0.value2))($1659.value1.value0)($1659.value1.value1)(v.value0.value1)(v.value0.value0);
+                                if ($1660 instanceof Just) {
+                                  return $1660.value0;
                                 }
                                 ;
                                 return v25(true);
@@ -21120,11 +21121,11 @@ var build = function(ctx) {
                             return v25(true);
                           };
                           if (v instanceof PrimOp && v.value0 instanceof Op2) {
-                            var $1654 = untypedExpr(v.value0.value1);
-                            if ($1654 instanceof ExprSyntax && $1654.value1 instanceof Branch) {
-                              var $1655 = shouldDistributeBranchPrimOp2L(analysisOf2(v.value0.value1))($1654.value1.value0)($1654.value1.value1)(v.value0.value0)(v.value0.value2);
-                              if ($1655 instanceof Just) {
-                                return $1655.value0;
+                            var $1671 = untypedExpr(v.value0.value1);
+                            if ($1671 instanceof ExprSyntax && $1671.value1 instanceof Branch) {
+                              var $1672 = shouldDistributeBranchPrimOp2L(analysisOf2(v.value0.value1))($1671.value1.value0)($1671.value1.value1)(v.value0.value0)(v.value0.value2);
+                              if ($1672 instanceof Just) {
+                                return $1672.value0;
                               }
                               ;
                               return v23(true);
@@ -21136,11 +21137,11 @@ var build = function(ctx) {
                           return v23(true);
                         };
                         if (v instanceof PrimOp && v.value0 instanceof Op1) {
-                          var $1666 = untypedExpr(v.value0.value1);
-                          if ($1666 instanceof ExprSyntax && $1666.value1 instanceof Branch) {
-                            var $1667 = shouldDistributeBranchPrimOp1(analysisOf2(v.value0.value1))($1666.value1.value0)($1666.value1.value1)(v.value0.value0);
-                            if ($1667 instanceof Just) {
-                              return $1667.value0;
+                          var $1683 = untypedExpr(v.value0.value1);
+                          if ($1683 instanceof ExprSyntax && $1683.value1 instanceof Branch) {
+                            var $1684 = shouldDistributeBranchPrimOp1(analysisOf2(v.value0.value1))($1683.value1.value0)($1683.value1.value1)(v.value0.value0);
+                            if ($1684 instanceof Just) {
+                              return $1684.value0;
                             }
                             ;
                             return v21(true);
@@ -21152,11 +21153,11 @@ var build = function(ctx) {
                         return v21(true);
                       };
                       if (v instanceof Accessor) {
-                        var $1677 = untypedExpr(v.value0);
-                        if ($1677 instanceof ExprSyntax && $1677.value1 instanceof Branch) {
-                          var $1678 = shouldDistributeBranchAccessor(analysisOf2(v.value0))($1677.value1.value0)($1677.value1.value1)(v.value1);
-                          if ($1678 instanceof Just) {
-                            return $1678.value0;
+                        var $1694 = untypedExpr(v.value0);
+                        if ($1694 instanceof ExprSyntax && $1694.value1 instanceof Branch) {
+                          var $1695 = shouldDistributeBranchAccessor(analysisOf2(v.value0))($1694.value1.value0)($1694.value1.value1)(v.value1);
+                          if ($1695 instanceof Just) {
+                            return $1695.value0;
                           }
                           ;
                           return v19(true);
@@ -21168,11 +21169,11 @@ var build = function(ctx) {
                       return v19(true);
                     };
                     if (v instanceof UncurriedApp) {
-                      var $1687 = untypedExpr(v.value0);
-                      if ($1687 instanceof ExprSyntax && $1687.value1 instanceof Branch) {
-                        var $1688 = shouldDistributeBranchUncurriedApps(analysisOf2(v.value0))($1687.value1.value0)($1687.value1.value1)(v.value1);
-                        if ($1688 instanceof Just) {
-                          return $1688.value0;
+                      var $1704 = untypedExpr(v.value0);
+                      if ($1704 instanceof ExprSyntax && $1704.value1 instanceof Branch) {
+                        var $1705 = shouldDistributeBranchUncurriedApps(analysisOf2(v.value0))($1704.value1.value0)($1704.value1.value1)(v.value1);
+                        if ($1705 instanceof Just) {
+                          return $1705.value0;
                         }
                         ;
                         return v17(true);
@@ -21184,11 +21185,11 @@ var build = function(ctx) {
                     return v17(true);
                   };
                   if (v instanceof App2) {
-                    var $1697 = untypedExpr(v.value0);
-                    if ($1697 instanceof ExprSyntax && $1697.value1 instanceof Branch) {
-                      var $1698 = shouldDistributeBranchApps(analysisOf2(v.value0))($1697.value1.value0)($1697.value1.value1)(v.value1);
-                      if ($1698 instanceof Just) {
-                        return $1698.value0;
+                    var $1714 = untypedExpr(v.value0);
+                    if ($1714 instanceof ExprSyntax && $1714.value1 instanceof Branch) {
+                      var $1715 = shouldDistributeBranchApps(analysisOf2(v.value0))($1714.value1.value0)($1714.value1.value1)(v.value1);
+                      if ($1715 instanceof Just) {
+                        return $1715.value0;
                       }
                       ;
                       return v15(true);
@@ -21200,9 +21201,9 @@ var build = function(ctx) {
                   return v15(true);
                 };
                 if (v instanceof Let) {
-                  var $1707 = shouldEtaReduce(v.value1)(v.value2)(v.value3);
-                  if ($1707 instanceof Just) {
-                    return $1707.value0;
+                  var $1724 = shouldEtaReduce(v.value1)(v.value2)(v.value3);
+                  if ($1724 instanceof Just) {
+                    return $1724.value0;
                   }
                   ;
                   return v13(true);
@@ -21211,9 +21212,9 @@ var build = function(ctx) {
                 return v13(true);
               };
               if (v instanceof Let) {
-                var $1714 = shouldDistributeBranches(v.value0)(v.value1)(v.value2)(v.value3);
-                if ($1714 instanceof Just) {
-                  return $1714.value0;
+                var $1731 = shouldDistributeBranches(v.value0)(v.value1)(v.value2)(v.value3);
+                if ($1731 instanceof Just) {
+                  return $1731.value0;
                 }
                 ;
                 return v11(true);
@@ -21222,9 +21223,9 @@ var build = function(ctx) {
               return v11(true);
             };
             if (v instanceof Let) {
-              var $1721 = shouldUnpackArray(v.value0)(v.value1)(v.value2)(v.value3);
-              if ($1721 instanceof Just) {
-                return $1721.value0;
+              var $1738 = shouldUnpackArray(v.value0)(v.value1)(v.value2)(v.value3);
+              if ($1738 instanceof Just) {
+                return $1738.value0;
               }
               ;
               return v9(true);
@@ -21233,9 +21234,9 @@ var build = function(ctx) {
             return v9(true);
           };
           if (v instanceof Let) {
-            var $1728 = shouldUnpackCtor(v.value0)(v.value1)(v.value2)(v.value3);
-            if ($1728 instanceof Just) {
-              return $1728.value0;
+            var $1745 = shouldUnpackCtor(v.value0)(v.value1)(v.value2)(v.value3);
+            if ($1745 instanceof Just) {
+              return $1745.value0;
             }
             ;
             return v7(true);
@@ -21244,9 +21245,9 @@ var build = function(ctx) {
           return v7(true);
         };
         if (v instanceof Let) {
-          var $1735 = shouldUnpackUpdate(v.value0)(v.value1)(v.value2)(v.value3);
-          if ($1735 instanceof Just) {
-            return $1735.value0;
+          var $1752 = shouldUnpackUpdate(v.value0)(v.value1)(v.value2)(v.value3);
+          if ($1752 instanceof Just) {
+            return $1752.value0;
           }
           ;
           return v5(true);
@@ -21255,9 +21256,9 @@ var build = function(ctx) {
         return v5(true);
       };
       if (v instanceof Let) {
-        var $1742 = shouldUnpackRecord(v.value0)(v.value1)(v.value2)(v.value3);
-        if ($1742 instanceof Just) {
-          return $1742.value0;
+        var $1759 = shouldUnpackRecord(v.value0)(v.value1)(v.value2)(v.value3);
+        if ($1759 instanceof Just) {
+          return $1759.value0;
         }
         ;
         return v3(true);
@@ -21266,9 +21267,9 @@ var build = function(ctx) {
       return v3(true);
     };
     if (v instanceof Let) {
-      var $1749 = shouldUncurryAbs(v.value0)(v.value1)(v.value2)(v.value3);
-      if ($1749 instanceof Just) {
-        return $1749.value0;
+      var $1766 = shouldUncurryAbs(v.value0)(v.value1)(v.value2)(v.value3);
+      if ($1766 instanceof Just) {
+        return $1766.value0;
       }
       ;
       return v1(true);
@@ -21317,16 +21318,16 @@ var simplifyCondRedundantElse = function(ctx) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1633, column 1 - line 1633, column 89): " + [ctx.constructor.name, v.constructor.name, def.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1666, column 1 - line 1666, column 89): " + [ctx.constructor.name, v.constructor.name, def.constructor.name]);
       };
-      var $1786 = untypedExpr(def);
-      if ($1786 instanceof ExprSyntax && $1786.value1 instanceof Branch) {
-        var $1787 = head2($1786.value1.value0);
-        var $1788 = untypedExpr($1787.value0);
-        if ($1788 instanceof ExprSyntax && ($1788.value1 instanceof PrimOp && ($1788.value1.value0 instanceof Op1 && $1788.value1.value0.value0 instanceof OpBooleanNot))) {
-          var $1789 = eq182(v.value0)($1788.value1.value0.value1);
-          if ($1789) {
-            return new Just(buildBranchCond(ctx)(new Pair(v.value0, v.value1))($1787.value1));
+      var $1803 = untypedExpr(def);
+      if ($1803 instanceof ExprSyntax && $1803.value1 instanceof Branch) {
+        var $1804 = head2($1803.value1.value0);
+        var $1805 = untypedExpr($1804.value0);
+        if ($1805 instanceof ExprSyntax && ($1805.value1 instanceof PrimOp && ($1805.value1.value0 instanceof Op1 && $1805.value1.value0.value0 instanceof OpBooleanNot))) {
+          var $1806 = eq182(v.value0)($1805.value1.value0.value1);
+          if ($1806) {
+            return new Just(buildBranchCond(ctx)(new Pair(v.value0, v.value1))($1804.value1));
           }
           ;
           return v1(true);
@@ -21347,15 +21348,15 @@ var simplifyCondLiftAnd = function(ctx) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1633, column 1 - line 1633, column 89): " + [ctx.constructor.name, v.constructor.name, def1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1666, column 1 - line 1666, column 89): " + [ctx.constructor.name, v.constructor.name, def1.constructor.name]);
       };
-      var $1811 = untypedExpr(v.value1);
-      if ($1811 instanceof ExprSyntax && $1811.value1 instanceof Branch) {
-        var $1812 = toArray3($1811.value1.value0);
-        if ($1812.length === 1) {
-          var $1813 = eq182(def1)($1811.value1.value1);
-          if ($1813) {
-            return new Just(buildBranchCond(ctx)(new Pair(build(ctx)(new PrimOp(new Op2(OpBooleanAnd.value, v.value0, $1812[0].value0))), $1812[0].value1))(def1));
+      var $1828 = untypedExpr(v.value1);
+      if ($1828 instanceof ExprSyntax && $1828.value1 instanceof Branch) {
+        var $1829 = toArray3($1828.value1.value0);
+        if ($1829.length === 1) {
+          var $1830 = eq182(def1)($1828.value1.value1);
+          if ($1830) {
+            return new Just(buildBranchCond(ctx)(new Pair(build(ctx)(new PrimOp(new Op2(OpBooleanAnd.value, v.value0, $1829[0].value0))), $1829[0].value1))(def1));
           }
           ;
           return v1(true);
@@ -21380,7 +21381,7 @@ var buildBranchCond = function(ctx) {
                   return build(ctx)(new Branch(singleton10(pair), def));
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1633, column 1 - line 1633, column 89): " + [ctx.constructor.name, pair.constructor.name, def.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1666, column 1 - line 1666, column 89): " + [ctx.constructor.name, pair.constructor.name, def.constructor.name]);
               };
               if (def instanceof ExprSyntax && def.value1 instanceof Branch) {
                 return build(ctx)(new Branch(cons2(pair)(def.value1.value0), def.value1.value1));
@@ -21388,30 +21389,30 @@ var buildBranchCond = function(ctx) {
               ;
               return v82(true);
             };
-            var $1837 = simplifyCondRedundantElse(ctx)(pair)(def);
-            if ($1837 instanceof Just) {
-              return $1837.value0;
+            var $1854 = simplifyCondRedundantElse(ctx)(pair)(def);
+            if ($1854 instanceof Just) {
+              return $1854.value0;
             }
             ;
             return v6(true);
           };
-          var $1842 = simplifyCondLiftAnd(ctx)(pair)(def);
-          if ($1842 instanceof Just) {
-            return $1842.value0;
+          var $1859 = simplifyCondLiftAnd(ctx)(pair)(def);
+          if ($1859 instanceof Just) {
+            return $1859.value0;
           }
           ;
           return v4(true);
         };
-        var $1847 = simplifyCondBoolean(ctx)(pair)(def);
-        if ($1847 instanceof Just) {
-          return $1847.value0;
+        var $1864 = simplifyCondBoolean(ctx)(pair)(def);
+        if ($1864 instanceof Just) {
+          return $1864.value0;
         }
         ;
         return v2(true);
       };
-      var $1852 = simplifyCondIsTag(ctx)(pair)(def);
-      if ($1852 instanceof Just) {
-        return $1852.value0;
+      var $1869 = simplifyCondIsTag(ctx)(pair)(def);
+      if ($1869 instanceof Just) {
+        return $1869.value0;
       }
       ;
       return v(true);
@@ -21431,7 +21432,7 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
       ;
       if (v instanceof SemLet) {
         var v1 = nextLevel(ctx);
-        return build(ctx)(new Let(v.value0, v1.value0, $lazy_quote(1403)(purely(ctx))(v.value1), $lazy_quote(1403)(v1.value1)(v.value2(new SemRef(new EvalLocal(v.value0, v1.value0), [], defer2(function(v2) {
+        return build(ctx)(new Let(v.value0, v1.value0, $lazy_quote(1436)(purely(ctx))(v.value1), $lazy_quote(1436)(v1.value1)(v.value2(new SemRef(new EvalLocal(v.value0, v1.value0), [], defer2(function(v2) {
           return deref(v.value1);
         }))))));
       }
@@ -21444,31 +21445,31 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
           }));
         })(v.value0);
         return build(ctx)(new LetRec(v1.value0, map111(map63(function(b) {
-          return $lazy_quote(1412)(purely(v1.value1))(b(neutBindings));
-        }))(v.value0), $lazy_quote(1413)(v1.value1)(v.value1(neutBindings))));
+          return $lazy_quote(1445)(purely(v1.value1))(b(neutBindings));
+        }))(v.value0), $lazy_quote(1446)(v1.value1)(v.value1(neutBindings))));
       }
       ;
       if (v instanceof SemEffectBind) {
         var ctx$prime = effectfully(ctx);
         var v1 = nextLevel(ctx$prime);
-        return build(ctx)(new EffectBind(v.value0, v1.value0, $lazy_quote(1417)(ctx$prime)(v.value1), $lazy_quote(1417)(v1.value1)(v.value2(new NeutLocal(v.value0, v1.value0)))));
+        return build(ctx)(new EffectBind(v.value0, v1.value0, $lazy_quote(1450)(ctx$prime)(v.value1), $lazy_quote(1450)(v1.value1)(v.value2(new NeutLocal(v.value0, v1.value0)))));
       }
       ;
       if (v instanceof SemEffectPure) {
-        return build(ctx)(new EffectPure($lazy_quote(1419)(purely(ctx))(v.value0)));
+        return build(ctx)(new EffectPure($lazy_quote(1452)(purely(ctx))(v.value0)));
       }
       ;
       if (v instanceof SemEffectDefer) {
-        return build(ctx)(new EffectDefer($lazy_quote(1421)(effectfully(ctx))(v.value0)));
+        return build(ctx)(new EffectDefer($lazy_quote(1454)(effectfully(ctx))(v.value0)));
       }
       ;
       if (v instanceof SemBranch) {
         var ctx$prime = purely(ctx);
         var quoteCond = function(v12) {
-          return new Pair($lazy_quote(1424)(ctx$prime)(force(v12.value0)), $lazy_quote(1424)(ctx)(force(v12.value1)));
+          return new Pair($lazy_quote(1457)(ctx$prime)(force(v12.value0)), $lazy_quote(1457)(ctx)(force(v12.value1)));
         };
         var branches$prime = map111(quoteCond)(v.value0);
-        return foldr14(buildBranchCond(ctx))($lazy_quote(1426)(ctx)(force(v.value1)))(branches$prime);
+        return foldr14(buildBranchCond(ctx))($lazy_quote(1459)(ctx)(force(v.value1)))(branches$prime);
       }
       ;
       if (v instanceof SemRef) {
@@ -21480,12 +21481,12 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
           return go(ctx)(neutralSpine(new NeutLocal(v.value0.value0, v.value0.value1))(v.value1));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1430, column 7 - line 1434, column 57): " + [v.value0.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1463, column 7 - line 1467, column 57): " + [v.value0.constructor.name]);
       }
       ;
       if (v instanceof SemLam) {
         var v1 = nextLevel(ctx);
-        return build(ctx)(new Abs(singleton10(new Tuple(v.value0, v1.value0)), $lazy_quote(1437)(purely(v1.value1))(v.value1(new NeutLocal(v.value0, v1.value0)))));
+        return build(ctx)(new Abs(singleton10(new Tuple(v.value0, v1.value0)), $lazy_quote(1470)(purely(v1.value1))(v.value1(new NeutLocal(v.value0, v1.value0)))));
       }
       ;
       if (v instanceof SemMkFn) {
@@ -21507,10 +21508,10 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
                 ;
                 if (v12 instanceof MkFnApplied) {
                   $tco_done = true;
-                  return build(ctx$prime2)(new UncurriedAbs(idents, $lazy_quote(1445)(purely(ctx$prime2))(v12.value0)));
+                  return build(ctx$prime2)(new UncurriedAbs(idents, $lazy_quote(1478)(purely(ctx$prime2))(v12.value0)));
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1440, column 28 - line 1445, column 72): " + [v12.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1473, column 28 - line 1478, column 72): " + [v12.constructor.name]);
               }
               ;
               while (!$tco_done) {
@@ -21543,10 +21544,10 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
                 ;
                 if (v12 instanceof MkFnApplied) {
                   $tco_done1 = true;
-                  return build(ctx$prime2)(new UncurriedEffectAbs(idents, $lazy_quote(1454)(purely(ctx$prime2))(v12.value0)));
+                  return build(ctx$prime2)(new UncurriedEffectAbs(idents, $lazy_quote(1487)(purely(ctx$prime2))(v12.value0)));
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1449, column 28 - line 1454, column 78): " + [v12.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1482, column 28 - line 1487, column 78): " + [v12.constructor.name]);
               }
               ;
               while (!$tco_done1) {
@@ -21564,16 +21565,16 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
         return foldl1Array(function(a) {
           return function(b) {
             if (v.value0 instanceof Left) {
-              return build(ctx)(new App2(build(ctx)(new Var(v.value0.value0)), cons$prime(a)([$lazy_quote(1460)(ctx)(b)])));
+              return build(ctx)(new App2(build(ctx)(new Var(v.value0.value0)), cons$prime(a)([$lazy_quote(1493)(ctx)(b)])));
             }
             ;
             if (v.value0 instanceof Right) {
-              return build(ctx)(new PrimOp(new Op2(v.value0.value0, a, $lazy_quote(1462)(ctx)(b))));
+              return build(ctx)(new PrimOp(new Op2(v.value0.value0, a, $lazy_quote(1495)(ctx)(b))));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1458, column 19 - line 1462, column 62): " + [v.value0.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1491, column 19 - line 1495, column 62): " + [v.value0.constructor.name]);
           };
-        })($lazy_quote(1464)(ctx))(v.value1);
+        })($lazy_quote(1497)(ctx))(v.value1);
       }
       ;
       if (v instanceof NeutLocal) {
@@ -21589,7 +21590,7 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
       }
       ;
       if (v instanceof NeutData) {
-        return build(ctx)(new CtorSaturated(v.value0, v.value1, v.value2, v.value3, map43(map63($lazy_quote(1473)(ctx)))(v.value4)));
+        return build(ctx)(new CtorSaturated(v.value0, v.value1, v.value2, v.value3, map43(map63($lazy_quote(1506)(ctx)))(v.value4)));
       }
       ;
       if (v instanceof NeutCtorDef) {
@@ -21598,20 +21599,20 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
       ;
       if (v instanceof NeutUncurriedApp) {
         var ctx$prime = purely(ctx);
-        var hd$prime = $lazy_quote(1478)(ctx$prime)(v.value0);
-        return build(ctx)(new UncurriedApp(hd$prime, map43($lazy_quote(1479)(ctx$prime))(v.value1)));
+        var hd$prime = $lazy_quote(1511)(ctx$prime)(v.value0);
+        return build(ctx)(new UncurriedApp(hd$prime, map43($lazy_quote(1512)(ctx$prime))(v.value1)));
       }
       ;
       if (v instanceof NeutUncurriedEffectApp) {
         var ctx$prime = purely(ctx);
-        var hd$prime = $lazy_quote(1482)(ctx$prime)(v.value0);
-        return build(ctx)(new UncurriedEffectApp(hd$prime, map43($lazy_quote(1483)(ctx$prime))(v.value1)));
+        var hd$prime = $lazy_quote(1515)(ctx$prime)(v.value0);
+        return build(ctx)(new UncurriedEffectApp(hd$prime, map43($lazy_quote(1516)(ctx$prime))(v.value1)));
       }
       ;
       if (v instanceof NeutApp) {
         var ctx$prime = purely(ctx);
-        var hd$prime = $lazy_quote(1486)(ctx$prime)(v.value0);
-        var v1 = fromArray2(map43($lazy_quote(1487)(ctx$prime))(v.value1));
+        var hd$prime = $lazy_quote(1519)(ctx$prime)(v.value0);
+        var v1 = fromArray2(map43($lazy_quote(1520)(ctx$prime))(v.value1));
         if (v1 instanceof Nothing) {
           return hd$prime;
         }
@@ -21620,27 +21621,27 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
           return build(ctx)(new App2(hd$prime, v1.value0));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1487, column 7 - line 1491, column 35): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1520, column 7 - line 1524, column 35): " + [v1.constructor.name]);
       }
       ;
       if (v instanceof NeutAccessor) {
-        return build(ctx)(new Accessor($lazy_quote(1493)(ctx)(v.value0), v.value1));
+        return build(ctx)(new Accessor($lazy_quote(1526)(ctx)(v.value0), v.value1));
       }
       ;
       if (v instanceof NeutUpdate) {
-        return build(ctx)(new Update($lazy_quote(1495)(ctx)(v.value0), map43(map53($lazy_quote(1495)(ctx)))(v.value1)));
+        return build(ctx)(new Update($lazy_quote(1528)(ctx)(v.value0), map43(map53($lazy_quote(1528)(ctx)))(v.value1)));
       }
       ;
       if (v instanceof NeutLit) {
-        return build(ctx)(new Lit(map82($lazy_quote(1497)(ctx))(v.value0)));
+        return build(ctx)(new Lit(map82($lazy_quote(1530)(ctx))(v.value0)));
       }
       ;
       if (v instanceof NeutPrimOp) {
-        return build(ctx)(new PrimOp(map92($lazy_quote(1499)(ctx))(v.value0)));
+        return build(ctx)(new PrimOp(map92($lazy_quote(1532)(ctx))(v.value0)));
       }
       ;
       if (v instanceof NeutPrimEffect) {
-        return build(ctx)(new PrimEffect(map102($lazy_quote(1501)(purely(ctx)))(v.value0)));
+        return build(ctx)(new PrimEffect(map102($lazy_quote(1534)(purely(ctx)))(v.value0)));
       }
       ;
       if (v instanceof NeutPrimUndefined) {
@@ -21651,12 +21652,12 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
         return build(ctx)(new Fail(v.value0));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1395, column 12 - line 1505, column 27): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1428, column 12 - line 1538, column 27): " + [v.constructor.name]);
     };
   };
   return go;
 });
-var quote = /* @__PURE__ */ $lazy_quote(1392);
+var quote = /* @__PURE__ */ $lazy_quote(1425);
 var bindLocal = function(v) {
   return function(sem) {
     return {
@@ -21747,7 +21748,7 @@ var evalApp = function(env) {
               }
               ;
               if (v instanceof NeutCtorDef && length(v.value4) === length2(v1)) {
-                return unsafeCrashWith("CRASH CtorDef");
+                return new NeutData(v.value0, v.value1, v.value2, v.value3, zip(v.value4)(fromFoldable1(v1)));
               }
               ;
               if (v1 instanceof Nil) {
@@ -21765,8 +21766,8 @@ var evalApp = function(env) {
               var finalTy = (function() {
                 if (mbTy instanceof Just && mbTy.value0 instanceof Func) {
                   var remaining = drop(length2(v1))(mbTy.value0.value0);
-                  var $1999 = length(remaining) > 0;
-                  if ($1999) {
+                  var $2016 = length(remaining) > 0;
+                  if ($2016) {
                     return new Just(new Func(remaining, mbTy.value0.value1));
                   }
                   ;
@@ -21775,7 +21776,7 @@ var evalApp = function(env) {
                 ;
                 return mbTy;
               })();
-              var app = new NeutApp(v, toUnfoldable12(v1));
+              var app = new NeutApp(v, toUnfoldable5(v1));
               if (finalTy instanceof Just) {
                 return new SemTyped(finalTy.value0, app);
               }
@@ -21803,9 +21804,9 @@ var evalMkFn = function(env) {
       if (otherwise) {
         if (sem instanceof SemLam) {
           return new MkFnNext(sem.value0, (function() {
-            var $2469 = evalMkFn(env)(n - 1 | 0);
-            return function($2470) {
-              return $2469(sem.value1($2470));
+            var $2528 = evalMkFn(env)(n - 1 | 0);
+            return function($2529) {
+              return $2528(sem.value1($2529));
             };
           })());
         }
@@ -21816,7 +21817,7 @@ var evalMkFn = function(env) {
         });
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2102, column 1 - line 2102, column 68): " + [env.constructor.name, n.constructor.name, sem.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2120, column 1 - line 2120, column 68): " + [env.constructor.name, n.constructor.name, sem.constructor.name]);
     };
   };
 };
@@ -21937,7 +21938,7 @@ var mkUncurriedAppRewrite = function(env) {
           });
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2118, column 3 - line 2122, column 42): " + [acc.constructor.name, n.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2136, column 3 - line 2140, column 42): " + [acc.constructor.name, n.constructor.name]);
       };
     };
     return go([]);
@@ -22020,17 +22021,17 @@ var mkFnFromArgs = function(dictEval) {
           return function(next2) {
             return function(env$prime) {
               return new MkFnNext(v.value0, (function() {
-                var $2471 = bindLocal(env$prime);
-                return function($2472) {
-                  return next2($2471(One.create($2472)));
+                var $2530 = bindLocal(env$prime);
+                return function($2531) {
+                  return next2($2530(One.create($2531)));
                 };
               })());
             };
           };
         })((function() {
-          var $2473 = flip(eval4)(body);
-          return function($2474) {
-            return MkFnApplied.create($2473($2474));
+          var $2532 = flip(eval4)(body);
+          return function($2533) {
+            return MkFnApplied.create($2532($2533));
           };
         })())(args)(env));
       };
@@ -22077,9 +22078,9 @@ var evalBackendSyntax = function(dictEval) {
             return unsafeCrashWith("Unbound local at level " + show5(unwrap4(v1.value1)));
           };
           if (v2 instanceof Just && v2.value0 instanceof Group) {
-            var $2060 = bindFlipped2(flip(lookup22)(v2.value0.value0))(v1.value0);
-            if ($2060 instanceof Just) {
-              return force($2060.value0);
+            var $2077 = bindFlipped2(flip(lookup22)(v2.value0.value0))(v1.value0);
+            if ($2077 instanceof Just) {
+              return force($2077.value0);
             }
             ;
             return v3(true);
@@ -22116,7 +22117,7 @@ var evalBackendSyntax = function(dictEval) {
               throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 329, column 21 - line 334, column 53): " + [v22.constructor.name]);
             };
           };
-          return new SemMkFn(loop(v)(toUnfoldable22(map43(fst)(v1.value0))));
+          return new SemMkFn(loop(v)(toUnfoldable12(map43(fst)(v1.value0))));
         }
         ;
         if (v1 instanceof UncurriedEffectApp) {
@@ -22139,7 +22140,7 @@ var evalBackendSyntax = function(dictEval) {
               throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 340, column 21 - line 345, column 53): " + [v22.constructor.name]);
             };
           };
-          return new SemMkEffectFn(loop(v)(toUnfoldable22(map43(fst)(v1.value0))));
+          return new SemMkEffectFn(loop(v)(toUnfoldable12(map43(fst)(v1.value0))));
         }
         ;
         if (v1 instanceof Abs) {
@@ -22147,9 +22148,9 @@ var evalBackendSyntax = function(dictEval) {
             return function(next2) {
               return function(env$prime) {
                 return new SemLam(v22.value0, (function() {
-                  var $2475 = bindLocal(env$prime);
-                  return function($2476) {
-                    return next2($2475(One.create($2476)));
+                  var $2534 = bindLocal(env$prime);
+                  return function($2535) {
+                    return next2($2534(One.create($2535)));
                   };
                 })());
               };
@@ -22157,10 +22158,10 @@ var evalBackendSyntax = function(dictEval) {
           })(function(v22) {
             return function(env$prime) {
               return new SemLam(v22.value0, (function() {
-                var $2477 = flip(eval4)(v1.value1);
-                var $2478 = bindLocal(env$prime);
-                return function($2479) {
-                  return $2477($2478(One.create($2479)));
+                var $2536 = flip(eval4)(v1.value1);
+                var $2537 = bindLocal(env$prime);
+                return function($2538) {
+                  return $2536($2537(One.create($2538)));
                 };
               })());
             };
@@ -22169,20 +22170,20 @@ var evalBackendSyntax = function(dictEval) {
         ;
         if (v1 instanceof Let) {
           return makeLet(v1.value0)(eval4(v)(v1.value2))((function() {
-            var $2480 = flip(eval4)(v1.value3);
-            var $2481 = bindLocal(v);
-            return function($2482) {
-              return $2480($2481(One.create($2482)));
+            var $2539 = flip(eval4)(v1.value3);
+            var $2540 = bindLocal(v);
+            return function($2541) {
+              return $2539($2540(One.create($2541)));
             };
           })());
         }
         ;
         if (v1 instanceof LetRec) {
           var bindGroup = function(sem) {
-            var $2483 = flip(eval4)(sem);
-            var $2484 = bindLocal(v);
-            return function($2485) {
-              return $2483($2484(Group.create($2485)));
+            var $2542 = flip(eval4)(sem);
+            var $2543 = bindLocal(v);
+            return function($2544) {
+              return $2542($2543(Group.create($2544)));
             };
           };
           return new SemLetRec(map111(map63(bindGroup))(v1.value1), bindGroup(v1.value2));
@@ -22190,10 +22191,10 @@ var evalBackendSyntax = function(dictEval) {
         ;
         if (v1 instanceof EffectBind) {
           return makeEffectBind(v1.value0)(eval4(v)(v1.value2))((function() {
-            var $2486 = flip(eval4)(v1.value3);
-            var $2487 = bindLocal(v);
-            return function($2488) {
-              return $2486($2487(One.create($2488)));
+            var $2545 = flip(eval4)(v1.value3);
+            var $2546 = bindLocal(v);
+            return function($2547) {
+              return $2545($2546(One.create($2547)));
             };
           })());
         }
@@ -22297,10 +22298,10 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                       };
                     };
                   })((function() {
-                    var $2489 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                    var $2490 = bindLocal(env);
-                    return function($2491) {
-                      return $2489($2490(One.create(NeutLit.create(LitRecord.create($2491)))));
+                    var $2548 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                    var $2549 = bindLocal(env);
+                    return function($2550) {
+                      return $2548($2549(One.create(NeutLit.create(LitRecord.create($2550)))));
                     };
                   })())(v.value1.value2.value0)([]);
                 }
@@ -22317,11 +22318,11 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                         };
                       };
                     })((function() {
-                      var $2492 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                      var $2493 = bindLocal(env);
-                      var $2494 = NeutUpdate.create(hd$prime);
-                      return function($2495) {
-                        return $2492($2493(One.create($2494($2495))));
+                      var $2551 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                      var $2552 = bindLocal(env);
+                      var $2553 = NeutUpdate.create(hd$prime);
+                      return function($2554) {
+                        return $2551($2552(One.create($2553($2554))));
                       };
                     })())(v.value1.value2.value1)([]);
                   });
@@ -22338,10 +22339,10 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                       };
                     };
                   })((function() {
-                    var $2496 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                    var $2497 = bindLocal(env);
-                    return function($2498) {
-                      return $2496($2497(One.create(NeutLit.create(LitArray.create($2498)))));
+                    var $2555 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                    var $2556 = bindLocal(env);
+                    return function($2557) {
+                      return $2555($2556(One.create(NeutLit.create(LitArray.create($2557)))));
                     };
                   })())(v.value1.value2.value0)([]);
                 }
@@ -22357,11 +22358,11 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                       };
                     };
                   })((function() {
-                    var $2499 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                    var $2500 = bindLocal(env);
-                    var $2501 = NeutData.create(v.value1.value2.value0)(v.value1.value2.value1)(v.value1.value2.value2)(v.value1.value2.value3);
-                    return function($2502) {
-                      return $2499($2500(One.create($2501($2502))));
+                    var $2558 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                    var $2559 = bindLocal(env);
+                    var $2560 = NeutData.create(v.value1.value2.value0)(v.value1.value2.value1)(v.value1.value2.value2)(v.value1.value2.value3);
+                    return function($2561) {
+                      return $2558($2559(One.create($2560($2561))));
                     };
                   })())(v.value1.value2.value4)([]);
                 }
@@ -22372,10 +22373,10 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
               if (v.value1 instanceof RewriteDistBranchesLet) {
                 $tco_done = true;
                 return rewriteBranches((function() {
-                  var $2503 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value4);
-                  var $2504 = bindLocal(env);
-                  return function($2505) {
-                    return $2503($2504(One.create($2505)));
+                  var $2562 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value4);
+                  var $2563 = bindLocal(env);
+                  return function($2564) {
+                    return $2562($2563(One.create($2564)));
                   };
                 })())(evalBranches(env)(map111(evalPair($lazy_evalBackendExpr(0))(env))(v.value1.value2))(defer2(function(v1) {
                   return $$eval($lazy_evalBackendExpr(0))(env)(v.value1.value3);
@@ -22397,26 +22398,26 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                   }
                   ;
                   if (v.value1.value2 instanceof DistPrimOp1) {
-                    var $2506 = evalPrimOp(env);
-                    var $2507 = Op1.create(v.value1.value2.value0);
-                    return function($2508) {
-                      return $2506($2507($2508));
+                    var $2565 = evalPrimOp(env);
+                    var $2566 = Op1.create(v.value1.value2.value0);
+                    return function($2567) {
+                      return $2565($2566($2567));
                     };
                   }
                   ;
                   if (v.value1.value2 instanceof DistPrimOp2L) {
-                    var $2509 = evalPrimOp(env);
-                    var $2510 = flip(Op2.create(v.value1.value2.value0))($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value1));
-                    return function($2511) {
-                      return $2509($2510($2511));
+                    var $2568 = evalPrimOp(env);
+                    var $2569 = flip(Op2.create(v.value1.value2.value0))($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value1));
+                    return function($2570) {
+                      return $2568($2569($2570));
                     };
                   }
                   ;
                   if (v.value1.value2 instanceof DistPrimOp2R) {
-                    var $2512 = evalPrimOp(env);
-                    var $2513 = Op2.create(v.value1.value2.value1)($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value0));
-                    return function($2514) {
-                      return $2512($2513($2514));
+                    var $2571 = evalPrimOp(env);
+                    var $2572 = Op2.create(v.value1.value2.value1)($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value0));
+                    return function($2573) {
+                      return $2571($2572($2573));
                     };
                   }
                   ;
@@ -22472,8 +22473,8 @@ var optimize = function(traceSteps) {
               return function(e) {
                 return function(expr) {
                   var v1 = analysisOf2(expr);
-                  var $2191 = v1.size <= 2e3;
-                  if ($2191) {
+                  var $2208 = v1.size <= 2e3;
+                  if ($2208) {
                     return quote(c)(eval1(e)(expr));
                   }
                   ;
@@ -22582,17 +22583,17 @@ var optimize = function(traceSteps) {
                     return quote(c)(eval1(e)(expr));
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1976, column 9 - line 2052, column 34): " + [expr.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1994, column 9 - line 2070, column 34): " + [expr.constructor.name]);
                 };
               };
             };
             var goStep = function(n) {
               return function(expr1) {
                 if (n === 0) {
-                  var name2 = foldMap24(function($2515) {
+                  var name2 = foldMap24(function($2574) {
                     return (function(v12) {
                       return v12 + ".";
-                    })(unwrap4($2515));
+                    })(unwrap4($2574));
                   })(v.value0) + v.value1;
                   return unsafeCrashWith(name2 + ": Possible infinite optimization loop.");
                 }
@@ -22604,11 +22605,11 @@ var optimize = function(traceSteps) {
                     return new Tuple(v3.rewrite, expr22);
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1938, column 1 - line 1938, column 116): " + [n.constructor.name, expr1.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1956, column 1 - line 1956, column 116): " + [n.constructor.name, expr1.constructor.name]);
                 };
-                var $2259 = analysisOf2(expr1);
-                var $2260 = $2259.size > 2e3;
-                if ($2260) {
+                var $2276 = analysisOf2(expr1);
+                var $2277 = $2276.size > 2e3;
+                if ($2277) {
                   var expr2 = optimizeChunk(ctx)(env)(expr1);
                   return new Tuple(false, expr2);
                 }
@@ -22640,7 +22641,7 @@ var optimize = function(traceSteps) {
                     }
                     ;
                     $tco_done = true;
-                    return new Tuple(reverse(toUnfoldable12(newSteps)), v1.value1);
+                    return new Tuple(reverse(toUnfoldable5(newSteps)), v1.value1);
                   }
                   ;
                   while (!$tco_done) {
@@ -22705,7 +22706,7 @@ var envForGroup = function(env) {
           return addStop(env)(ref)(acc);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1138, column 1 - line 1138, column 82): " + [env.constructor.name, ref.constructor.name, acc.constructor.name, group4.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1143, column 1 - line 1143, column 82): " + [env.constructor.name, ref.constructor.name, acc.constructor.name, group4.constructor.name]);
       };
     };
   };
@@ -22768,8 +22769,8 @@ var evalExternFromImpl = function(v) {
             return Nothing.value;
           };
           if (v1.value1 instanceof ExternDict) {
-            var $2308 = findProp(v2[0].value0.value0)(v1.value1.value1);
-            if ($2308 instanceof Just) {
+            var $2325 = findProp(v2[0].value0.value0)(v1.value1.value1);
+            if ($2325 instanceof Just) {
               var ref = new EvalExtern(qual);
               var v4 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineProp(v2[0].value0.value0)));
               if (v4 instanceof Just && v4.value0 instanceof InlineNever) {
@@ -22777,15 +22778,15 @@ var evalExternFromImpl = function(v) {
               }
               ;
               if (v4 instanceof Just && v4.value0 instanceof InlineAlways) {
-                return new Just(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2308.value0.value1));
+                return new Just(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2325.value0.value1));
               }
               ;
               if (v4 instanceof Just && v4.value0 instanceof InlineArity) {
                 return Nothing.value;
               }
               ;
-              if (shouldInlineExternAccessor(qual)($2308.value0.value0)($2308.value0.value1)(v2[0].value0)) {
-                return new Just(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2308.value0.value1));
+              if (shouldInlineExternAccessor(qual)($2325.value0.value0)($2325.value0.value1)(v2[0].value0)) {
+                return new Just(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2325.value0.value1));
               }
               ;
               return Nothing.value;
@@ -22827,8 +22828,8 @@ var evalExternFromImpl = function(v) {
             return Nothing.value;
           };
           if (v1.value1 instanceof ExternDict) {
-            var $2331 = findProp(v2[0].value0.value0)(v1.value1.value1);
-            if ($2331 instanceof Just) {
+            var $2348 = findProp(v2[0].value0.value0)(v1.value1.value1);
+            if ($2348 instanceof Just) {
               var ref = new EvalExtern(qual);
               var v4 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineProp(v2[0].value0.value0)));
               if (v4 instanceof Just && v4.value0 instanceof InlineNever) {
@@ -22836,12 +22837,12 @@ var evalExternFromImpl = function(v) {
               }
               ;
               if (v4 instanceof Just && v4.value0 instanceof InlineAlways) {
-                return new Just(evalApp(v)(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2331.value0.value1))(v2[1].value0));
+                return new Just(evalApp(v)(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2348.value0.value1))(v2[1].value0));
               }
               ;
               if (v4 instanceof Just && v4.value0 instanceof InlineArity) {
                 if (length(v2[1].value0) >= v4.value0.value0) {
-                  return new Just(evalApp(v)(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2331.value0.value1))(v2[1].value0));
+                  return new Just(evalApp(v)(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2348.value0.value1))(v2[1].value0));
                 }
                 ;
                 if (otherwise) {
@@ -22850,8 +22851,8 @@ var evalExternFromImpl = function(v) {
                 ;
               }
               ;
-              if (shouldInlineExternApp(qual)($2331.value0.value0)($2331.value0.value1)(v2[1].value0)) {
-                return new Just(evalApp(v)(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2331.value0.value1))(v2[1].value0));
+              if (shouldInlineExternApp(qual)($2348.value0.value0)($2348.value0.value1)(v2[1].value0)) {
+                return new Just(evalApp(v)(eval2(envForGroup(v)(ref)(new InlineProp(v2[0].value0.value0))(v1.value1.value0))($2348.value0.value1))(v2[1].value0));
               }
               ;
               return Nothing.value;
@@ -22918,6 +22919,46 @@ var evalExternFromImpl = function(v) {
           return Nothing.value;
         }
         ;
+        if (v2.length === 3 && (v2[0] instanceof ExternApp && (v2[1] instanceof ExternAccessor && (v2[1].value0 instanceof GetCtorField && (v2[2] instanceof ExternAccessor && v2[2].value0 instanceof GetProp))))) {
+          if (v1.value1 instanceof ExternExpr) {
+            var ref = new EvalExtern(qual);
+            var v3 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineSpineProp(v2[2].value0.value0)));
+            if (v3 instanceof Just && v3.value0 instanceof InlineNever) {
+              return new Just(neutralSpine(new NeutStop(qual))(spine));
+            }
+            ;
+            if (v3 instanceof Just && v3.value0 instanceof InlineAlways) {
+              return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineSpineProp(v2[2].value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
+            }
+            ;
+            return Nothing.value;
+          }
+          ;
+          return Nothing.value;
+        }
+        ;
+        if (v2.length === 4 && (v2[0] instanceof ExternApp && (v2[1] instanceof ExternAccessor && (v2[1].value0 instanceof GetCtorField && (v2[2] instanceof ExternAccessor && (v2[2].value0 instanceof GetProp && v2[3] instanceof ExternApp)))))) {
+          if (v1.value1 instanceof ExternExpr) {
+            var ref = new EvalExtern(qual);
+            var v3 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineSpineProp(v2[2].value0.value0)));
+            if (v3 instanceof Just && v3.value0 instanceof InlineNever) {
+              return new Just(neutralSpine(new NeutStop(qual))(spine));
+            }
+            ;
+            if (v3 instanceof Just && v3.value0 instanceof InlineAlways) {
+              return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineSpineProp(v2[2].value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
+            }
+            ;
+            if (v3 instanceof Just && (v3.value0 instanceof InlineArity && length(v2[3].value0) >= v3.value0.value0)) {
+              return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineSpineProp(v2[2].value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
+            }
+            ;
+            return Nothing.value;
+          }
+          ;
+          return Nothing.value;
+        }
+        ;
         if (v2.length === 3 && (v2[0] instanceof ExternApp && (v2[1] instanceof ExternAccessor && (v2[1].value0 instanceof GetProp && v2[2] instanceof ExternApp)))) {
           if (v1.value1 instanceof ExternExpr) {
             var ref = new EvalExtern(qual);
@@ -22945,8 +22986,8 @@ var evalExternFromImpl = function(v) {
             var v7 = function(v83) {
               return Nothing.value;
             };
-            var $2389 = uncons(filter(isNotTypeApp)(spine));
-            if ($2389 instanceof Just && $2389.value0.head instanceof ExternApp) {
+            var $2448 = uncons(filter(isNotTypeApp)(spine));
+            if ($2448 instanceof Just && $2448.value0.head instanceof ExternApp) {
               if (v1.value1 instanceof ExternExpr) {
                 var ref3 = new EvalExtern(qual);
                 var v82 = bind6(lookup42(ref3)(v.directives))(lookup32(InlineRef.value));
@@ -22962,15 +23003,15 @@ var evalExternFromImpl = function(v) {
             ;
             return v7(true);
           };
-          var $2400 = uncons(filter(isNotTypeApp)(spine));
-          if ($2400 instanceof Just && $2400.value0.head instanceof ExternApp) {
-            var $2401 = uncons($2400.value0.tail);
-            if ($2401 instanceof Just && ($2401.value0.head instanceof ExternAccessor && $2401.value0.head.value0 instanceof GetProp)) {
+          var $2459 = uncons(filter(isNotTypeApp)(spine));
+          if ($2459 instanceof Just && $2459.value0.head instanceof ExternApp) {
+            var $2460 = uncons($2459.value0.tail);
+            if ($2460 instanceof Just && ($2460.value0.head instanceof ExternAccessor && $2460.value0.head.value0 instanceof GetProp)) {
               if (v1.value1 instanceof ExternExpr) {
                 var ref2 = new EvalExtern(qual);
-                var v6 = bind6(lookup42(ref2)(v.directives))(lookup32(new InlineSpineProp($2401.value0.head.value0.value0)));
+                var v6 = bind6(lookup42(ref2)(v.directives))(lookup32(new InlineSpineProp($2460.value0.head.value0.value0)));
                 if (v6 instanceof Just && v6.value0 instanceof InlineAlways) {
-                  return new Just(evalSpine(v)(eval2(envForGroup(v)(ref2)(new InlineSpineProp($2401.value0.head.value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
+                  return new Just(evalSpine(v)(eval2(envForGroup(v)(ref2)(new InlineSpineProp($2460.value0.head.value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
                 }
                 ;
                 return Nothing.value;
@@ -22984,13 +23025,13 @@ var evalExternFromImpl = function(v) {
           ;
           return v52(true);
         };
-        var $2417 = uncons(filter(isNotTypeApp)(spine));
-        if ($2417 instanceof Just && ($2417.value0.head instanceof ExternAccessor && $2417.value0.head.value0 instanceof GetProp)) {
+        var $2476 = uncons(filter(isNotTypeApp)(spine));
+        if ($2476 instanceof Just && ($2476.value0.head instanceof ExternAccessor && $2476.value0.head.value0 instanceof GetProp)) {
           if (v1.value1 instanceof ExternExpr) {
             var ref = new EvalExtern(qual);
-            var v4 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineProp($2417.value0.head.value0.value0)));
+            var v4 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineProp($2476.value0.head.value0.value0)));
             if (v4 instanceof Just && v4.value0 instanceof InlineAlways) {
-              return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineProp($2417.value0.head.value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
+              return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineProp($2476.value0.head.value0.value0))(v1.value1.value0))(v1.value1.value1))(spine));
             }
             ;
             return Nothing.value;
@@ -23000,12 +23041,12 @@ var evalExternFromImpl = function(v) {
             return Nothing.value;
           };
           if (v1.value1 instanceof ExternDict) {
-            var $2424 = findProp($2417.value0.head.value0.value0)(v1.value1.value1);
-            if ($2424 instanceof Just) {
+            var $2483 = findProp($2476.value0.head.value0.value0)(v1.value1.value1);
+            if ($2483 instanceof Just) {
               var ref = new EvalExtern(qual);
-              var v5 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineProp($2417.value0.head.value0.value0)));
+              var v5 = bind6(lookup42(ref)(v.directives))(lookup32(new InlineProp($2476.value0.head.value0.value0)));
               if (v5 instanceof Just && v5.value0 instanceof InlineAlways) {
-                return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineProp($2417.value0.head.value0.value0))(v1.value1.value0))($2424.value0.value1))($2417.value0.tail));
+                return new Just(evalSpine(v)(eval2(envForGroup(v)(ref)(new InlineProp($2476.value0.head.value0.value0))(v1.value1.value0))($2483.value0.value1))($2476.value0.tail));
               }
               ;
               return Nothing.value;
@@ -24044,7 +24085,7 @@ var insertLayout = function(v) {
           return k(v1);
         };
       };
-      var insert18 = function(v1) {
+      var insert19 = function(v1) {
         if (v.value instanceof TokLowerName && (v.value.value0 instanceof Nothing && v.value.value1 === "data")) {
           var v2 = insertDefault(v1);
           if (isTopDecl(v.range.start)(v2.value0)) {
@@ -24349,7 +24390,7 @@ var insertLayout = function(v) {
         ;
         return insertDefault(v1);
       };
-      return insert18(new Tuple(stack, []));
+      return insert19(new Tuple(stack, []));
     };
   };
 };
@@ -26049,7 +26090,7 @@ var defaultDirectives = "\n  -- Prelude\n\n  Control.Applicative.liftA1 arity=1\
 var bind7 = /* @__PURE__ */ bind(bindAff);
 var pure5 = /* @__PURE__ */ pure(applicativeAff);
 var bind12 = /* @__PURE__ */ bind(bindEither);
-var lmap3 = /* @__PURE__ */ lmap(bifunctorEither);
+var lmap4 = /* @__PURE__ */ lmap(bifunctorEither);
 var discard3 = /* @__PURE__ */ discard(discardUnit)(bindAff);
 var liftEffect2 = /* @__PURE__ */ liftEffect(monadEffectAff);
 var show6 = /* @__PURE__ */ show(showError);
@@ -26064,7 +26105,7 @@ var readCoreFnModule = function(filePath) {
       if ($24) {
         return bind7(readTextFile3(UTF8.value)(filePath))(function(contents) {
           var v = bind12(jsonParser(contents))((function() {
-            var $40 = lmap3(printJsonDecodeError);
+            var $40 = lmap4(printJsonDecodeError);
             return function($41) {
               return $40(decodeModule($41));
             };
@@ -26334,7 +26375,8 @@ var $runtime_lazy7 = function(name2, moduleName2, init4) {
 var eq20 = /* @__PURE__ */ eq(/* @__PURE__ */ eqArray(eqString));
 var conj2 = /* @__PURE__ */ conj(heytingAlgebraBoolean);
 var eq110 = /* @__PURE__ */ eq(/* @__PURE__ */ eqQualified(eqProperName));
-var eq23 = /* @__PURE__ */ eq(/* @__PURE__ */ eqQualified(eqIdent));
+var eqQualified3 = /* @__PURE__ */ eqQualified(eqIdent);
+var eq23 = /* @__PURE__ */ eq(eqQualified3);
 var compare9 = /* @__PURE__ */ compare(/* @__PURE__ */ ordArray(ordString));
 var compare16 = /* @__PURE__ */ compare(/* @__PURE__ */ ordQualified(ordProperName));
 var ordQualified3 = /* @__PURE__ */ ordQualified(ordIdent);
@@ -26361,10 +26403,11 @@ var foldl10 = /* @__PURE__ */ foldl(foldableArray);
 var bind8 = /* @__PURE__ */ bind(bindMaybe);
 var pure6 = /* @__PURE__ */ pure(applicativeMaybe);
 var fromFoldable8 = /* @__PURE__ */ fromFoldable4(foldableArray);
-var fromFoldable1 = /* @__PURE__ */ fromFoldable8(ordString);
+var fromFoldable12 = /* @__PURE__ */ fromFoldable8(ordString);
 var append23 = /* @__PURE__ */ append(/* @__PURE__ */ semigroupSet(ordString));
 var bindFlipped4 = /* @__PURE__ */ bindFlipped(bindFn);
 var lookup12 = /* @__PURE__ */ lookup2(ordQualified3);
+var elem3 = /* @__PURE__ */ elem2(eqQualified3);
 var map210 = /* @__PURE__ */ map(functorMaybe);
 var eq84 = /* @__PURE__ */ eq(eqMeta);
 var insert8 = /* @__PURE__ */ insert(ordIdent);
@@ -26373,6 +26416,7 @@ var foldrWithIndex3 = /* @__PURE__ */ foldrWithIndex(foldableWithIndexMap);
 var insert13 = /* @__PURE__ */ insert(ordInlineAccessor);
 var lookup33 = /* @__PURE__ */ lookup2(ordInlineAccessor);
 var fromFoldable22 = /* @__PURE__ */ fromFoldable2(ordInlineAccessor)(foldableArray);
+var bind13 = /* @__PURE__ */ bind(bindArray);
 var alt5 = /* @__PURE__ */ alt(altMaybe);
 var analyzeEffectBlock2 = /* @__PURE__ */ analyzeEffectBlock(hasAnalysisBackendExpr)(hasSyntaxBackendExpr);
 var analyze2 = /* @__PURE__ */ analyze(hasAnalysisBackendExpr)(hasSyntaxBackendExpr);
@@ -26393,7 +26437,7 @@ var unwrap6 = /* @__PURE__ */ unwrap();
 var composeKleisli3 = /* @__PURE__ */ composeKleisli(bindMaybe);
 var comparing1 = /* @__PURE__ */ comparing(ordInt);
 var sequence4 = /* @__PURE__ */ sequence(traversableBackendSyntax)(applicativeFn);
-var bind13 = /* @__PURE__ */ bind(bindFn);
+var bind23 = /* @__PURE__ */ bind(bindFn);
 var foldr9 = /* @__PURE__ */ foldr(foldableArray);
 var pure14 = /* @__PURE__ */ pure(applicativeFn);
 var map36 = /* @__PURE__ */ map(functorFn);
@@ -26427,11 +26471,10 @@ var mapAccumL2 = /* @__PURE__ */ mapAccumL(traversableArray);
 var bindFlipped1 = /* @__PURE__ */ bindFlipped(bindArray);
 var fromFoldable32 = /* @__PURE__ */ fromFoldable8(ordIdent);
 var member1 = /* @__PURE__ */ member2(ordIdent);
-var bind23 = /* @__PURE__ */ bind(bindArray);
 var pure23 = /* @__PURE__ */ pure(applicativeArray);
 var fromFoldable42 = /* @__PURE__ */ fromFoldable2(ordProperName)(foldableArray);
 var fromFoldable52 = /* @__PURE__ */ fromFoldable2(ordIdent)(foldableNonEmptyArray);
-var mapWithIndex5 = /* @__PURE__ */ mapWithIndex(functorWithIndexNonEmptyArray);
+var mapWithIndex6 = /* @__PURE__ */ mapWithIndex(functorWithIndexNonEmptyArray);
 var maximum3 = /* @__PURE__ */ maximum2(ordInt)(foldable1NonEmptyArray);
 var comparing22 = /* @__PURE__ */ comparing(ordProperName);
 var foldlWithIndex12 = /* @__PURE__ */ foldlWithIndex(foldableWithIndexMap);
@@ -26799,7 +26842,7 @@ var unwrapExternSpine = function(v) {
     return new ExternPrimOp(v.value0);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 433, column 21 - line 438, column 37): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 452, column 21 - line 457, column 37): " + [v.constructor.name]);
 };
 var topEnv = function(v) {
   return {
@@ -26884,9 +26927,9 @@ var toExternImpl = function(env) {
           return new Tuple(new Tuple(v3.value0, new ExternExpr(group4, v3.value1)), v3.value1);
         };
         if (isDict) {
-          var $504 = getLitRecord(v);
-          if ($504 instanceof Just) {
-            var propsWithAnalysis = map30(map113(freeze))($504.value0);
+          var $508 = getLitRecord(v);
+          if ($508 instanceof Just) {
+            var propsWithAnalysis = map30(map113(freeze))($508.value0);
             var v2 = freeze(expr);
             return new Tuple(new Tuple(analysisOf3(expr), new ExternDict(group4, propsWithAnalysis)), v2.value1);
           }
@@ -26901,9 +26944,9 @@ var toExternImpl = function(env) {
 };
 var toCaseRowVars = function(v) {
   return foldMap9((function() {
-    var $997 = flip(singleton4)(v.column);
-    return function($998) {
-      return SemigroupMap($997($998));
+    var $1029 = flip(singleton4)(v.column);
+    return function($1030) {
+      return SemigroupMap($1029($1030));
     };
   })())(v.pattern.vars);
 };
@@ -26970,7 +27013,7 @@ var normalizeCaseRows = /* @__PURE__ */ (function() {
                 return pure6((function() {
                   var v = patternPatCase(pat);
                   if (v instanceof PatRecord) {
-                    var keys3 = fromFoldable1(v.value0);
+                    var keys3 = fromFoldable12(v.value0);
                     return maybe(keys3)(append23(keys3))(acc);
                   }
                   ;
@@ -26990,7 +27033,7 @@ var normalizeCaseRows = /* @__PURE__ */ (function() {
             return;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 807, column 7 - line 809, column 63): " + [nextColumnFields.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 834, column 7 - line 836, column 63): " + [nextColumnFields.constructor.name]);
         }
         ;
         while (!$tco_done) {
@@ -27022,41 +27065,58 @@ var lookupImplementation = function(conv) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 460, column 9 - line 462, column 29): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 484, column 9 - line 486, column 29): " + [v2.constructor.name]);
       }
       ;
       if (v.value0 instanceof Nothing) {
         return Nothing.value;
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 458, column 16 - line 463, column 25): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 482, column 16 - line 487, column 25): " + [v.value0.constructor.name]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 456, column 3 - line 463, column 25): " + [v1.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 480, column 3 - line 487, column 25): " + [v1.constructor.name]);
   };
 };
-var makeExternEvalRef = function(conv) {
-  return function(env) {
-    return function(qual) {
-      return map210(evalExternRefFromImpl(env)(qual))(lookupImplementation(conv)(qual));
+var makeExternEvalRef = function(group4) {
+  return function(conv) {
+    return function(env) {
+      return function(qual) {
+        var $562 = elem3(qual)(group4);
+        if ($562) {
+          return Nothing.value;
+        }
+        ;
+        return map210(evalExternRefFromImpl(env)(qual))(lookupImplementation(conv)(qual));
+      };
     };
   };
 };
-var makeExternEvalSpine = function(conv) {
-  return function(env) {
-    return function(qual) {
-      return function(spine) {
-        var spine$prime = map30(unwrapExternSpine)(spine);
-        var result = bind8(lookup12(qual)(conv.foreignSemantics))(function(fn) {
-          return fn(env)(qual)(spine$prime);
-        });
-        if (result instanceof Nothing) {
-          return bind8(lookupImplementation(conv)(qual))(function(impl) {
-            return evalExternFromImpl(topEnv(env))(qual)(impl)(spine$prime);
+var makeExternEvalSpine = function(group4) {
+  return function(conv) {
+    return function(env) {
+      return function(qual) {
+        return function(spine) {
+          var $563 = elem3(qual)(group4);
+          if ($563) {
+            return Nothing.value;
+          }
+          ;
+          var spine$prime = map30(unwrapExternSpine)(spine);
+          var result = bind8(lookup12(qual)(conv.foreignSemantics))(function(fn) {
+            return fn(env)(qual)(spine$prime);
           });
-        }
-        ;
-        return result;
+          var res = (function() {
+            if (result instanceof Nothing) {
+              return bind8(lookupImplementation(conv)(qual))(function(impl) {
+                return evalExternFromImpl(topEnv(env))(qual)(impl)(spine$prime);
+              });
+            }
+            ;
+            return result;
+          })();
+          return res;
+        };
       };
     };
   };
@@ -27103,84 +27163,145 @@ var isConstrainedType = function($copy_v) {
   ;
   return $tco_result;
 };
-var isTypeClassDictionaryWithProps = function($copy_expr) {
-  var $tco_done = false;
-  var $tco_result;
-  function $tco_loop(expr) {
-    var getConstructorMeta = function($copy_v) {
-      var $tco_done1 = false;
-      var $tco_result2;
-      function $tco_loop2(v2) {
-        if (v2 instanceof ExprVar && v2.value0.meta instanceof Just) {
-          $tco_done1 = true;
-          return new Just(v2.value0.meta.value0);
+var isTypeClassDictionaryWithProps = /* @__PURE__ */ (function() {
+  var unrollApps = (function() {
+    var loop = function($copy_v) {
+      return function($copy_v1) {
+        var $tco_var_v = $copy_v;
+        var $tco_done = false;
+        var $tco_result;
+        function $tco_loop(v, v1) {
+          if (v1 instanceof ExprApp) {
+            $tco_var_v = cons(v1.value2)(v);
+            $copy_v1 = v1.value1;
+            return;
+          }
+          ;
+          if (v1 instanceof ExprTypeApp) {
+            $tco_var_v = v;
+            $copy_v1 = v1.value1;
+            return;
+          }
+          ;
+          $tco_done = true;
+          return new Tuple(v1, v);
         }
         ;
-        if (v2 instanceof ExprApp) {
-          $copy_v = v2.value1;
+        while (!$tco_done) {
+          $tco_result = $tco_loop($tco_var_v, $copy_v1);
+        }
+        ;
+        return $tco_result;
+      };
+    };
+    return loop([]);
+  })();
+  var getConstructorMeta = function($copy_expr$prime) {
+    var $tco_done1 = false;
+    var $tco_result;
+    function $tco_loop(expr$prime) {
+      if (expr$prime instanceof ExprVar && expr$prime.value0.meta instanceof Just) {
+        $tco_done1 = true;
+        return new Just(expr$prime.value0.meta.value0);
+      }
+      ;
+      if (expr$prime instanceof ExprConstructor) {
+        $tco_done1 = true;
+        return new Just(IsTypeClassConstructor.value);
+      }
+      ;
+      if (expr$prime instanceof ExprApp) {
+        $copy_expr$prime = expr$prime.value1;
+        return;
+      }
+      ;
+      if (expr$prime instanceof ExprTypeApp) {
+        $copy_expr$prime = expr$prime.value1;
+        return;
+      }
+      ;
+      $tco_done1 = true;
+      return Nothing.value;
+    }
+    ;
+    while (!$tco_done1) {
+      $tco_result = $tco_loop($copy_expr$prime);
+    }
+    ;
+    return $tco_result;
+  };
+  var go = function($copy_isClass) {
+    return function($copy_v) {
+      var $tco_var_isClass = $copy_isClass;
+      var $tco_done2 = false;
+      var $tco_result;
+      function $tco_loop(isClass, v) {
+        if (v instanceof ExprAbs && (v.value0.type instanceof Just && isConstrainedType(v.value0.type.value0))) {
+          $tco_var_isClass = true;
+          $copy_v = v.value2;
           return;
         }
         ;
-        $tco_done1 = true;
-        return Nothing.value;
-      }
-      ;
-      while (!$tco_done1) {
-        $tco_result2 = $tco_loop2($copy_v);
-      }
-      ;
-      return $tco_result2;
-    };
-    if (expr instanceof ExprAbs && (expr.value0.type instanceof Just && isConstrainedType(expr.value0.type.value0))) {
-      $copy_expr = expr.value2;
-      return;
-    }
-    ;
-    if (expr instanceof ExprAbs) {
-      $copy_expr = expr.value2;
-      return;
-    }
-    ;
-    if (expr instanceof ExprLet) {
-      $copy_expr = expr.value2;
-      return;
-    }
-    ;
-    if (expr instanceof ExprTypeApp) {
-      $copy_expr = expr.value1;
-      return;
-    }
-    ;
-    var v = function(v1) {
-      return new Tuple(false, []);
-    };
-    if (expr instanceof ExprApp && (expr.value2 instanceof ExprLit && expr.value2.value1 instanceof LitRecord)) {
-      var $588 = getConstructorMeta(expr.value1);
-      if ($588 instanceof Just) {
-        var $589 = eq84($588.value0)(IsTypeClassConstructor.value) || eq84($588.value0)(IsNewtype.value);
-        if ($589) {
-          $tco_done = true;
-          return new Tuple(true, map30(propKey)(expr.value2.value1.value0));
+        if (v instanceof ExprAbs) {
+          $tco_var_isClass = isClass;
+          $copy_v = v.value2;
+          return;
         }
         ;
-        $tco_done = true;
-        return v(true);
+        if (v instanceof ExprLet) {
+          $tco_var_isClass = isClass;
+          $copy_v = v.value2;
+          return;
+        }
+        ;
+        if (v instanceof ExprTypeApp) {
+          $tco_var_isClass = isClass;
+          $copy_v = v.value1;
+          return;
+        }
+        ;
+        var v1 = function(v2) {
+          if (v instanceof ExprLit && (v.value1 instanceof LitRecord && isClass)) {
+            return new Tuple(true, map30(propKey)(v.value1.value0));
+          }
+          ;
+          var v3 = unrollApps(v);
+          if (v3.value0 instanceof ExprVar && (v3.value0.value0.meta instanceof Just && (eq84(v3.value0.value0.meta.value0)(IsTypeClassConstructor.value) || eq84(v3.value0.value0.meta.value0)(IsNewtype.value)))) {
+            return new Tuple(true, []);
+          }
+          ;
+          return new Tuple(false, []);
+        };
+        if (v instanceof ExprApp && (v.value2 instanceof ExprLit && v.value2.value1 instanceof LitRecord)) {
+          var $620 = getConstructorMeta(v.value1);
+          if ($620 instanceof Just) {
+            var $621 = eq84($620.value0)(IsTypeClassConstructor.value) || eq84($620.value0)(IsNewtype.value);
+            if ($621) {
+              $tco_done2 = true;
+              return new Tuple(true, map30(propKey)(v.value2.value1.value0));
+            }
+            ;
+            $tco_done2 = true;
+            return new Tuple(false, []);
+          }
+          ;
+          $tco_done2 = true;
+          return v1(true);
+        }
+        ;
+        $tco_done2 = true;
+        return v1(true);
       }
       ;
-      $tco_done = true;
-      return v(true);
-    }
-    ;
-    $tco_done = true;
-    return v(true);
-  }
-  ;
-  while (!$tco_done) {
-    $tco_result = $tco_loop($copy_expr);
-  }
-  ;
-  return $tco_result;
-};
+      while (!$tco_done2) {
+        $tco_result = $tco_loop($tco_var_isClass, $copy_v);
+      }
+      ;
+      return $tco_result;
+    };
+  };
+  return go(false);
+})();
 var intro = function(dictFoldable) {
   var foldr15 = foldr(dictFoldable);
   return function(ident) {
@@ -27232,8 +27353,8 @@ var inferTransitiveDirective = function(directives) {
                     };
                   };
                 })(empty2)(v.value0);
-                var $603 = isEmpty(newDirs);
-                if ($603) {
+                var $635 = isEmpty(newDirs);
+                if ($635) {
                   return Nothing.value;
                 }
                 ;
@@ -27267,9 +27388,9 @@ var inferTransitiveDirective = function(directives) {
                     return Nothing.value;
                   };
                   if (v4 instanceof Just && v4.value0 instanceof InlineArity) {
-                    var $629 = length5(backendExpr.value1.value1);
-                    var $630 = $629 >= v4.value0.value0;
-                    if ($630) {
+                    var $661 = length5(backendExpr.value1.value1);
+                    var $662 = $661 >= v4.value0.value0;
+                    if ($662) {
                       return new Just(singleton4(InlineRef.value)(InlineAlways.value));
                     }
                     ;
@@ -27281,13 +27402,13 @@ var inferTransitiveDirective = function(directives) {
                 ;
                 return Nothing.value;
               };
-              var $641 = isTypeClassDictionaryWithProps(cfn);
-              if ($641.value0) {
-                var $643 = dictSize <= 512;
-                if ($643) {
-                  return new Just(fromFoldable22(append14([new Tuple(InlineRef.value, InlineAlways.value)])(map30(function(p) {
-                    return new Tuple(new InlineProp(p), InlineAlways.value);
-                  })($641.value1))));
+              var $673 = isTypeClassDictionaryWithProps(cfn);
+              if ($673.value0) {
+                var $675 = dictSize <= 512e3;
+                if ($675) {
+                  return new Just(fromFoldable22(append14([new Tuple(InlineRef.value, InlineAlways.value)])(bind13($673.value1)(function(p) {
+                    return [new Tuple(new InlineProp(p), InlineAlways.value), new Tuple(new InlineSpineProp(p), InlineAlways.value)];
+                  }))));
                 }
                 ;
                 return v2(true);
@@ -27296,10 +27417,10 @@ var inferTransitiveDirective = function(directives) {
               return v2(true);
             };
             if (cfn instanceof ExprAbs && cfn.value0.meta instanceof Just) {
-              var $647 = eq84(cfn.value0.meta.value0)(IsTypeClassConstructor.value) || eq84(cfn.value0.meta.value0)(IsNewtype.value);
-              if ($647) {
-                var $648 = dictSize <= 512;
-                if ($648) {
+              var $679 = eq84(cfn.value0.meta.value0)(IsTypeClassConstructor.value) || eq84(cfn.value0.meta.value0)(IsNewtype.value);
+              if ($679) {
+                var $680 = dictSize <= 512;
+                if ($680) {
                   return new Just(singleton4(InlineRef.value)(InlineAlways.value));
                 }
                 ;
@@ -27373,7 +27494,7 @@ var inferExprType = function(v) {
       return Nothing.value;
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1128, column 8 - line 1130, column 23): " + [v2.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1155, column 8 - line 1157, column 23): " + [v2.constructor.name]);
   }
   ;
   return Nothing.value;
@@ -27399,14 +27520,14 @@ var getCtx = function(env) {
             return new Just(v.value0);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 495, column 9 - line 499, column 19): " + [acc.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 522, column 9 - line 526, column 19): " + [acc.constructor.name]);
         }
         ;
         if (v.value1 instanceof ExternCtor) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 489, column 5 - line 501, column 16): " + [v.value1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 516, column 5 - line 528, column 16): " + [v.value1.constructor.name]);
       });
     };
   };
@@ -27428,7 +27549,7 @@ var getCtx = function(env) {
           return analyze2(lookupExtern)(expr);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 477, column 7 - line 483, column 38): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 504, column 7 - line 510, column 38): " + [v1.constructor.name]);
       };
     },
     effect: false
@@ -27465,7 +27586,7 @@ var decompose = function(chosenColumn) {
         };
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1055, column 22 - line 1059, column 123): " + [l.match.constructor.name, r.match.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1082, column 22 - line 1086, column 123): " + [l.match.constructor.name, r.match.constructor.name]);
     };
   };
   var checkMatch = function(p) {
@@ -27477,12 +27598,12 @@ var decompose = function(chosenColumn) {
         };
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1021, column 1 - line 1021, column 119): " + [p.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1048, column 1 - line 1048, column 119): " + [p.constructor.name]);
     };
-    var $702 = eq94(p.column)(chosenColumn.column);
-    if ($702) {
-      var $703 = eq112(patternPatCase(p))(PatWild.value) || on(eq112)(patternPatCase)(chosenColumn)(p);
-      if ($703) {
+    var $734 = eq94(p.column)(chosenColumn.column);
+    if ($734) {
+      var $735 = eq112(patternPatCase(p))(PatWild.value) || on(eq112)(patternPatCase)(chosenColumn)(p);
+      if ($735) {
         return {
           nonMatchesBefore: [],
           match: new Just({
@@ -27505,9 +27626,9 @@ var decompose = function(chosenColumn) {
     ;
     if (v instanceof Just) {
       var v1 = foldl1Array(function(l) {
-        var $999 = mergeResults(l);
-        return function($1000) {
-          return $999(checkMatch($1000));
+        var $1031 = mergeResults(l);
+        return function($1032) {
+          return $1031(checkMatch($1032));
         };
       })(checkMatch)(v.value0);
       if (v1.match instanceof Just) {
@@ -27520,8 +27641,8 @@ var decompose = function(chosenColumn) {
             nonMatchesAfter: v1.match.value0.nonMatchesAfter
           }],
           rowsNoMatch: (function() {
-            var $707 = eq112(patternPatCase(v1.match.value0.match))(PatWild.value);
-            if ($707) {
+            var $739 = eq112(patternPatCase(v1.match.value0.match))(PatWild.value);
+            if ($739) {
               return [row];
             }
             ;
@@ -27537,10 +27658,10 @@ var decompose = function(chosenColumn) {
         };
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1027, column 7 - line 1035, column 12): " + [v1.match.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1054, column 7 - line 1062, column 12): " + [v1.match.constructor.name]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1023, column 3 - line 1035, column 12): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1050, column 3 - line 1062, column 12): " + [v.constructor.name]);
   });
 };
 var currentLevel = function(env) {
@@ -27571,10 +27692,10 @@ var chooseNextPattern = function(row0Patterns) {
                 return new Just(singleton10(next2));
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 911, column 19 - line 914, column 52): " + [v2.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 938, column 19 - line 941, column 52): " + [v2.constructor.name]);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 909, column 7 - line 914, column 52): " + [acc.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 936, column 7 - line 941, column 52): " + [acc.constructor.name]);
           };
         };
         return foldl14(keepAllMax)(Nothing.value);
@@ -27611,23 +27732,23 @@ var chooseNextPattern = function(row0Patterns) {
                 tailRowIndices: guard5(on(eq112)(patternPatCase)(v2.value1)(v1.value0))([rowIdx + 1 | 0]),
                 ctors: guard22(notEq1(patternPatCase(v1.value0))(PatWild.value))(singleton5(patternPatCase(v1.value0))),
                 aScore: -length(filter((function() {
-                  var $1001 = notEq1(PatWild.value);
-                  return function($1002) {
-                    return $1001(patternPatCase($1002));
+                  var $1033 = notEq1(PatWild.value);
+                  return function($1034) {
+                    return $1033(patternPatCase($1034));
                   };
                 })())(patternSubterms(v1.value0))) | 0
               };
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 883, column 15 - line 890, column 20): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 910, column 15 - line 917, column 20): " + [v1.constructor.name]);
           };
         })(tailRows);
         return {
           pattern: v2.value1,
           pScore: foldl10(function(l) {
             return function(r) {
-              var $728 = (l + 1 | 0) === r;
-              if ($728) {
+              var $760 = (l + 1 | 0) === r;
+              if ($760) {
                 return r;
               }
               ;
@@ -27643,16 +27764,16 @@ var chooseNextPattern = function(row0Patterns) {
       })))(composeKleisli3(maximumByAll1(comparing1(function(v2) {
         return v2.bScore;
       })))((function() {
-        var $1003 = map210(function($1006) {
+        var $1035 = map210(function($1038) {
           return (function(v2) {
             return v2.pattern;
-          })(head2($1006));
+          })(head2($1038));
         });
-        var $1004 = maximumByAll1(comparing1(function(v2) {
+        var $1036 = maximumByAll1(comparing1(function(v2) {
           return v2.aScore;
         }));
-        return function($1005) {
-          return $1003($1004($1005));
+        return function($1037) {
+          return $1035($1036($1037));
         };
       })()));
       var v = heuristic(matchingPatternGroups);
@@ -27664,10 +27785,10 @@ var chooseNextPattern = function(row0Patterns) {
         return snd(head2(row0Patterns));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 901, column 7 - line 903, column 57): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 928, column 7 - line 930, column 57): " + [v.constructor.name]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 874, column 3 - line 903, column 57): " + [expandIfPossible.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 901, column 3 - line 930, column 57): " + [expandIfPossible.constructor.name]);
   };
 };
 var buildM = function(a) {
@@ -27720,7 +27841,7 @@ var makeGuard = function(lvl) {
 var makeLet2 = function(id2) {
   return function(a) {
     return function(k) {
-      return bind13(currentLevel)(function(lvl) {
+      return bind23(currentLevel)(function(lvl) {
         if (id2 instanceof Nothing) {
           return make(new Let(id2, lvl, a, levelUp(k(lvl))));
         }
@@ -27729,7 +27850,7 @@ var makeLet2 = function(id2) {
           return make(new Let(id2, lvl, a, intro1([id2.value0])(lvl)(k(lvl))));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1067, column 3 - line 1071, column 56): " + [id2.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1094, column 3 - line 1098, column 56): " + [id2.constructor.name]);
       });
     };
   };
@@ -27739,7 +27860,7 @@ var makeUncurriedAbs = function(args) {
     return foldr9(function(ident) {
       return function(next2) {
         return function(tmps) {
-          return bind13(currentLevel)(function(lvl) {
+          return bind23(currentLevel)(function(lvl) {
             return intro1([ident])(lvl)(next2(snoc(tmps)(new Tuple(new Just(ident), lvl))));
           });
         };
@@ -27777,7 +27898,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
                   accessor: buildAccessor(idx)(nextArg),
                   pattern: v
                 };
-              })($lazy_binderToPattern(758)(toBinder(nextArg)));
+              })($lazy_binderToPattern(785)(toBinder(nextArg)));
             };
           }));
         };
@@ -27804,7 +27925,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
           subterms: r.subterms,
           vars: insert22(v.value1)(r.vars)
         };
-      }))($lazy_binderToPattern(701)(v.value2));
+      }))($lazy_binderToPattern(728)(v.value2));
     }
     ;
     if (v instanceof BinderLit) {
@@ -27844,7 +27965,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
         })(propValue);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 702, column 22 - line 722, column 18): " + [v.value1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 729, column 22 - line 749, column 18): " + [v.value1.constructor.name]);
     }
     ;
     if (v instanceof BinderConstructor) {
@@ -27873,7 +27994,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
       };
       if (v.value0.meta instanceof Just && v.value0.meta.value0 instanceof IsNewtype) {
         if (v.value3.length === 1) {
-          return $lazy_binderToPattern(728)(v["value3"][0]);
+          return $lazy_binderToPattern(755)(v["value3"][0]);
         }
         ;
         return v1(true);
@@ -27882,10 +28003,10 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
       return v1(true);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 696, column 19 - line 744, column 55): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 723, column 19 - line 771, column 55): " + [v.constructor.name]);
   };
 });
-var binderToPattern = /* @__PURE__ */ $lazy_binderToPattern(695);
+var binderToPattern = /* @__PURE__ */ $lazy_binderToPattern(722);
 var toBackendExprWithType = function(mbTy) {
   return function(expr) {
     var go = /* @__PURE__ */ (function() {
@@ -27895,7 +28016,7 @@ var toBackendExprWithType = function(mbTy) {
             return foldr9(function(v2) {
               return function(mainCb) {
                 return function(caseRows) {
-                  return bind13(zipWithA2(function(ident) {
+                  return bind23(zipWithA2(function(ident) {
                     return function(b) {
                       return map36(function(v1) {
                         return {
@@ -27942,11 +28063,11 @@ var toBackendExprWithType = function(mbTy) {
                           return mainCb(snoc(caseRows)(buildCaseRow(new GuardedFn(v1.value0))));
                         }
                         ;
-                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 632, column 23 - line 635, column 86): " + [v1.constructor.name]);
+                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 659, column 23 - line 662, column 86): " + [v1.constructor.name]);
                       })(v2.value1.value0)([]);
                     }
                     ;
-                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 621, column 13 - line 638, column 21): " + [v2.value1.constructor.name]);
+                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 648, column 13 - line 665, column 21): " + [v2.value1.constructor.name]);
                   });
                 };
               };
@@ -27956,7 +28077,7 @@ var toBackendExprWithType = function(mbTy) {
       };
       return function(v2) {
         if (v2 instanceof ExprVar) {
-          return bind13(ask2)(function(v12) {
+          return bind23(ask2)(function(v12) {
             var v22 = function(v3) {
               var v4 = function(v5) {
                 if (v2.value1.value0 instanceof Just && (v2.value1.value0.value0 === "Prim" && v2.value1.value1 === "undefined")) {
@@ -27970,11 +28091,11 @@ var toBackendExprWithType = function(mbTy) {
                 return buildM(new Var(v2.value1));
               };
               if (v2.value1.value0 instanceof Just) {
-                var $791 = eq104(v2.value1.value0.value0)(v12.currentModule);
-                if ($791) {
-                  var $792 = lookup43(v2.value1.value1)(v12.toLevel);
-                  if ($792 instanceof Just) {
-                    return buildM(new Local(new Just(v2.value1.value1), $792.value0));
+                var $823 = eq104(v2.value1.value0.value0)(v12.currentModule);
+                if ($823) {
+                  var $824 = lookup43(v2.value1.value1)(v12.toLevel);
+                  if ($824 instanceof Just) {
+                    return buildM(new Local(new Just(v2.value1.value1), $824.value0));
                   }
                   ;
                   return v4(true);
@@ -27986,9 +28107,9 @@ var toBackendExprWithType = function(mbTy) {
               return v4(true);
             };
             if (v2.value1.value0 instanceof Nothing) {
-              var $798 = lookup43(v2.value1.value1)(v12.toLevel);
-              if ($798 instanceof Just) {
-                return buildM(new Local(new Just(v2.value1.value1), $798.value0));
+              var $830 = lookup43(v2.value1.value1)(v12.toLevel);
+              if ($830 instanceof Just) {
+                return buildM(new Local(new Just(v2.value1.value1), $830.value0));
               }
               ;
               return v22(true);
@@ -27999,13 +28120,13 @@ var toBackendExprWithType = function(mbTy) {
         }
         ;
         if (v2 instanceof ExprLit) {
-          return bindFlipped4(function($1007) {
-            return buildM(Lit.create($1007));
+          return bindFlipped4(function($1039) {
+            return buildM(Lit.create($1039));
           })(traverse8(toBackendExpr)(v2.value1));
         }
         ;
         if (v2 instanceof ExprConstructor) {
-          return bind13(ask2)(function(v12) {
+          return bind23(ask2)(function(v12) {
             var ct = (function() {
               var v22 = lookup6(v2.value1)(v12.dataTypes);
               if (v22 instanceof Just && size(v22.value0.constructors) === 1) {
@@ -28020,9 +28141,9 @@ var toBackendExprWithType = function(mbTy) {
         ;
         if (v2 instanceof ExprAccessor) {
           return bindFlipped4((function() {
-            var $1008 = flip(Accessor.create)(new GetProp(v2.value2));
-            return function($1009) {
-              return buildM($1008($1009));
+            var $1040 = flip(Accessor.create)(new GetProp(v2.value2));
+            return function($1041) {
+              return buildM($1040($1041));
             };
           })())(toBackendExpr(v2.value1));
         }
@@ -28036,7 +28157,7 @@ var toBackendExprWithType = function(mbTy) {
         }
         ;
         if (v2 instanceof ExprAbs) {
-          return bind13(currentLevel)(function(lvl) {
+          return bind23(currentLevel)(function(lvl) {
             return make(new Abs(singleton10(new Tuple(new Just(v2.value1), lvl)), intro1([v2.value1])(lvl)(toBackendExpr(v2.value2))));
           });
         }
@@ -28050,7 +28171,7 @@ var toBackendExprWithType = function(mbTy) {
             var goBind = function(bind$prime) {
               return function(next2) {
                 if (bind$prime instanceof NonRec) {
-                  return makeLet2(new Just(bind$prime.value0.value1))(toBackendExpr(bind$prime.value0.value2))(function(v32) {
+                  return makeLet2(new Just(bind$prime.value0.value1))(toBackendExprWithType(bind$prime.value0.value0.type)(bind$prime.value0.value2))(function(v32) {
                     return next2;
                   });
                 }
@@ -28060,20 +28181,20 @@ var toBackendExprWithType = function(mbTy) {
                     return unsafeCrashWith("CoreFn empty Rec binding group");
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 520, column 1 - line 520, column 76): " + [bind$prime.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 547, column 1 - line 547, column 76): " + [bind$prime.constructor.name]);
                 };
                 if (bind$prime instanceof Rec) {
-                  var $838 = fromArray2(bind$prime.value0);
-                  if ($838 instanceof Just) {
-                    return bind13(currentLevel)(function(lvl) {
+                  var $870 = fromArray2(bind$prime.value0);
+                  if ($870 instanceof Just) {
+                    return bind23(currentLevel)(function(lvl) {
                       var idents = map44(function(v4) {
                         return v4.value1;
-                      })($838.value0);
+                      })($870.value0);
                       return join2(apply8(map36(function(x) {
                         return function(y) {
                           return buildM(new LetRec(lvl, x, y));
                         };
-                      })(intro2(idents)(lvl)(traverse33(toBackendBinding)($838.value0))))(intro2(idents)(lvl)(next2)));
+                      })(intro2(idents)(lvl)(traverse33(toBackendBinding)($870.value0))))(intro2(idents)(lvl)(next2)));
                     });
                   }
                   ;
@@ -28087,7 +28208,7 @@ var toBackendExprWithType = function(mbTy) {
           }
           ;
           if (v2 instanceof ExprTypeApp) {
-            return bind13(go(v2.value1))(function(expr$prime$prime) {
+            return bind23(go(v2.value1))(function(expr$prime$prime) {
               return buildM(new TypeApp2(expr$prime$prime, v2.value2));
             });
           }
@@ -28103,7 +28224,7 @@ var toBackendExprWithType = function(mbTy) {
                 return [];
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 591, column 24 - line 593, column 24): " + [v3.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 618, column 24 - line 620, column 24): " + [v3.constructor.name]);
             })();
             return foldr9(function(v3) {
               return function(next2) {
@@ -28119,7 +28240,7 @@ var toBackendExprWithType = function(mbTy) {
                       return Nothing.value;
                     }
                     ;
-                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 598, column 25 - line 600, column 37): " + [v4.constructor.name]);
+                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 625, column 25 - line 627, column 37): " + [v4.constructor.name]);
                   })();
                   return makeLet2(Nothing.value)(toBackendExprWithType(altTy)(v3.value1))(function(tmp) {
                     return next2(snoc(idents)(tmp));
@@ -28133,7 +28254,7 @@ var toBackendExprWithType = function(mbTy) {
             })(mapWithIndex2(Tuple.create)(v2.value1))([]);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 520, column 1 - line 520, column 76): " + [v2.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 547, column 1 - line 547, column 76): " + [v2.constructor.name]);
         };
         if (v2 instanceof ExprApp) {
           if (v2.value1 instanceof ExprVar && (v2.value1.value0.meta instanceof Just && v2.value1.value0.meta.value0 instanceof IsNewtype)) {
@@ -28147,7 +28268,7 @@ var toBackendExprWithType = function(mbTy) {
       };
     })();
     var v = exprAnn(expr);
-    return bind13(go(expr))(function(backendExpr) {
+    return bind23(go(expr))(function(backendExpr) {
       return pure14((function() {
         var v1 = (function() {
           if (v.type instanceof Just) {
@@ -28163,10 +28284,10 @@ var toBackendExprWithType = function(mbTy) {
               return inferExprType(expr);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 528, column 20 - line 530, column 40): " + [mbTy.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 555, column 20 - line 557, column 40): " + [mbTy.constructor.name]);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 526, column 7 - line 530, column 40): " + [v.type.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 553, column 7 - line 557, column 40): " + [v.type.constructor.name]);
         })();
         if (v1 instanceof Just) {
           return new ExprSyntax(analysisOf3(backendExpr), new Typed(v1.value0, backendExpr));
@@ -28176,7 +28297,7 @@ var toBackendExprWithType = function(mbTy) {
           return backendExpr;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 525, column 5 - line 533, column 29): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 552, column 5 - line 560, column 29): " + [v1.constructor.name]);
       })());
     });
   };
@@ -28185,7 +28306,7 @@ var toBackendExpr = function(expr) {
   return toBackendExprWithType(Nothing.value)(expr);
 };
 var toBackendBinding = function(v) {
-  return map36(Tuple.create(v.value1))(toBackendExpr(v.value2));
+  return map36(Tuple.create(v.value1))(toBackendExprWithType(v.value0.type)(v.value2));
 };
 var buildCaseTreeFromRows = function(denormalizedRows) {
   var v = fromArray2(normalizeCaseRows(denormalizedRows));
@@ -28198,8 +28319,8 @@ var buildCaseTreeFromRows = function(denormalizedRows) {
     var row0NonPatWildPatterns = fromArray2(foldlWithIndex3(function(idx) {
       return function(acc) {
         return function(p) {
-          var $886 = notEq1(patternPatCase(p))(PatWild.value);
-          if ($886) {
+          var $918 = notEq1(patternPatCase(p))(PatWild.value);
+          if ($918) {
             return snoc(acc)(new Tuple(idx, p));
           }
           ;
@@ -28215,10 +28336,10 @@ var buildCaseTreeFromRows = function(denormalizedRows) {
       return buildCasePattern(chooseNextPattern(row0NonPatWildPatterns.value0)(v1.tail))(toArray3(v.value0));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 793, column 5 - line 797, column 95): " + [row0NonPatWildPatterns.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 820, column 5 - line 824, column 95): " + [row0NonPatWildPatterns.constructor.name]);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 782, column 42 - line 797, column 95): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 809, column 42 - line 824, column 95): " + [v.constructor.name]);
 };
 var buildCasePattern = function(chosenColumn) {
   return function(rows) {
@@ -28322,7 +28443,7 @@ var buildCasePattern = function(chosenColumn) {
       return buildCaseBranch(guardBoolean(v.value0));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 923, column 38 - line 943, column 37): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 950, column 38 - line 970, column 37): " + [v.constructor.name]);
   };
 };
 var buildCaseLeaf = function(row0) {
@@ -28349,17 +28470,17 @@ var buildCaseLeaf = function(row0) {
           };
         };
       })(function(args) {
-        return bind13($$for3(row0.guardFn.value0)(function(v) {
+        return bind23($$for3(row0.guardFn.value0)(function(v) {
           return apply8(map36(Pair.create)(toBackendExpr(v.value0)))(callFn(v.value1)(args));
         }))(function(pairs) {
-          return bind13(buildCaseTreeFromRows(tailRows))(function(fallback) {
+          return bind23(buildCaseTreeFromRows(tailRows))(function(fallback) {
             return buildM(new Branch(pairs, fallback));
           });
         });
       })(orderedArgs)([]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 848, column 3 - line 870, column 11): " + [row0.guardFn.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 875, column 3 - line 897, column 11): " + [row0.guardFn.constructor.name]);
   };
 };
 var toTopLevelBackendBinding = function(group4) {
@@ -28367,8 +28488,8 @@ var toTopLevelBackendBinding = function(group4) {
     return function(v) {
       var evalEnv = {
         currentModule: env.currentModule,
-        evalExternRef: makeExternEvalRef(env),
-        evalExternSpine: makeExternEvalSpine(env),
+        evalExternRef: makeExternEvalRef(group4)(env),
+        evalExternSpine: makeExternEvalSpine(group4)(env),
         locals: empty2,
         localsSize: 0,
         directives: env.directives
@@ -28394,7 +28515,7 @@ var toTopLevelBackendBinding = function(group4) {
           return v2.value1;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 292, column 27 - line 294, column 31): " + [mbType.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 296, column 27 - line 298, column 31): " + [mbType.constructor.name]);
       })();
       var isDict = fst(isTypeClassDictionaryWithProps(v.value2));
       var v3 = toExternImpl(env)(group4)(isDict)(optimizedExprWithTy);
@@ -28411,10 +28532,10 @@ var toTopLevelBackendBinding = function(group4) {
           implementations: insert32(qualifiedIdent)(v3.value0)(env.implementations),
           moduleImplementations: insert32(qualifiedIdent)(v3.value0)(env.moduleImplementations),
           optimizationSteps: maybe(env.optimizationSteps)((function() {
-            var $1010 = snoc(env.optimizationSteps);
-            var $1011 = Tuple.create(qualifiedIdent);
-            return function($1012) {
-              return $1010($1011($1012));
+            var $1042 = snoc(env.optimizationSteps);
+            var $1043 = Tuple.create(qualifiedIdent);
+            return function($1044) {
+              return $1042($1043($1044));
             };
           })())(fromArray2(v2.value0)),
           directives: (function() {
@@ -28429,7 +28550,7 @@ var toTopLevelBackendBinding = function(group4) {
                   return new Just(v5.value0);
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 305, column 17 - line 309, column 30): " + [v6.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 309, column 17 - line 313, column 30): " + [v6.constructor.name]);
               })(new EvalExtern(new Qualified(new Just(env.currentModule), v.value1)))(env.directives);
             }
             ;
@@ -28437,7 +28558,7 @@ var toTopLevelBackendBinding = function(group4) {
               return env.directives;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 302, column 11 - line 313, column 29): " + [v5.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 306, column 11 - line 317, column 29): " + [v5.constructor.name]);
           })()
         },
         value: new Tuple(v.value1, new Tuple(unwrap6(fst(v3.value0)).deps, v3.value1))
@@ -28476,7 +28597,7 @@ var toBackendTopLevelBindingGroup = function(env) {
       })(mapAccumL2(toTopLevelBackendBinding([]))(env)([v.value0]));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 250, column 37 - line 257, column 52): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 254, column 37 - line 261, column 52): " + [v.constructor.name]);
   };
 };
 var toBackendTopLevelBindingGroups = function(binds) {
@@ -28491,10 +28612,10 @@ var toBackendTopLevelBindingGroups = function(binds) {
             return v1.bindings;
           })(toArray3(as))
         };
-      })(groupBy(on(conj2)(function($1013) {
+      })(groupBy(on(conj2)(function($1045) {
         return !(function(v1) {
           return v1.recursive;
-        })($1013);
+        })($1045);
       }))(result.value))
     };
   };
@@ -28505,8 +28626,8 @@ var toBackendModule = function(v) {
     var isBindingUsed = function(deps) {
       return function(v1) {
         var res = member1(v1.value0)(localExports) || member3(new Qualified(new Just(v.name), v1.value0))(deps);
-        var $973 = unwrap6(v.name) === "Data.Set";
-        if ($973) {
+        var $1005 = unwrap6(v.name) === "Data.Set";
+        if ($1005) {
           return res;
         }
         ;
@@ -28514,8 +28635,8 @@ var toBackendModule = function(v) {
       };
     };
     var directives = parseDirectiveHeader(v.name)(v.comments);
-    var ctors = bind23(v.dataDecls)(function(decl) {
-      return bind23(decl.constructors)(function(ctor) {
+    var ctors = bind13(v.dataDecls)(function(decl) {
+      return bind13(decl.constructors)(function(ctor) {
         var fieldNames = mapWithIndex2(function(i) {
           return function(v1) {
             return "value" + show7(i);
@@ -28526,7 +28647,7 @@ var toBackendModule = function(v) {
     });
     var dataTypes = fromFoldable42(map30(function(group4) {
       var proper = fst(head2(group4));
-      var constructors = fromFoldable52(mapWithIndex5(function(tag) {
+      var constructors = fromFoldable52(mapWithIndex6(function(tag) {
         return function(v1) {
           return new Tuple(v1.value1.value0, {
             fields: v1.value1.value1,
@@ -28534,8 +28655,8 @@ var toBackendModule = function(v) {
           });
         };
       })(group4));
-      var sizes = map44(function($1014) {
-        return length(snd(snd($1014)));
+      var sizes = map44(function($1046) {
+        return length(snd(snd($1046)));
       })(group4);
       return new Tuple(proper, {
         constructors,
@@ -28566,16 +28687,16 @@ var toBackendModule = function(v) {
       return function(group4) {
         var v1 = (function() {
           if (group4.recursive) {
-            var $982 = any2(isBindingUsed(deps))(group4.bindings);
-            if ($982) {
+            var $1014 = any2(isBindingUsed(deps))(group4.bindings);
+            if ($1014) {
               return {
-                accum: append43(foldMap54(function($1015) {
-                  return fst(snd($1015));
+                accum: append43(foldMap54(function($1047) {
+                  return fst(snd($1047));
                 })(group4.bindings))(deps),
                 value: map30((function() {
-                  var $1016 = map54(snd);
-                  return function($1017) {
-                    return Just.create($1016($1017));
+                  var $1048 = map54(snd);
+                  return function($1049) {
+                    return Just.create($1048($1049));
                   };
                 })())(group4.bindings)
               };
@@ -28589,8 +28710,8 @@ var toBackendModule = function(v) {
           ;
           return mapAccumR2(function(deps$prime) {
             return function(v2) {
-              var $984 = isBindingUsed(deps$prime)(v2);
-              if ($984) {
+              var $1016 = isBindingUsed(deps$prime)(v2);
+              if ($1016) {
                 return {
                   accum: append43(v2.value1.value0)(deps$prime),
                   value: new Just(new Tuple(v2.value0, v2.value1.value1))
@@ -28625,11 +28746,11 @@ var toBackendModule = function(v) {
       classDecls: v.classDecls,
       imports: usedImports,
       dataTypes: filter5((function() {
-        var $1018 = any2(isBindingUsed(usedBindings.accum));
-        return function($1019) {
-          return $1018(toUnfoldable13((function(v1) {
+        var $1050 = any2(isBindingUsed(usedBindings.accum));
+        return function($1051) {
+          return $1050(toUnfoldable13((function(v1) {
             return v1.constructors;
-          })($1019)));
+          })($1051)));
         };
       })())(dataTypes),
       bindings: usedBindings.value,
@@ -28715,7 +28836,7 @@ var buildModules = function(dictMonad) {
                     var v4 = unsafePerformEffect(writePurmetaSync(v2.name)(v3.value1.implementations));
                     var v5 = unsafePerformEffect(clearPurmetaCache);
                     return go({
-                      directives: v.directives,
+                      directives: v3.value1.directives,
                       implementations: empty2,
                       moduleIndex: v.moduleIndex + 1 | 0,
                       exports: newExports
@@ -30063,33 +30184,148 @@ var collectModulesModule = function(v) {
   })(empty3)(v.decls);
 };
 
-// output/Purust.CodeGen/index.js
-var map38 = /* @__PURE__ */ map(functorArray);
-var append7 = /* @__PURE__ */ append(semigroupArray);
+// output/Purust.LocalNames/index.js
 var show9 = /* @__PURE__ */ show(showInt);
 var unwrap7 = /* @__PURE__ */ unwrap();
+var insert11 = /* @__PURE__ */ insert(ordLevel);
+var lookup7 = /* @__PURE__ */ lookup2(ordLevel);
+var ordMaybe2 = /* @__PURE__ */ ordMaybe(ordIdent);
+var lookup13 = /* @__PURE__ */ lookup2(ordMaybe2);
+var map38 = /* @__PURE__ */ map(functorNonEmptyArray);
+var map114 = /* @__PURE__ */ map(functorArray);
+var fromFoldable11 = /* @__PURE__ */ fromFoldable2(ordMaybe2)(foldableNonEmptyArray);
+var map211 = /* @__PURE__ */ map(functorBackendSyntax);
+var renameLocals = /* @__PURE__ */ (function() {
+  var localName = function(lvl) {
+    return "purs_local_" + show9(unwrap7(lvl));
+  };
+  var renameParam = function(v) {
+    return new Tuple(new Just(localName(v.value1)), v.value1);
+  };
+  var bindName = function(env) {
+    return function(lvl) {
+      return insert11(lvl)(singleton4(Nothing.value)(localName(lvl)))(env);
+    };
+  };
+  var bindParams = function(env) {
+    return function(params) {
+      return foldl2(function(acc) {
+        return function(v) {
+          return bindName(acc)(v.value1);
+        };
+      })(env)(params);
+    };
+  };
+  var go = function(env) {
+    return function(v) {
+      if (v instanceof Local) {
+        var v1 = lookup7(v.value1)(env);
+        if (v1 instanceof Just) {
+          var v2 = lookup13(Nothing.value)(v1.value0);
+          if (v2 instanceof Just) {
+            return new Local(new Just(v2.value0), v.value1);
+          }
+          ;
+          if (v2 instanceof Nothing) {
+            var v3 = lookup13(v.value0)(v1.value0);
+            if (v3 instanceof Just) {
+              return new Local(new Just(v3.value0), v.value1);
+            }
+            ;
+            if (v3 instanceof Nothing) {
+              return new Local(v.value0, v.value1);
+            }
+            ;
+            throw new Error("Failed pattern match at Purust.LocalNames (line 41, column 22 - line 43, column 39): " + [v3.constructor.name]);
+          }
+          ;
+          throw new Error("Failed pattern match at Purust.LocalNames (line 39, column 23 - line 43, column 39): " + [v2.constructor.name]);
+        }
+        ;
+        if (v1 instanceof Nothing) {
+          return new Local(v.value0, v.value1);
+        }
+        ;
+        throw new Error("Failed pattern match at Purust.LocalNames (line 38, column 7 - line 44, column 35): " + [v1.constructor.name]);
+      }
+      ;
+      if (v instanceof Var) {
+        return v;
+      }
+      ;
+      if (v instanceof Abs) {
+        return new Abs(map38(renameParam)(v.value0), go(bindParams(env)(toArray3(v.value0)))(v.value1));
+      }
+      ;
+      if (v instanceof UncurriedAbs) {
+        return new UncurriedAbs(map114(renameParam)(v.value0), go(bindParams(env)(v.value0))(v.value1));
+      }
+      ;
+      if (v instanceof UncurriedEffectAbs) {
+        return new UncurriedEffectAbs(map114(renameParam)(v.value0), go(bindParams(env)(v.value0))(v.value1));
+      }
+      ;
+      if (v instanceof Let) {
+        return new Let(new Just(localName(v.value1)), v.value1, go(env)(v.value2), go(bindName(env)(v.value1))(v.value3));
+      }
+      ;
+      if (v instanceof EffectBind) {
+        return new EffectBind(new Just(localName(v.value1)), v.value1, go(env)(v.value2), go(bindName(env)(v.value1))(v.value3));
+      }
+      ;
+      if (v instanceof LetRec) {
+        var renamed = mapWithIndex5(function(i) {
+          return function(v12) {
+            return {
+              ident: v12.value0,
+              value: v12.value1,
+              name: "purs_local_" + (show9(unwrap7(v.value0)) + ("_rec_" + show9(i)))
+            };
+          };
+        })(v.value1);
+        var groupNames = fromFoldable11(map38(function(entry) {
+          return new Tuple(new Just(entry.ident), entry.name);
+        })(renamed));
+        var groupEnv = insert11(v.value0)(groupNames)(env);
+        return new LetRec(v.value0, map38(function(entry) {
+          return new Tuple(entry.name, go(groupEnv)(entry.value));
+        })(renamed), go(groupEnv)(v.value2));
+      }
+      ;
+      return map211(go(env))(v);
+    };
+  };
+  return go(empty2);
+})();
+
+// output/Purust.CodeGen/index.js
+var map39 = /* @__PURE__ */ map(functorArray);
+var append7 = /* @__PURE__ */ append(semigroupArray);
+var show10 = /* @__PURE__ */ show(showInt);
+var unwrap8 = /* @__PURE__ */ unwrap();
 var union7 = /* @__PURE__ */ union2(ordString);
 var $$delete5 = /* @__PURE__ */ $$delete2(ordString);
-var insert11 = /* @__PURE__ */ insert2(ordString);
+var insert15 = /* @__PURE__ */ insert2(ordString);
 var difference4 = /* @__PURE__ */ difference2(ordString);
-var lookup7 = /* @__PURE__ */ lookup2(ordString);
+var lookup8 = /* @__PURE__ */ lookup2(ordString);
 var trace2 = /* @__PURE__ */ trace();
-var insert15 = /* @__PURE__ */ insert(ordString);
-var fromFoldable11 = /* @__PURE__ */ fromFoldable(foldableSet);
-var fromFoldable12 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordString);
+var insert16 = /* @__PURE__ */ insert(ordString);
+var fromFoldable13 = /* @__PURE__ */ fromFoldable(foldableSet);
+var fromFoldable14 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordString);
 var member4 = /* @__PURE__ */ member2(ordString);
 var compare11 = /* @__PURE__ */ compare(ordString);
 var foldMap10 = /* @__PURE__ */ foldMap2(monoidString);
-var elem3 = /* @__PURE__ */ elem2(eqString);
+var elem4 = /* @__PURE__ */ elem2(eqString);
 var eq24 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqInt));
 var show12 = /* @__PURE__ */ show(showBoolean);
-var member12 = /* @__PURE__ */ member(ordString);
 var eq34 = /* @__PURE__ */ eq(eqUnit);
+var member12 = /* @__PURE__ */ member(ordString);
 var intersection3 = /* @__PURE__ */ intersection2(ordString);
 var filter6 = /* @__PURE__ */ filter3(ordString);
 var pure7 = /* @__PURE__ */ pure(applicativeEffect);
+var eq42 = /* @__PURE__ */ eq(eqExprType);
 var fromFoldable23 = /* @__PURE__ */ fromFoldable(foldableArray);
-var map114 = /* @__PURE__ */ map(functorMaybe);
+var map115 = /* @__PURE__ */ map(functorMaybe);
 var show22 = /* @__PURE__ */ show(showNumber);
 var show32 = /* @__PURE__ */ show(showChar);
 var fromFoldable33 = /* @__PURE__ */ fromFoldable2(ordString)(foldableArray);
@@ -30109,7 +30345,7 @@ var unwrapType = function(v) {
   }
   ;
   if (v instanceof ConstrainedType) {
-    var csArgs = map38(function(v12) {
+    var csArgs = map39(function(v12) {
       var className = fromMaybe("")(last(v12.value0));
       return new ADT(className, v12.value0, v12.value1);
     })(v.value0);
@@ -30128,73 +30364,73 @@ var sanitizeIdent = function(s) {
   var s2 = replaceAll("$")("_dollar_")(s1);
   var s3 = replaceAll("-")("_minus_")(s2);
   var s4 = replaceAll(".")("_dot_")(s3);
-  var $234 = s4 === "type";
-  if ($234) {
+  var $237 = s4 === "type";
+  if ($237) {
     return "type_kw";
   }
   ;
-  var $235 = s4 === "fn";
-  if ($235) {
+  var $238 = s4 === "fn";
+  if ($238) {
     return "fn_kw";
   }
   ;
-  var $236 = s4 === "break";
-  if ($236) {
+  var $239 = s4 === "break";
+  if ($239) {
     return "break_kw";
   }
   ;
-  var $237 = s4 === "mod";
-  if ($237) {
+  var $240 = s4 === "mod";
+  if ($240) {
     return "mod_kw";
   }
   ;
-  var $238 = s4 === "as";
-  if ($238) {
+  var $241 = s4 === "as";
+  if ($241) {
     return "as_kw";
   }
   ;
-  var $239 = s4 === "gen";
-  if ($239) {
+  var $242 = s4 === "gen";
+  if ($242) {
     return "gen_kw";
   }
   ;
-  var $240 = s4 === "use";
-  if ($240) {
+  var $243 = s4 === "use";
+  if ($243) {
     return "use_kw";
   }
   ;
-  var $241 = s4 === "pub";
-  if ($241) {
+  var $244 = s4 === "pub";
+  if ($244) {
     return "pub_kw";
   }
   ;
-  var $242 = s4 === "ref";
-  if ($242) {
+  var $245 = s4 === "ref";
+  if ($245) {
     return "ref_kw";
   }
   ;
-  var $243 = s4 === "mut";
-  if ($243) {
+  var $246 = s4 === "mut";
+  if ($246) {
     return "mut_kw";
   }
   ;
-  var $244 = s4 === "move";
-  if ($244) {
+  var $247 = s4 === "move";
+  if ($247) {
     return "move_kw";
   }
   ;
-  var $245 = s4 === "let";
-  if ($245) {
+  var $248 = s4 === "let";
+  if ($248) {
     return "let_kw";
   }
   ;
-  var $246 = s4 === "if";
-  if ($246) {
+  var $249 = s4 === "if";
+  if ($249) {
     return "if_kw";
   }
   ;
-  var $247 = s4 === "loop";
-  if ($247) {
+  var $250 = s4 === "loop";
+  if ($250) {
     return "loop_kw";
   }
   ;
@@ -30336,7 +30572,7 @@ var printAST = function(v) {
     return "Fail(" + (v.value0 + ")");
   }
   ;
-  throw new Error("Failed pattern match at Purust.CodeGen (line 1598, column 31 - line 1623, column 36): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Purust.CodeGen (line 1626, column 31 - line 1651, column 36): " + [v.constructor.name]);
 };
 var globalConsumed = /* @__PURE__ */ unsafePerformEffect(/* @__PURE__ */ $$new(empty3));
 var globalCaptured = /* @__PURE__ */ unsafePerformEffect(/* @__PURE__ */ $$new(empty3));
@@ -30350,7 +30586,7 @@ var getTyPrefix = function(modNameStr) {
       return replaceAll(".")("_")(modNameStr) + "_";
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 628, column 46 - line 630, column 81): " + [v.value0.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 638, column 46 - line 640, column 81): " + [v.value0.constructor.name]);
   };
 };
 var getArity = function(v) {
@@ -30374,18 +30610,7 @@ var freeVariables = function(v) {
   }
   ;
   if (v instanceof Var) {
-    var modPrefix = (function() {
-      if (v.value0.value0 instanceof Just) {
-        return replaceAll(".")("_")(v.value0.value0.value0) + "_";
-      }
-      ;
-      if (v.value0.value0 instanceof Nothing) {
-        return "";
-      }
-      ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 1629, column 21 - line 1631, column 24): " + [v.value0.value0.constructor.name]);
-    })();
-    return singleton5(modPrefix + sanitizeIdent(v.value0.value1));
+    return empty3;
   }
   ;
   if (v instanceof Local) {
@@ -30395,10 +30620,10 @@ var freeVariables = function(v) {
       }
       ;
       if (v.value0 instanceof Nothing) {
-        return "lvl_" + show9(unwrap7(v.value1));
+        return "lvl_" + show10(unwrap8(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 1633, column 36 - line 1635, column 45): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 1658, column 36 - line 1660, column 45): " + [v.value0.constructor.name]);
     })());
   }
   ;
@@ -30417,10 +30642,10 @@ var freeVariables = function(v) {
       }
       ;
       if (v.value0 instanceof Nothing) {
-        return "lvl_" + show9(unwrap7(v.value1));
+        return "lvl_" + show10(unwrap8(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 1639, column 16 - line 1641, column 49): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 1664, column 16 - line 1666, column 49): " + [v.value0.constructor.name]);
     })();
     return union7(freeVariables(v.value2))($$delete5(name2)(freeVariables(v.value3)));
   }
@@ -30465,10 +30690,10 @@ var freeVariables = function(v) {
       }
       ;
       if (v.value0 instanceof Nothing) {
-        return "lvl_" + show9(unwrap7(v.value1));
+        return "lvl_" + show10(unwrap8(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 1653, column 16 - line 1655, column 49): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 1678, column 16 - line 1680, column 49): " + [v.value0.constructor.name]);
     })();
     var bodyVars = $$delete5(name2)(freeVariables(v.value3));
     return union7(freeVariables(v.value2))(bodyVars);
@@ -30481,7 +30706,7 @@ var freeVariables = function(v) {
   if (v instanceof LetRec) {
     var bindsVars = foldl2(function(acc) {
       return function(v1) {
-        return insert11(sanitizeIdent(v1.value0))(acc);
+        return insert15(sanitizeIdent(v1.value0))(acc);
       };
     })(empty3)(toArray3(v.value1));
     var allValsVars = foldl2(function(acc) {
@@ -30496,14 +30721,14 @@ var freeVariables = function(v) {
     var paramsVars = foldl2(function(acc) {
       return function(v1) {
         if (v1.value0 instanceof Just) {
-          return insert11(sanitizeIdent(v1.value0.value0))(acc);
+          return insert15(sanitizeIdent(v1.value0.value0))(acc);
         }
         ;
         if (v1.value0 instanceof Nothing) {
-          return insert11("lvl_" + show9(unwrap7(v1.value1)))(acc);
+          return insert15("lvl_" + show10(unwrap8(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1664, column 60 - line 1666, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1689, column 60 - line 1691, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(toArray3(v.value0));
     return difference4(freeVariables(v.value1))(paramsVars);
@@ -30513,14 +30738,14 @@ var freeVariables = function(v) {
     var paramsVars = foldl2(function(acc) {
       return function(v1) {
         if (v1.value0 instanceof Just) {
-          return insert11(sanitizeIdent(v1.value0.value0))(acc);
+          return insert15(sanitizeIdent(v1.value0.value0))(acc);
         }
         ;
         if (v1.value0 instanceof Nothing) {
-          return insert11("lvl_" + show9(unwrap7(v1.value1)))(acc);
+          return insert15("lvl_" + show10(unwrap8(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1669, column 60 - line 1671, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1694, column 60 - line 1696, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(v.value0);
     return difference4(freeVariables(v.value1))(paramsVars);
@@ -30530,14 +30755,14 @@ var freeVariables = function(v) {
     var paramsVars = foldl2(function(acc) {
       return function(v1) {
         if (v1.value0 instanceof Just) {
-          return insert11(sanitizeIdent(v1.value0.value0))(acc);
+          return insert15(sanitizeIdent(v1.value0.value0))(acc);
         }
         ;
         if (v1.value0 instanceof Nothing) {
-          return insert11("lvl_" + show9(unwrap7(v1.value1)))(acc);
+          return insert15("lvl_" + show10(unwrap8(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1674, column 60 - line 1676, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1699, column 60 - line 1701, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(v.value0);
     return difference4(freeVariables(v.value1))(paramsVars);
@@ -30615,7 +30840,7 @@ var inferTypeExpr = function(currentMod) {
       return function(bound2) {
         return function(v) {
           if (v instanceof TypeApp2) {
-            return v.value1;
+            return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value0);
           }
           ;
           if (v instanceof Accessor && v.value1 instanceof GetProp) {
@@ -30623,7 +30848,7 @@ var inferTypeExpr = function(currentMod) {
               if (v12 instanceof ADT) {
                 var nameStr = fromMaybe("")(last(v12.value1));
                 var modStr2 = joinWith("_")(dropEnd(1)(v12.value1));
-                var v22 = lookup7(modStr2 + ("_" + nameStr))(globalClassFields);
+                var v22 = lookup8(modStr2 + ("_" + nameStr))(globalClassFields);
                 if (v22 instanceof Just) {
                   var v3 = find2(function(v4) {
                     return v4.value0 === sanitizeIdent(v.value1.value0);
@@ -30636,14 +30861,14 @@ var inferTypeExpr = function(currentMod) {
                     return Any.value;
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.CodeGen (line 1698, column 36 - line 1700, column 32): " + [v3.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.CodeGen (line 1725, column 36 - line 1727, column 32): " + [v3.constructor.name]);
                 }
                 ;
                 if (v22 instanceof Nothing) {
                   return Any.value;
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 1697, column 14 - line 1701, column 30): " + [v22.constructor.name]);
+                throw new Error("Failed pattern match at Purust.CodeGen (line 1724, column 14 - line 1728, column 30): " + [v22.constructor.name]);
               }
               ;
               return Any.value;
@@ -30662,10 +30887,10 @@ var inferTypeExpr = function(currentMod) {
                 return currentMod;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1705, column 18 - line 1707, column 32): " + [v.value1.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1732, column 18 - line 1734, column 32): " + [v.value1.value0.value0.constructor.name]);
             })();
             var ctorFqn = modStr + ("_" + sanitizeIdent(v.value1.value3));
-            var v1 = lookup7(ctorFqn)(aritiesMap);
+            var v1 = lookup8(ctorFqn)(aritiesMap);
             if (v1 instanceof Just) {
               var args = extractAllArgTypes(v1.value0);
               var v2 = index(args)(v.value1.value5);
@@ -30674,12 +30899,12 @@ var inferTypeExpr = function(currentMod) {
               }
               ;
               if (v2 instanceof Nothing) {
-                return trace2("Warning: fieldIdx " + (show9(v.value1.value5) + (" out of bounds for " + (ctorFqn + (" (args len: " + (show9(length(args)) + ")"))))))(function(v3) {
+                return trace2("Warning: fieldIdx " + (show10(v.value1.value5) + (" out of bounds for " + (ctorFqn + (" (args len: " + (show10(length(args)) + ")"))))))(function(v3) {
                   return Any.value;
                 });
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1712, column 15 - line 1714, column 175): " + [v2.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1739, column 15 - line 1741, column 175): " + [v2.constructor.name]);
             }
             ;
             if (v1 instanceof Nothing) {
@@ -30688,7 +30913,7 @@ var inferTypeExpr = function(currentMod) {
               });
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 1709, column 8 - line 1715, column 100): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 1736, column 8 - line 1742, column 100): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof App2) {
@@ -30724,8 +30949,8 @@ var inferTypeExpr = function(currentMod) {
             if (v2 instanceof Func) {
               var providedCount = length5(v.value1);
               var expectedCount = length(v2.value0);
-              var $482 = expectedCount > providedCount;
-              if ($482) {
+              var $481 = expectedCount > providedCount;
+              if ($481) {
                 return new Func(drop(providedCount)(v2.value0), v2.value1);
               }
               ;
@@ -30754,17 +30979,19 @@ var inferTypeExpr = function(currentMod) {
           }
           ;
           if (v instanceof Abs) {
-            return new Func([Any.value], Any.value);
+            return new Func(map39(function(v12) {
+              return Any.value;
+            })(toArray3(v.value0)), Any.value);
           }
           ;
           if (v instanceof UncurriedAbs) {
-            return new Func(map38(function(v12) {
+            return new Func(map39(function(v12) {
               return Any.value;
             })(v.value0), Any.value);
           }
           ;
           if (v instanceof UncurriedEffectAbs) {
-            return new Func(map38(function(v12) {
+            return new Func(map39(function(v12) {
               return Any.value;
             })(v.value0), Any.value);
           }
@@ -30774,15 +31001,15 @@ var inferTypeExpr = function(currentMod) {
           }
           ;
           if (v instanceof EffectBind) {
-            return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value3);
+            return Any.value;
           }
           ;
           if (v instanceof EffectPure) {
-            return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value0);
+            return Any.value;
           }
           ;
           if (v instanceof EffectDefer) {
-            return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value0);
+            return Any.value;
           }
           ;
           if (v instanceof Branch) {
@@ -30796,7 +31023,26 @@ var inferTypeExpr = function(currentMod) {
           }
           ;
           if (v instanceof Typed) {
-            var innerTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value1);
+            var stripTyped = function($copy_v1) {
+              var $tco_done1 = false;
+              var $tco_result;
+              function $tco_loop(v12) {
+                if (v12 instanceof Typed) {
+                  $copy_v1 = v12.value1;
+                  return;
+                }
+                ;
+                $tco_done1 = true;
+                return v12;
+              }
+              ;
+              while (!$tco_done1) {
+                $tco_result = $tco_loop($copy_v1);
+              }
+              ;
+              return $tco_result;
+            };
+            var innerTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(stripTyped(v.value1));
             var v1 = unwrapType(innerTy);
             var v2 = unwrapType(v.value0);
             if (v2 instanceof Any) {
@@ -30844,48 +31090,38 @@ var inferTypeExpr = function(currentMod) {
                 return currentMod;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1770, column 18 - line 1772, column 32): " + [v.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1801, column 18 - line 1803, column 32): " + [v.value0.value0.constructor.name]);
             })();
             return new ADT(modStr, [modStr, v.value2], []);
           }
           ;
           if (v instanceof CtorDef) {
-            return fromMaybe(Any.value)(lookup7(currentMod + ("_" + sanitizeIdent(v.value2)))(aritiesMap));
+            return fromMaybe(Any.value)(lookup8(currentMod + ("_" + sanitizeIdent(v.value2)))(aritiesMap));
           }
           ;
           if (v instanceof Var) {
-            var sName = sanitizeIdent(v.value0.value1);
-            var v1 = lookup7(sName)(bound2);
+            var modPrefix = (function() {
+              if (v.value0.value0 instanceof Just) {
+                return replaceAll(".")("_")(v.value0.value0.value0) + "_";
+              }
+              ;
+              if (v.value0.value0 instanceof Nothing) {
+                return replaceAll(".")("_")(currentMod) + "_";
+              }
+              ;
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1807, column 25 - line 1809, column 93): " + [v.value0.value0.constructor.name]);
+            })();
+            var fullName = modPrefix + sanitizeIdent(v.value0.value1);
+            var v1 = lookup8(fullName)(aritiesMap);
             if (v1 instanceof Just) {
               return v1.value0;
             }
             ;
             if (v1 instanceof Nothing) {
-              var modPrefix = (function() {
-                if (v.value0.value0 instanceof Just) {
-                  return replaceAll(".")("_")(v.value0.value0.value0) + "_";
-                }
-                ;
-                if (v.value0.value0 instanceof Nothing) {
-                  return replaceAll(".")("_")(currentMod) + "_";
-                }
-                ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 1780, column 25 - line 1782, column 93): " + [v.value0.value0.constructor.name]);
-              })();
-              var fullName = modPrefix + sName;
-              var v2 = lookup7(fullName)(aritiesMap);
-              if (v2 instanceof Just) {
-                return v2.value0;
-              }
-              ;
-              if (v2 instanceof Nothing) {
-                return Any.value;
-              }
-              ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1784, column 12 - line 1786, column 25): " + [v2.constructor.name]);
+              return Any.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 1777, column 8 - line 1786, column 25): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 1811, column 12 - line 1813, column 25): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Local) {
@@ -30895,12 +31131,12 @@ var inferTypeExpr = function(currentMod) {
               }
               ;
               if (v.value0 instanceof Nothing) {
-                return "lvl_" + show9(unwrap7(v.value1));
+                return "lvl_" + show10(unwrap8(v.value1));
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1788, column 16 - line 1790, column 49): " + [v.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1815, column 16 - line 1817, column 49): " + [v.value0.constructor.name]);
             })();
-            var v1 = lookup7(name2)(bound2);
+            var v1 = lookup8(name2)(bound2);
             if (v1 instanceof Just) {
               return v1.value0;
             }
@@ -30909,11 +31145,11 @@ var inferTypeExpr = function(currentMod) {
               return Any.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 1791, column 8 - line 1793, column 21): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 1818, column 8 - line 1820, column 21): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Let && v.value0 instanceof Just) {
-            return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(insert15(sanitizeIdent(v.value0.value0))(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value2))(bound2))(v.value3);
+            return inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(insert16(sanitizeIdent(v.value0.value0))(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value2))(bound2))(v.value3);
           }
           ;
           if (v instanceof Let && v.value0 instanceof Nothing) {
@@ -31033,16 +31269,16 @@ var extractAbsParams = function(v) {
     }
     ;
     if (v1 instanceof Abs) {
-      var pNames = map38(function(v22) {
+      var pNames = map39(function(v22) {
         if (v22.value0 instanceof Just) {
           return sanitizeIdent(v22.value0.value0);
         }
         ;
         if (v22.value0 instanceof Nothing) {
-          return "lvl_" + show9(unwrap7(v22.value1));
+          return "lvl_" + show10(unwrap8(v22.value1));
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 456, column 42 - line 458, column 56): " + [v22.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 466, column 42 - line 468, column 56): " + [v22.value0.constructor.name]);
       })(toArray3(v1.value0));
       var len = length(pNames);
       var $607 = v >= len;
@@ -31056,7 +31292,7 @@ var extractAbsParams = function(v) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 461, column 8 - line 463, column 28): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 471, column 8 - line 473, column 28): " + [v2.constructor.name]);
       }
       ;
       return Nothing.value;
@@ -31072,7 +31308,7 @@ var extractAbsParams = function(v) {
         return Nothing.value;
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 466, column 3 - line 468, column 23): " + [v2.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 476, column 3 - line 478, column 23): " + [v2.constructor.name]);
     }
     ;
     return Nothing.value;
@@ -31081,23 +31317,23 @@ var extractAbsParams = function(v) {
 var dedupArgs = function(arr) {
   var step2 = function(acc) {
     return function(item) {
-      var count = lookup7(item)(acc.counts);
+      var count = lookup8(item)(acc.counts);
       if (count instanceof Nothing) {
         return {
           result: snoc(acc.result)(item),
-          counts: insert15(item)(1)(acc.counts)
+          counts: insert16(item)(1)(acc.counts)
         };
       }
       ;
       if (count instanceof Just) {
-        var newItem = item + ("_" + show9(count.value0));
+        var newItem = item + ("_" + show10(count.value0));
         return {
           result: snoc(acc.result)(newItem),
-          counts: insert15(item)(count.value0 + 1 | 0)(acc.counts)
+          counts: insert16(item)(count.value0 + 1 | 0)(acc.counts)
         };
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 1861, column 10 - line 1866, column 99): " + [count.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 1888, column 10 - line 1893, column 99): " + [count.constructor.name]);
     };
   };
   return foldl2(step2)({
@@ -31106,24 +31342,24 @@ var dedupArgs = function(arr) {
   })(arr).result;
 };
 var codegenPrelude = function(fields) {
-  var shapes = fromFoldable11(fields);
-  var uniqueFields = fromFoldable11(fromFoldable12(concatMap(function(shape) {
+  var shapes = fromFoldable13(fields);
+  var uniqueFields = fromFoldable13(fromFoldable14(concatMap(function(shape) {
     return split(",")(shape);
   })(shapes)));
   var validUniqueFields = filter(function(f) {
-    return !member4(f)(fromFoldable12(["unwrap", "clone", "as_ref", "tag", "vals", "call"])) && !$$null2(f);
+    return !member4(f)(fromFoldable14(["unwrap", "clone", "as_ref", "tag", "vals", "call"])) && !$$null2(f);
   })(uniqueFields);
   var validShapes = filter(function(shape) {
     return !$$null2(shape);
   })(shapes);
   var shapeToStructName = function(shape) {
-    return "Record_" + joinWith("_")(map38(sanitizeIdent)(sortBy(compare11)(split(",")(shape))));
+    return "Record_" + joinWith("_")(map39(sanitizeIdent)(sortBy(compare11)(split(",")(shape))));
   };
   var setMethods = foldMap10(function(f) {
     var sf = sanitizeIdent(f);
     var matchArms = foldMap10(function(shape) {
       var structName = shapeToStructName(shape);
-      var $624 = elem3(f)(split(",")(shape));
+      var $624 = elem4(f)(split(",")(shape));
       if ($624) {
         return "            Value::" + (structName + ("(r) => {\n" + ("                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" + ("                mut_r." + (sf + " = Some(val);\n            },\n")))));
       }
@@ -31149,7 +31385,7 @@ var codegenPrelude = function(fields) {
     var sf = sanitizeIdent(f);
     var matchArms = foldMap10(function(shape) {
       var structName = shapeToStructName(shape);
-      var $625 = elem3(f)(split(",")(shape));
+      var $625 = elem4(f)(split(",")(shape));
       if ($625) {
         return "            Value::" + (structName + ("(r) => r." + (sf + ".clone().unwrap(),\n")));
       }
@@ -31159,56 +31395,60 @@ var codegenPrelude = function(fields) {
     return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self {\n" + (matchArms + ("            Value::Record_a(r) => r." + (sf + (".clone().unwrap(),\n" + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n')))))))));
   })(validUniqueFields);
   var funcWrappers = foldMap10(function(arity) {
-    var typeParamsList = map38(function(i) {
-      return "T" + show9(i);
+    var typeParamsList = map39(function(i) {
+      return "T" + show10(i);
     })(range2(1)(arity));
-    var typeParamsWithBounds = joinWith(", ")(map38(function(p) {
+    var typeParamsWithBounds = joinWith(", ")(map39(function(p) {
       return p + ": 'static";
     })(append7(typeParamsList)(["R"])));
     var typeParams = joinWith(", ")(typeParamsList);
     var typeParamsWithRet = typeParams + ", R";
     var args = joinWith(", ")(typeParamsList);
-    return "#[derive(Clone)]\npub enum Func" + (show9(arity) + ("<" + (typeParamsWithRet + ("> {\n" + ("    Static(fn(" + (args + (") -> R),\n" + ("    Shared(std::rc::Rc<dyn Fn(" + (args + (") -> R>),\n" + ("}\n\n" + ("impl<" + (typeParamsWithBounds + ("> std::ops::Deref for Func" + (show9(arity) + ("<" + (typeParamsWithRet + ("> {\n" + ("    type Target = dyn Fn(" + (args + (") -> R;\n" + ("    #[inline(always)]\n" + ("    fn deref(&self) -> &Self::Target {\n" + ("        match self {\n" + ("            Func" + (show9(arity) + ("::Static(f) => f,\n" + ("            Func" + (show9(arity) + "::Shared(rc) => rc.as_ref(),\n        }\n    }\n}\n\n")))))))))))))))))))))))))))));
+    return "#[derive(Clone)]\npub enum Func" + (show10(arity) + ("<" + (typeParamsWithRet + ("> {\n" + ("    Static(fn(" + (args + (") -> R),\n" + ("    Shared(std::rc::Rc<dyn Fn(" + (args + (") -> R>),\n" + ("}\n\n" + ("impl<" + (typeParamsWithBounds + ("> std::ops::Deref for Func" + (show10(arity) + ("<" + (typeParamsWithRet + ("> {\n" + ("    type Target = dyn Fn(" + (args + (") -> R;\n" + ("    #[inline(always)]\n" + ("    fn deref(&self) -> &Self::Target {\n" + ("        match self {\n" + ("            Func" + (show10(arity) + ("::Static(f) => f,\n" + ("            Func" + (show10(arity) + "::Shared(rc) => rc.as_ref(),\n        }\n    }\n}\n\n")))))))))))))))))))))))))))));
   })(range2(1)(10));
   var funcVariants = foldMap10(function(arity) {
     var typeParams = joinWith(", ")(replicate(arity + 1 | 0)("UnknownType"));
-    return "    Func" + (show9(arity) + ("(Func" + (show9(arity) + ("<" + (typeParams + ">),\n")))));
+    return "    Func" + (show10(arity) + ("(Func" + (show10(arity) + ("<" + (typeParams + ">),\n")))));
   })(range2(1)(10));
   var funcUnwraps = foldMap10(function(arity) {
     var typeParams = joinWith(", ")(replicate(arity + 1 | 0)("UnknownType"));
-    return "    pub fn unwrap_func" + (show9(arity) + ("(&self) -> Func" + (show9(arity) + ("<" + (typeParams + ("> {\n" + ((function() {
+    return "    pub fn unwrap_func" + (show10(arity) + ("(&self) -> Func" + (show10(arity) + ("<" + (typeParams + ("> {\n" + ((function() {
       var $626 = arity === 1;
       if ($626) {
-        return "        if let Value::Func1(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } " + (joinWith(" ")(map38(function(a) {
-          return "else if let Value::Func" + (show9(a) + ("(v) = self { let f = v.clone(); Func1::Shared(std::rc::Rc::new(move |a0: UnknownType| -> UnknownType { crate::Value::Func" + (show9(a - 1 | 0) + ("(Func" + (show9(a - 1 | 0) + ("::Shared(std::rc::Rc::new({ let f2 = f.clone(); move |" + (joinWith(", ")(map38(function(i) {
-            return "mut a" + (show9(i) + ": UnknownType");
-          })(range2(1)(a - 1 | 0))) + ("| -> UnknownType { f2(a0.clone(), " + (joinWith(", ")(map38(function(i) {
-            return "a" + show9(i);
+        return "        if let Value::Func1(v) = self { v.clone() } else if let Value::Thunk(v) = self { v.call.clone().unwrap() } else if let Value::Record_a(v) = self { v.call.clone().unwrap() } " + (joinWith(" ")(map39(function(a) {
+          return "else if let Value::Func" + (show10(a) + ("(v) = self { let f = v.clone(); Func1::Shared(std::rc::Rc::new(move |a0: UnknownType| -> UnknownType { crate::Value::Func" + (show10(a - 1 | 0) + ("(Func" + (show10(a - 1 | 0) + ("::Shared(std::rc::Rc::new({ let f2 = f.clone(); move |" + (joinWith(", ")(map39(function(i) {
+            return "mut a" + (show10(i) + ": UnknownType");
+          })(range2(1)(a - 1 | 0))) + ("| -> UnknownType { f2(a0.clone(), " + (joinWith(", ")(map39(function(i) {
+            return "a" + show10(i);
           })(range2(1)(a - 1 | 0))) + ") } }))) })) }")))))))));
         })(range2(2)(10))) + ' else { panic!("Expected Func1"); }\n');
       }
       ;
       var bodyInner = foldl2(function(acc) {
         return function(i) {
-          return acc + (".unwrap_func1()(a" + (show9(i) + ")"));
+          return acc + (".unwrap_func1()(a" + (show10(i) + ")"));
         };
       })("f(a0)")(range2(1)(arity - 1 | 0));
       var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
         return function(v) {
-          return "mut a" + (show9(i) + ": UnknownType");
+          return "mut a" + (show10(i) + ": UnknownType");
         };
       })(replicate(arity)(unit)));
-      return "        if let Value::Func" + (show9(arity) + ("(v) = self { v.clone() } else if let Value::Func1(v) = self { let f = v.clone(); Func" + (show9(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsDecl + ("| -> UnknownType { " + (bodyInner + (' })) } else { panic!("Expected Func' + (show9(arity) + ' or Func1 (curried) - got something else"); }\n')))))))));
+      return "        if let Value::Func" + (show10(arity) + ("(v) = self { v.clone() } else if let Value::Func1(v) = self { let f = v.clone(); Func" + (show10(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsDecl + ("| -> UnknownType { " + (bodyInner + (' })) } else { panic!("Expected Func' + (show10(arity) + ' or Func1 (curried) - got something else"); }\n')))))))));
     })() + "    }\n")))))));
   })(range2(1)(10));
-  return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ('        if let Value::Number(v) = self { *v } else { panic!("Expected Number"); }\n' + ("    }\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ('        if let Value::Array(v) = self { v.clone() } else { panic!("Expected Array"); }\n' + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        if let Value::Class(v) = self { v.downcast_ref::<T>().unwrap() } else { panic!("Expected Class"); }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn get_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + (foldMap10(function(field) {
+  return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Unit,\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    pub fn unwrap_unit(&self) {\n" + ('        if !matches!(self, Value::Unit) { panic!("Expected Unit"); }\n' + ("    }\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ('        if let Value::Number(v) = self { *v } else { panic!("Expected Number"); }\n' + ("    }\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ('        if let Value::Array(v) = self { v.clone() } else { panic!("Expected Array"); }\n' + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        if let Value::Class(v) = self { v.downcast_ref::<T>().unwrap() } else { panic!("Expected Class"); }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn get_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + ("pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + (foldMap10(function(field) {
     return "    pub " + (sanitizeIdent(field) + ": Option<UnknownType>,\n");
-  })(validUniqueFields) + ("}\n\n" + (recordStructs + ("\n\n" + funcWrappers)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
+  })(validUniqueFields) + ("}\n\n" + (recordStructs + ("\n\n" + funcWrappers))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
 };
 var codegenExprType = function(currentMod) {
   return function(isRet) {
     return function(ty) {
       var v = unwrapType(ty);
+      if (v instanceof Unit) {
+        return "()";
+      }
+      ;
       if (v instanceof Int) {
         return "i64";
       }
@@ -31263,11 +31503,11 @@ var codegenExprType = function(currentMod) {
       if (v instanceof Func) {
         var retStr = codegenExprType(currentMod)(true)(v.value1);
         var arity = length(v.value0);
-        var argStrs = map38(codegenExprType(currentMod)(false))(v.value0);
+        var argStrs = map39(codegenExprType(currentMod)(false))(v.value0);
         var typeArgs = joinWith(", ")(append7(argStrs)([retStr]));
         var $636 = arity > 0 && arity <= 10;
         if ($636) {
-          return "purust_core::Func" + (show9(arity) + ("<" + (typeArgs + ">")));
+          return "purust_core::Func" + (show10(arity) + ("<" + (typeArgs + ">")));
         }
         ;
         return "crate::UnknownType";
@@ -31316,19 +31556,19 @@ var boxUnbox = function(currentMod) {
           var $646 = expArity === actArity && (expArity > 0 && expArity <= 10);
           if ($646) {
             var retStr = codegenExprType(currentMod)(true)(v2.value1);
-            var expArgTypes = map38(codegenExprType(currentMod)(false))(v2.value0);
+            var expArgTypes = map39(codegenExprType(currentMod)(false))(v2.value0);
             var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
               return function(ty) {
-                return "mut _a" + (show9(i) + (": " + ty));
+                return "mut _a" + (show10(i) + (": " + ty));
               };
             })(expArgTypes));
             var argsCall = joinWith(", ")(mapWithIndex2(function(i) {
               return function(v32) {
-                return boxUnbox(currentMod)(v32.value1)(v32.value0)("_a" + show9(i));
+                return boxUnbox(currentMod)(v32.value1)(v32.value0)("_a" + show10(i));
               };
             })(zip(v2.value0)(v1.value0)));
-            var actArgTypes = map38(codegenExprType(currentMod)(false))(v1.value0);
-            return "purust_core::Func" + (show9(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(v1.value1)("_f(" + (argsCall + ")")) + " } }))")))))))));
+            var actArgTypes = map39(codegenExprType(currentMod)(false))(v1.value0);
+            return "purust_core::Func" + (show10(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(v1.value1)("_f(" + (argsCall + ")")) + " } }))")))))))));
           }
           ;
           var $650 = actArity > expArity && (expArity > 0 && actArity <= 10);
@@ -31337,34 +31577,34 @@ var boxUnbox = function(currentMod) {
             var remainingActArgs = drop(expArity)(v1.value0);
             var remRetStr = codegenExprType(currentMod)(true)(v1.value1);
             var remArity = length(remainingActArgs);
-            var remArgTypes = map38(codegenExprType(currentMod)(false))(remainingActArgs);
+            var remArgTypes = map39(codegenExprType(currentMod)(false))(remainingActArgs);
             var remArgsDecl = joinWith(", ")(mapWithIndex2(function(i) {
               return function(ty) {
-                return "mut _a" + (show9(expArity + i | 0) + (": " + ty));
+                return "mut _a" + (show10(expArity + i | 0) + (": " + ty));
               };
             })(remArgTypes));
-            var expArgTypes = map38(codegenExprType(currentMod)(false))(v2.value0);
+            var expArgTypes = map39(codegenExprType(currentMod)(false))(v2.value0);
             var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
               return function(ty) {
-                return "mut _a" + (show9(i) + (": " + ty));
+                return "mut _a" + (show10(i) + (": " + ty));
               };
             })(expArgTypes));
             var allArgsCall = joinWith(", ")(mapWithIndex2(function(i) {
               return function(actTy) {
                 var paramTy = fromMaybe(Any.value)(index(append7(v2.value0)(remainingActArgs))(i));
-                return boxUnbox(currentMod)(actTy)(paramTy)("_a" + (show9(i) + ".clone()"));
+                return boxUnbox(currentMod)(actTy)(paramTy)("_a" + (show10(i) + ".clone()"));
               };
             })(v1.value0));
-            var innerClosure = "purust_core::Func" + (show9(remArity) + ("::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " + (joinWith(" ")(mapWithIndex2(function(i) {
+            var innerClosure = "purust_core::Func" + (show10(remArity) + ("::Shared(std::rc::Rc::new({ let _f2 = _f.clone(); " + (joinWith(" ")(mapWithIndex2(function(i) {
               return function(v32) {
-                return "let mut _a" + (show9(i) + (" = _a" + (show9(i) + ".clone();")));
+                return "let mut _a" + (show10(i) + (" = _a" + (show10(i) + ".clone();")));
               };
             })(v2.value0)) + (" move |" + (remArgsDecl + ("| -> " + (remRetStr + (" { _f2(" + (allArgsCall + ") } }))")))))))));
-            return "purust_core::Func" + (show9(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(new Func(remainingActArgs, v1.value1))(innerClosure) + " } }))")))))))));
+            return "purust_core::Func" + (show10(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(new Func(remainingActArgs, v1.value1))(innerClosure) + " } }))")))))))));
           }
           ;
           var retStr = codegenExprType(currentMod)(true)(v2.value1);
-          var expArgTypes = map38(codegenExprType(currentMod)(false))(v2.value0);
+          var expArgTypes = map39(codegenExprType(currentMod)(false))(v2.value0);
           var buildCall = function($copy_idx) {
             return function($copy_currentTy) {
               return function($copy_accCode) {
@@ -31386,7 +31626,7 @@ var boxUnbox = function(currentMod) {
                     var argsStrs = mapWithIndex2(function(i) {
                       return function(paramTy2) {
                         var actArgTy = fromMaybe(Any.value)(index(v32.value0)(i));
-                        return boxUnbox(currentMod)(actArgTy)(paramTy2)("_a" + (show9(idx + i | 0) + ".clone()"));
+                        return boxUnbox(currentMod)(actArgTy)(paramTy2)("_a" + (show10(idx + i | 0) + ".clone()"));
                       };
                     })(argsToPass);
                     var nextCode = "(" + (accCode + (")(" + (joinWith(", ")(argsStrs) + ")")));
@@ -31397,7 +31637,7 @@ var boxUnbox = function(currentMod) {
                   }
                   ;
                   var paramTy = fromMaybe(Any.value)(index(v2.value0)(idx));
-                  var boxedArg = boxUnbox(currentMod)(Any.value)(paramTy)("_a" + (show9(idx) + ".clone()"));
+                  var boxedArg = boxUnbox(currentMod)(Any.value)(paramTy)("_a" + (show10(idx) + ".clone()"));
                   var nextCode = "(" + (accCode + (").unwrap_func1()(" + (boxedArg + ")")));
                   $tco_var_idx = idx + 1 | 0;
                   $tco_var_currentTy = Any.value;
@@ -31415,11 +31655,11 @@ var boxUnbox = function(currentMod) {
           };
           var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
             return function(ty) {
-              return "mut _a" + (show9(i) + (": " + ty));
+              return "mut _a" + (show10(i) + (": " + ty));
             };
           })(expArgTypes));
           var v3 = buildCall(0)(new Func(v1.value0, v1.value1))("_f");
-          return "purust_core::Func" + (show9(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(v3.value0)(v3.value1) + " } }))")))))))));
+          return "purust_core::Func" + (show10(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(v3.value0)(v3.value1) + " } }))")))))))));
         }
         ;
         if (v2 instanceof Func) {
@@ -31427,18 +31667,18 @@ var boxUnbox = function(currentMod) {
           var $662 = (actStr === "crate::UnknownType" || actStr === "crate::Value") && (arity > 0 && arity <= 10);
           if ($662) {
             var retStr = codegenExprType(currentMod)(true)(v2.value1);
-            var expArgTypes = map38(codegenExprType(currentMod)(false))(v2.value0);
+            var expArgTypes = map39(codegenExprType(currentMod)(false))(v2.value0);
             var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
               return function(ty) {
-                return "mut _a" + (show9(i) + (": " + ty));
+                return "mut _a" + (show10(i) + (": " + ty));
               };
             })(expArgTypes));
             var argsCall = joinWith(", ")(mapWithIndex2(function(i) {
               return function(expTy) {
-                return boxUnbox(currentMod)(Any.value)(expTy)("_a" + show9(i));
+                return boxUnbox(currentMod)(Any.value)(expTy)("_a" + show10(i));
               };
             })(v2.value0));
-            return "purust_core::Func" + (show9(arity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").unwrap_func" + (show9(arity) + ("(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(Any.value)("_f(" + (argsCall + ")")) + " } }))")))))))))));
+            return "purust_core::Func" + (show10(arity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").unwrap_func" + (show10(arity) + ("(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(currentMod)(v2.value1)(Any.value)("_f(" + (argsCall + ")")) + " } }))")))))))))));
           }
           ;
           return code;
@@ -31450,15 +31690,15 @@ var boxUnbox = function(currentMod) {
           if ($665) {
             var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
               return function(v32) {
-                return "mut _a" + (show9(i) + ": crate::UnknownType");
+                return "mut _a" + (show10(i) + ": crate::UnknownType");
               };
             })(v1.value0));
             var argsCall = joinWith(", ")(mapWithIndex2(function(i) {
               return function(actTy) {
-                return boxUnbox(currentMod)(actTy)(Any.value)("_a" + show9(i));
+                return boxUnbox(currentMod)(actTy)(Any.value)("_a" + show10(i));
               };
             })(v1.value0));
-            return "crate::Value::Func" + (show9(arity) + ("(purust_core::Func" + (show9(arity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> crate::UnknownType { " + (boxUnbox(currentMod)(Any.value)(v1.value1)("_f(" + (argsCall + ")")) + " } })))")))))))));
+            return "crate::Value::Func" + (show10(arity) + ("(purust_core::Func" + (show10(arity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> crate::UnknownType { " + (boxUnbox(currentMod)(Any.value)(v1.value1)("_f(" + (argsCall + ")")) + " } })))")))))))));
           }
           ;
           return code;
@@ -31490,53 +31730,63 @@ var boxUnbox = function(currentMod) {
           return "(" + (code + (").unwrap_class::<" + (expStr + ">().clone()")));
         }
         ;
-        var $678 = expStr === "i64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+        var $678 = expStr === "()" && actStr === "crate::UnknownType";
         if ($678) {
+          return "(" + (code + ").unwrap_unit()");
+        }
+        ;
+        var $679 = expStr === "crate::UnknownType" && actStr === "()";
+        if ($679) {
+          return "crate::mk_unit(" + (code + ")");
+        }
+        ;
+        var $680 = expStr === "i64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+        if ($680) {
           return "(" + (code + ").unwrap_int()");
         }
         ;
-        var $679 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "i64";
-        if ($679) {
+        var $681 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "i64";
+        if ($681) {
           return "crate::mk_int(" + (code + ")");
         }
         ;
-        var $680 = expStr === "bool" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-        if ($680) {
+        var $682 = expStr === "bool" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+        if ($682) {
           return "(" + (code + ").unwrap_bool()");
         }
         ;
-        var $681 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "bool";
-        if ($681) {
+        var $683 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "bool";
+        if ($683) {
           return "crate::mk_bool(" + (code + ")");
         }
         ;
-        var $682 = expStr === "f64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-        if ($682) {
+        var $684 = expStr === "f64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+        if ($684) {
           return "(" + (code + ").unwrap_number()");
         }
         ;
-        var $683 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "f64";
-        if ($683) {
+        var $685 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "f64";
+        if ($685) {
           return "crate::mk_number(" + (code + ")");
         }
         ;
-        var $684 = expStr === "char" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-        if ($684) {
+        var $686 = expStr === "char" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+        if ($686) {
           return "(" + (code + ").unwrap_char()");
         }
         ;
-        var $685 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "char";
-        if ($685) {
+        var $687 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "char";
+        if ($687) {
           return "crate::mk_char(" + (code + ")");
         }
         ;
-        var $686 = expStr === "String" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-        if ($686) {
+        var $688 = expStr === "String" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+        if ($688) {
           return "(" + (code + ").unwrap_string()");
         }
         ;
-        var $687 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "String";
-        if ($687) {
+        var $689 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "String";
+        if ($689) {
           return "crate::mk_string(&(" + (code + "))");
         }
         ;
@@ -31559,14 +31809,14 @@ var genApp = function(modNameStr) {
                       var m = length(argsArray);
                       var lookupArity = function(fname) {
                         var key = (function() {
-                          var $688 = fname === "main";
-                          if ($688) {
+                          var $690 = fname === "main";
+                          if ($690) {
                             return "main";
                           }
                           ;
                           return fname;
                         })();
-                        var v = lookup7(key)(aritiesMap);
+                        var v = lookup8(key)(aritiesMap);
                         if (v instanceof Just) {
                           return getArity(v.value0);
                         }
@@ -31575,7 +31825,7 @@ var genApp = function(modNameStr) {
                           return 0;
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 696, column 14 - line 698, column 25): " + [v.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 706, column 14 - line 708, column 25): " + [v.constructor.name]);
                       };
                       var getInner = function($copy_v) {
                         var $tco_done = false;
@@ -31596,7 +31846,7 @@ var genApp = function(modNameStr) {
                         ;
                         return $tco_result;
                       };
-                      var argsFree = map38(freeVariables)(argsArray);
+                      var argsFree = map39(freeVariables)(argsArray);
                       var argsCodeArray = mapWithIndex2(function(i) {
                         return function(arg) {
                           var subsequentArgsFree = drop(i + 1 | 0)(argsFree);
@@ -31612,8 +31862,8 @@ var genApp = function(modNameStr) {
                             var $tco_done1 = false;
                             var $tco_result;
                             function $tco_loop(accTy, accCode, idx) {
-                              var $694 = idx >= length(argsCodeArray);
-                              if ($694) {
+                              var $696 = idx >= length(argsCodeArray);
+                              if ($696) {
                                 $tco_done1 = true;
                                 return new Tuple(accTy, accCode);
                               }
@@ -31621,11 +31871,11 @@ var genApp = function(modNameStr) {
                               var v = unwrapType(accTy);
                               if (v instanceof Func) {
                                 var arity = length(v.value0);
-                                var $696 = arity > 0 && arity <= 10;
-                                if ($696) {
+                                var $698 = arity > 0 && arity <= 10;
+                                if ($698) {
                                   var availableArgsCount = length(argsCodeArray) - idx | 0;
-                                  var $697 = availableArgsCount >= arity;
-                                  if ($697) {
+                                  var $699 = availableArgsCount >= arity;
+                                  if ($699) {
                                     var passedArgsTys = slice(idx)(idx + arity | 0)(argsArray);
                                     var passedArgs = slice(idx)(idx + arity | 0)(argsCodeArray);
                                     var boxedArgs = mapWithIndex2(function(i) {
@@ -31651,12 +31901,12 @@ var genApp = function(modNameStr) {
                                   var letFnCode = "        let mut _fn_eval = (" + (accCode + ");\n");
                                   var evalArgs = mapWithIndex2(function(i) {
                                     return function(v1) {
-                                      return "eval_arg_" + show9(i);
+                                      return "eval_arg_" + show10(i);
                                     };
                                   })(passedArgs);
                                   var etaArgs = mapWithIndex2(function(i) {
                                     return function(v1) {
-                                      return "eta_" + show9(i);
+                                      return "eta_" + show10(i);
                                     };
                                   })(replicate(missingCount)(unit));
                                   var etaArgsDecl = joinWith(", ")(mapWithIndex2(function(i) {
@@ -31670,10 +31920,10 @@ var genApp = function(modNameStr) {
                                     };
                                   })(etaArgs));
                                   var innerCall = "_fn_ptr(" + (joinWith(", ")(innerArgs) + ")");
-                                  var clonesCode = "    let mut _fn_ptr = _fn_eval.clone();\n" + joinWith("")(map38(function(arg) {
+                                  var clonesCode = "    let mut _fn_ptr = _fn_eval.clone();\n" + joinWith("")(map39(function(arg) {
                                     return "    let mut " + (arg + (" = " + (arg + ".clone();\n")));
                                   })(evalArgs));
-                                  var closureCode = "purust_core::Func" + (show9(missingCount) + ("::Shared(std::rc::Rc::new(move |" + (etaArgsDecl + ("| -> " + (retTyStr + (" {\n" + (clonesCode + ("    " + (innerCall + "\n}))")))))))));
+                                  var closureCode = "purust_core::Func" + (show10(missingCount) + ("::Shared(std::rc::Rc::new(move |" + (etaArgsDecl + ("| -> " + (retTyStr + (" {\n" + (clonesCode + ("    " + (innerCall + "\n}))")))))))));
                                   var boxedPassedArgs = mapWithIndex2(function(i) {
                                     return function(argCode2) {
                                       var expectedTy = fromMaybe(Any.value)(index(v.value0)(i));
@@ -31684,7 +31934,7 @@ var genApp = function(modNameStr) {
                                   })(passedArgs);
                                   var letArgsCode = mapWithIndex2(function(i) {
                                     return function(boxedArg2) {
-                                      return "        let mut eval_arg_" + (show9(i) + (" = " + (boxedArg2 + ";\n")));
+                                      return "        let mut eval_arg_" + (show10(i) + (" = " + (boxedArg2 + ";\n")));
                                     };
                                   })(boxedPassedArgs);
                                   var blockCode = "{\n" + (letFnCode + (joinWith("")(letArgsCode) + ("    " + (closureCode + "\n}"))));
@@ -31720,13 +31970,56 @@ var genApp = function(modNameStr) {
                           };
                         };
                       };
+                      var tcoTemps = function(params) {
+                        return mapWithIndex2(function(i) {
+                          return function(argCode) {
+                            var argTy = (function() {
+                              var v = index(argsArray)(i);
+                              if (v instanceof Just) {
+                                return inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound2)(v.value0);
+                              }
+                              ;
+                              if (v instanceof Nothing) {
+                                return Any.value;
+                              }
+                              ;
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 716, column 23 - line 718, column 31): " + [v.constructor.name]);
+                            })();
+                            var paramTy = (function() {
+                              var v = index(params)(i);
+                              if (v instanceof Just) {
+                                return fromMaybe(argTy)(lookup8(sanitizeIdent(v.value0))(bound2));
+                              }
+                              ;
+                              if (v instanceof Nothing) {
+                                return argTy;
+                              }
+                              ;
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 719, column 25 - line 721, column 33): " + [v.constructor.name]);
+                            })();
+                            var converted = boxUnbox(modNameStr)(paramTy)(argTy)(argCode);
+                            return "        let _tco_temp_" + (show10(i) + (" = " + (converted + ";\n")));
+                          };
+                        })(argsCodeArray);
+                      };
                       var aliveForFn = union7(alive)(foldl2(union7)(empty3)(argsFree));
                       var fnCode = codegenExpr_(modNameStr)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForFn)(false)(fn);
                       var resultCode = (function() {
                         var mbFnName = (function() {
                           var v3 = getInner(fn);
                           if (v3 instanceof Var) {
-                            return new Just(sanitizeIdent(v3.value0.value1));
+                            var prefix = (function() {
+                              if (v3.value0.value0 instanceof Just) {
+                                return replaceAll(".")("_")(v3.value0.value0.value0);
+                              }
+                              ;
+                              if (v3.value0.value0 instanceof Nothing) {
+                                return modNameStr;
+                              }
+                              ;
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 733, column 34 - line 735, column 48): " + [v3.value0.value0.constructor.name]);
+                            })();
+                            return new Just(prefix + ("_" + sanitizeIdent(v3.value0.value1)));
                           }
                           ;
                           if (v3 instanceof Local && v3.value0 instanceof Just) {
@@ -31737,21 +32030,17 @@ var genApp = function(modNameStr) {
                         })();
                         var isTco = (function() {
                           if (mbLoop instanceof Just && mbFnName instanceof Just) {
-                            return (mbFnName.value0 === mbLoop.value0.name || replaceAll(".")("_")(modNameStr) + ("_" + mbFnName.value0) === mbLoop.value0.name) && m === length(mbLoop.value0.params);
+                            return mbFnName.value0 === mbLoop.value0.name && m === length(mbLoop.value0.params);
                           }
                           ;
                           return false;
                         })();
                         if (isTco) {
                           if (mbLoop instanceof Just) {
-                            var tempsCode = mapWithIndex2(function(i) {
-                              return function(argCode) {
-                                return "        let _tco_temp_" + (show9(i) + (" = " + (argCode + ";\n")));
-                              };
-                            })(argsCodeArray);
+                            var tempsCode = tcoTemps(mbLoop.value0.params);
                             var assignsCode = mapWithIndex2(function(i) {
                               return function(pName) {
-                                return "        " + (sanitizeIdent(pName) + (" = _tco_temp_" + (show9(i) + ";\n")));
+                                return "        " + (sanitizeIdent(pName) + (" = _tco_temp_" + (show10(i) + ";\n")));
                               };
                             })(mbLoop.value0.params);
                             return "{\n" + (joinWith("")(tempsCode) + (joinWith("")(assignsCode) + "        continue;\n    }"));
@@ -31763,12 +32052,6 @@ var genApp = function(modNameStr) {
                         var v = getInner(fn);
                         if (v instanceof Var) {
                           var sName = sanitizeIdent(v.value0.value1);
-                          var $719 = member12(sName)(bound2);
-                          if ($719) {
-                            var v1 = buildCall(inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound2)(fn))(fnCode)(0);
-                            return boxUnbox(modNameStr)(appTy)(v1.value0)(v1.value1);
-                          }
-                          ;
                           var modPrefix = (function() {
                             if (v.value0.value0 instanceof Just) {
                               return replaceAll(".")("_")(v.value0.value0.value0) + "_";
@@ -31778,62 +32061,58 @@ var genApp = function(modNameStr) {
                               return replaceAll(".")("_")(modNameStr) + "_";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 732, column 41 - line 734, column 109): " + [v.value0.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 753, column 41 - line 755, column 109): " + [v.value0.value0.constructor.name]);
                           })();
                           var fullName = modPrefix + sName;
-                          var $725 = fullName === "Data_Eq_eqInt" && m === 2;
-                          if ($725) {
+                          var $729 = fullName === "Data_Eq_eqInt" && m === 2;
+                          if ($729) {
                             return "purust_core::mk_bool((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() == (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                           }
                           ;
-                          var $726 = fullName === "Data_Semiring_addInt" && m === 2;
-                          if ($726) {
+                          var $730 = fullName === "Data_Semiring_addInt" && m === 2;
+                          if ($730) {
                             return "purust_core::mk_int((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() + (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                           }
                           ;
-                          var $727 = fullName === "Data_Ring_subInt" && m === 2;
-                          if ($727) {
+                          var $731 = fullName === "Data_Ring_subInt" && m === 2;
+                          if ($731) {
                             return "purust_core::mk_int((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() - (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                           }
                           ;
-                          var $728 = fullName === "Data_Semiring_mulInt" && m === 2;
-                          if ($728) {
+                          var $732 = fullName === "Data_Semiring_mulInt" && m === 2;
+                          if ($732) {
                             return "purust_core::mk_int((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() * (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                           }
                           ;
-                          var $729 = fullName === "Data_Ord_lessThanInt" && m === 2;
-                          if ($729) {
+                          var $733 = fullName === "Data_Ord_lessThanInt" && m === 2;
+                          if ($733) {
                             return "purust_core::mk_bool((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() < (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                           }
                           ;
-                          var $730 = fullName === "Data_Ord_greaterThanInt" && m === 2;
-                          if ($730) {
+                          var $734 = fullName === "Data_Ord_greaterThanInt" && m === 2;
+                          if ($734) {
                             return "purust_core::mk_bool((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() > (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                           }
                           ;
-                          var $735 = (function() {
+                          var $739 = (function() {
                             if (mbLoop instanceof Just) {
                               return fullName === mbLoop.value0.name && m === length(mbLoop.value0.params);
                             }
                             ;
                             return false;
                           })();
-                          if ($735) {
+                          if ($739) {
                             if (mbLoop instanceof Just) {
-                              var tempsCode = mapWithIndex2(function(i) {
-                                return function(argCode) {
-                                  return "        let _tco_temp_" + (show9(i) + (" = " + (argCode + ";\n")));
-                                };
-                              })(argsCodeArray);
+                              var tempsCode = tcoTemps(mbLoop.value0.params);
                               var assignsCode = mapWithIndex2(function(i) {
                                 return function(pName) {
-                                  return "        " + (sanitizeIdent(pName) + (" = _tco_temp_" + (show9(i) + ";\n")));
+                                  return "        " + (sanitizeIdent(pName) + (" = _tco_temp_" + (show10(i) + ";\n")));
                                 };
                               })(mbLoop.value0.params);
                               var _dbg = unsafePerformEffect(log2("GENERATED CONTINUE FOR: " + mbLoop.value0.name));
                               return (function() {
-                                var $737 = eq34(_dbg)(unit);
-                                if ($737) {
+                                var $741 = eq34(_dbg)(unit);
+                                if ($741) {
                                   return "";
                                 }
                                 ;
@@ -31844,19 +32123,19 @@ var genApp = function(modNameStr) {
                             return "";
                           }
                           ;
-                          var $742 = member12((function() {
-                            var $741 = fullName === "main";
-                            if ($741) {
+                          var $746 = member12((function() {
+                            var $745 = fullName === "main";
+                            if ($745) {
                               return "main";
                             }
                             ;
                             return fullName;
                           })())(aritiesMap);
-                          if ($742) {
+                          if ($746) {
                             var n = lookupArity(fullName);
-                            var fnTy = fromMaybe(Any.value)(lookup7((function() {
-                              var $743 = fullName === "main";
-                              if ($743) {
+                            var fnTy = fromMaybe(Any.value)(lookup8((function() {
+                              var $747 = fullName === "main";
+                              if ($747) {
                                 return "main";
                               }
                               ;
@@ -31864,9 +32143,9 @@ var genApp = function(modNameStr) {
                             })())(aritiesMap));
                             var expectedArgTys = extractAllArgTypes(fnTy);
                             var v1 = (function() {
-                              var $744 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
-                              if ($744) {
-                                return trace2("genApp runSTFn3 fnTy: " + (printType(fnTy) + (" expectedArgTys len: " + show9(length(expectedArgTys)))))(function(v22) {
+                              var $748 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
+                              if ($748) {
+                                return trace2("genApp runSTFn3 fnTy: " + (printType(fnTy) + (" expectedArgTys len: " + show10(length(expectedArgTys)))))(function(v22) {
                                   return unit;
                                 });
                               }
@@ -31879,9 +32158,9 @@ var genApp = function(modNameStr) {
                                 var argExpr = fromMaybe(new Var(new Qualified(Nothing.value, "")))(index(argsArray)(i));
                                 var argTy = inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound2)(argExpr);
                                 var v22 = (function() {
-                                  var $745 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
-                                  if ($745) {
-                                    return trace2("genApp runSTFn3 arg " + (show9(i) + (": expectedTy=" + (printType(expectedTy) + (", argTy=" + printType(argTy))))))(function(v3) {
+                                  var $749 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
+                                  if ($749) {
+                                    return trace2("genApp runSTFn3 arg " + (show10(i) + (": expectedTy=" + (printType(expectedTy) + (", argTy=" + printType(argTy))))))(function(v3) {
                                       return unit;
                                     });
                                   }
@@ -31891,33 +32170,33 @@ var genApp = function(modNameStr) {
                                 return boxUnbox(modNameStr)(expectedTy)(argTy)(argCode);
                               };
                             })(argsCodeArray);
-                            var $746 = n > 0;
-                            if ($746) {
-                              var $747 = m === n;
-                              if ($747) {
+                            var $750 = n > 0;
+                            if ($750) {
+                              var $751 = m === n;
+                              if ($751) {
                                 return fullName + ("(" + (joinWith(", ")(boxedArgs) + ")"));
                               }
                               ;
-                              var $748 = m < n;
-                              if ($748) {
+                              var $752 = m < n;
+                              if ($752) {
                                 var retTy = extractFinalRetType(fnTy);
                                 var retTyStr = codegenExprType(modNameStr)(true)(retTy);
                                 var missingCount = n - m | 0;
                                 var letArgsCode = mapWithIndex2(function(i) {
                                   return function(boxedArg) {
-                                    return "        let mut eval_arg_" + (show9(i) + (" = " + (boxedArg + ";\n")));
+                                    return "        let mut eval_arg_" + (show10(i) + (" = " + (boxedArg + ";\n")));
                                   };
                                 })(boxedArgs);
                                 var expectedArgTys1 = extractAllArgTypes(fnTy);
                                 var missingEtasTypes = drop(m)(expectedArgTys1);
                                 var evalArgs = mapWithIndex2(function(i) {
                                   return function(v22) {
-                                    return "eval_arg_" + show9(i);
+                                    return "eval_arg_" + show10(i);
                                   };
                                 })(argsCodeArray);
                                 var etaArgs = mapWithIndex2(function(i) {
                                   return function(v22) {
-                                    return "eta_" + show9(i);
+                                    return "eta_" + show10(i);
                                   };
                                 })(replicate(missingCount)(unit));
                                 var etaArgsDecl = joinWith(", ")(mapWithIndex2(function(i) {
@@ -31931,10 +32210,10 @@ var genApp = function(modNameStr) {
                                   };
                                 })(etaArgs));
                                 var innerCall = fullName + ("(" + (joinWith(", ")(innerArgs) + ")"));
-                                var clonesCode = joinWith("")(map38(function(arg) {
+                                var clonesCode = joinWith("")(map39(function(arg) {
                                   return "    let mut " + (arg + (" = " + (arg + ".clone();\n")));
                                 })(evalArgs));
-                                var closureCode = "purust_core::Func" + (show9(missingCount) + ("::Shared(std::rc::Rc::new(move |" + (etaArgsDecl + ("| -> " + (retTyStr + (" {\n" + (clonesCode + ("    " + (innerCall + "\n}))")))))))));
+                                var closureCode = "purust_core::Func" + (show10(missingCount) + ("::Shared(std::rc::Rc::new(move |" + (etaArgsDecl + ("| -> " + (retTyStr + (" {\n" + (clonesCode + ("    " + (innerCall + "\n}))")))))))));
                                 var blockCode = "{\n" + (joinWith("")(letArgsCode) + ("    " + (closureCode + "\n}")));
                                 return boxUnbox(modNameStr)(appTy)(new Func(missingEtasTypes, retTy))(blockCode);
                               }
@@ -31989,21 +32268,21 @@ var genAbs = function(currentMod) {
                       var newBound = foldr2(function(v) {
                         return function(b) {
                           var pTy = fromMaybe(Any.value)(index(expectedArgTys)(v.value0));
-                          var $765 = v.value1 === "_";
-                          if ($765) {
+                          var $769 = v.value1 === "_";
+                          if ($769) {
                             return b;
                           }
                           ;
-                          return insert15(sanitizeIdent(v.value1))(pTy)(b);
+                          return insert16(sanitizeIdent(v.value1))(pTy)(b);
                         };
                       })(bound2)(mapWithIndex2(Tuple.create)(paramsArr));
-                      var capturedVars = difference4(freeVariables(body))(fromFoldable12(paramsArr));
+                      var capturedVars = difference4(freeVariables(body))(fromFoldable14(paramsArr));
                       var arity = length(paramsArr);
                       var isFuncN = arity > 0 && (arity <= 10 && arity === length(expectedArgTys));
                       if (isFuncN) {
                         var toCloneOutside = filter(function(v) {
                           return !member12(v)(aritiesMap) && !member4(v)(allZeroArity);
-                        })(fromFoldable11(intersection3(capturedVars)(alive)));
+                        })(fromFoldable13(intersection3(capturedVars)(alive)));
                         var remainingArgs = drop(arity)(expectedArgTys);
                         var realCapturedVars = filter6(function(v) {
                           return !member12(v)(aritiesMap) && !member4(v)(allZeroArity);
@@ -32017,38 +32296,38 @@ var genAbs = function(currentMod) {
                         });
                         var processParam = function(v) {
                           return function(st) {
-                            var $771 = v.value1 === "_";
-                            if ($771) {
+                            var $775 = v.value1 === "_";
+                            if ($775) {
                               return {
-                                code: st.code + ("    drop(_a" + (show9(v.value0) + ");\n")),
+                                code: st.code + ("    drop(_a" + (show10(v.value0) + ");\n")),
                                 bound: st.bound
                               };
                             }
                             ;
-                            var $772 = member4(v.value1)(st.bound);
-                            if ($772) {
+                            var $776 = member4(v.value1)(st.bound);
+                            if ($776) {
                               return {
-                                code: st.code + ("    drop(_a" + (show9(v.value0) + ");\n")),
+                                code: st.code + ("    drop(_a" + (show10(v.value0) + ");\n")),
                                 bound: st.bound
                               };
                             }
                             ;
-                            var newBound1 = insert11(v.value1)(st.bound);
-                            var $773 = member4(v.value1)(freeVariables(body));
-                            if ($773) {
+                            var newBound1 = insert15(v.value1)(st.bound);
+                            var $777 = member4(v.value1)(freeVariables(body));
+                            if ($777) {
                               return {
-                                code: "    let mut " + (sanitizeIdent(v.value1) + (" = _a" + (show9(v.value0) + (";\n" + st.code)))),
+                                code: "    let mut " + (sanitizeIdent(v.value1) + (" = _a" + (show10(v.value0) + (";\n" + st.code)))),
                                 bound: newBound1
                               };
                             }
                             ;
                             return {
-                              code: st.code + ("    drop(_a" + (show9(v.value0) + ");\n")),
+                              code: st.code + ("    drop(_a" + (show10(v.value0) + ");\n")),
                               bound: newBound1
                             };
                           };
                         };
-                        var outsideClonesCode = joinWith("")(map38(function(v) {
+                        var outsideClonesCode = joinWith("")(map39(function(v) {
                           return "    let mut " + (sanitizeIdent(v) + (" = " + (sanitizeIdent(v) + ".clone();\n")));
                         })(toCloneOutside));
                         var letBindingsAndDrops = foldr2(processParam)({
@@ -32056,8 +32335,8 @@ var genAbs = function(currentMod) {
                           bound: empty3
                         })(mapWithIndex2(Tuple.create)(paramsArr)).code;
                         var innermostExpectedRetTy = (function() {
-                          var $776 = length(remainingArgs) > 0;
-                          if ($776) {
+                          var $780 = length(remainingArgs) > 0;
+                          if ($780) {
                             return new Func(remainingArgs, expectedRetTy);
                           }
                           ;
@@ -32068,22 +32347,22 @@ var genAbs = function(currentMod) {
                         var boxedBody = boxUnbox(currentMod)(innermostExpectedRetTy)(bodyTy)(rawCode);
                         var argsCodeArr = mapWithIndex2(function(i) {
                           return function(p) {
-                            return "mut _a" + (show9(i) + (": " + codegenExprType(currentMod)(false)(fromMaybe(Any.value)(index(expectedArgTys)(i)))));
+                            return "mut _a" + (show10(i) + (": " + codegenExprType(currentMod)(false)(fromMaybe(Any.value)(index(expectedArgTys)(i)))));
                           };
                         })(paramsArr);
                         var argsCode = joinWith(", ")(argsCodeArr);
                         var closureCode = (function() {
-                          var $777 = isEmpty2(realCapturedVars);
-                          if ($777) {
-                            return "purust_core::Func" + (show9(arity) + ("::Static(|" + (argsCode + ("| -> " + (retTyStr + (" {\n" + (letBindingsAndDrops + ("    " + (boxedBody + ("\n} as fn(" + (joinWith(", ")(map38(function(v) {
+                          var $781 = isEmpty2(realCapturedVars);
+                          if ($781) {
+                            return "purust_core::Func" + (show10(arity) + ("::Static(|" + (argsCode + ("| -> " + (retTyStr + (" {\n" + (letBindingsAndDrops + ("    " + (boxedBody + ("\n} as fn(" + (joinWith(", ")(map39(function(v) {
                               return codegenExprType(currentMod)(false)(fromMaybe(Any.value)(index(expectedArgTys)(v.value0)));
                             })(mapWithIndex2(Tuple.create)(paramsArr))) + (") -> " + (retTyStr + ")")))))))))))));
                           }
                           ;
-                          return "purust_core::Func" + (show9(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsCode + ("| -> " + (retTyStr + (" {\n" + (letBindingsAndDrops + ("    " + (boxedBody + "\n}))")))))))));
+                          return "purust_core::Func" + (show10(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsCode + ("| -> " + (retTyStr + (" {\n" + (letBindingsAndDrops + ("    " + (boxedBody + "\n}))")))))))));
                         })();
-                        var $781 = length(toCloneOutside) > 0;
-                        if ($781) {
+                        var $785 = length(toCloneOutside) > 0;
+                        if ($785) {
                           return "{\n" + (outsideClonesCode + ("    " + (closureCode + "\n}")));
                         }
                         ;
@@ -32103,8 +32382,8 @@ var genAbs = function(currentMod) {
                             return res;
                           });
                           var innermostExpectedRetTy2 = (function() {
-                            var $782 = length(remainingArgs2) > 0;
-                            if ($782) {
+                            var $786 = length(remainingArgs2) > 0;
+                            if ($786) {
                               return new Func(remainingArgs2, expectedRetTy);
                             }
                             ;
@@ -32118,8 +32397,8 @@ var genAbs = function(currentMod) {
                         return function(st) {
                           var remainingArgTys = drop(v.value0 + 1 | 0)(expectedArgTys);
                           var thisRetTy = (function() {
-                            var $784 = length(remainingArgTys) > 0;
-                            if ($784) {
+                            var $788 = length(remainingArgTys) > 0;
+                            if ($788) {
                               return new Func(remainingArgTys, expectedRetTy);
                             }
                             ;
@@ -32135,10 +32414,10 @@ var genAbs = function(currentMod) {
                           })(thisClosureCaptures);
                           var toClone = filter(function(v1) {
                             return !member12(v1)(aritiesMap) && !member4(v1)(allZeroArity);
-                          })(fromFoldable11(thisClosureCaptures));
+                          })(fromFoldable13(thisClosureCaptures));
                           var letBindingAndDrop = (function() {
-                            var $785 = v.value1 === "_";
-                            if ($785) {
+                            var $789 = v.value1 === "_";
+                            if ($789) {
                               return "    drop(_a0);\n";
                             }
                             ;
@@ -32148,12 +32427,12 @@ var genAbs = function(currentMod) {
                             ;
                             return "    drop(_a0);\n";
                           })();
-                          var clonesCode = joinWith("")(map38(function(v1) {
+                          var clonesCode = joinWith("")(map39(function(v1) {
                             return "    let mut " + (sanitizeIdent(v1) + (" = " + (sanitizeIdent(v1) + ".clone();\n")));
                           })(toClone));
                           var newCode = (function() {
-                            var $787 = isEmpty2(realThisClosureCaptures);
-                            if ($787) {
+                            var $791 = isEmpty2(realThisClosureCaptures);
+                            if ($791) {
                               return "purust_core::Func1::Static(|" + (pCode + ("| -> " + (retTyStr2 + (" {\n" + (clonesCode + (letBindingAndDrop + ("    " + (st.code + ("\n" + ("} as fn(" + (codegenExprType(currentMod)(false)(pTy) + (") -> " + (retTyStr2 + ")")))))))))))));
                             }
                             ;
@@ -32168,13 +32447,13 @@ var genAbs = function(currentMod) {
                       })(initialState)(mapWithIndex2(Tuple.create)(paramsArr));
                       var toCloneOutside = filter(function(v) {
                         return !member12(v)(aritiesMap) && !member4(v)(allZeroArity);
-                      })(fromFoldable11(intersection3(finalState.freeVars)(alive)));
-                      var outsideClonesCode = joinWith("")(map38(function(v) {
+                      })(fromFoldable13(intersection3(finalState.freeVars)(alive)));
+                      var outsideClonesCode = joinWith("")(map39(function(v) {
                         return "let mut " + (sanitizeIdent(v) + (" = " + (sanitizeIdent(v) + ".clone();\n    ")));
                       })(toCloneOutside));
                       var wrappedCode = (function() {
-                        var $790 = length(toCloneOutside) > 0;
-                        if ($790) {
+                        var $794 = length(toCloneOutside) > 0;
+                        if ($794) {
                           return "{\n    " + (outsideClonesCode + (finalState.code + "\n}"));
                         }
                         ;
@@ -32256,29 +32535,29 @@ var codegenExpr_ = function(currentMod) {
                       ;
                       return $tco_result;
                     };
-                    var $821 = isEffectNode(v) && !inEffectBlock;
-                    if ($821) {
+                    var $825 = isEffectNode(v) && !inEffectBlock;
+                    if ($825) {
                       var freeVars = freeVariables(v);
                       var toCloneInside = filter(function(v12) {
                         return !member12(v12)(aritiesMap) && !member4(v12)(allZeroArity);
-                      })(fromFoldable11(freeVars));
-                      var insideClonesCode = "// FREEVARS: " + (joinWith(", ")(fromFoldable11(freeVars)) + ("\n" + joinWith("")(map38(function(v12) {
+                      })(fromFoldable13(freeVars));
+                      var insideClonesCode = "// FREEVARS: " + (joinWith(", ")(fromFoldable13(freeVars)) + ("\n" + joinWith("")(map39(function(v12) {
                         return "    let mut " + (sanitizeIdent(v12) + (" = " + (sanitizeIdent(v12) + ".clone();\n")));
                       })(toCloneInside))));
                       var toCloneOutside = filter(function(v12) {
                         return !member12(v12)(aritiesMap) && !member4(v12)(allZeroArity);
-                      })(fromFoldable11(intersection3(freeVars)(alive)));
-                      var outsideClonesCode = joinWith("")(map38(function(v12) {
+                      })(fromFoldable13(intersection3(freeVars)(alive)));
+                      var outsideClonesCode = joinWith("")(map39(function(v12) {
                         return "let mut " + (sanitizeIdent(v12) + (" = " + (sanitizeIdent(v12) + ".clone();\n    ")));
                       })(toCloneOutside));
                       var bodyCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(freeVars)(true)(v);
-                      var $822 = length(toCloneInside) === 0;
-                      if ($822) {
+                      var $826 = length(toCloneInside) === 0;
+                      if ($826) {
                         return "{\n    " + (outsideClonesCode + ("crate::Value::Func1(purust_core::Func1::Static(|mut _u: crate::UnknownType| -> crate::UnknownType {\n" + ("        " + (bodyCode + "\n    } as fn(crate::UnknownType) -> crate::UnknownType))\n}"))));
                       }
                       ;
-                      var $823 = length(toCloneOutside) > 0;
-                      if ($823) {
+                      var $827 = length(toCloneOutside) > 0;
+                      if ($827) {
                         return "{\n    " + (outsideClonesCode + ("crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + (insideClonesCode + ("        " + (bodyCode + "\n    })))\n}")))));
                       }
                       ;
@@ -32310,68 +32589,73 @@ var codegenExpr_ = function(currentMod) {
                         return $tco_result;
                       };
                       var inner = stripTyped(v.value1);
+                      var effectiveTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v);
+                      if (inner instanceof PrimUndefined && eq42(unwrapType(v.value0))(Unit.value)) {
+                        return "()";
+                      }
+                      ;
                       if (inner instanceof Abs) {
-                        var argTys = extractAllArgTypes(v.value0);
+                        var argTys = extractAllArgTypes(effectiveTy);
                         var n = length(argTys);
                         var v1 = (function() {
-                          var v22 = extractAbsParams(n)(v.value1);
-                          if (v22 instanceof Just) {
-                            return new Tuple(v22.value0.value0, v22.value0.value1);
+                          var v2 = extractAbsParams(n)(v.value1);
+                          if (v2 instanceof Just) {
+                            return new Tuple(v2.value0.value0, v2.value0.value1);
                           }
                           ;
-                          if (v22 instanceof Nothing) {
-                            var p1 = map38(function(v3) {
+                          if (v2 instanceof Nothing) {
+                            var p1 = map39(function(v3) {
                               if (v3.value0 instanceof Just) {
                                 return sanitizeIdent(v3.value0.value0);
                               }
                               ;
                               if (v3.value0 instanceof Nothing) {
-                                return "lvl_" + show9(unwrap7(v3.value1));
+                                return "lvl_" + show10(unwrap8(v3.value1));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 987, column 50 - line 989, column 64): " + [v3.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1012, column 50 - line 1014, column 64): " + [v3.value0.constructor.name]);
                             })(toArray3(inner.value0));
                             return new Tuple(p1, inner.value1);
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 983, column 39 - line 990, column 31): " + [v22.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1008, column 39 - line 1015, column 31): " + [v2.constructor.name]);
                         })();
                         var actualTy = (function() {
-                          var retTy2 = extractFinalRetType(v.value0);
+                          var retTy2 = extractFinalRetType(effectiveTy);
                           var remainingArgTys = drop(length(v1.value0))(argTys);
                           var finalRetTy = (function() {
-                            var $841 = length(remainingArgTys) > 0;
-                            if ($841) {
+                            var $845 = length(remainingArgTys) > 0;
+                            if ($845) {
                               return new Func(remainingArgTys, retTy2);
                             }
                             ;
                             return retTy2;
                           })();
                           var filledArgTys = mapWithIndex2(function(i) {
-                            return function(v22) {
+                            return function(v2) {
                               return fromMaybe(Any.value)(index(argTys)(i));
                             };
                           })(v1.value0);
                           return new Func(filledArgTys, finalRetTy);
                         })();
-                        return "/* Typed Abs */" + boxUnbox(currentMod)(v.value0)(actualTy)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(v1.value0)(v.value0)(v1.value1));
+                        return "/* Typed Abs */" + boxUnbox(currentMod)(effectiveTy)(actualTy)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(v1.value0)(actualTy)(v1.value1));
                       }
                       ;
                       if (inner instanceof UncurriedAbs) {
-                        var paramsArr = map38(function(v12) {
+                        var paramsArr = map39(function(v12) {
                           if (v12.value0 instanceof Just) {
                             return sanitizeIdent(v12.value0.value0);
                           }
                           ;
                           if (v12.value0 instanceof Nothing) {
-                            return "lvl_" + show9(unwrap7(v12.value1));
+                            return "lvl_" + show10(unwrap8(v12.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1001, column 49 - line 1003, column 51): " + [v12.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1026, column 49 - line 1028, column 51): " + [v12.value0.constructor.name]);
                         })(inner.value0);
                         var actualTy = (function() {
-                          var retTy2 = extractFinalRetType(v.value0);
-                          var argTys2 = extractAllArgTypes(v.value0);
+                          var retTy2 = extractFinalRetType(effectiveTy);
+                          var argTys2 = extractAllArgTypes(effectiveTy);
                           var filledArgTys = mapWithIndex2(function(i) {
                             return function(v12) {
                               return fromMaybe(Any.value)(index(argTys2)(i));
@@ -32379,8 +32663,8 @@ var codegenExpr_ = function(currentMod) {
                           })(paramsArr);
                           var remainingArgTys = drop(length(paramsArr))(argTys2);
                           var finalRetTy = (function() {
-                            var $851 = length(remainingArgTys) > 0;
-                            if ($851) {
+                            var $855 = length(remainingArgTys) > 0;
+                            if ($855) {
                               return new Func(remainingArgTys, retTy2);
                             }
                             ;
@@ -32388,24 +32672,24 @@ var codegenExpr_ = function(currentMod) {
                           })();
                           return new Func(filledArgTys, finalRetTy);
                         })();
-                        return "/* Typed UncurriedAbs */" + boxUnbox(currentMod)(v.value0)(actualTy)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(v.value0)(inner.value1));
+                        return "/* Typed UncurriedAbs */" + boxUnbox(currentMod)(effectiveTy)(actualTy)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(actualTy)(inner.value1));
                       }
                       ;
                       if (inner instanceof UncurriedEffectAbs) {
-                        var paramsArr = map38(function(v12) {
+                        var paramsArr = map39(function(v12) {
                           if (v12.value0 instanceof Just) {
                             return sanitizeIdent(v12.value0.value0);
                           }
                           ;
                           if (v12.value0 instanceof Nothing) {
-                            return "lvl_" + show9(unwrap7(v12.value1));
+                            return "lvl_" + show10(unwrap8(v12.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1014, column 49 - line 1016, column 51): " + [v12.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1039, column 49 - line 1041, column 51): " + [v12.value0.constructor.name]);
                         })(inner.value0);
                         var actualTy = (function() {
-                          var retTy2 = extractFinalRetType(v.value0);
-                          var argTys2 = extractAllArgTypes(v.value0);
+                          var retTy2 = extractFinalRetType(effectiveTy);
+                          var argTys2 = extractAllArgTypes(effectiveTy);
                           var filledArgTys = mapWithIndex2(function(i) {
                             return function(v12) {
                               return fromMaybe(Any.value)(index(argTys2)(i));
@@ -32413,8 +32697,8 @@ var codegenExpr_ = function(currentMod) {
                           })(paramsArr);
                           var remainingArgTys = drop(length(paramsArr))(argTys2);
                           var finalRetTy = (function() {
-                            var $859 = length(remainingArgTys) > 0;
-                            if ($859) {
+                            var $863 = length(remainingArgTys) > 0;
+                            if ($863) {
                               return new Func(remainingArgTys, retTy2);
                             }
                             ;
@@ -32422,16 +32706,20 @@ var codegenExpr_ = function(currentMod) {
                           })();
                           return new Func(filledArgTys, finalRetTy);
                         })();
-                        return "/* Typed UncurriedEffectAbs */" + boxUnbox(currentMod)(v.value0)(actualTy)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(v.value0)(inner.value1));
+                        return "/* Typed UncurriedEffectAbs */" + boxUnbox(currentMod)(effectiveTy)(actualTy)(genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(actualTy)(inner.value1));
                       }
                       ;
                       if (inner instanceof Lit && inner.value0 instanceof LitRecord) {
                         var v1 = unwrapType(v.value0);
+                        if (v1 instanceof Unit && $$null(inner.value0.value0)) {
+                          return "()";
+                        }
+                        ;
                         if (v1 instanceof ADT && length(v1.value1) >= 2) {
                           var propsArr = fromFoldable23(inner.value0.value0);
                           var propsCode = mapWithIndex2(function(i) {
-                            return function(v22) {
-                              var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v22.value1);
+                            return function(v2) {
+                              var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v2.value1);
                               var subsequentProps = drop(i + 1 | 0)(propsArr);
                               var expectedTy = (function() {
                                 var findFieldTy = function(v3) {
@@ -32439,7 +32727,7 @@ var codegenExpr_ = function(currentMod) {
                                     if (v4 instanceof ADT) {
                                       var nameStr = fromMaybe("")(last(v4.value1));
                                       var modStr = joinWith("_")(dropEnd(1)(v4.value1));
-                                      var mbDecl = lookup7(modStr + ("_" + nameStr))(globalClassFields);
+                                      var mbDecl = lookup8(modStr + ("_" + nameStr))(globalClassFields);
                                       if (mbDecl instanceof Just) {
                                         var v5 = find2(function(v6) {
                                           return v6.value0 === sanitizeIdent(v3);
@@ -32452,29 +32740,29 @@ var codegenExpr_ = function(currentMod) {
                                           return valTy2;
                                         }
                                         ;
-                                        throw new Error("Failed pattern match at Purust.CodeGen (line 1043, column 65 - line 1045, column 63): " + [v5.constructor.name]);
+                                        throw new Error("Failed pattern match at Purust.CodeGen (line 1069, column 65 - line 1071, column 63): " + [v5.constructor.name]);
                                       }
                                       ;
                                       if (mbDecl instanceof Nothing) {
                                         return valTy2;
                                       }
                                       ;
-                                      throw new Error("Failed pattern match at Purust.CodeGen (line 1042, column 43 - line 1046, column 61): " + [mbDecl.constructor.name]);
+                                      throw new Error("Failed pattern match at Purust.CodeGen (line 1068, column 43 - line 1072, column 61): " + [mbDecl.constructor.name]);
                                     }
                                     ;
                                     return valTy2;
                                   };
                                 };
-                                return findFieldTy(v22.value0)(unwrapType(v.value0));
+                                return findFieldTy(v2.value0)(unwrapType(v.value0));
                               })();
                               var aliveForProp = union7(alive)(foldl2(function(acc) {
                                 return function(v3) {
                                   return union7(acc)(freeVariables(v3.value1));
                                 };
                               })(empty3)(subsequentProps));
-                              var valCode2 = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(aliveForProp)(false)(v22.value1);
-                              return trace2("LITRECORD expStr=" + (codegenExprType(currentMod)(true)(expectedTy) + (", actStr=" + (codegenExprType(currentMod)(true)(valTy2) + (" for " + v22.value0)))))(function(v3) {
-                                return sanitizeIdent(v22.value0) + (": " + boxUnbox(currentMod)(expectedTy)(valTy2)(valCode2));
+                              var valCode2 = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(aliveForProp)(false)(v2.value1);
+                              return trace2("LITRECORD expStr=" + (codegenExprType(currentMod)(true)(expectedTy) + (", actStr=" + (codegenExprType(currentMod)(true)(valTy2) + (" for " + v2.value0)))))(function(v3) {
+                                return sanitizeIdent(v2.value0) + (": " + boxUnbox(currentMod)(expectedTy)(valTy2)(valCode2));
                               });
                             };
                           })(propsArr);
@@ -32482,8 +32770,8 @@ var codegenExpr_ = function(currentMod) {
                           var fields = joinWith(", ")(propsCode);
                           var className = sanitizeIdent(fromMaybe("Unknown")(last(v1.value1)));
                           var structName = (function() {
-                            var $883 = modName === currentMod;
-                            if ($883) {
+                            var $887 = modName === currentMod;
+                            if ($887) {
                               return "crate::" + className;
                             }
                             ;
@@ -32524,7 +32812,7 @@ var codegenExpr_ = function(currentMod) {
                           return "// Unsupported UncurriedEffectApp without args\n";
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1073, column 12 - line 1075, column 75): " + [arg0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1099, column 12 - line 1101, column 75): " + [arg0.constructor.name]);
                       }
                       ;
                       if (v.value0 instanceof Accessor && (v.value0.value1 instanceof GetProp && v.value0.value1.value0 === "logRecord")) {
@@ -32537,7 +32825,7 @@ var codegenExpr_ = function(currentMod) {
                           return "// Unsupported UncurriedEffectApp without args\n";
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1078, column 12 - line 1080, column 75): " + [arg0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1104, column 12 - line 1106, column 75): " + [arg0.constructor.name]);
                       }
                       ;
                       if (v.value0 instanceof Typed && (v.value0.value1 instanceof Var && v.value0.value1.value0.value1 === "logRecord")) {
@@ -32550,7 +32838,7 @@ var codegenExpr_ = function(currentMod) {
                           return "// Unsupported UncurriedEffectApp without args\n";
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1083, column 12 - line 1085, column 75): " + [arg0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1109, column 12 - line 1111, column 75): " + [arg0.constructor.name]);
                       }
                       ;
                       if (v.value0 instanceof Var && v.value0.value0.value1 === "logRecord") {
@@ -32563,7 +32851,7 @@ var codegenExpr_ = function(currentMod) {
                           return "// Unsupported UncurriedEffectApp without args\n";
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1088, column 12 - line 1090, column 75): " + [arg0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1114, column 12 - line 1116, column 75): " + [arg0.constructor.name]);
                       }
                       ;
                       var appTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(new UncurriedEffectApp(v.value0, v.value1));
@@ -32593,21 +32881,25 @@ var codegenExpr_ = function(currentMod) {
                     }
                     ;
                     if (v instanceof Branch) {
-                      var defCode = "{\n        " + (codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(false)(v.value1) + "\n    }");
                       var branchesArr = toArray3(v.value0);
+                      var branchTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v);
+                      var genBranchBody = function(body) {
+                        return boxUnbox(currentMod)(branchTy)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(body))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(false)(body));
+                      };
+                      var defCode = "{\n        " + (genBranchBody(v.value1) + "\n    }");
                       var branchCode = mapWithIndex2(function(i) {
                         return function(v12) {
                           var subsequentBranches = drop(i + 1 | 0)(branchesArr);
                           var varsSubsequent = foldl2(function(acc) {
-                            return function(v22) {
-                              return union7(acc)(union7(freeVariables(v22.value0))(freeVariables(v22.value1)));
+                            return function(v2) {
+                              return union7(acc)(union7(freeVariables(v2.value0))(freeVariables(v2.value1)));
                             };
                           })(freeVariables(v.value1))(subsequentBranches);
                           var condTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v12.value0);
                           var aliveForCond = union7(alive)(union7(freeVariables(v12.value1))(varsSubsequent));
                           var condCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForCond)(false)(v12.value0);
                           var condFinal = boxUnbox(currentMod)($$Boolean.value)(condTy)(condCode);
-                          return "if " + (condFinal + (" {\n        " + (codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(false)(v12.value1) + "\n    }")));
+                          return "if " + (condFinal + (" {\n        " + (genBranchBody(v12.value1) + "\n    }")));
                         };
                       })(branchesArr);
                       return joinWith(" else ")(branchCode) + (" else " + defCode);
@@ -32620,7 +32912,7 @@ var codegenExpr_ = function(currentMod) {
                         return "!(" + (boxUnbox(currentMod)($$Boolean.value)(aTy)(aStrRaw) + (" /* aTy: " + (codegenExprType(currentMod)(true)(aTy) + (", a is " + (printAST(v.value0.value1) + (", fn ty is " + ((function() {
                           if (v.value0.value1 instanceof App2) {
                             return printType(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value0.value1.value0)) + (", lvl_3 in bound: " + ((function() {
-                              var v12 = lookup7("lvl_3")(bound2);
+                              var v12 = lookup8("lvl_3")(bound2);
                               if (v12 instanceof Just) {
                                 return printType(v12.value0);
                               }
@@ -32629,9 +32921,9 @@ var codegenExpr_ = function(currentMod) {
                                 return "none";
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1132, column 138 - line 1134, column 28): " + [v12.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1162, column 138 - line 1164, column 28): " + [v12.constructor.name]);
                             })() + (", lvl_3 in arities: " + (function() {
-                              var v12 = lookup7("lvl_3")(aritiesMap);
+                              var v12 = lookup8("lvl_3")(aritiesMap);
                               if (v12 instanceof Just) {
                                 return printType(v12.value0);
                               }
@@ -32640,7 +32932,7 @@ var codegenExpr_ = function(currentMod) {
                                 return "none";
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1134, column 60 - line 1136, column 28): " + [v12.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1164, column 60 - line 1166, column 28): " + [v12.constructor.name]);
                             })())));
                           }
                           ;
@@ -32670,7 +32962,7 @@ var codegenExpr_ = function(currentMod) {
                           var modName = replaceAll(".")("_")(joinWith("_")(dropEnd(1)(v1.value1)));
                           var cName = sanitizeIdent(v.value0.value0.value0.value1);
                           var prefixedKey = modName + ("_" + cName);
-                          var lookupRes = lookup7(prefixedKey)(aritiesMap);
+                          var lookupRes = lookup8(prefixedKey)(aritiesMap);
                           var debugComment = "/* OpIsTag Debug: " + (prefixedKey + (" -> " + ((function() {
                             if (lookupRes instanceof Just) {
                               return printType(lookupRes.value0);
@@ -32680,11 +32972,11 @@ var codegenExpr_ = function(currentMod) {
                               return "Nothing";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1156, column 83 - line 1158, column 40): " + [lookupRes.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1186, column 83 - line 1188, column 40): " + [lookupRes.constructor.name]);
                           })() + " */ ")));
                           var hasArgs = (function() {
-                            var v22 = map114(unwrapType)(lookupRes);
-                            if (v22 instanceof Just && v22.value0 instanceof Func) {
+                            var v2 = map115(unwrapType)(lookupRes);
+                            if (v2 instanceof Just && v2.value0 instanceof Func) {
                               return true;
                             }
                             ;
@@ -32700,8 +32992,8 @@ var codegenExpr_ = function(currentMod) {
                           var boxedA = boxUnbox(currentMod)(new ADT(v1.value0, v1.value1, []))(aTy)(aStrRaw);
                           var actualClassName = fromMaybe(v1.value0)(last(v1.value1));
                           var enumName = (function() {
-                            var $957 = modName === currentMod;
-                            if ($957) {
+                            var $961 = modName === currentMod;
+                            if ($961) {
                               return "crate::" + sanitizeIdent(actualClassName);
                             }
                             ;
@@ -32744,6 +33036,10 @@ var codegenExpr_ = function(currentMod) {
                       ;
                       if (v.value0.value0 instanceof OpIntNum && v.value0.value0.value0 instanceof OpDivide) {
                         return "(" + (aStrInt + (" / " + (bStrInt + ")")));
+                      }
+                      ;
+                      if (v.value0.value0 instanceof OpIntNum && v.value0.value0.value0 instanceof OpMod) {
+                        return "{ let _mod_l: i64 = " + (aStrInt + ("; let _mod_r: i64 = " + (bStrInt + "; _mod_l.checked_rem_euclid(_mod_r).unwrap_or(0_i64) }")));
                       }
                       ;
                       if (v.value0.value0 instanceof OpIntBitAnd) {
@@ -32919,6 +33215,10 @@ var codegenExpr_ = function(currentMod) {
                         return "(" + (aStrNum + (" / " + (bStrNum + ")")));
                       }
                       ;
+                      if (v.value0.value0 instanceof OpNumberNum && v.value0.value0.value0 instanceof OpMod) {
+                        return "{ let _ = " + (aStrNum + ("; let _ = " + (bStrNum + "; 0.0_f64 }")));
+                      }
+                      ;
                       if (v.value0.value0 instanceof OpStringAppend) {
                         return 'format!("{}{}", ' + (aStrStr + (", " + (bStrStr + ")")));
                       }
@@ -32958,18 +33258,18 @@ var codegenExpr_ = function(currentMod) {
                           return currentMod;
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1242, column 19 - line 1244, column 32): " + [v.value1.value0.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1276, column 19 - line 1278, column 32): " + [v.value1.value0.value0.constructor.name]);
                       })();
-                      var matchArgs = joinWith(", ")(map38(function(i) {
-                        var $1023 = i === v.value1.value5;
-                        if ($1023) {
+                      var matchArgs = joinWith(", ")(map39(function(i) {
+                        var $1029 = i === v.value1.value5;
+                        if ($1029) {
                           return "ref f";
                         }
                         ;
                         return "_";
                       })(range2(0)(v.value1.value5))) + (function() {
-                        var $1024 = v.value1.value5 >= 0;
-                        if ($1024) {
+                        var $1030 = v.value1.value5 >= 0;
+                        if ($1030) {
                           return ", ..";
                         }
                         ;
@@ -32977,8 +33277,8 @@ var codegenExpr_ = function(currentMod) {
                       })();
                       var expectedBaseTy = new ADT(v.value1.value2, [modName, v.value1.value2], []);
                       var enumName = (function() {
-                        var $1025 = modName === currentMod;
-                        if ($1025) {
+                        var $1031 = modName === currentMod;
+                        if ($1031) {
                           return "crate::" + sanitizeIdent(v.value1.value2);
                         }
                         ;
@@ -32992,101 +33292,56 @@ var codegenExpr_ = function(currentMod) {
                     }
                     ;
                     if (v instanceof Var) {
-                      var sName = sanitizeIdent(v.value0.value1);
-                      var t = (function() {
-                        var v12 = lookup7(sName)(bound2);
+                      var modPrefix = (function() {
+                        if (v.value0.value0 instanceof Just) {
+                          return replaceAll(".")("_")(v.value0.value0.value0) + "_";
+                        }
+                        ;
+                        if (v.value0.value0 instanceof Nothing) {
+                          return replaceAll(".")("_")(currentMod) + "_";
+                        }
+                        ;
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1287, column 23 - line 1289, column 91): " + [v.value0.value0.constructor.name]);
+                      })();
+                      var fullName = modPrefix + sanitizeIdent(v.value0.value1);
+                      var isAlive = member4(fullName)(alive);
+                      var key = (function() {
+                        var $1044 = fullName === "main";
+                        if ($1044) {
+                          return "main";
+                        }
+                        ;
+                        return fullName;
+                      })();
+                      var expectedArgsLength = (function() {
+                        var v12 = lookup8(key)(aritiesMap);
                         if (v12 instanceof Just) {
-                          return v12.value0;
+                          return getArity(v12.value0);
                         }
                         ;
                         if (v12 instanceof Nothing) {
-                          return fromMaybe(Any.value)(lookup7(v.value0.value1)(aritiesMap));
+                          return 0;
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1253, column 13 - line 1255, column 64): " + [v12.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1294, column 32 - line 1296, column 25): " + [v12.constructor.name]);
                       })();
-                      var v1 = (function() {
-                        var $1038 = sName === "sup";
-                        if ($1038) {
-                          return trace2("VAR sup type is: " + printType(t))(function(v22) {
-                            return unit;
-                          });
-                        }
-                        ;
-                        return unit;
-                      })();
-                      var v2 = lookup7(sName)(bound2);
-                      if (v2 instanceof Just) {
-                        var varCode = (function() {
-                          var v3 = unwrapType(v2.value0);
-                          if (v3 instanceof Func) {
-                            return sName;
+                      var varCode = (function() {
+                        if (true) {
+                          var $1048 = expectedArgsLength === 0;
+                          if ($1048) {
+                            return fullName + "()";
                           }
                           ;
-                          return sName + "()";
-                        })();
-                        var isAlive = member4(sName)(alive);
-                        if (isAlive) {
-                          return varCode + ".clone()";
+                          return "purust_core::Func" + (show10(expectedArgsLength) + ("::Static(" + (fullName + ")")));
                         }
                         ;
-                        return varCode;
+                        return fullName;
+                      })();
+                      if (isAlive) {
+                        return varCode + ".clone()";
                       }
                       ;
-                      if (v2 instanceof Nothing) {
-                        var modPrefix = (function() {
-                          if (v.value0.value0 instanceof Just) {
-                            return replaceAll(".")("_")(v.value0.value0.value0) + "_";
-                          }
-                          ;
-                          if (v.value0.value0 instanceof Nothing) {
-                            return replaceAll(".")("_")(currentMod) + "_";
-                          }
-                          ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1266, column 23 - line 1268, column 91): " + [v.value0.value0.constructor.name]);
-                        })();
-                        var fullName = modPrefix + sanitizeIdent(v.value0.value1);
-                        var isAlive = member4(fullName)(alive);
-                        var key = (function() {
-                          var $1047 = fullName === "main";
-                          if ($1047) {
-                            return "main";
-                          }
-                          ;
-                          return fullName;
-                        })();
-                        var expectedArgsLength = (function() {
-                          var v3 = lookup7(key)(aritiesMap);
-                          if (v3 instanceof Just) {
-                            return getArity(v3.value0);
-                          }
-                          ;
-                          if (v3 instanceof Nothing) {
-                            return 0;
-                          }
-                          ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1273, column 32 - line 1275, column 25): " + [v3.constructor.name]);
-                        })();
-                        var varCode = (function() {
-                          if (true) {
-                            var $1051 = expectedArgsLength === 0;
-                            if ($1051) {
-                              return fullName + "()";
-                            }
-                            ;
-                            return "purust_core::Func" + (show9(expectedArgsLength) + ("::Static(" + (fullName + ")")));
-                          }
-                          ;
-                          return fullName;
-                        })();
-                        if (isAlive) {
-                          return varCode + ".clone()";
-                        }
-                        ;
-                        return varCode;
-                      }
-                      ;
-                      throw new Error("Failed pattern match at Purust.CodeGen (line 1257, column 8 - line 1286, column 62): " + [v2.constructor.name]);
+                      return varCode;
                     }
                     ;
                     if (v instanceof Let) {
@@ -33097,12 +33352,12 @@ var codegenExpr_ = function(currentMod) {
                         }
                         ;
                         if (v.value0 instanceof Nothing) {
-                          return "lvl_" + show9(unwrap7(v.value1));
+                          return "lvl_" + show10(unwrap8(v.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1289, column 14 - line 1291, column 47): " + [v.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1310, column 14 - line 1312, column 47): " + [v.value0.constructor.name]);
                       })();
-                      var newBound = insert15(name2)(valTy)(bound2);
+                      var newBound = insert16(name2)(valTy)(bound2);
                       var newMbLoop = (function() {
                         if (mbLoop instanceof Just && mbLoop.value0.name === name2) {
                           return Nothing.value;
@@ -33112,8 +33367,8 @@ var codegenExpr_ = function(currentMod) {
                       })();
                       var bodyVars = freeVariables(v.value3);
                       var deadCode = (function() {
-                        var $1060 = member4(name2)(bodyVars);
-                        if ($1060) {
+                        var $1057 = member4(name2)(bodyVars);
+                        if ($1057) {
                           return "";
                         }
                         ;
@@ -33160,10 +33415,10 @@ var codegenExpr_ = function(currentMod) {
                         }
                         ;
                         if (v.value0 instanceof Nothing) {
-                          return "lvl_" + show9(unwrap7(v.value1));
+                          return "lvl_" + show10(unwrap8(v.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1309, column 16 - line 1311, column 49): " + [v.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1330, column 16 - line 1332, column 49): " + [v.value0.constructor.name]);
                       })();
                       var newMbLoop = (function() {
                         if (mbLoop instanceof Just && mbLoop.value0.name === name2) {
@@ -33176,6 +33431,11 @@ var codegenExpr_ = function(currentMod) {
                         var $tco_done2 = false;
                         var $tco_result;
                         function $tco_loop(v12) {
+                          if (v12 instanceof EffectPure) {
+                            $tco_done2 = true;
+                            return true;
+                          }
+                          ;
                           if (v12 instanceof UncurriedEffectApp) {
                             $tco_done2 = true;
                             return true;
@@ -33224,40 +33484,40 @@ var codegenExpr_ = function(currentMod) {
                         ;
                         return Any.value;
                       })();
-                      var newBound = insert15(name2)(boundTy)(bound2);
+                      var newBound = insert16(name2)(boundTy)(bound2);
                       var rawBodyCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(newMbLoop)(aritiesMap)(globalClassFields)(newBound)(alive)(inEffectBlock)(v.value3);
                       var bodyVars = freeVariables(v.value3);
                       var deadCode = (function() {
-                        var $1108 = member4(name2)(bodyVars);
-                        if ($1108) {
+                        var $1106 = member4(name2)(bodyVars);
+                        if ($1106) {
                           return "";
                         }
                         ;
                         return "    drop(" + (name2 + ");\n");
                       })();
                       var bodyCode = (function() {
-                        var $1109 = isEffectNode(v.value3);
-                        if ($1109) {
+                        var $1107 = isEffectNode(v.value3);
+                        if ($1107) {
                           return rawBodyCode;
                         }
                         ;
-                        return "{\n" + ("        let _val_eval = " + (rawBodyCode + ";\n        if let crate::Value::Func1(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }"));
+                        return "{\n" + ("        let _val_eval = " + (rawBodyCode + ";\n        if let crate::Value::Func1(f) = &_val_eval {\n            f(crate::Value::Unit)\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Unit)\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }"));
                       })();
                       var aliveForVal = union7(alive)(freeVariables(v.value3));
-                      var rawValCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForVal)(true)(realVal);
+                      var rawValCode = boxUnbox(currentMod)(Any.value)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(realVal))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForVal)(true)(realVal));
                       var valCode = (function() {
-                        var $1110 = isUncurriedApp(realVal);
-                        if ($1110) {
+                        var $1108 = isUncurriedApp(realVal);
+                        if ($1108) {
                           return rawValCode;
                         }
                         ;
-                        return "{\n" + ("        let _val_eval = " + (rawValCode + ";\n        if let crate::Value::Func1(f) = &_val_eval {\n            f(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() })))\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }"));
+                        return "{\n" + ("        let _val_eval = " + (rawValCode + ";\n        if let crate::Value::Func1(f) = &_val_eval {\n            f(crate::Value::Unit)\n        } else if let crate::Value::Record_a(r) = &_val_eval {\n            if r.call.is_some() {\n                r.call.clone().unwrap()(crate::Value::Unit)\n            } else {\n                _val_eval\n            }\n        } else {\n            _val_eval\n        }\n    }"));
                       })();
                       return "{\n" + ("    let mut " + (name2 + (" = " + (boxUnbox(currentMod)(boundTy)(Any.value)(valCode) + (";\n" + (deadCode + ("    " + (bodyCode + "\n}"))))))));
                     }
                     ;
                     if (v instanceof EffectPure) {
-                      return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(alive)(false)(v.value0);
+                      return boxUnbox(currentMod)(Any.value)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value0))(codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(alive)(false)(v.value0));
                     }
                     ;
                     if (v instanceof Local) {
@@ -33267,13 +33527,13 @@ var codegenExpr_ = function(currentMod) {
                         }
                         ;
                         if (v.value0 instanceof Nothing) {
-                          return "lvl_" + show9(unwrap7(v.value1));
+                          return "lvl_" + show10(unwrap8(v.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1388, column 16 - line 1390, column 49): " + [v.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1414, column 16 - line 1416, column 49): " + [v.value0.constructor.name]);
                       })();
                       var t = (function() {
-                        var v12 = lookup7(name2)(bound2);
+                        var v12 = lookup8(name2)(bound2);
                         if (v12 instanceof Just) {
                           return v12.value0;
                         }
@@ -33282,20 +33542,20 @@ var codegenExpr_ = function(currentMod) {
                           return Any.value;
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1391, column 13 - line 1393, column 25): " + [v12.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1417, column 13 - line 1419, column 25): " + [v12.constructor.name]);
                       })();
                       var v1 = (function() {
-                        var $1120 = name2 === "sup";
-                        if ($1120) {
-                          return trace2("LOCAL sup type is: " + printType(t))(function(v22) {
+                        var $1118 = name2 === "sup";
+                        if ($1118) {
+                          return trace2("LOCAL sup type is: " + printType(t))(function(v2) {
                             return unit;
                           });
                         }
                         ;
                         return unit;
                       })();
-                      var $1121 = member4(name2)(alive);
-                      if ($1121) {
+                      var $1119 = member4(name2)(alive);
+                      if ($1119) {
                         return name2 + ".clone()";
                       }
                       ;
@@ -33304,7 +33564,7 @@ var codegenExpr_ = function(currentMod) {
                     ;
                     if (v instanceof Lit) {
                       if (v.value0 instanceof LitInt) {
-                        return show9(v.value0.value0);
+                        return show10(v.value0.value0);
                       }
                       ;
                       if (v.value0 instanceof LitNumber) {
@@ -33331,8 +33591,10 @@ var codegenExpr_ = function(currentMod) {
                         var arrCode = mapWithIndex2(function(i) {
                           return function(a) {
                             var subsequent = drop(i + 1 | 0)(v.value0.value0);
-                            var aliveForA2 = union7(alive)(foldl2(union7)(empty3)(map38(freeVariables)(subsequent)));
-                            return codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForA2)(false)(a);
+                            var aliveForA2 = union7(alive)(foldl2(union7)(empty3)(map39(freeVariables)(subsequent)));
+                            var aTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(a);
+                            var aCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForA2)(false)(a);
+                            return boxUnbox(currentMod)(Any.value)(aTy2)(aCode);
                           };
                         })(v.value0.value0);
                         return "crate::mk_array(vec![" + (joinWith(", ")(arrCode) + "])");
@@ -33343,7 +33605,7 @@ var codegenExpr_ = function(currentMod) {
                           return function(v12) {
                             var vTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v12.value1);
                             var subsequent = drop(i + 1 | 0)(v.value0.value0);
-                            var aliveForV = union7(alive)(foldl2(union7)(empty3)(map38(function(v3) {
+                            var aliveForV = union7(alive)(foldl2(union7)(empty3)(map39(function(v3) {
                               return freeVariables(v3.value1);
                             })(subsequent)));
                             var vCode = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v12.value1);
@@ -33351,20 +33613,20 @@ var codegenExpr_ = function(currentMod) {
                             return sanitizeIdent(v12.value0) + (": Some(" + (vFinal + ")"));
                           };
                         })(v.value0.value0));
-                        var shape = joinWith("_")(map38(sanitizeIdent)(sortBy(compare11)(map38(function(v12) {
+                        var shape = joinWith("_")(map39(sanitizeIdent)(sortBy(compare11)(map39(function(v12) {
                           return v12.value0;
                         })(v.value0.value0))));
                         var structName = (function() {
-                          var $1141 = $$null2(shape);
-                          if ($1141) {
+                          var $1139 = $$null2(shape);
+                          if ($1139) {
                             return "Record_a";
                           }
                           ;
                           return "Record_" + shape;
                         })();
                         return "crate::Value::" + (structName + ("(perceus_ptr::PerceusPtr::new(" + (structName + (" { " + (fields + ((function() {
-                          var $1142 = length(v.value0.value0) > 0;
-                          if ($1142) {
+                          var $1140 = length(v.value0.value0) > 0;
+                          if ($1140) {
                             return ", ";
                           }
                           ;
@@ -33372,52 +33634,58 @@ var codegenExpr_ = function(currentMod) {
                         })() + "..Default::default() }))"))))));
                       }
                       ;
-                      throw new Error("Failed pattern match at Purust.CodeGen (line 1396, column 14 - line 1421, column 188): " + [v.value0.constructor.name]);
+                      throw new Error("Failed pattern match at Purust.CodeGen (line 1422, column 14 - line 1449, column 188): " + [v.value0.constructor.name]);
                     }
                     ;
                     if (v instanceof Abs) {
-                      var paramsArr = map38(function(v12) {
+                      var paramsArr = map39(function(v12) {
                         if (v12.value0 instanceof Just) {
                           return sanitizeIdent(v12.value0.value0);
                         }
                         ;
                         if (v12.value0 instanceof Nothing) {
-                          return "lvl_" + show9(unwrap7(v12.value1));
+                          return "lvl_" + show10(unwrap8(v12.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1424, column 45 - line 1426, column 47): " + [v12.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1452, column 45 - line 1454, column 47): " + [v12.value0.constructor.name]);
                       })(toArray3(v.value0));
-                      return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(Any.value)(v.value1);
+                      return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map39(function(v12) {
+                        return Any.value;
+                      })(paramsArr), Any.value))(v.value1);
                     }
                     ;
                     if (v instanceof UncurriedAbs) {
-                      var paramsArr = map38(function(v12) {
+                      var paramsArr = map39(function(v12) {
                         if (v12.value0 instanceof Just) {
                           return sanitizeIdent(v12.value0.value0);
                         }
                         ;
                         if (v12.value0 instanceof Nothing) {
-                          return "lvl_" + show9(unwrap7(v12.value1));
+                          return "lvl_" + show10(unwrap8(v12.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1430, column 45 - line 1432, column 47): " + [v12.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1458, column 45 - line 1460, column 47): " + [v12.value0.constructor.name]);
                       })(v.value0);
-                      return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(Any.value)(v.value1);
+                      return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map39(function(v12) {
+                        return Any.value;
+                      })(paramsArr), Any.value))(v.value1);
                     }
                     ;
                     if (v instanceof UncurriedEffectAbs) {
-                      var paramsArr = map38(function(v12) {
+                      var paramsArr = map39(function(v12) {
                         if (v12.value0 instanceof Just) {
                           return sanitizeIdent(v12.value0.value0);
                         }
                         ;
                         if (v12.value0 instanceof Nothing) {
-                          return "lvl_" + show9(unwrap7(v12.value1));
+                          return "lvl_" + show10(unwrap8(v12.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1436, column 45 - line 1438, column 47): " + [v12.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1464, column 45 - line 1466, column 47): " + [v12.value0.constructor.name]);
                       })(v.value0);
-                      return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(Any.value)(v.value1);
+                      return genAbs(currentMod)(allZeroArity)(allMacroBindings)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map39(function(v12) {
+                        return Any.value;
+                      })(paramsArr), Any.value))(v.value1);
                     }
                     ;
                     if (v instanceof PrimUndefined) {
@@ -33427,13 +33695,13 @@ var codegenExpr_ = function(currentMod) {
                     if (v instanceof CtorSaturated) {
                       var modPrefix = getTyPrefix(currentMod)(new Qualified(v.value0.value0, v.value2));
                       var structKey = modPrefix + sanitizeIdent(v.value2);
-                      var v1 = lookup7(structKey)(globalClassFields);
+                      var v1 = lookup8(structKey)(globalClassFields);
                       if (v1 instanceof Just) {
                         var structName = (function() {
                           if (v.value0.value0 instanceof Just) {
                             var mnStr = replaceAll(".")("_")(v.value0.value0.value0);
-                            var $1168 = mnStr === currentMod;
-                            if ($1168) {
+                            var $1166 = mnStr === currentMod;
+                            if ($1166) {
                               return "crate::" + sanitizeIdent(v.value2);
                             }
                             ;
@@ -33444,21 +33712,21 @@ var codegenExpr_ = function(currentMod) {
                             return "crate::" + sanitizeIdent(v.value2);
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1448, column 24 - line 1452, column 60): " + [v.value0.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1476, column 24 - line 1480, column 60): " + [v.value0.value0.constructor.name]);
                         })();
                         var structFieldsCode = joinWith(", ")(mapWithIndex2(function(i) {
-                          return function(v22) {
-                            var v3 = fromMaybe(new Tuple("field" + show9(i), Any.value))(index(v1.value0)(i));
-                            var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v22.value1);
+                          return function(v2) {
+                            var v3 = fromMaybe(new Tuple("field" + show10(i), Any.value))(index(v1.value0)(i));
+                            var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v2.value1);
                             var subsequent = drop(i + 1 | 0)(v.value4);
-                            var aliveForV = union7(alive)(foldl2(union7)(empty3)(map38(function(v42) {
+                            var aliveForV = union7(alive)(foldl2(union7)(empty3)(map39(function(v42) {
                               return freeVariables(v42.value1);
                             })(subsequent)));
-                            var valCode2 = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v22.value1);
+                            var valCode2 = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v2.value1);
                             var resCode = boxUnbox(currentMod)(v3.value1)(valTy2)(valCode2);
                             var v4 = (function() {
-                              var $1175 = structName === "Purs_Data_Show::Show";
-                              if ($1175) {
+                              var $1173 = structName === "Purs_Data_Show::Show";
+                              if ($1173) {
                                 return trace2("SHOW CtorSaturated field=" + (v3.value0 + (" expectedTy=" + (codegenExprType(currentMod)(true)(v3.value1) + (" valTy=" + (codegenExprType(currentMod)(true)(valTy2) + (" valCode=" + (valCode2 + (" resCode=" + resCode)))))))))(function(v5) {
                                   return unit;
                                 });
@@ -33474,14 +33742,14 @@ var codegenExpr_ = function(currentMod) {
                       ;
                       if (v1 instanceof Nothing) {
                         var fieldsCode = (function() {
-                          var $1181 = $$null(v.value4);
-                          if ($1181) {
+                          var $1179 = $$null(v.value4);
+                          if ($1179) {
                             return "";
                           }
                           ;
                           return "(" + (joinWith(", ")(mapWithIndex2(function(i) {
-                            return function(v22) {
-                              var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v22.value1);
+                            return function(v2) {
+                              var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v2.value1);
                               var subsequent = drop(i + 1 | 0)(v.value4);
                               var ctorFqn = (function() {
                                 if (v.value0.value0 instanceof Just) {
@@ -33492,10 +33760,10 @@ var codegenExpr_ = function(currentMod) {
                                   return replaceAll(".")("_")(currentMod) + "_";
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1480, column 33 - line 1482, column 102): " + [v.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1508, column 33 - line 1510, column 102): " + [v.value0.value0.constructor.name]);
                               })() + v.value3;
                               var expectedFieldTy = (function() {
-                                var v3 = lookup7(ctorFqn)(aritiesMap);
+                                var v3 = lookup8(ctorFqn)(aritiesMap);
                                 if (v3 instanceof Just) {
                                   return fromMaybe(Any.value)(index(extractAllArgTypes(v3.value0))(i));
                                 }
@@ -33504,12 +33772,12 @@ var codegenExpr_ = function(currentMod) {
                                   return Any.value;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1483, column 40 - line 1485, column 38): " + [v3.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1511, column 40 - line 1513, column 38): " + [v3.constructor.name]);
                               })();
-                              var aliveForV = union7(alive)(foldl2(union7)(empty3)(map38(function(v3) {
+                              var aliveForV = union7(alive)(foldl2(union7)(empty3)(map39(function(v3) {
                                 return freeVariables(v3.value1);
                               })(subsequent)));
-                              var valCode2 = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v22.value1);
+                              var valCode2 = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v2.value1);
                               return boxUnbox(currentMod)(expectedFieldTy)(valTy2)(valCode2);
                             };
                           })(v.value4)) + ")");
@@ -33517,8 +33785,8 @@ var codegenExpr_ = function(currentMod) {
                         var enumPrefix = (function() {
                           if (v.value0.value0 instanceof Just) {
                             var mnStr = replaceAll(".")("_")(v.value0.value0.value0);
-                            var $1193 = mnStr === currentMod;
-                            if ($1193) {
+                            var $1191 = mnStr === currentMod;
+                            if ($1191) {
                               return "crate::";
                             }
                             ;
@@ -33529,34 +33797,34 @@ var codegenExpr_ = function(currentMod) {
                             return "crate::";
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1466, column 25 - line 1470, column 34): " + [v.value0.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1494, column 25 - line 1498, column 34): " + [v.value0.value0.constructor.name]);
                         })();
                         var enumName = sanitizeIdent(v.value2);
                         var ctorClean = sanitizeIdent(v.value3);
                         return "std::rc::Rc::new(" + (enumPrefix + (enumName + ("::" + (ctorClean + (fieldsCode + ")")))));
                       }
                       ;
-                      throw new Error("Failed pattern match at Purust.CodeGen (line 1445, column 8 - line 1488, column 99): " + [v1.constructor.name]);
+                      throw new Error("Failed pattern match at Purust.CodeGen (line 1473, column 8 - line 1516, column 99): " + [v1.constructor.name]);
                     }
                     ;
                     if (v instanceof CtorDef) {
                       var rustCtor = "crate::" + (sanitizeIdent(v.value1) + ("::" + sanitizeIdent(v.value2)));
                       var len = length(v.value3);
                       var enumPrefix = (function() {
-                        var $1202 = currentMod === v.value1;
-                        if ($1202) {
+                        var $1200 = currentMod === v.value1;
+                        if ($1200) {
                           return "crate::";
                         }
                         ;
                         return "Purs_" + (currentMod + "::");
                       })();
-                      var ctorTy = fromMaybe(Any.value)(lookup7(currentMod + ("_" + sanitizeIdent(v.value2)))(aritiesMap));
+                      var ctorTy = fromMaybe(Any.value)(lookup8(currentMod + ("_" + sanitizeIdent(v.value2)))(aritiesMap));
                       var retTy = extractFinalRetType(ctorTy);
                       var retTyStr = codegenExprType(currentMod)(true)(retTy);
                       var argTys = extractAllArgTypes(ctorTy);
                       var argNames = mapWithIndex2(function(i) {
                         return function(v12) {
-                          return "a" + show9(i);
+                          return "a" + show10(i);
                         };
                       })(v.value3);
                       var argsCode = joinWith(", ")(mapWithIndex2(function(i) {
@@ -33564,17 +33832,17 @@ var codegenExpr_ = function(currentMod) {
                           return "mut " + (a + (": " + codegenExprType(currentMod)(false)(fromMaybe(Any.value)(index(argTys)(i)))));
                         };
                       })(argNames));
-                      var innerCall = "std::rc::Rc::new(" + (rustCtor + ("(" + (joinWith(", ")(map38(function(a) {
+                      var innerCall = "std::rc::Rc::new(" + (rustCtor + ("(" + (joinWith(", ")(map39(function(a) {
                         return a + ".clone()";
                       })(argNames)) + "))")));
-                      var $1203 = len === 0;
-                      if ($1203) {
+                      var $1201 = len === 0;
+                      if ($1201) {
                         return "std::rc::Rc::new(" + (rustCtor + ")");
                       }
                       ;
-                      var $1204 = len <= 10;
-                      if ($1204) {
-                        return "purust_core::Func" + (show9(len) + ("::Static(|" + (argsCode + ("| -> " + (retTyStr + (" { " + (innerCall + (" } as fn(" + (joinWith(", ")(map38(function(i) {
+                      var $1202 = len <= 10;
+                      if ($1202) {
+                        return "purust_core::Func" + (show10(len) + ("::Static(|" + (argsCode + ("| -> " + (retTyStr + (" { " + (innerCall + (" } as fn(" + (joinWith(", ")(map39(function(i) {
                           return codegenExprType(currentMod)(false)(fromMaybe(Any.value)(index(argTys)(i)));
                         })(range2(0)(len - 1 | 0))) + (") -> " + (retTyStr + ")")))))))))));
                       }
@@ -33584,7 +33852,7 @@ var codegenExpr_ = function(currentMod) {
                     ;
                     if (v instanceof LetRec) {
                       var bindsArray = toArray3(v.value1);
-                      var declCode = joinWith("\n    ")(map38(function(v12) {
+                      var declCode = joinWith("\n    ")(map39(function(v12) {
                         return "let mut " + (sanitizeIdent(v12.value0) + " = crate::Value::Thunk(perceus_ptr::PerceusPtr::new(crate::Thunk { ..Default::default() }));");
                       })(bindsArray));
                       var evalCode = joinWith("\n    ")(mapWithIndex2(function(i) {
@@ -33592,18 +33860,18 @@ var codegenExpr_ = function(currentMod) {
                           var valTy2 = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v12.value1);
                           var subsequentVals = drop(i + 1 | 0)(bindsArray);
                           var varsSubsequent = foldl2(function(acc) {
-                            return function(v22) {
-                              return union7(acc)(freeVariables(v22.value1));
+                            return function(v2) {
+                              return union7(acc)(freeVariables(v2.value1));
                             };
                           })(empty3)(subsequentVals);
                           var retType = extractFinalRetType(valTy2);
                           var isSelfRecursive = member4(sanitizeIdent(v12.value0))(freeVariables(v12.value1));
-                          var clonesCode = joinWith("\n        ")(map38(function(v22) {
-                            return "let mut " + (sanitizeIdent(v22.value0) + (" = " + (sanitizeIdent(v22.value0) + ".clone();")));
+                          var clonesCode = joinWith("\n        ")(map39(function(v2) {
+                            return "let mut " + (sanitizeIdent(v2.value0) + (" = " + (sanitizeIdent(v2.value0) + ".clone();")));
                           })(bindsArray));
                           var bindsVarsForAlive = foldl2(function(acc) {
-                            return function(v22) {
-                              return insert11(sanitizeIdent(v22.value0))(acc);
+                            return function(v2) {
+                              return insert15(sanitizeIdent(v2.value0))(acc);
                             };
                           })(empty3)(bindsArray);
                           var allArgTypes = extractAllArgTypes(valTy2);
@@ -33617,11 +33885,11 @@ var codegenExpr_ = function(currentMod) {
                               return false;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1526, column 43 - line 1528, column 33): " + [extracted.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1554, column 43 - line 1556, column 33): " + [extracted.constructor.name]);
                           })();
                           var aliveForVal2 = union7(alive)(union7(bindsVarsForAlive)(union7(freeVariables(v.value2))(varsSubsequent)));
-                          var $1224 = isTCO && length(allArgTypes) > 0;
-                          if ($1224) {
+                          var $1222 = isTCO && length(allArgTypes) > 0;
+                          if ($1222) {
                             var paramsArr2 = (function() {
                               if (extracted instanceof Just) {
                                 return extracted.value0.value0;
@@ -33631,7 +33899,7 @@ var codegenExpr_ = function(currentMod) {
                                 return [];
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1531, column 32 - line 1533, column 35): " + [extracted.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1559, column 32 - line 1561, column 35): " + [extracted.constructor.name]);
                             })();
                             var innerExpr = (function() {
                               if (extracted instanceof Just) {
@@ -33642,7 +33910,7 @@ var codegenExpr_ = function(currentMod) {
                                 return v12.value1;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1535, column 32 - line 1537, column 36): " + [extracted.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1563, column 32 - line 1565, column 36): " + [extracted.constructor.name]);
                             })();
                             var fnName = sanitizeIdent(v12.value0) + "_impl";
                             var dedupedParams = dedupArgs(paramsArr2);
@@ -33651,47 +33919,47 @@ var codegenExpr_ = function(currentMod) {
                               params: dedupedParams
                             });
                             var paramPairs = zip(dedupedParams)(allArgTypes);
-                            var funcArgs = map38(function(v22) {
-                              return "mut " + (sanitizeIdent(v22.value0) + (": " + codegenExprType(currentMod)(false)(v22.value1)));
+                            var funcArgs = map39(function(v2) {
+                              return "mut " + (sanitizeIdent(v2.value0) + (": " + codegenExprType(currentMod)(false)(v2.value1)));
                             })(paramPairs);
                             var innerBound = foldl2(function(b) {
-                              return function(v22) {
-                                return insert15(sanitizeIdent(v22.value0))(v22.value1)(b);
+                              return function(v2) {
+                                return insert16(sanitizeIdent(v2.value0))(v2.value1)(b);
                               };
                             })(bound2)(paramPairs);
-                            var capturedSet = difference4(freeVariables(v12.value1))(fromFoldable12(dedupedParams));
-                            var capturedArr = filter(function(v22) {
-                              return !member12(v22)(aritiesMap) && !member4(v22)(allZeroArity);
-                            })(fromFoldable11(capturedSet));
-                            var capturedClones = joinWith("\n        ")(map38(function(c) {
+                            var capturedSet = difference4(freeVariables(v12.value1))(fromFoldable14(dedupedParams));
+                            var capturedArr = filter(function(v2) {
+                              return !member12(v2)(aritiesMap) && !member4(v2)(allZeroArity);
+                            })(fromFoldable13(capturedSet));
+                            var capturedClones = joinWith("\n        ")(map39(function(c) {
                               return "let mut " + (sanitizeIdent(c) + (" = " + (sanitizeIdent(c) + ".clone();")));
                             })(capturedArr));
-                            var capturedArgs = map38(function(c) {
-                              return "mut " + (sanitizeIdent(c) + (": " + codegenExprType(currentMod)(false)(fromMaybe(Any.value)(lookup7(c)(bound2)))));
+                            var capturedArgs = map39(function(c) {
+                              return "mut " + (sanitizeIdent(c) + (": " + codegenExprType(currentMod)(false)(fromMaybe(Any.value)(lookup8(c)(bound2)))));
                             })(capturedArr);
                             var bodyTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(innerBound)(innerExpr);
                             var bodyRaw = codegenExpr_(currentMod)(allZeroArity)(allMacroBindings)(mbLoop2)(aritiesMap)(globalClassFields)(innerBound)(freeVariables(innerExpr))(false)(innerExpr);
                             var boxedBody = boxUnbox(currentMod)(retType)(bodyTy)(bodyRaw);
                             var arity = length(paramPairs);
                             var bridgeCode = (function() {
-                              var $1239 = arity > 0 && arity <= 10;
-                              if ($1239) {
-                                var innerArgs = joinWith(", ")(append7(map38(sanitizeIdent)(capturedArr))(map38(sanitizeIdent)(dedupedParams)));
+                              var $1237 = arity > 0 && arity <= 10;
+                              if ($1237) {
+                                var innerArgs = joinWith(", ")(append7(map39(sanitizeIdent)(capturedArr))(map39(sanitizeIdent)(dedupedParams)));
                                 var innerCall2 = fnName + ("(" + (innerArgs + ")"));
-                                var clones = joinWith("\n        ")(map38(function(c) {
+                                var clones = joinWith("\n        ")(map39(function(c) {
                                   return "let mut " + (sanitizeIdent(c) + (" = " + (sanitizeIdent(c) + ".clone();")));
                                 })(capturedArr));
-                                var argsDecl = joinWith(", ")(map38(function(v22) {
-                                  return "mut " + (sanitizeIdent(v22.value0) + (": " + codegenExprType(currentMod)(false)(v22.value1)));
+                                var argsDecl = joinWith(", ")(map39(function(v2) {
+                                  return "mut " + (sanitizeIdent(v2.value0) + (": " + codegenExprType(currentMod)(false)(v2.value1)));
                                 })(paramPairs));
-                                var $1243 = length(capturedArr) === 0;
-                                if ($1243) {
-                                  return "purust_core::Func" + (show9(arity) + ("::Static(|" + (argsDecl + ("| -> " + (codegenExprType(currentMod)(true)(retType) + (" {\n        " + (innerCall2 + ("\n    } as fn(" + (joinWith(", ")(map38(function(v22) {
-                                    return codegenExprType(currentMod)(false)(v22.value1);
+                                var $1241 = length(capturedArr) === 0;
+                                if ($1241) {
+                                  return "purust_core::Func" + (show10(arity) + ("::Static(|" + (argsDecl + ("| -> " + (codegenExprType(currentMod)(true)(retType) + (" {\n        " + (innerCall2 + ("\n    } as fn(" + (joinWith(", ")(map39(function(v2) {
+                                    return codegenExprType(currentMod)(false)(v2.value1);
                                   })(paramPairs)) + (") -> " + (codegenExprType(currentMod)(true)(retType) + ")")))))))))));
                                 }
                                 ;
-                                return "purust_core::Func" + (show9(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsDecl + ("| -> " + (codegenExprType(currentMod)(true)(retType) + (" {\n        " + (clones + ("\n        " + (innerCall2 + "\n    }))")))))))));
+                                return "purust_core::Func" + (show10(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsDecl + ("| -> " + (codegenExprType(currentMod)(true)(retType) + (" {\n        " + (clones + ("\n        " + (innerCall2 + "\n    }))")))))))));
                               }
                               ;
                               return 'unimplemented!("LetRec arity > 10")';
@@ -33707,7 +33975,7 @@ var codegenExpr_ = function(currentMod) {
                           return "let val_" + (sanitizeIdent(v12.value0) + (" = {\n        " + (clonesCode + ("\n        " + (boxedValCode + "\n    };")))));
                         };
                       })(bindsArray));
-                      var mutCode = joinWith("\n    ")(map38(function(v12) {
+                      var mutCode = joinWith("\n    ")(map39(function(v12) {
                         return "if let crate::Value::Thunk(ref mut thunk) = " + (sanitizeIdent(v12.value0) + (" {\n" + ("    let mut mut_thunk = unsafe { perceus_ptr::PerceusPtr::force_mut(thunk) };\n" + ("    mut_thunk.call = Some((val_" + (sanitizeIdent(v12.value0) + ").unwrap_func1());\n} else { unreachable!() }")))));
                       })(bindsArray));
                       var newMbLoop = (function() {
@@ -33751,8 +34019,8 @@ var codegenBindingGroup = function(modName) {
             return function(group4) {
               return unsafePerformEffect(function __do() {
                 write(empty3)(globalConsumed)();
-                var $1262 = $$null(group4.bindings);
-                if ($1262) {
+                var $1260 = $$null(group4.bindings);
+                if ($1260) {
                   return {
                     code: "",
                     arities: aritiesMap
@@ -33760,12 +34028,12 @@ var codegenBindingGroup = function(modName) {
                 }
                 ;
                 var isSelfRecursive = group4.recursive && length(group4.bindings) === 1;
-                var groupArities = fromFoldable33(map38(function(v) {
+                var groupArities = fromFoldable33(map39(function(v) {
                   var rawIdentName = sanitizeIdent(v.value0);
                   var inferredTy = inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(empty2)(v.value1);
                   var identName = (function() {
-                    var $1265 = rawIdentName === "main";
-                    if ($1265) {
+                    var $1263 = rawIdentName === "main";
+                    if ($1263) {
                       return "main";
                     }
                     ;
@@ -33784,17 +34052,17 @@ var codegenBindingGroup = function(modName) {
                     return v.value1;
                   })();
                   var identName = (function() {
-                    var $1273 = rawIdentName === "main";
-                    if ($1273) {
+                    var $1271 = rawIdentName === "main";
+                    if ($1271) {
                       return "main";
                     }
                     ;
                     return modNameStr + ("_" + rawIdentName);
                   })();
-                  var inferredType = fromMaybe(Any.value)(lookup7(identName)(mergedArities));
+                  var inferredType = fromMaybe(Any.value)(lookup8(identName)(mergedArities));
                   var _dbg = unsafePerformEffect((function() {
-                    var $1274 = identName === "Data_Symbol_reifySymbol";
-                    if ($1274) {
+                    var $1272 = identName === "Data_Symbol_reifySymbol";
+                    if ($1272) {
                       return log2("reifySymbol type: " + printType(inferredType));
                     }
                     ;
@@ -33802,8 +34070,8 @@ var codegenBindingGroup = function(modName) {
                   })());
                   var v1 = (function() {
                     var allArgTypes = extractAllArgTypes(inferredType);
-                    var $1275 = length(allArgTypes) > 0;
-                    if ($1275) {
+                    var $1273 = length(allArgTypes) > 0;
+                    if ($1273) {
                       var retType = extractFinalRetType(inferredType);
                       var extracted = extractAbsParams(length(allArgTypes))(innerExpr);
                       var isMatchingAbs = (function() {
@@ -33815,7 +34083,7 @@ var codegenBindingGroup = function(modName) {
                           return false;
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 510, column 31 - line 512, column 33): " + [extracted.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 520, column 31 - line 522, column 33): " + [extracted.constructor.name]);
                       })();
                       var paramsArr = (function() {
                         if (extracted instanceof Just) {
@@ -33825,12 +34093,12 @@ var codegenBindingGroup = function(modName) {
                         if (extracted instanceof Nothing) {
                           return mapWithIndex2(function(i) {
                             return function(v2) {
-                              return "a" + show9(i);
+                              return "a" + show10(i);
                             };
                           })(allArgTypes);
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 513, column 27 - line 515, column 79): " + [extracted.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 523, column 27 - line 525, column 79): " + [extracted.constructor.name]);
                       })();
                       var deduped = dedupArgs(paramsArr);
                       var mbLoop = (function() {
@@ -33844,10 +34112,10 @@ var codegenBindingGroup = function(modName) {
                         return Nothing.value;
                       })();
                       var paramPairs = zip(deduped)(allArgTypes);
-                      var bound2 = fromFoldable33(map38(function(v2) {
+                      var bound2 = fromFoldable33(map39(function(v2) {
                         return new Tuple((function() {
-                          var $1284 = v2.value0 === "_";
-                          if ($1284) {
+                          var $1282 = v2.value0 === "_";
+                          if ($1282) {
                             return "_";
                           }
                           ;
@@ -33875,8 +34143,8 @@ var codegenBindingGroup = function(modName) {
                                 var paramTys = take(arity)(expectedArgs);
                                 var restArgs = drop(arity)(expectedArgs);
                                 var bodyExpectedTy = (function() {
-                                  var $1295 = length(restArgs) > 0;
-                                  if ($1295) {
+                                  var $1293 = length(restArgs) > 0;
+                                  if ($1293) {
                                     return new Func(restArgs, retTy);
                                   }
                                   ;
@@ -33892,8 +34160,8 @@ var codegenBindingGroup = function(modName) {
                                 var paramTys = take(arity)(expectedArgs);
                                 var restArgs = drop(arity)(expectedArgs);
                                 var bodyExpectedTy = (function() {
-                                  var $1298 = length(restArgs) > 0;
-                                  if ($1298) {
+                                  var $1296 = length(restArgs) > 0;
+                                  if ($1296) {
                                     return new Func(restArgs, retTy);
                                   }
                                   ;
@@ -33921,8 +34189,8 @@ var codegenBindingGroup = function(modName) {
                                 var $tco_done = false;
                                 var $tco_result;
                                 function $tco_loop(accTy, accCode, idx) {
-                                  var $1301 = idx >= length(argsCodeAndType);
-                                  if ($1301) {
+                                  var $1299 = idx >= length(argsCodeAndType);
+                                  if ($1299) {
                                     $tco_done = true;
                                     return new Tuple(accTy, accCode);
                                   }
@@ -33930,11 +34198,11 @@ var codegenBindingGroup = function(modName) {
                                   var v22 = unwrapType(accTy);
                                   if (v22 instanceof Func) {
                                     var arity = length(v22.value0);
-                                    var $1303 = arity > 0 && arity <= 10;
-                                    if ($1303) {
+                                    var $1301 = arity > 0 && arity <= 10;
+                                    if ($1301) {
                                       var availableArgsCount = length(argsCodeAndType) - idx | 0;
-                                      var $1304 = availableArgsCount >= arity;
-                                      if ($1304) {
+                                      var $1302 = availableArgsCount >= arity;
+                                      if ($1302) {
                                         var passedArgs = slice(idx)(idx + arity | 0)(argsCodeAndType);
                                         var boxedArgs = mapWithIndex2(function(i) {
                                           return function(v32) {
@@ -33982,20 +34250,20 @@ var codegenBindingGroup = function(modName) {
                           return boxUnbox(modNameStr)(retType)(v2.value0)(v2.value1);
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 523, column 29 - line 578, column 71): " + [extracted.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 533, column 29 - line 588, column 71): " + [extracted.constructor.name]);
                       })();
-                      var pCode = joinWith(", ")(map38(function(v2) {
+                      var pCode = joinWith(", ")(map39(function(v2) {
                         var p = sanitizeIdent(v2.value0);
                         return (function() {
-                          var $1323 = p === "_";
-                          if ($1323) {
+                          var $1321 = p === "_";
+                          if ($1321) {
                             return "";
                           }
                           ;
                           return "mut ";
                         })() + (p + (": " + codegenExprType(modNameStr)(true)(v2.value1)));
                       })(paramPairs));
-                      var _debug = unsafePerformEffect(log2("FUNCTION " + (identName + (" args: " + (show9(length(allArgTypes)) + (" extracted: " + (function() {
+                      var _debug = unsafePerformEffect(log2("FUNCTION " + (identName + (" args: " + (show10(length(allArgTypes)) + (" extracted: " + (function() {
                         if (extracted instanceof Just) {
                           return "Just";
                         }
@@ -34004,7 +34272,7 @@ var codegenBindingGroup = function(modName) {
                           return "Nothing";
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 507, column 142 - line 509, column 37): " + [extracted.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 517, column 142 - line 519, column 37): " + [extracted.constructor.name]);
                       })()))))));
                       return {
                         paramsCode: pCode,
@@ -34030,7 +34298,7 @@ var codegenBindingGroup = function(modName) {
                         ;
                         return unsafeCrashWith("impossible");
                       })();
-                      var paramsArr = map38(function(v2) {
+                      var paramsArr = map39(function(v2) {
                         if (v2.value0 instanceof Just) {
                           return v2.value0.value0;
                         }
@@ -34063,8 +34331,8 @@ var codegenBindingGroup = function(modName) {
                           var ptStr = codegenExprType(modNameStr)(false)(pt);
                           var p = sanitizeIdent(pName);
                           return (function() {
-                            var $1344 = p === "_";
-                            if ($1344) {
+                            var $1342 = p === "_";
+                            if ($1342) {
                               return "";
                             }
                             ;
@@ -34088,16 +34356,16 @@ var codegenBindingGroup = function(modName) {
                     };
                   })();
                   var bodyCodeWithLoop = (function() {
-                    var $1346 = isSelfRecursive && v1.isFunc;
-                    if ($1346) {
+                    var $1344 = isSelfRecursive && v1.isFunc;
+                    if ($1344) {
                       return "    loop {\n" + ("        break " + (v1.bodyCode + ";\n    }"));
                     }
                     ;
                     return v1.bodyCode;
                   })();
                   return "pub fn " + (identName + ("(" + (v1.paramsCode + (")" + ((function() {
-                    var $1347 = v1.retCode === "";
-                    if ($1347) {
+                    var $1345 = v1.retCode === "";
+                    if ($1345) {
                       return "";
                     }
                     ;
@@ -34120,17 +34388,17 @@ var codegenModule = function(globalAritiesMap) {
   return function(globalClassFields) {
     return function(v) {
       return function(backendMod) {
-        var modNameStr = replaceAll(".")("_")(unwrap7(backendMod.name));
-        var enumsCode = joinWith("\n")(map38(function(decl) {
+        var modNameStr = replaceAll(".")("_")(unwrap8(backendMod.name));
+        var enumsCode = joinWith("\n")(map39(function(decl) {
           var enumName = sanitizeIdent(decl.name);
-          var ctors = map38(function(ctor) {
-            var fields = map38(function(fieldTy) {
+          var ctors = map39(function(ctor) {
+            var fields = map39(function(fieldTy) {
               return codegenExprType(modNameStr)(false)(fieldTy);
             })(ctor.fields);
             var ctorNameClean = sanitizeIdent(ctor.name);
             return "    " + (ctorNameClean + (function() {
-              var $1358 = length(fields) > 0;
-              if ($1358) {
+              var $1356 = length(fields) > 0;
+              if ($1356) {
                 return "(" + (joinWith(", ")(fields) + ")");
               }
               ;
@@ -34139,14 +34407,14 @@ var codegenModule = function(globalAritiesMap) {
           })(decl.constructors);
           return "#[derive(Clone)]\npub enum " + (enumName + (" {\n" + (joinWith(",\n")(ctors) + "\n}\n")));
         })(v.dataDecls));
-        var classesCode = joinWith("\n")(map38(function(v1) {
+        var classesCode = joinWith("\n")(map39(function(v1) {
           var superFields = mapWithIndex2(function(i) {
             return function(v2) {
               var scName = fromMaybe("Super")(last(v2.value0));
-              return "    pub " + (scName + (show9(i) + ": crate::UnknownType"));
+              return "    pub " + (scName + (show10(i) + ": crate::UnknownType"));
             };
           })(v1.superclasses);
-          var methFields = map38(function(v2) {
+          var methFields = map39(function(v2) {
             return "    pub " + (sanitizeIdent(v2.value0) + (": " + codegenExprType(modNameStr)(false)(v2.value1)));
           })(v1.methods);
           var fieldsCode = joinWith(",\n")(concat([superFields, methFields]));
@@ -34155,7 +34423,13 @@ var codegenModule = function(globalAritiesMap) {
         })(v.classDecls));
         var bindingsRes = foldl2(function(acc) {
           return function(group4) {
-            var res = codegenBindingGroup(v.name)(modNameStr)(empty3)(empty3)(acc.arities)(globalClassFields)(group4);
+            var namedGroup = {
+              recursive: group4.recursive,
+              bindings: map39(function(v2) {
+                return new Tuple(v2.value0, renameLocals(v2.value1));
+              })(group4.bindings)
+            };
+            var res = codegenBindingGroup(v.name)(modNameStr)(empty3)(empty3)(acc.arities)(globalClassFields)(namedGroup);
             return {
               code: acc.code + res.code,
               arities: res.arities
@@ -34188,13 +34462,13 @@ var bind9 = /* @__PURE__ */ bind(bindAff);
 var liftEffect3 = /* @__PURE__ */ liftEffect(monadEffectAff);
 var discard5 = /* @__PURE__ */ discard(discardUnit);
 var discard1 = /* @__PURE__ */ discard5(bindAff);
-var unwrap8 = /* @__PURE__ */ unwrap();
+var unwrap9 = /* @__PURE__ */ unwrap();
 var foldl11 = /* @__PURE__ */ foldl(foldableArray);
-var insert16 = /* @__PURE__ */ insert2(ordString);
+var insert17 = /* @__PURE__ */ insert2(ordString);
 var foldl13 = /* @__PURE__ */ foldl(foldableList);
-var show10 = /* @__PURE__ */ show(showInt);
-var map39 = /* @__PURE__ */ map(functorArray);
-var insert17 = /* @__PURE__ */ insert(ordString);
+var show11 = /* @__PURE__ */ show(showInt);
+var map40 = /* @__PURE__ */ map(functorArray);
+var insert18 = /* @__PURE__ */ insert(ordString);
 var toUnfoldable7 = /* @__PURE__ */ toUnfoldable2(unfoldableArray);
 var buildModules2 = /* @__PURE__ */ buildModules(monadAff);
 var pure8 = /* @__PURE__ */ pure(applicativeAff);
@@ -34210,10 +34484,10 @@ var nub3 = /* @__PURE__ */ nub(ordString);
 var eq25 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqInt));
 var when3 = /* @__PURE__ */ when(applicativeEffect);
 var applySecond4 = /* @__PURE__ */ applySecond(applyEffect);
-var fromFoldable13 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordString);
-var lookup8 = /* @__PURE__ */ lookup2(ordString);
+var fromFoldable15 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordString);
+var lookup9 = /* @__PURE__ */ lookup2(ordString);
 var union8 = /* @__PURE__ */ union2(ordString);
-var map115 = /* @__PURE__ */ map(functorMaybe);
+var map116 = /* @__PURE__ */ map(functorMaybe);
 var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ liftEffect3(argv))(function(args) {
   var mainModule = (function() {
     var v = findIndex(function(v12) {
@@ -34266,15 +34540,15 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
       var buildGlobalTypes = function(modules) {
         var processModule = function(acc) {
           return function(v) {
-            var modStr = replaceAll(".")("_")(unwrap8(v.name));
+            var modStr = replaceAll(".")("_")(unwrap9(v.name));
             var accData = foldl11(function(acc2) {
               return function(decl) {
-                return insert16(modStr + ("_" + (sanitizeIdent(decl.name) + "_enum")))(acc2);
+                return insert17(modStr + ("_" + (sanitizeIdent(decl.name) + "_enum")))(acc2);
               };
             })(acc)(v.dataDecls);
             var accClass = foldl11(function(acc2) {
               return function(decl) {
-                return insert16(modStr + ("_" + sanitizeIdent(decl.name)))(acc2);
+                return insert17(modStr + ("_" + sanitizeIdent(decl.name)))(acc2);
               };
             })(accData)(v.classDecls);
             return accClass;
@@ -34285,7 +34559,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
       var buildGlobalClassFields = function(modules) {
         var processModule = function(acc) {
           return function(v) {
-            var modPrefix = replaceAll(".")("_")(unwrap8(v.name)) + "_";
+            var modPrefix = replaceAll(".")("_")(unwrap9(v.name)) + "_";
             return foldl11(function(a) {
               return function(classDecl) {
                 var superNames = mapWithIndex2(function(i) {
@@ -34301,14 +34575,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                       }
                       ;
                       throw new Error("Failed pattern match at Main (line 133, column 26 - line 135, column 39): " + [v2.constructor.name]);
-                    })() + show10(i), Any.value);
+                    })() + show11(i), Any.value);
                   };
                 })(classDecl.superclasses);
-                var methodNames = map39(function(v1) {
+                var methodNames = map40(function(v1) {
                   return new Tuple(sanitizeIdent(v1.value0), v1.value1);
                 })(classDecl.methods);
                 var allFields = concat([superNames, methodNames]);
-                return insert17(modPrefix + sanitizeIdent(classDecl.name))(allFields)(a);
+                return insert18(modPrefix + sanitizeIdent(classDecl.name))(allFields)(a);
               };
             })(acc)(v.classDecls);
           };
@@ -34318,7 +34592,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
       var buildGlobalArities = function(modules) {
         var processModule = function(acc) {
           return function(v) {
-            var modPrefix = replaceAll(".")("_")(unwrap8(v.name)) + "_";
+            var modPrefix = replaceAll(".")("_")(unwrap9(v.name)) + "_";
             var getTy2 = function(v1) {
               return v1.type;
             };
@@ -34381,7 +34655,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                     throw new Error("Failed pattern match at Main (line 80, column 26 - line 82, column 61): " + [v2.constructor.name]);
                   })();
                   if (tyMb instanceof Just) {
-                    return insert17(modPrefix + sanitizeIdent(v1.value0.value1))(tyMb.value0)(a);
+                    return insert18(modPrefix + sanitizeIdent(v1.value0.value1))(tyMb.value0)(a);
                   }
                   ;
                   if (tyMb instanceof Nothing) {
@@ -34407,7 +34681,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                         throw new Error("Failed pattern match at Main (line 88, column 28 - line 90, column 63): " + [v3.constructor.name]);
                       })();
                       if (tyMb2 instanceof Just) {
-                        return insert17(modPrefix + sanitizeIdent(v2.value1))(tyMb2.value0)(a$prime);
+                        return insert18(modPrefix + sanitizeIdent(v2.value1))(tyMb2.value0)(a$prime);
                       }
                       ;
                       if (tyMb2 instanceof Nothing) {
@@ -34426,7 +34700,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
             var acc2 = foldl11(function(a) {
               return function(v1) {
                 if (v1.value1 instanceof Just) {
-                  return insert17(modPrefix + sanitizeIdent(v1.value0))(v1.value1.value0)(a);
+                  return insert18(modPrefix + sanitizeIdent(v1.value0))(v1.value1.value0)(a);
                 }
                 ;
                 if (v1.value1 instanceof Nothing) {
@@ -34440,7 +34714,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
               return function(decl) {
                 return foldl11(function(a2) {
                   return function(ctor) {
-                    var modPath = split(".")(unwrap8(v.name));
+                    var modPath = split(".")(unwrap9(v.name));
                     var fqn = snoc(modPath)(decl.name);
                     var retTy = new ADT(decl.name, fqn, []);
                     var ty = (function() {
@@ -34451,7 +34725,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                       ;
                       return retTy;
                     })();
-                    return insert17(modPrefix + sanitizeIdent(ctor.name))(ty)(a2);
+                    return insert18(modPrefix + sanitizeIdent(ctor.name))(ty)(a2);
                   };
                 })(a)(decl.constructors);
               };
@@ -34490,10 +34764,10 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
               return function(v1) {
                 return function(backendMod) {
                   return function(v2) {
-                    var modNameStr = unwrap8(backendMod.name);
+                    var modNameStr = unwrap9(backendMod.name);
                     var rsFile = codegenModule(globalArities)(globalClassFields)(v1)(backendMod);
                     return liftEffect3((function() {
-                      var modName = replaceAll(".")("_")(unwrap8(v1.name));
+                      var modName = replaceAll(".")("_")(unwrap9(v1.name));
                       var modPrefix = modName + "_";
                       return function __do() {
                         var ffiPathMb = findFfiFile(".rs")([])(new Just("../"))(modNameStr)(new Just(v1.path))();
@@ -34514,15 +34788,15 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                         };
                         var genFallback = function(name2) {
                           return function(ty) {
-                            var $176 = !member5(modPrefix + sanitizeIdent(unwrap8(name2)))(empty3);
+                            var $176 = !member5(modPrefix + sanitizeIdent(unwrap9(name2)))(empty3);
                             if ($176) {
                               var argTypes = extractAllArgTypes(ty);
                               var args1 = mapWithIndex2(function(i) {
                                 return function(argTy) {
-                                  return "mut a" + (show10(i) + (": " + codegenExprType(modName)(true)(argTy)));
+                                  return "mut a" + (show11(i) + (": " + codegenExprType(modName)(true)(argTy)));
                                 };
                               })(argTypes);
-                              var v32 = trace3("genFallback " + (unwrap8(name2) + (" args: " + show13(args1))))(function(v4) {
+                              var v32 = trace3("genFallback " + (unwrap9(name2) + (" args: " + show13(args1))))(function(v4) {
                                 return unit;
                               });
                               var retTyStr = codegenExprType(modName)(true)(extractFinalRetType(ty));
@@ -34549,7 +34823,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                                 ;
                                 return "unimplemented!()";
                               })();
-                              return "pub fn " + (modPrefix + (sanitizeIdent(unwrap8(name2)) + ("(" + (joinWith(", ")(args1) + (") -> " + (retTyStr + (" { " + (defaultRet + " }\n"))))))));
+                              return "pub fn " + (modPrefix + (sanitizeIdent(unwrap9(name2)) + ("(" + (joinWith(", ")(args1) + (") -> " + (retTyStr + (" { " + (defaultRet + " }\n"))))))));
                             }
                             ;
                             return "";
@@ -34564,7 +34838,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                             var content = readTextFile(UTF8.value)(ffiPathMb.value0)();
                             var missingStubs = foldMap11(function(tup) {
                               if (tup.value1 instanceof Just) {
-                                var $180 = contains("fn " + (modPrefix + sanitizeIdent(unwrap8(tup.value0))))(content);
+                                var $180 = contains("fn " + (modPrefix + sanitizeIdent(unwrap9(tup.value0))))(content);
                                 if ($180) {
                                   return "";
                                 }
@@ -34633,12 +34907,12 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                           ;
                           return new Just(nStr);
                         })(allModules));
-                        var importsRust = joinWith("\n")(map39(function(i) {
+                        var importsRust = joinWith("\n")(map40(function(i) {
                           return "use Purs_" + (i + "::*;");
                         })(coreImports));
                         var rustCode = "#![allow(warnings)]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" + (importsRust + ("\n\n" + (rsFile + ("\n\n" + (ffiContent + "\n\n")))));
                         return modify_(function(acc) {
-                          return insert17(modName)({
+                          return insert18(modName)({
                             code: rustCode,
                             imports: coreImports
                           })(acc);
@@ -34685,7 +34959,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                 var initTc = toUnfoldable7(allModules);
                 foldl11(function(eff) {
                   return function(v) {
-                    return applySecond4(eff)(modify_(insert17(v.value0)(fromFoldable13(v.value1.imports)))(tcRef));
+                    return applySecond4(eff)(modify_(insert18(v.value0)(fromFoldable15(v.value1.imports)))(tcRef));
                   };
                 })(pure15(unit))(initTc)();
                 var $lazy_loop = $runtime_lazy8("loop", "Main", function() {
@@ -34698,7 +34972,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                         return applySecond4(eff)((function() {
                           var newImps = foldl11(function(acc) {
                             return function(i) {
-                              var v1 = lookup8(i)(currMap);
+                              var v1 = lookup9(i)(currMap);
                               if (v1 instanceof Just) {
                                 return union8(acc)(v1.value0);
                               }
@@ -34714,7 +34988,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                           if ($207) {
                             return function __do3() {
                               write(true)(changed)();
-                              return modify_(insert17(v.value0)(newImps))(tcRef)();
+                              return modify_(insert18(v.value0)(newImps))(tcRef)();
                             };
                           }
                           ;
@@ -34740,12 +35014,12 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                 })(empty3)(finalModules);
                 var preludeRsContent = codegenPrelude(allShapes);
                 var mainModuleSanitized = replaceAll(".")("_")(mainModule);
-                var workspaceMembers = '"purust_core", ' + joinWith(", ")(map39(function(v) {
+                var workspaceMembers = '"purust_core", ' + joinWith(", ")(map40(function(v) {
                   return '"Purs_' + (v.value0 + '"');
                 })(toUnfoldable7(allModules)));
                 var rootCargoToml = "[workspace]\nmembers = [\n  " + (workspaceMembers + ('\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + (mainModuleSanitized + (' = { path = "Purs_' + (mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\n')))));
                 writeTextFile(UTF8.value)(outDir + "/Cargo.toml")(rootCargoToml)();
-                writeTextFile(UTF8.value)(outDir + "/src/main.rs")("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" + (mainModuleSanitized + "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a { ..Default::default() })));\n}\n"))();
+                writeTextFile(UTF8.value)(outDir + "/src/main.rs")("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    let mut _effect = Purs_" + (mainModuleSanitized + "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit);\n}\n"))();
                 var coreDir = outDir + "/purust_core";
                 var coreExists = exists(coreDir)();
                 when3(!coreExists)(function __do2() {
@@ -34764,17 +35038,17 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind9(/* @__PURE__ */ lift
                           mkdir(modDir)();
                           return mkdir(modDir + "/src")();
                         })();
-                        var modDeps = 'purust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(map39(function(i) {
+                        var modDeps = 'purust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(map40(function(i) {
                           return "Purs_" + (i + (' = { path = "../Purs_' + (i + '" }')));
-                        })(fromMaybe([])(map115(function(s) {
+                        })(fromMaybe([])(map116(function(s) {
                           return toUnfoldable14(s);
-                        })(lookup8(v.value0)(finalTcMap)))));
+                        })(lookup9(v.value0)(finalTcMap)))));
                         var modCargoToml = '[package]\nname = "Purs_' + (v.value0 + ('"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' + modDeps));
                         writeTextFile(UTF8.value)(modDir + "/Cargo.toml")(modCargoToml)();
-                        var transImps = fromMaybe([])(map115(function(s) {
+                        var transImps = fromMaybe([])(map116(function(s) {
                           return toUnfoldable14(s);
-                        })(lookup8(v.value0)(finalTcMap)));
-                        var newImportsRust = joinWith("\n")(map39(function(i) {
+                        })(lookup9(v.value0)(finalTcMap)));
+                        var newImportsRust = joinWith("\n")(map40(function(i) {
                           return "use Purs_" + (i + "::*;");
                         })(transImps));
                         var finalCode = replace("use purust_core::*;\n")("use purust_core::*;\n" + (newImportsRust + "\n"))(v.value1.code);
