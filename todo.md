@@ -102,6 +102,8 @@ Synchronisation avec `main` de PBO le même jour : utilisation de sa substitutio
 
 Constat : les quatre rotations du source deviennent environ 790 lignes et 379 occurrences statiques de `.clone()` dans `balance`. Une version factorisée donne **48,814 ms** contre **55,928 ms** ; avec couleurs en valeur, **42,546 ms**. Son gain recouvre une partie de celui des emprunts.
 
+Nouvelle mesure du 9 septembre, après les emprunts et les couleurs en valeur : factoriser seulement `balance` donne **40,472 ms contre 40,312 ms**, sans gain temporel mesurable. Priorité à la réutilisation des nœuds de l'étape 7.
+
 - [ ] Isoler un motif à deux niveaux avec deux branches et localiser la duplication entre PBO et Purust.
 - [ ] Générer une déconstruction empruntée réutilisant les champs et tests déjà établis, en préservant l'ordre des branches.
 - [ ] Vérifier les quatre rotations et la persistance, puis mesurer le gain supplémentaire après les étapes 2 et 3.
@@ -118,15 +120,22 @@ Mise à jour du 9 septembre : l'étape 1 bis réduit encore Church de **4,919 à
 - [ ] Préserver la signature instanciée ou supprimer les adaptateurs inverses lorsque leurs sémantiques le permettent.
 - [ ] Vérifier ordre d'évaluation, effets et applications partielles, puis mesurer Church.
 
-## 7. RBTree : réutiliser une racine unique
+## 7. RBTree : réutiliser les nœuds consommés — prochaine priorité
 
-Constat : après le passage des couleurs en valeur, le prototype de recoloration via `Rc::make_mut` économise **100 000 allocations supplémentaires**. Son gain temporel est modeste dans la série exploratoire à O3 : **47,0 à 45,3 ms**. La réutilisation générale des nœuds reste à étudier.
+Audit du 9 septembre : le prototype isolé qui réutilise les cellules uniques dans le chemin d'insertion et les quatre rotations passe de **40,856 à 15,475 ms (−62,1 %)**. Il conserve `Rc<Tree>` et copie les cellules partagées avec `Rc::make_mut`. **2 783 933 → 200 001 allocations**, soit **133 628 784 → 9 600 048 octets demandés cumulés**. Quinze mesures par variante, trois processus alternés, même O1 et mimalloc ; comptage séparé. Les quatre rotations, les invariants et les clés exactes de 200 anciennes versions retenues passent. Il s'agit d'une réécriture Rust exploratoire, pas encore d'une transformation du générateur ni d'un gain validé dans la suite complète.
 
-- [ ] Isoler la reconstruction de racine dans `makeBlack` / `insert` et établir les conditions permettant une réutilisation.
-- [ ] Générer la mutation d'une racine unique avec copie lorsqu'elle est partagée ; vérifier qu'une ancienne version reste intacte.
-- [ ] Mesurer le gain supplémentaire après les autres changements avant d'élargir aux rotations ou à d'autres ADT.
+Réutiliser seulement la racine économise 100 000 allocations mais ne donne pas de gain temporel mesurable dans la nouvelle série : **40,800 ms contre 40,312 ms**. L'ancien essai à O3 (**47,0 → 45,3 ms**) reste une observation historique. La racine sert de premier cas de génération ; le potentiel principal concerne l'ensemble du chemin et les rotations.
 
-La FFI optimisée à 16,700 ms dans le README utilise une arène préallouée et des indices, avec des durées de vie différentes. Ce score reste un repère, pas une promesse de gain pour l'arbre persistant.
+- [x] Isoler dans une [fixture TAST](tests/tast/consumed-nodes.mjs) la déconstruction/reconstruction d'un ADT récursif consommé, avec racine unique, racine partagée, enfants partagés, reconstruction d'un enfant et réutilisation de l'ancienne valeur dans le PureScript. Les contrôles exécutent le vrai fork, PBO, le CLI et les crates Rust fraîches.
+- [ ] Introduire une règle générale de reconstruction à la dernière utilisation, en utilisant le type et le layout du TAST : cellule unique réutilisée, copie si partagée. Durcir le budget du cas « racine unique » à zéro allocation pour 1 000 mises à jour ; conserver les contrôles de l'ancienne version et des enfants.
+- [ ] Transférer les champs consommés pour conserver l'unicité pendant les appels sur les enfants. Reprendre le cas à deux nœuds, puis les quatre rotations et les versions persistantes avant de généraliser la réutilisation des cellules.
+- [ ] Régénérer altbak.pub-purust, vérifier les 14 résultats, puis mesurer RBTree et la suite complète avec la même configuration. Confirmer le gain du Rust réellement généré et ses allocations ; ne pas attribuer directement les chiffres du prototype à l'intégration.
+
+Référence de la fixture avant changement du générateur : **1 000 allocations pour 1 000 reconstructions de racine unique**, **1 000 avec une racine partagée à chaque appel**, **2 000 pour un chemin de deux nœuds uniques**. Toutes les allocations sont libérées. Les assertions sont des plafonds permettant les optimisations futures ; ces nombres ne sont pas des allocations à conserver. Commande : `PURS="$PWD/../../altbak.pub-purust/run/bak/js/node_modules/.bin/purs" node --test tests/tast/consumed-nodes.mjs`.
+
+Validation de cette première étape : **14 tests de génération + 5 tests TAST passent**, ainsi que **`bin/rust/run -c` et ses 14 résultats**. Le noyau RBTree régénéré est identique à celui d'avant la fixture ; aucune règle de réutilisation n'est encore intégrée.
+
+Le README officiel relevé le 9 septembre indique RBTree compilé **40,746 ms**, natif optimisé **16,700 ms**, total compilé **119,19 ms**. Le dernier relevé après les fonctions retournées donne RBTree **40,151 ms** sur un total de **62,136 ms**. Le natif remesuré pendant l'audit (**14,652 ms**) utilisait encore une arène préallouée ; l'utilisateur a depuis retiré ce pool. Cette comparaison native devra être refaite. Le gain généré/prototype ci-dessus est indépendant de cette modification.
 
 ## Pistes à réévaluer seulement sur nouvelles preuves
 
