@@ -27,13 +27,21 @@ Constat initial : `Data_Unit_unit` construisait un `Record_a` dynamique de **6 4
 - [x] Reproduire la construction et le passage de `Unit` dans un petit module ; compter les allocations et couvrir les valeurs renvoyées par une continuation. Test : [unit-values.mjs](tests/codegen/unit-values.mjs), lancé avec `node --test tests/codegen/unit-values.mjs` après le build.
 - [x] Introduire une représentation dédiée sans allocation : `()` dans le code typé, `Value::Unit` dans le runtime dynamique, conversions `mk_unit` / `unwrap_unit`, construction et FFI cohérentes. Les tableaux convertissent aussi leurs éléments natifs en `Value`.
 - [x] Vérifier les passages par `Effect`, les fonctions polymorphes et les FFI, puis régénérer et mesurer LazyEvaluation avec le runner complet : **11 tests passent**, `bin/rust/run -c` réussit, **14 résultats corrects**. Sur trois runs avant/après : LazyEvaluation **220,394 → 67,315 ms (−69,5 %)** ; total **330,603 → 174,147 ms (−47,3 %)**.
-- [ ] Après cette intégration, mesurer les allocations restantes avant de reprendre les adaptateurs de thunks.
+- [x] Après cette intégration, mesurer les allocations restantes avant de reprendre les adaptateurs de thunks. Le 9 septembre : **5 003 000 allocations** par passage avant la correction des fonctions retournées ci-dessous.
 
 La suppression des allocations de `Unit` économise environ **6,42 Go d'octets demandés cumulés** par passage dans le prototype, pas 6,42 Go de mémoire simultanément résidente.
 
 Premier baby step validé le 8 septembre 2026 : le test génère un module `UnitValues`, compile son Rust avec la vraie FFI `Data.Unit`, puis vérifie identité, réutilisation, nombre d'appels et résultats des continuations (entiers, booléen et fonction renvoyée sans exécution prématurée). Sur 1 000 constructions : **1 000 allocations, 56 000 octets demandés et 1 000 libérations** ; transmettre 1 000 fois une valeur déjà construite n'alloue rien. Le runtime minimal a un `Record_a` de 48 octets, contre 6 408 dans altbak.pub, où davantage de champs sont collectés. Ce test établit la référence avant le changement de représentation ; il ne fixe pas les allocations actuelles comme résultat à conserver.
 
 Après intégration, le même test exige **zéro allocation** pour 1 000 constructions, passages et allers-retours `()` / `Value`. Il couvre aussi `[unit]`, les records vides distincts de `Unit`, les effets différés et rejouables, les continuations polymorphes et les FFI d'assertion. Les témoins de contraintes `Partial` restent des records vides. Aucun changement de l'algorithme de thunks n'a été intégré.
+
+## 1 bis. Fonctions retournées : supprimer les adaptateurs de la récursion
+
+- [x] Reproduire avec une fixture TAST une récursion à deux paramètres renvoyant une fonction : **5 003 allocations pour 1 000 thunks utiles** avant correction.
+- [x] Générer une fonction interne sur les paramètres présents dans l'AST, avec une boucle pour les appels terminaux, tout en conservant l'interface publique. Les appels directs et références de fonction utilisent l'arité native ; l'inférence consomme aussi les arguments appliqués au résultat fonctionnel.
+- [x] Vérifier les applications partielles, le forçage répété, les captures, les fonctions retournées à deux arguments, la récursion différée, les records et les chemins polymorphes `Int`/`Number`. **14 tests de génération + 4 tests TAST passent**, ainsi que `bin/rust/run -c` et ses **14 résultats**.
+
+Intégration du 9 septembre 2026 : cinq paires alternées de runners complets, même O1 et mimalloc, donnent **LazyEvaluation 67,352 → 19,136 ms** et **total 113,499 → 62,136 ms (−45,3 %)**. Church progresse également : **4,919 → 1,584 ms**. Le Rust réellement généré alloue **1 000 000 objets au lieu de 5 003 000**, soit **32 000 000 octets demandés cumulés au lieu de 160 088 000**, tous libérés. Les thunks utiles et leur forçage sont conservés. Le README officiel indique LazyEvaluation **72,002 ms**, Church **5,096 ms**, total **119,19 ms** ; les chiffres avant/après de cette série mesurent la correction. [Rapport et reproduction](../../altbak.pub-purust/scratch/rust-returned-functions-20260909/REPORT.md).
 
 ## 2. RBTree : emprunter lors des lectures de motifs
 
@@ -104,6 +112,8 @@ Constat : des allers-retours `Func1<i64, i64>` → `Func1<Value, Value>` → `Fu
 
 À réévaluer après l'étape 4 : la propagation des instanciations TAST réduit déjà Church de **11,130 à 4,928 ms** dans le runner. Repartir des adaptateurs encore présents dans le nouveau Rust généré avant d'estimer un gain supplémentaire.
 
+Mise à jour du 9 septembre : l'étape 1 bis réduit encore Church de **4,919 à 1,584 ms**. Refaire le constat sur ce nouveau code avant de traiter les adaptateurs inverses restants.
+
 - [ ] Reproduire un aller-retour sur une fonction typée et suivre les arguments `TypeApp` et les conversions émises.
 - [ ] Préserver la signature instanciée ou supprimer les adaptateurs inverses lorsque leurs sémantiques le permettent.
 - [ ] Vérifier ordre d'évaluation, effets et applications partielles, puis mesurer Church.
@@ -120,5 +130,5 @@ La FFI optimisée à 16,700 ms dans le README utilise une arène préallouée et
 
 ## Pistes à réévaluer seulement sur nouvelles preuves
 
-- **Simplification des thunks :** le prototype à un seul thunk par étape ralentit LazyEvaluation de **230,252 à 300,579 ms**. Ne pas intégrer cette réécriture en l'état ; reprendre la mesure après le travail sur `Unit`.
+- **Ancien prototype de thunks :** avant Unit natif, une version à un thunk par étape ralentissait LazyEvaluation de **230,252 à 300,579 ms**. Les nouvelles mesures après Unit natif ont permis l'intégration de l'étape 1 bis ; cette observation historique ne décrit plus le générateur actuel.
 - **Profil Rust :** O3 seul n'améliore pas le noyau RBTree étudié (**55,3 ms à O1 contre 59,8 ms à O3** dans la série exploratoire). LTO et le nombre d'unités de codegen restent non mesurés. Tester chaque option séparément sur la suite complète avant de changer les valeurs par défaut.

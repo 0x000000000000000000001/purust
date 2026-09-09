@@ -471,6 +471,15 @@ extractFinalRetType ty = case unwrapType ty of
   Func _ retTy -> retTy
   other -> other
 
+-- A single App can supply parameters of both a function and its result.
+applicationResultType :: Int -> ExprType -> ExprType
+applicationResultType 0 ty = ty
+applicationResultType count ty = case unwrapType ty of
+  Func args result ->
+    if count < Array.length args then Func (Array.drop count args) result
+    else applicationResultType (count - Array.length args) result
+  _ -> Any
+
 extractAbsParams :: Int -> NeutralExpr -> Maybe (Tuple (Array String) NeutralExpr)
 extractAbsParams 0 expr = Just (Tuple [] expr)
 extractAbsParams n (NeutralExpr (Typed _ expr)) = extractAbsParams n expr
@@ -489,6 +498,13 @@ extractAbsParams n (NeutralExpr (Let ident ty val body)) =
     Just (Tuple rest inner) -> Just (Tuple rest (NeutralExpr (Let ident ty val inner)))
     Nothing -> Nothing
 extractAbsParams _ _ = Nothing
+
+-- Count consecutive lambda binders. Stop before a let or branch that
+-- computes a function-valued result.
+leadingAbsArity :: NeutralExpr -> Int
+leadingAbsArity (NeutralExpr (Typed _ inner)) = leadingAbsArity inner
+leadingAbsArity (NeutralExpr (Abs params body)) = NonEmptyArray.length params + leadingAbsArity body
+leadingAbsArity _ = 0
 
 codegenBindingGroup :: ValueEnums -> ModuleName -> String -> Set.Set String -> Set.Set String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
 codegenBindingGroup valueEnums modName modNameStr allZeroArity allMacroBindings aritiesMap globalClassFields group = unsafePerformEffect do
@@ -547,6 +563,38 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity allMacroBindings 
                     let bodyRaw = codegenExpr_ valueEnums modNameStr allZeroArity allMacroBindings mbLoop mergedArities globalClassFields bound Set.empty false body
                         bodyTy = inferTypeExpr modNameStr mergedArities globalClassFields bound body
                     in boxUnbox valueEnums modNameStr retType bodyTy bodyRaw
+                Nothing
+                  | isSelfRecursive
+                  , prefixArity <- leadingAbsArity expr
+                  , prefixArity > 0
+                  , remainingTypes <- Array.drop prefixArity argTypes
+                  , not (Array.null remainingTypes)
+                  , Array.length remainingTypes <= 10
+                  , Just (Tuple prefixParams body) <- extractAbsParams prefixArity expr ->
+                      let
+                        -- Preserve the public ABI. Within this wrapper, the
+                        -- same name resolves to a worker returning the actual
+                        -- function value. Recursive calls use its native arity.
+                        workerParams = dedupArgs prefixParams
+                        workerTypes = Array.take prefixArity argTypes
+                        workerReturn = Func remainingTypes retType
+                        workerType = Func workerTypes workerReturn
+                        workerArities = Map.insert identName workerType mergedArities
+                        workerBound = Map.fromFoldable (Array.zip workerParams workerTypes)
+                        workerLoop = Just { name: identName, params: workerParams }
+                        workerBody = codegenExpr_ valueEnums modNameStr allZeroArity allMacroBindings workerLoop workerArities globalClassFields workerBound Set.empty false body
+                        workerBodyType = inferTypeExpr modNameStr workerArities globalClassFields workerBound body
+                        workerCode = boxUnbox valueEnums modNameStr workerReturn workerBodyType workerBody
+                        workerArgs = String.joinWith ", " $ Array.zipWith
+                          (\name ty -> (if name == "_" then "" else "mut ") <> name <> ": " <> codegenExprTypeWithValueEnums valueEnums modNameStr false ty)
+                          workerParams workerTypes
+                        passedArgs = map (\name -> name <> ".clone()") deduped
+                        call = identName <> "(" <> String.joinWith ", " (Array.take prefixArity passedArgs) <> ")"
+                      in
+                        "{\nfn " <> identName <> "(" <> workerArgs <> ") -> "
+                          <> codegenExprTypeWithValueEnums valueEnums modNameStr true workerReturn <> " {\n"
+                          <> "    loop {\n        break " <> workerCode <> ";\n    }\n}\n"
+                          <> "(" <> call <> ")(" <> String.joinWith ", " (Array.drop prefixArity passedArgs) <> ")\n}"
                 Nothing -> 
                    let shapeTypeToAST :: ExprType -> NeutralExpr -> ExprType
                        shapeTypeToAST currentTy (NeutralExpr (Typed ty _)) = ty
@@ -715,10 +763,11 @@ genApp valueEnums modNameStr allZeroArity allMacroBindings mbLoop aritiesMap glo
         argsFree = map freeVariables argsArray
         aliveForFn = Set.union alive (Array.foldl Set.union Set.empty argsFree)
         fnCode = codegenExpr_ valueEnums modNameStr allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForFn false fn
+        -- Arguments of a returned function belong to a subsequent call.
         lookupArity fname = 
           let key = if fname == "main" then "main" else fname
           in case Map.lookup key aritiesMap of
-            Just ty -> getArity ty
+            Just ty -> Array.length (extractAllArgTypes ty)
             Nothing -> 0
             
         argsCodeArray = Array.mapWithIndex (\i arg -> 
@@ -1331,7 +1380,7 @@ codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesM
           key = if fullName == "main" then "main" else fullName
           isTopLevel = true
           expectedArgsLength = case Map.lookup key aritiesMap of
-            Just ty -> getArity ty
+            Just ty -> Array.length (extractAllArgTypes ty)
             Nothing -> 0
 
           varCode = if isTopLevel then
@@ -1793,14 +1842,8 @@ inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr expr) =
     in case stripTyped fn of
       NeutralExpr (Var (Qualified _ (Ident "not"))) -> Boolean
       NeutralExpr (Var (Qualified (Just (ModuleName "Data.HeytingAlgebra")) (Ident "not"))) -> Boolean
-      _ -> case unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) of
-        Func argTypes retTy -> 
-          let expectedCount = Array.length argTypes
-              providedCount = NonEmptyArray.length args
-          in if expectedCount > providedCount then
-               Func (Array.drop providedCount argTypes) retTy
-             else retTy
-        _ -> Any
+      _ -> applicationResultType (NonEmptyArray.length args)
+        (inferTypeExpr currentMod aritiesMap globalClassFields bound fn)
 
 
   UncurriedApp fn _args -> 
