@@ -16,6 +16,7 @@ import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
 import Purust.ReuseFields (scalarFieldUpdate)
+import Purust.RecordUpdates (childRecordUpdate)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import Purust.FunctionFusion (countedFunctionProducers)
@@ -1436,20 +1437,45 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
             && not (Set.isEmpty (Set.intersection baseVars propVars))
         _ -> false
       valueName i = "_record_update_" <> show i
+      childValueName j = "_record_child_update_" <> show j
+      -- Reuse at most one immediate child. Finish all RHS evaluations before
+      -- detaching it; no callback can observe the temporary vacant slot.
+      childPlans = map (\(Prop k v) -> childRecordUpdate
+        (inferTypeExpr currentMod aritiesMap globalClassFields bound base) operandType
+        (\root -> isUnconvertedLocal operandType root && freeVariables root == baseVars) k v) propsArr
+      childIndex = if moveAfterProps
+        && Array.length (Array.nub (map (\(Prop k _) -> k) propsArr)) == Array.length propsArr
+        then Array.findIndex (case _ of
+          Just _ -> true
+          _ -> false) childPlans
+        else Nothing
+      childPlan i = if childIndex == Just i then fromMaybe Nothing (Array.index childPlans i) else Nothing
+      boxedValue aliveForValue v =
+        let valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForValue false v
+            valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
+        in boxUnbox valueEnums currentMod Any valTy valCode
       propsCode = Array.mapWithIndex (\i (Prop k v) -> 
         let subsequentProps = Array.drop (i + 1) propsArr
             laterVars = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
             aliveForProp = if moveAfterProps then Set.union baseVars laterVars else laterVars
-            valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForProp false v
-            valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
-            boxed = boxUnbox valueEnums currentMod Any valTy valCode
-        in if moveAfterProps then "let " <> valueName i <> " = " <> boxed <> ";"
-           else "_base.set_" <> sanitizeIdent k <> "(" <> boxed <> ");"
+        in case childPlan i of
+          Just childProps -> String.joinWith "\n    " (Array.mapWithIndex (\j (Prop _ cv) ->
+            let laterChildVars = Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) aliveForProp (Array.drop (j + 1) childProps)
+            in "let " <> childValueName j <> " = " <> boxedValue laterChildVars cv <> ";") childProps)
+          Nothing -> if moveAfterProps then "let " <> valueName i <> " = " <> boxedValue aliveForProp v <> ";"
+            else "_base.set_" <> sanitizeIdent k <> "(" <> boxedValue aliveForProp v <> ");"
       ) propsArr
       aliveForBase = if moveAfterProps then alive else Set.union alive propVars
       baseCode = "    let mut _base = " <> codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n"
       valuesCode = "    " <> String.joinWith "\n    " propsCode <> "\n"
-      setters = Array.mapWithIndex (\i (Prop k _) -> "_base.set_" <> sanitizeIdent k <> "(" <> valueName i <> ");") propsArr
+      setters = Array.mapWithIndex (\i (Prop k _) -> case childPlan i of
+        Nothing -> "_base.set_" <> sanitizeIdent k <> "(" <> valueName i <> ");"
+        Just childProps ->
+          "let mut _record_child = _base.get_" <> sanitizeIdent k <> "();\n    " <>
+          "_base.set_" <> sanitizeIdent k <> "(crate::Value::Unit);\n    " <>
+          String.joinWith "\n    " (Array.mapWithIndex (\j (Prop ck _) ->
+            "_record_child.set_" <> sanitizeIdent ck <> "(" <> childValueName j <> ");") childProps) <>
+          "\n    _base.set_" <> sanitizeIdent k <> "(_record_child);") propsArr
     in
       "{\n" <>
       (if moveAfterProps then valuesCode <> baseCode <> "    " <> String.joinWith "\n    " setters <> "\n"

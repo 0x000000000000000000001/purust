@@ -5,6 +5,8 @@ import Prelude
 
 type Pair = { a :: Int, b :: Int }
 type Deep = { a :: Int, b :: { c :: Int, d :: { e :: Int, f :: Int } } }
+type Nested = { a :: Int, b :: { c :: Int, d :: Int } }
+type NestedFunction = { a :: Int, b :: { c :: Int, d :: Unit -> Int } }
 type WithFunction = { a :: Int, b :: Unit -> Int }
 data Payload = Payload (Unit -> Int)
 type Payloads = { a :: Payload, b :: Payload }
@@ -40,6 +42,21 @@ payloads _ = { a: Payload (\_ -> 1), b: Payload (\_ -> 2) }
 
 callbackPayloads :: (Payload -> Payload) -> (Payload -> Payload) -> Payloads -> Payloads
 callbackPayloads first second r = r { a = first r.a, b = second r.b }
+
+callbackNested :: (Int -> Int) -> (Int -> Int) -> (Int -> Int) -> Nested -> Nested
+callbackNested first second third r =
+  r { a = first r.a, b = r.b { c = second r.b.c, d = third r.b.d } }
+
+captureChild :: NestedFunction -> NestedFunction
+captureChild r = r { b = r.b { c = r.b.c + 1, d = \_ -> r.b.c } }
+
+nestedPayloads :: Unit -> { a :: Int, b :: { c :: Payload, d :: Payload } }
+nestedPayloads _ = { a: 0, b: { c: Payload (\_ -> 1), d: Payload (\_ -> 2) } }
+
+callbackNestedPayloads :: (Payload -> Payload) -> (Payload -> Payload)
+  -> { a :: Int, b :: { c :: Payload, d :: Payload } }
+  -> { a :: Int, b :: { c :: Payload, d :: Payload } }
+callbackNestedPayloads first second r = r { b = r.b { c = first r.b.c, d = second r.b.d } }
 
 openRow :: forall r. { score :: Int | r } -> { score :: Int | r }
 openRow r = r { score = r.score + 1 }

@@ -31,6 +31,12 @@ try {
     assert.match(bodies.get(name), /let _record_update_0 = /, name);
   }
   assert.match(bodies.get('bump'), /let mut _base = purs_local_0;/);
+  for (const name of ['updateDeep', 'callbackNested', 'captureChild', 'callbackNestedPayloads']) {
+    const body = bodies.get(name);
+    assert.match(body, /let _record_child_update_0 = /, name);
+    assert.equal((body.match(/let mut _record_child = /g) ?? []).length, 1, name);
+    assert.match(body, /_base\.set_b\(crate::Value::Unit\);/, name);
+  }
   for (const name of ['retain', 'capturedBase', 'openRow']) {
     assert.doesNotMatch(bodies.get(name), /let _record_update_/, name);
   }

@@ -12,6 +12,76 @@ fn address(r: &Value) -> usize {
     let Value::Record_a_b(ptr) = r else { panic!("pair") };
     &**ptr as *const Record_a_b as usize
 }
+fn nested() -> Value {
+    Value::Record_a_b(PerceusPtr::new(Record_a_b {
+        a: Some(mk_int(5)), b: Some(Value::Record_c_d(PerceusPtr::new(Record_c_d {
+            c: Some(mk_int(7)), d: Some(mk_int(11))
+        })))
+    }))
+}
+fn nested_values(r: &Value) -> [i64; 3] {
+    [r.get_a().unwrap_int(), r.get_b().get_c().unwrap_int(), r.get_b().get_d().unwrap_int()]
+}
+fn child_address(r: &Value) -> usize {
+    let Value::Record_c_d(ptr) = r.get_b() else { panic!("child") };
+    &*ptr as *const Record_c_d as usize
+}
+fn check_child_reuse() {
+    let plus = || Func1::Static(|x: i64| x + 1);
+    let r = nested(); let root_ptr = address(&r); let child_ptr = child_address(&r);
+    let changed = RecordRootMove_callbackNested(plus(), plus(), plus(), r);
+    assert_eq!(nested_values(&changed), [6, 8, 12]);
+    assert_eq!(address(&changed), root_ptr); assert_eq!(child_address(&changed), child_ptr);
+    let r = nested(); let old = r.clone();
+    let changed = RecordRootMove_callbackNested(plus(), plus(), plus(), r);
+    assert_eq!(nested_values(&old), [5, 7, 11]);
+    assert_eq!(nested_values(&changed), [6, 8, 12]);
+    assert_ne!(address(&changed), address(&old));
+    assert_ne!(child_address(&changed), child_address(&old));
+    let r = nested(); let root_ptr = address(&r); let child_ptr = child_address(&r);
+    let kept_child = r.get_b();
+    let changed = RecordRootMove_callbackNested(plus(), plus(), plus(), r);
+    assert_eq!(address(&changed), root_ptr);
+    assert_ne!(child_address(&changed), child_ptr);
+    assert_eq!([kept_child.get_c().unwrap_int(), kept_child.get_d().unwrap_int()], [7, 11]);
+    assert_eq!(nested_values(&changed), [6, 8, 12]);
+
+    let calls = Rc::new(RefCell::new(Vec::new()));
+    let old = nested();
+    let callback = || {
+        let old = old.clone(); let calls = calls.clone();
+        Func1::Shared(Rc::new(move |x: i64| {
+            calls.borrow_mut().push(x); assert_eq!(nested_values(&old), [5, 7, 11]); x + 1
+        }))
+    };
+    let changed = RecordRootMove_callbackNested(callback(), callback(), callback(), old.clone());
+    assert_eq!(*calls.borrow(), [5, 7, 11]);
+    assert_eq!(nested_values(&changed), [6, 8, 12]);
+    assert_eq!(nested_values(&old), [5, 7, 11]);
+    calls.borrow_mut().clear();
+    let fail = Func1::Static(|_: i64| -> i64 { panic!("third RHS") });
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(||
+        RecordRootMove_callbackNested(callback(), callback(), fail, old.clone()))).is_err());
+    assert_eq!(*calls.borrow(), [5, 7]);
+    assert_eq!(nested_values(&old), [5, 7, 11]);
+
+    let mut r = nested(); let mut b = r.get_b();
+    b.set_d(Value::Func1(Func1::Static(|_| mk_int(99)))); r.set_b(b);
+    let changed = RecordRootMove_captureChild(r);
+    assert_eq!(changed.get_b().get_c().unwrap_int(), 8);
+    assert_eq!((changed.get_b().get_d().unwrap_func1())(Value::Unit).unwrap_int(), 7,
+        "The new child closure must retain the old root and child");
+
+    let drops = Rc::new(()); let held = drops.clone();
+    let first = Func1::Shared(Rc::new(move |_: Rc<Payload>| {
+        let held = held.clone();
+        Rc::new(Payload::Payload(Func1::Shared(Rc::new(move |_| { let _keep = &held; 10 }))))
+    }));
+    let second = Func1::Static(|_: Rc<Payload>| -> Rc<Payload> { panic!("child payload") });
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(||
+        RecordRootMove_callbackNestedPayloads(first, second, RecordRootMove_nestedPayloads(())))).is_err());
+    assert_eq!(Rc::strong_count(&drops), 1, "Staged child values release their captures on panic");
+}
 fn main() {
     for (a, b) in [(0, 0), (7, 11), (-3, 9)] {
         let original = pair(a, b); let ptr = address(&original);
@@ -88,5 +158,6 @@ fn main() {
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(||
         RecordRootMove_callbackPayloads(first, second, r))).is_err());
     assert_eq!(Rc::strong_count(&drops), 1);
-    println!("Record root move: unique addresses, shared roots, last uses, callback order, captured old roots, repeated closures, panic/overflow and temporary drops checked.");
+    check_child_reuse();
+    println!("Record root/child reuse: unique addresses, shared roots and children, last uses, callback order, captured old versions, repeated closures, panic/overflow and temporary drops checked.");
 }
