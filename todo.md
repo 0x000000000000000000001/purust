@@ -1,6 +1,6 @@
 # Plan de performance de Purust
 
-Mis à jour le 9 septembre 2026. Objectif : réduire le travail autour des cellules déjà réutilisées, en priorité dans RBTree. Les gains des étapes à venir restent à mesurer.
+Mis à jour le 9 septembre 2026. Objectif : réduire le travail autour des cellules déjà réutilisées, en priorité dans RBTree. Les gains des étapes à venir restent à mesurer. La dernière intégration B13 donne **19,419 → 16,835 ms** sur la suite (−2,584 ms, −13,3 %), dont **0,607 ms** ajoutée par la modification du seul enfant après la reconstruction directe avec emprunt conservé.
 
 ## Point de départ
 
@@ -44,7 +44,7 @@ Diagnostic du 9 septembre : la construction de 100 000 nœuds exécute **3 060 1
 
 **Prototype non retenu :** trois paires isolées, 15 mesures par processus, O1/mimalloc sans instrumentation : **19,737 → 20,563 ms (+4,2 %)**. Aucun changement du générateur ni gain sur le runner complet. Les nombres d'opérations logiques ne sont pas un décompte d'instructions machine. [Rapport, comptage, fixture et mesures](../../altbak.pub-purust/scratch/rust-perceus-counts-20260909/REPORT.md).
 
-**Recoloration intégrée, étape 2.** Le gain vient de la suppression de l'extraction/reconstruction de tout le nœud. La seule conservation d'une preuve d'unicité, mesurée séparément à l'étape 4, ne justifiait pas une intégration. La prochaine extension à un enfant modifié par un appel demande sa propre expérience.
+**Recoloration intégrée, étape 2.** Le gain vient de la suppression de l'extraction/reconstruction de tout le nœud. La seule conservation d'une preuve d'unicité, mesurée séparément à l'étape 4, ne justifiait pas une intégration. L’extension à un enfant modifié par un appel est désormais intégrée sur un graphe local fermé, avec sa propre expérience et sa mesure ci-dessous.
 
 ## 2. Spécialiser les reconstructions : ne modifier que les champs changés
 
@@ -53,9 +53,12 @@ Le chemin unique de recoloration dans `Test_RBTree_insert` ne modifie désormais
 - [x] **Prototype de cette piste :** isoler la recoloration actuelle et une variante qui ne modifie que la couleur. Vérifier racines uniques et partagées, références faibles et anciennes versions ; examiner le code machine et mesurer le noyau RBTree. Ne changer le générateur qu'après cette preuve.
 - [x] Reconnaître une reconstruction du même constructeur où tous les champs sauf un sont des projections inchangées du même parent. Commencer par un champ scalaire, sans appel ni conversion ; utiliser l'identité du constructeur et son layout TAST.
 - [x] Émettre une modification du seul champ sur le chemin unique, avec reconstruction sur le chemin partagé. Couvrir les champs inchangés, enfants partagés, usages ultérieurs et ordre d'évaluation ; valider puis mesurer la suite.
-- [ ] Étendre ensuite à un enfant modifié par un appel, seulement si la preuve de propriété survit à cet appel. Isoler d'abord le cas hors rotation ; vérifier callbacks et libérations sur exception avant de couvrir les rotations.
+- [x] Étendre à un enfant modifié par un appel natif direct fermé, avec une branche de reconstruction du même constructeur prouvée par le TAST. L’emprunt mutable reste valide pendant l’appel ; le parent garde ses champs inchangés et ne réinstalle que l’enfant. Parents partagés/faibles, callbacks, appels opaques et conversions gardent les chemins existants.
+- [ ] Étendre cette spécialisation aux rotations ou à d’autres formes d’appels seulement après une nouvelle preuve et une mesure ; les gains sur les versions fortement persistantes restent à établir.
 
 **Résultat du 9 septembre :** prototype **−1,5 %**, puis **−1,8 %** sur sept paires de confirmation. Après intégration, cinq paires de runners complets donnent **RBTree 18,237 → 17,644 ms (−3,3 %)** et **total 20,977 → 20,354 ms (−3,0 %)**. **100 000 extractions/reconstructions et retests supprimés**, toujours 100 001 allocations/libérations et le même nombre de clones. La règle s'applique aussi aux quatre setters de `Data.Time`. [Règle](src/Purust/ReuseFields.purs), [fixture TAST](tests/tast/field-updates.mjs), [rapport et mesures](../../altbak.pub-purust/scratch/rust-recolor-field-20260909/REPORT.md).
+
+**Enfant par appel intégré, 9 septembre :** cinq blocs comparant les trois binaires réellement générés donnent **RBTree 18,309 → 16,339 → 15,741 ms**, **total 19,419 → 17,442 → 16,835 ms**. La première étape combine reconstruction directe et emprunt unique conservé (**−1,977 ms**) ; la modification du seul enfant apporte ensuite **−0,607 ms**. Les deux étapes sont favorables dans chacun des cinq blocs. **715 030 extractions/reconstructions complètes supprimées**, autant de clones/relâchements temporaires du frère ajoutés ; toujours **100 001 allocations/libérations**. **23 tests de génération, 14 tests TAST et les 14 résultats du runner** passent après `bin/rust/run -c`. Le README officiel relu donne **18,480 ms RBTree / 19,62 ms total** pour le compilé et **36,070 / 36,13 ms** pour le natif optimisé. [Règle d’appel](src/Purust/ChildCalls.purs), [règle de champ](src/Purust/ChildUpdates.purs), [rapport et mesures](../../altbak.pub-purust/scratch/rust-child-field-integration-20260909/REPORT.md). B13/B14 restent partiels.
 
 ## 3. Étendre les emprunts aux parcours en lecture
 
@@ -66,15 +69,16 @@ Constat : `Test_RBTree_depth` reçoit un `Rc<Tree>` possédé et clone ses enfan
 - [ ] Garder l'interface possédée aux frontières publiques et FFI, appeler le worker emprunté lorsque possible. Couvrir appels répétés, partages, résultats, destruction et usages ultérieurs ; intégrer puis mesurer.
 - [ ] Étendre aux fonctions voisines ou à plusieurs paramètres uniquement après avoir identifié un coût exécuté supplémentaire.
 
-## 4. Retests d'unicité : expérience réalisée, intégration en attente
+## 4. Retests d'unicité : prototypes isolés et intégration ciblée
 
 Constat confirmé dans l'assembleur : certains chemins appellent `Rc::get_mut` pour extraire les champs, puis à nouveau pour reconstruire la même cellule. Le comptage initial observe **2 483 932 retests** après extraction sur la construction de 100 000 nœuds.
 
 - [x] Identifier un test répété encore présent dans le code machine d'un chemin unique et mesurer sa fréquence séparément des temps.
 - [x] Prototyper un emprunt mutable conservé localement ; mesurer séparément son passage au worker privé. Préserver les refus de partage et de références faibles, les anciennes versions et les durées de vie.
-- [ ] Reprendre l'intégration seulement après un prototype au gain confirmé, avec fixture TAST et mesure de la suite. Le cas local et le passage au worker restent distincts ; aucun alias du propriétaire ne peut apparaître pendant l'emprunt.
+- [x] Conserver l’emprunt sur le chemin enfant fermé de l’étape 2, après prototype, fixture TAST et mesure de la suite. Son gain combine suppression du helper de balance et du retest ; il ne valide pas à lui seul les anciens prototypes de propagation.
+- [ ] Étendre à d’autres chemins seulement avec un gain propre confirmé. Le cas local et le passage au worker restent distincts ; aucun alias du propriétaire ne peut apparaître pendant l’emprunt.
 
-**Résultat du 9 septembre :** l'emprunt local supprime **100 000 retests** ; le premier relevé donne −1,7 %, puis cinq paires donnent **19,555 → 19,398 ms (−0,8 %)**, avec trois paires favorables et deux défavorables. Le worker supprime **2 183 976 retests**, mais ralentit le noyau : **19,282 → 20,778 ms (+7,8 %)**. Allocations et clones identiques ; contrôles natifs et instrumentés réussis, dont 200 versions conservées et 512 insertions avec partage mixte. **Aucune variante intégrée.** [Rapport et mesures](../../altbak.pub-purust/scratch/rust-uniqueness-proof-20260909/REPORT.md).
+**Résultat du 9 septembre :** l'emprunt local supprime **100 000 retests** ; le premier relevé donne −1,7 %, puis cinq paires donnent **19,555 → 19,398 ms (−0,8 %)**, avec trois paires favorables et deux défavorables. Le worker supprime **2 183 976 retests**, mais ralentit le noyau : **19,282 → 20,778 ms (+7,8 %)**. Allocations et clones identiques ; contrôles natifs et instrumentés réussis, dont 200 versions conservées et 512 insertions avec partage mixte. **Ces deux variantes isolées n’ont pas été intégrées.** L’étape 2 ajoute depuis un chemin fermé différent, dont le gain est mesuré avec son raccourci de reconstruction. [Rapport et mesures](../../altbak.pub-purust/scratch/rust-uniqueness-proof-20260909/REPORT.md).
 
 ## 5. Reclasser les autres coûts après RBTree
 
