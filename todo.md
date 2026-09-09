@@ -43,6 +43,18 @@ Après intégration, le même test exige **zéro allocation** pour 1 000 constru
 
 Intégration du 9 septembre 2026 : cinq paires alternées de runners complets, même O1 et mimalloc, donnent **LazyEvaluation 67,352 → 19,136 ms** et **total 113,499 → 62,136 ms (−45,3 %)**. Church progresse également : **4,919 → 1,584 ms**. Le Rust réellement généré alloue **1 000 000 objets au lieu de 5 003 000**, soit **32 000 000 octets demandés cumulés au lieu de 160 088 000**, tous libérés. Les thunks utiles et leur forçage sont conservés. Le README officiel indique LazyEvaluation **72,002 ms**, Church **5,096 ms**, total **119,19 ms** ; les chiffres avant/après de cette série mesurent la correction. [Rapport et reproduction](../../altbak.pub-purust/scratch/rust-returned-functions-20260909/REPORT.md).
 
+## 1 ter. Appeler les fonctions locales natives par emprunt
+
+- [x] Tester sur le noyau généré l'élimination du clone de la fonction capturée avant son appel : **LazyEvaluation 15,897 → 14,943 ms (−6,0 %)** sur trois paires de processus isolés, quinze mesures par processus, O1 et mimalloc. Appels répétés et résultats vérifiés ; allocations comptées séparément.
+- [x] Emprunter les fonctions locales natives `Func1` à `Func10` lorsque le premier appel est complet, en utilisant le type et l'arité du TAST. Les applications partielles gardent une fonction possédée ; les récepteurs calculés et les conversions conservent leur chemin normal. La fonction reste disponible pendant l'évaluation d'un argument qui la transmet ou la capture.
+- [x] Vérifier les captures rejouables, les usages multiples, les appels imbriqués, les applications partielles conservées, les wrappers `Typed`/`TypeApp`, l'ordre d'évaluation et les exceptions ; régénérer et mesurer la suite complète.
+
+Intégration du 9 septembre : **18 tests de génération + 9 tests TAST passent**, ainsi que **`bin/rust/run -c` et les 14 résultats attendus**. La [fixture TAST](tests/tast/function-borrows.mjs) observe directement les compteurs de références pendant les appels de `Func1`/`Func2` et vérifie les captures et références faibles. Le [test de génération](tests/codegen/function-borrows.mjs) contrôle les frontières de représentation, les récepteurs calculés et les libérations après exception.
+
+Cinq paires alternées du runner complet, même O1 et mimalloc : **LazyEvaluation 19,406 → 17,399 ms (−10,3 %)**, **Church 1,661 → 1,507 ms (−9,3 %)** et **total 41,129 → 39,108 ms (−4,9 %)**. LazyEvaluation conserve **1 000 000 allocations et libérations**, soit **32 000 000 octets demandés cumulés**, dans les deux versions. Seul le clone avant l'appel disparaît dans son Rust généré. Le noyau RBTree reste identique ; ses temps de **18,750 → 18,892 ms** ne constituent pas un gain de cette étape. Le binaire passe de **1 509 120 à 1 509 088 octets**.
+
+Le README officiel relu indique LazyEvaluation compilé **19,791 ms**, Church **1,592 ms** et total **42,74 ms**. La dernière colonne native affiche environ **0 µs**, **1 µs** et **36,13 ms** ; le natif de LazyEvaluation calcule directement la somme sans construire les thunks. Ces références sont distinctes de la série appariée. [Rapport, mesures et reproduction](../../altbak.pub-purust/scratch/rust-function-borrow-20260909/REPORT.md).
+
 ## 2. RBTree : emprunter lors des lectures de motifs
 
 Constat initial : les tests et extractions clonent fréquemment le pointeur parent avant de le lire. Remplacer `(parent.clone()).as_ref()` par `parent.as_ref()` sur une variable locale fait passer le noyau extrait de **55,928 à 47,642 ms**, soit **14,8 % de temps en moins**, sans changer la représentation des ADT. Ce prototype combine tests de constructeur et extractions de champs ; les deux parties sont maintenant intégrées.

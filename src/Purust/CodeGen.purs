@@ -835,7 +835,19 @@ genApp valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalC
         getInner (NeutralExpr (Typed _ inner)) = getInner inner
         getInner e = e
         argsFree = map freeVariables argsArray
-        aliveForFn = Set.union alive (Array.foldl Set.union Set.empty argsFree)
+        operandType operand = codegenExprTypeWithValueEnums valueEnums modNameStr false
+          (inferTypeExpr modNameStr aritiesMap globalClassFields bound operand)
+        borrowFn = case unwrapType (inferTypeExpr modNameStr aritiesMap globalClassFields bound fn) of
+          Func argTys _ ->
+            let arity = Array.length argTys
+            in arity > 0 && arity <= 10 && Array.length argsArray >= arity
+              && String.indexOf (Pattern ("purust_core::Func" <> show arity <> "<")) (operandType fn) == Just 0
+              && isUnconvertedLocal operandType fn
+          _ -> false
+        borrowedFnVars = if borrowFn then freeVariables fn else Set.empty
+        -- Calling FuncN borrows its receiver. A partial application instead
+        -- captures an owned value, so it keeps the normal clone/move path.
+        aliveForFn = Set.difference (Set.union alive (Array.foldl Set.union Set.empty argsFree)) borrowedFnVars
         fnCode = codegenExpr_ valueEnums modNameStr allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForFn false fn
         -- Arguments of a returned function belong to a subsequent call.
         lookupArity fname = 
@@ -846,7 +858,9 @@ genApp valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalC
             
         argsCodeArray = Array.mapWithIndex (\i arg -> 
             let subsequentArgsFree = Array.drop (i + 1) argsFree
-                aliveForArg = Set.union alive (Array.foldl Set.union Set.empty subsequentArgsFree)
+                -- An argument may itself pass or capture the callee. Keep its
+                -- owned value alive for the duration of the receiver borrow.
+                aliveForArg = Set.union borrowedFnVars (Set.union alive (Array.foldl Set.union Set.empty subsequentArgsFree))
             in codegenExpr_ valueEnums modNameStr allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForArg false arg
           ) argsArray
         tcoTemps params = Array.mapWithIndex (\i argCode ->
@@ -1091,7 +1105,10 @@ codegenExpr valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap gl
 -- and non-locals still need the normal ownership path when evaluating the base.
 isBorrowableLocal :: (NeutralExpr -> String) -> NeutralExpr -> Boolean
 isBorrowableLocal operandType operand =
-  String.indexOf (Pattern "std::rc::Rc<") (operandType operand) == Just 0 && go operand
+  String.indexOf (Pattern "std::rc::Rc<") (operandType operand) == Just 0 && isUnconvertedLocal operandType operand
+
+isUnconvertedLocal :: (NeutralExpr -> String) -> NeutralExpr -> Boolean
+isUnconvertedLocal operandType = go
   where
   go (NeutralExpr (Local _ _)) = true
   go wrapped@(NeutralExpr (Typed _ inner)) =
