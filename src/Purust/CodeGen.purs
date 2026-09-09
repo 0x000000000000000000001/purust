@@ -1422,18 +1422,38 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
   Update base props ->
     let
       propsArr = props
+      baseVars = freeVariables base
+      propVars = Array.foldl (\acc (Prop _ v) -> Set.union acc (freeVariables v)) Set.empty propsArr
+      operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
+        (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+      -- A local read has no evaluation to defer. Keep it alive while evaluating
+      -- every RHS in order, then move it at last use. Retained aliases in those
+      -- RHS values still make the ordinary setters take their copying path.
+      moveAfterProps = case inferTypeExpr currentMod aritiesMap globalClassFields bound base of
+        Record (Row _ Nothing) ->
+          isUnconvertedLocal operandType base && operandType base == "crate::UnknownType"
+            && Set.isEmpty (Set.intersection baseVars alive)
+            && not (Set.isEmpty (Set.intersection baseVars propVars))
+        _ -> false
+      valueName i = "_record_update_" <> show i
       propsCode = Array.mapWithIndex (\i (Prop k v) -> 
         let subsequentProps = Array.drop (i + 1) propsArr
-            aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
+            laterVars = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
+            aliveForProp = if moveAfterProps then Set.union baseVars laterVars else laterVars
             valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForProp false v
             valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
-        in "_base.set_" <> sanitizeIdent k <> "(" <> boxUnbox valueEnums currentMod Any valTy valCode <> ");"
+            boxed = boxUnbox valueEnums currentMod Any valTy valCode
+        in if moveAfterProps then "let " <> valueName i <> " = " <> boxed <> ";"
+           else "_base.set_" <> sanitizeIdent k <> "(" <> boxed <> ");"
       ) propsArr
-      aliveForBase = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty propsArr)
+      aliveForBase = if moveAfterProps then alive else Set.union alive propVars
+      baseCode = "    let mut _base = " <> codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n"
+      valuesCode = "    " <> String.joinWith "\n    " propsCode <> "\n"
+      setters = Array.mapWithIndex (\i (Prop k _) -> "_base.set_" <> sanitizeIdent k <> "(" <> valueName i <> ");") propsArr
     in
       "{\n" <>
-      "    let mut _base = " <> codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n" <>
-      "    " <> String.joinWith "\n    " propsCode <> "\n" <>
+      (if moveAfterProps then valuesCode <> baseCode <> "    " <> String.joinWith "\n    " setters <> "\n"
+       else baseCode <> valuesCode) <>
       "    _base\n" <>
       "}"
   Branch branches def ->
