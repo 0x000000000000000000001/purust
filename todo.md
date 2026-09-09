@@ -14,7 +14,7 @@ Mis à jour le 9 septembre 2026. Objectif : réduire le travail autour des cellu
 
 Source : [README du checkout normal d'altbak.pub](../../altbak.pub/README.md#rust), relevé le 9 septembre. Celui du worktree peut être plus ancien. RBTree représente environ 87 % du total ; gagner 10 % dessus retirerait environ 1,9 ms au total, sans constituer une prévision de gain.
 
-La dernière [série appariée](../../altbak.pub-purust/scratch/rust-thunk-fusion-20260909/REPORT.md) donne **21,395 ms au total**, dont **18,597 ms pour RBTree**. Elle reste distincte du README. Les 19 tests de génération, 10 tests TAST et 14 résultats du runner passent à cette étape.
+La dernière [série appariée](../../altbak.pub-purust/scratch/rust-recolor-field-20260909/REPORT.md), après spécialisation d'un champ scalaire, donne **20,354 ms au total**, dont **17,644 ms pour RBTree**, contre **20,977 / 18,237 ms** avant. Elle reste distincte du README. Les 19 tests de génération, 11 tests TAST et 14 résultats du runner passent à cette étape.
 
 Acquis : ADT typés, enums sans champs en valeur, transferts au dernier usage, emprunts locaux, réutilisation des cellules uniques et des rotations, copie des cellules partagées. Le [comptage RBTree](../../altbak.pub-purust/scratch/rust-existing-empty-20260909/REPORT.md) donne **100 001 allocations et libérations pour 100 000 nœuds utiles et une cellule vide**. La fusion des thunks immédiatement forcés est intégrée pour les entrées entières fermées dont l'exécution est prouvée sûre.
 
@@ -27,22 +27,31 @@ Acquis : ADT typés, enums sans champs en valeur, transferts au dernier usage, e
 - Après une intégration : `npm run build`, tests de génération et TAST, puis `bin/rust/run -c` depuis `altbak.pub-purust` avec les 14 résultats vérifiés. Sélectionner explicitement le fork pour les tests TAST : `PURS="$PWD/../../altbak.pub-purust/run/bak/js/node_modules/.bin/purs" npm run test:tast` depuis Purust.
 - Mesurer cinq paires alternées de runners complets, documenter dispersion et médianes, et comparer au README officiel relu. Un gain local doit être confirmé dans la suite ; en l'absence de gain mesurable, noter le résultat et réévaluer la priorité.
 
-## 1. Spécialiser les reconstructions : ne modifier que les champs changés
+## 1. Rendre le comptage plus précis, branche par branche
 
-Constat : la recoloration dans `Test_RBTree_insert` extrait tout le nœud avec `__purust_take`, place temporairement `E`, reconstruit `T`, puis réécrit la cellule. Le chemin unique pourrait ne modifier que la couleur. C'est le principe de « reuse specialization » décrit dans [Perceus, section 2.5](https://www.microsoft.com/en-us/research/wp-content/uploads/2020/11/perceus-tr-v4.pdf).
+Les premiers comptages sont établis. Une première spécialisation de reconstruction est intégrée à l'étape 2, après les deux expériences ci-dessous sans gain temporel suffisamment établi.
 
-- [ ] **Premier baby step :** isoler la recoloration actuelle et une variante qui ne modifie que la couleur. Vérifier racines uniques et partagées, références faibles et anciennes versions ; examiner le code machine et mesurer le noyau RBTree. Ne changer le générateur qu'après cette preuve.
-- [ ] Reconnaître une reconstruction du même constructeur où tous les champs sauf un sont des projections inchangées du même parent. Commencer par un champ scalaire, sans appel ni conversion ; utiliser l'identité du constructeur et son layout TAST.
-- [ ] Émettre une modification du seul champ sur le chemin unique, avec reconstruction sur le chemin partagé. Couvrir les champs inchangés, enfants partagés, usages ultérieurs et ordre d'évaluation ; valider puis mesurer la suite.
+- [x] Instrumenter le Rust généré de RBTree : distinguer créations, clones, relâchements, tests d'unicité et consommations sur les chemins uniques et partagés.
+- [x] Isoler une paire temporaire dans une fixture TAST fraîche et comparer un prototype empruntant l'enfant pendant les tests de motifs. Vérifier les branches, la persistance, les références faibles et les durées de vie ; chronométrer séparément.
+- [x] Choisir une règle locale dont le prototype améliore effectivement le temps, puis intégrer avec les preuves de dernières utilisations, d'ordre d'évaluation et de libération. Les cas opaques gardent leur chemin actuel.
+- [x] Mesurer dans la suite complète et vérifier les effets sur la réutilisation des cellules. Une représentation intermédiaire générale des opérations de propriété demande plusieurs cas démontrés.
+
+Diagnostic du 9 septembre : la construction de 100 000 nœuds exécute **3 060 100 clones**, **2 960 100 relâchements temporaires** et **4 967 864 tests d'unicité réussis**. Le prototype supprime les **2 960 100 paires** de projections immédiatement lues, avec les mêmes **100 001 allocations/libérations** et décisions d'unicité. La fixture TAST et les quatre rotations/200 versions persistantes passent.
+
+**Prototype non retenu :** trois paires isolées, 15 mesures par processus, O1/mimalloc sans instrumentation : **19,737 → 20,563 ms (+4,2 %)**. Aucun changement du générateur ni gain sur le runner complet. Les nombres d'opérations logiques ne sont pas un décompte d'instructions machine. [Rapport, comptage, fixture et mesures](../../altbak.pub-purust/scratch/rust-perceus-counts-20260909/REPORT.md).
+
+**Recoloration intégrée, étape 2.** Le gain vient de la suppression de l'extraction/reconstruction de tout le nœud. La seule conservation d'une preuve d'unicité, mesurée séparément à l'étape 4, ne justifiait pas une intégration. La prochaine extension à un enfant modifié par un appel demande sa propre expérience.
+
+## 2. Spécialiser les reconstructions : ne modifier que les champs changés
+
+Le chemin unique de recoloration dans `Test_RBTree_insert` ne modifie désormais que la couleur ; il n'extrait plus tout le nœud avec `__purust_take` et ne reconstruit plus `T`. C'est une première application de la « reuse specialization » décrite dans [Perceus, section 2.5](https://www.microsoft.com/en-us/research/wp-content/uploads/2020/11/perceus-tr-v4.pdf).
+
+- [x] **Prototype de cette piste :** isoler la recoloration actuelle et une variante qui ne modifie que la couleur. Vérifier racines uniques et partagées, références faibles et anciennes versions ; examiner le code machine et mesurer le noyau RBTree. Ne changer le générateur qu'après cette preuve.
+- [x] Reconnaître une reconstruction du même constructeur où tous les champs sauf un sont des projections inchangées du même parent. Commencer par un champ scalaire, sans appel ni conversion ; utiliser l'identité du constructeur et son layout TAST.
+- [x] Émettre une modification du seul champ sur le chemin unique, avec reconstruction sur le chemin partagé. Couvrir les champs inchangés, enfants partagés, usages ultérieurs et ordre d'évaluation ; valider puis mesurer la suite.
 - [ ] Étendre ensuite à un enfant modifié par un appel, seulement si la preuve de propriété survit à cet appel. Isoler d'abord le cas hors rotation ; vérifier callbacks et libérations sur exception avant de couvrir les rotations.
 
-## 2. Éviter de retester une unicité déjà établie
-
-Constat : certains chemins appellent `Rc::get_mut` pour extraire les champs, puis à nouveau pour reconstruire la même cellule. Le compilateur Rust peut en supprimer une partie ; le coût restant est à établir.
-
-- [ ] Identifier un test répété encore présent dans le code machine d'un chemin unique et mesurer sa fréquence séparément des temps.
-- [ ] Prototyper la conservation d'un emprunt mutable ou d'une preuve d'unicité dans un bloc strict local, sans appel intermédiaire. Préserver les règles de `Rc`, notamment les références faibles.
-- [ ] Si le gain est confirmé, intégrer ce seul cas avec un test TAST, puis mesurer. Traiter séparément un éventuel passage par un worker privé ; invalider la preuve dès qu'un alias peut être créé ou exposé.
+**Résultat du 9 septembre :** prototype **−1,5 %**, puis **−1,8 %** sur sept paires de confirmation. Après intégration, cinq paires de runners complets donnent **RBTree 18,237 → 17,644 ms (−3,3 %)** et **total 20,977 → 20,354 ms (−3,0 %)**. **100 000 extractions/reconstructions et retests supprimés**, toujours 100 001 allocations/libérations et le même nombre de clones. La règle s'applique aussi aux quatre setters de `Data.Time`. [Règle](src/Purust/ReuseFields.purs), [fixture TAST](tests/tast/field-updates.mjs), [rapport et mesures](../../altbak.pub-purust/scratch/rust-recolor-field-20260909/REPORT.md).
 
 ## 3. Étendre les emprunts aux parcours en lecture
 
@@ -53,14 +62,15 @@ Constat : `Test_RBTree_depth` reçoit un `Rc<Tree>` possédé et clone ses enfan
 - [ ] Garder l'interface possédée aux frontières publiques et FFI, appeler le worker emprunté lorsque possible. Couvrir appels répétés, partages, résultats, destruction et usages ultérieurs ; intégrer puis mesurer.
 - [ ] Étendre aux fonctions voisines ou à plusieurs paramètres uniquement après avoir identifié un coût exécuté supplémentaire.
 
-## 4. Rendre le comptage plus précis, branche par branche
+## 4. Retests d'unicité : expérience réalisée, intégration en attente
 
-Objectif : compléter les déplacements et emprunts existants par la spécialisation des libérations et l'élimination des paires incrément/décrément encore exécutées. Le runtime `PerceusPtr` ne suffit pas à fournir toutes les analyses de Perceus.
+Constat confirmé dans l'assembleur : certains chemins appellent `Rc::get_mut` pour extraire les champs, puis à nouveau pour reconstruire la même cellule. Le comptage initial observe **2 483 932 retests** après extraction sur la construction de 100 000 nœuds.
 
-- [ ] Instrumenter un seul chemin chaud restant après les étapes précédentes : distinguer copies utiles, copies temporaires, libérations et tests d'unicité. Choisir la première paire réellement évitable.
-- [ ] Isoler une fixture où un parent consommé et ses champs provoquent encore du comptage inutile. Prototyper le déplacement des opérations dans les seules branches qui en ont besoin, puis leur suppression par paires.
-- [ ] Intégrer une règle locale tenant compte des dernières utilisations et sorties de branche. Vérifier partages, captures, ordre des effets et libérations normales ou sur exception ; conserver les cas opaques sur leur chemin actuel.
-- [ ] Mesurer le gain et les effets sur la réutilisation des cellules. N'introduire une représentation intermédiaire générale des opérations de propriété que si plusieurs cas démontrés le justifient.
+- [x] Identifier un test répété encore présent dans le code machine d'un chemin unique et mesurer sa fréquence séparément des temps.
+- [x] Prototyper un emprunt mutable conservé localement ; mesurer séparément son passage au worker privé. Préserver les refus de partage et de références faibles, les anciennes versions et les durées de vie.
+- [ ] Reprendre l'intégration seulement après un prototype au gain confirmé, avec fixture TAST et mesure de la suite. Le cas local et le passage au worker restent distincts ; aucun alias du propriétaire ne peut apparaître pendant l'emprunt.
+
+**Résultat du 9 septembre :** l'emprunt local supprime **100 000 retests** ; le premier relevé donne −1,7 %, puis cinq paires donnent **19,555 → 19,398 ms (−0,8 %)**, avec trois paires favorables et deux défavorables. Le worker supprime **2 183 976 retests**, mais ralentit le noyau : **19,282 → 20,778 ms (+7,8 %)**. Allocations et clones identiques ; contrôles natifs et instrumentés réussis, dont 200 versions conservées et 512 insertions avec partage mixte. **Aucune variante intégrée.** [Rapport et mesures](../../altbak.pub-purust/scratch/rust-uniqueness-proof-20260909/REPORT.md).
 
 ## 5. Reclasser les autres coûts après RBTree
 

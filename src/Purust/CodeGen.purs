@@ -15,6 +15,7 @@ import Purust.LocalNames (renameLocals)
 import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
+import Purust.ReuseFields (scalarFieldUpdate)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
@@ -1870,9 +1871,26 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
             in if isValueEnum valueEnums ctorModule tyNameStr then constructed else case transfer of
                  Nothing -> fallback
                  Just { owned, rewritten } ->
-                   let rebuilt = enumPrefix <> enumName <> "::" <> ctorClean <>
-                         renderFields (bindOwnedFields owned bound) alive rewritten
-                   in "{ let mut " <> owned.source <> " = " <> owned.source <> "; " <>
+                   let fieldBound = bindOwnedFields owned bound
+                       representation value = codegenExprTypeWithValueEnums valueEnums currentMod false
+                         (inferTypeExpr currentMod aritiesMap globalClassFields fieldBound value)
+                       update = do
+                         index <- scalarFieldUpdate valueEnums
+                           (codegenExprTypeWithValueEnums valueEnums currentMod false) representation owned rewritten
+                         value <- Array.index values index
+                         pure { index, value }
+                       rebuilt = enumPrefix <> enumName <> "::" <> ctorClean <>
+                         renderFields fieldBound alive rewritten
+                   in case update of
+                     Just { index, value } ->
+                       let valueCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing
+                             aritiesMap globalClassFields bound aliveForFields false value
+                           pattern = owned.constructor <> "(" <> String.joinWith ", "
+                             (Array.mapWithIndex (\i _ -> if i == index then "_updated_field" else "_") owned.names) <> ")"
+                       in "{ let _new_field = " <> valueCode <> "; let mut " <> owned.source <> " = " <> owned.source <> "; " <>
+                          "if let std::option::Option::Some(" <> pattern <> ") = std::rc::Rc::get_mut(&mut " <> owned.source <> ") { " <>
+                          "*_updated_field = _new_field; " <> owned.source <> " } else " <> fallback <> " }"
+                     Nothing -> "{ let mut " <> owned.source <> " = " <> owned.source <> "; " <>
                       "let _taken = std::rc::Rc::get_mut(&mut " <> owned.source <> ").and_then(|node| node.__purust_take()); " <>
                       "match _taken { std::option::Option::Some(" <> ownedFieldsPattern owned <> ") => { let _rebuilt = " <> rebuilt <> "; " <>
                       "*std::rc::Rc::get_mut(&mut " <> owned.source <> ").unwrap() = _rebuilt; " <> owned.source <> " }, " <>
