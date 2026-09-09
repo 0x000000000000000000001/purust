@@ -1,4 +1,5 @@
 use Purs_ConsumedNodes::*;
+use purust_core::{Func1, Func3};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -87,6 +88,34 @@ fn correctness() {
     let changed = ConsumedNodes_changeRoot(1, original);
     assert_eq!(key(&changed), 42);
     assert!(weak.upgrade().is_none(), "A weak reference must not see the changed value");
+
+    let tree = Rc::new(Tree::Node(leaf(3), 10, leaf(17)));
+    let result = ConsumedNodes_consumeFields(Func3::Static(|left, key, right| {
+        assert_eq!(Rc::strong_count(&left), 1, "Move the child before calling the function");
+        assert_eq!(Rc::strong_count(&right), 1);
+        Rc::new(Tree::Node(ConsumedNodes_changeRoot(1, left), key, right))
+    }), tree);
+    assert_eq!(key(node(&result).0), 4);
+    let old = result.clone();
+    let changed = ConsumedNodes_consumeFields(Func3::Static(|left, key, right| {
+        Rc::new(Tree::Node(ConsumedNodes_changeRoot(1, left), key, right))
+    }), result);
+    assert_eq!((key(node(&changed).0), key(node(&old).0)), (5, 4));
+
+    let repeated = ConsumedNodes_reuseChild(Rc::new(Tree::Node(leaf(3), 10, leaf(17))));
+    assert_eq!((key(node(&repeated).0), key(node(&repeated).2)), (4, 3));
+
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let observed = calls.clone();
+    let deferred = Rc::new(Deferred::Deferred(3, Func1::Shared(Rc::new(move |_| {
+        observed.set(observed.get() + 1);
+        7
+    }))));
+    let changed = ConsumedNodes_changeDeferred(deferred);
+    assert_eq!(calls.get(), 0, "Transferring captures must not execute a deferred call");
+    let Deferred::Deferred(key, f) = changed.as_ref() else { panic!("Expected Deferred") };
+    assert_eq!(*key, 3);
+    assert_eq!((f.clone()(()), f.clone()(()), calls.get()), (10, 10, 2));
 }
 
 fn allocation_budgets() -> (usize, usize, usize) {
@@ -118,9 +147,7 @@ fn allocation_budgets() -> (usize, usize, usize) {
     let path = ALLOCS.load(Ordering::Relaxed) - start;
     let (left, root_key, right) = node(&tree);
     assert_eq!((key(left), root_key, key(right)), (7 + iterations, 0, 17));
-    // The outer cell is reused; transferring its child to the recursive call
-    // without a transient shared reference is a separate optimization.
-    assert!(path <= iterations as usize, "Unique path: {path}");
+    assert_eq!(path, 0, "Both consumed nodes must remain unique during the call");
     (unique, shared, path)
 }
 

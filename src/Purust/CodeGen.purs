@@ -12,6 +12,7 @@ import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import Purust.LocalNames (renameLocals)
+import Purust.OwnedFields (OwnedFields, fieldSources, rewriteFields)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
 import PureScript.Backend.Optimizer.CoreFn as CoreFn
@@ -20,6 +21,7 @@ import Data.String as String
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Foldable (foldMap)
+import Data.Traversable (traverse)
 import Data.Newtype (unwrap)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
@@ -64,9 +66,16 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
               fields = map (\fieldTy -> codegenExprTypeWithValueEnums valueEnums modNameStr false fieldTy) ctor.fields
           in "    " <> ctorNameClean <> if Array.length fields > 0 then "(" <> String.joinWith ", " fields <> ")" else ""
         ) decl.constructors
+        takeBody = case Array.find (Array.null <<< _.fields) decl.constructors of
+          Just ctor -> "std::option::Option::Some(std::mem::replace(self, Self::" <> sanitizeIdent ctor.name <> "))"
+          Nothing -> "std::option::Option::None"
+        -- A real nullary constructor is a valid temporary payload. Types with
+        -- no such constructor retain the existing reconstruction path.
+        takeMethod = if isValueEnum valueEnums modNameStr decl.name then "" else
+          "impl " <> enumName <> " { pub fn __purust_take(&mut self) -> std::option::Option<Self> { " <> takeBody <> " } }\n"
       in
         (if isValueEnum valueEnums modNameStr decl.name then "#[derive(Clone, Copy)]" else "#[derive(Clone)]") <>
-        "\npub enum " <> enumName <> " {\n" <> String.joinWith ",\n" ctors <> "\n}\n"
+        "\npub enum " <> enumName <> " {\n" <> String.joinWith ",\n" ctors <> "\n}\n" <> takeMethod
     ) coreFnMod.dataDecls
 
     -- Traduction des Classes (Type Classes)
@@ -1041,6 +1050,30 @@ consumedConstructorSource operandType resultType ctorName alive fields =
           (Array.fromFoldable (freeVariables base)))
   source _ = Nothing
 
+ownedFieldSources :: ValueEnums -> String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set String -> Array NeutralExpr -> Array OwnedFields
+ownedFieldSources valueEnums currentMod aritiesMap globalClassFields bound alive =
+  fieldSources operandType localName (\key -> map extractAllArgTypes (Map.lookup key aritiesMap)) sanitizeIdent currentMod alive
+  where
+  operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
+    (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+  localName operand = if isBorrowableLocal operandType operand
+    then Array.head (Array.fromFoldable (freeVariables operand)) else Nothing
+
+rewriteOwnedFields :: ValueEnums -> String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> OwnedFields -> NeutralExpr -> Maybe NeutralExpr
+rewriteOwnedFields valueEnums currentMod aritiesMap globalClassFields bound = rewriteFields operandType localName
+  where
+  operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
+    (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+  localName operand = if isBorrowableLocal operandType operand
+    then Array.head (Array.fromFoldable (freeVariables operand)) else Nothing
+
+bindOwnedFields :: OwnedFields -> Map.Map String ExprType -> Map.Map String ExprType
+bindOwnedFields fields bound = Array.foldl (\acc (Tuple name ty) -> Map.insert name ty acc)
+  bound (Array.zip fields.names fields.types)
+
+ownedFieldsPattern :: OwnedFields -> String
+ownedFieldsPattern fields = fields.constructor <> "(" <> String.joinWith ", " (map ("mut " <> _) fields.names) <> ")"
+
 codegenExpr_ :: ValueEnums -> String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) =
   let
@@ -1178,8 +1211,19 @@ codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesM
         in "/* Typed " <> codegenExprTypeWithValueEnums valueEnums currentMod true ty <> " <- " <> codegenExprTypeWithValueEnums valueEnums currentMod true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox valueEnums currentMod fixedTy innerTy innerCode
 
   App fn args -> 
-    let appTy = inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr (App fn args))
-    in genApp valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn (NonEmptyArray.toArray args)
+    let appTy = inferTypeExpr currentMod aritiesMap globalClassFields bound expr
+        candidates = ownedFieldSources valueEnums currentMod aritiesMap globalClassFields bound alive (NonEmptyArray.toArray args)
+        transfer fields = do
+          rewritten <- rewriteOwnedFields valueEnums currentMod aritiesMap globalClassFields bound fields expr
+          -- Calls move whole nodes only when every field is used. This avoids
+          -- cloning unused payloads on the shared path.
+          if Array.all (\name -> Set.member name (freeVariables rewritten)) fields.names
+            then Just { fields, rewritten } else Nothing
+    in case Array.head (Array.mapMaybe transfer candidates) of
+      Just { fields, rewritten } ->
+        "{ let " <> ownedFieldsPattern fields <> " = std::rc::Rc::unwrap_or_clone(" <> fields.source <> ") else { unreachable!() }; " <>
+        codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields (bindOwnedFields fields bound) alive inEffectBlock rewritten <> " }"
+      Nothing -> genApp valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn (NonEmptyArray.toArray args)
   UncurriedApp fn args ->
     let appTy = inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr (UncurriedApp fn args))
     in genApp valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive appTy fn args
@@ -1607,18 +1651,25 @@ codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesM
            source = consumedConstructorSource operandType
              ("std::rc::Rc<" <> enumPrefix <> enumName <> ">") ctorName alive
              (map (\(Tuple _ val) -> val) fields)
+           values = map (\(Tuple _ val) -> val) fields
+           candidates = ownedFieldSources valueEnums currentMod aritiesMap globalClassFields bound alive values
+           transfer = do
+             name <- source
+             owned <- Array.find (\candidate -> candidate.source == name && candidate.constructor == enumPrefix <> enumName <> "::" <> ctorClean) candidates
+             rewritten <- traverse (rewriteOwnedFields valueEnums currentMod aritiesMap globalClassFields bound owned) values
+             pure { owned, rewritten }
            -- Evaluate every field before touching the old node. Keep the source
            -- alive even if a field stores it: get_mut then detects that alias.
            aliveForFields = case source of
              Just name -> Set.insert name alive
              Nothing -> alive
            
-           fieldsCode = if Array.null fields then "" else 
-               "(" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
-                 let subsequent = Array.drop (i + 1) fields
-                     aliveForV = Set.union aliveForFields (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
-                     valCode = codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForV false val
-                     valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
+           renderFields fieldBound fieldAlive fieldValues = if Array.null fieldValues then "" else
+               "(" <> String.joinWith ", " (Array.mapWithIndex (\i val ->
+                 let subsequent = Array.drop (i + 1) fieldValues
+                     aliveForV = Set.union fieldAlive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
+                     valCode = codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields fieldBound aliveForV false val
+                     valTy = inferTypeExpr currentMod aritiesMap globalClassFields fieldBound val
                      ctorFqn = (case mbMod of
                        Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
                        Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_") <> ctorName
@@ -1626,17 +1677,27 @@ codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesM
                        Just ctorTy -> fromMaybe Any (Array.index (extractAllArgTypes ctorTy) i)
                        Nothing -> Any
                  in boxUnbox valueEnums currentMod expectedFieldTy valTy valCode
-               ) fields) <> ")"
+               ) fieldValues) <> ")"
            ctorModule = case mbMod of
              Just (ModuleName mn) -> mn
              Nothing -> currentMod
-           constructed = enumPrefix <> enumName <> "::" <> ctorClean <> fieldsCode
-        in if isValueEnum valueEnums ctorModule tyNameStr then constructed else case source of
+           constructed = enumPrefix <> enumName <> "::" <> ctorClean <> renderFields bound aliveForFields values
+           fallback = case source of
              Nothing -> "std::rc::Rc::new(" <> constructed <> ")"
              Just name ->
                "{ let _rebuilt = " <> constructed <> "; let mut _reused = " <> name <> "; " <>
-               "if let Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { " <>
+               "if let std::option::Option::Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { " <>
                "*_slot = _rebuilt; _reused } else { std::rc::Rc::new(_rebuilt) } }"
+        in if isValueEnum valueEnums ctorModule tyNameStr then constructed else case transfer of
+             Nothing -> fallback
+             Just { owned, rewritten } ->
+               let rebuilt = enumPrefix <> enumName <> "::" <> ctorClean <>
+                     renderFields (bindOwnedFields owned bound) alive rewritten
+               in "{ let mut " <> owned.source <> " = " <> owned.source <> "; " <>
+                  "let _taken = std::rc::Rc::get_mut(&mut " <> owned.source <> ").and_then(|node| node.__purust_take()); " <>
+                  "match _taken { std::option::Option::Some(" <> ownedFieldsPattern owned <> ") => { let _rebuilt = " <> rebuilt <> "; " <>
+                  "*std::rc::Rc::get_mut(&mut " <> owned.source <> ").unwrap() = _rebuilt; " <> owned.source <> " }, " <>
+                  "std::option::Option::None => " <> fallback <> ", _ => unreachable!() } }"
   CtorDef _ (ProperName tyNameStr) (Ident ctorName) fields -> 
       let enumPrefix = if currentMod == tyNameStr then "crate::" else "Purs_" <> currentMod <> "::" 
           rustCtor = "crate::" <> sanitizeIdent tyNameStr <> "::" <> sanitizeIdent ctorName
