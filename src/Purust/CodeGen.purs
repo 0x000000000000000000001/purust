@@ -12,6 +12,7 @@ import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import Purust.LocalNames (renameLocals)
+import Purust.ShareNullaries (shareNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
 import Purust.DataLayout (ValueEnums, isValueEnum)
@@ -1138,6 +1139,28 @@ bindOwnedFields fields bound = Array.foldl (\acc (Tuple name ty) -> Map.insert n
 ownedFieldsPattern :: OwnedFields -> String
 ownedFieldsPattern fields = fields.constructor <> "(" <> String.joinWith ", " (map ("mut " <> _) fields.names) <> ")"
 
+-- Syntax proves that the value has no payload or deferred computation. Native
+-- representation checks exclude value enums and wrappers requiring conversion.
+nullaryValue :: ValueEnums -> String -> Map String ExprType -> Map String (Array (Tuple String ExprType)) -> Map String ExprType -> NeutralExpr -> Maybe { key :: String, ty :: ExprType }
+nullaryValue valueEnums currentMod aritiesMap globalClassFields bound expr = do
+  key <- identify expr
+  pure { key, ty: inferTypeExpr currentMod aritiesMap globalClassFields bound expr }
+  where
+  representation value = codegenExprTypeWithValueEnums valueEnums currentMod false
+    (inferTypeExpr currentMod aritiesMap globalClassFields bound value)
+  identify wrapped@(NeutralExpr (Typed _ inner))
+    | representation wrapped == representation inner = identify inner
+  identify (NeutralExpr (Syn.TypeApp inner _)) = identify inner
+  identify value@(NeutralExpr (CtorSaturated _ _ _ (Ident ctor) fields))
+    | Array.null fields
+    , native <- representation value
+    , String.indexOf (Pattern "std::rc::Rc<") native == Just 0 = Just (native <> "::" <> ctor)
+  identify value@(NeutralExpr (CtorDef _ _ (Ident ctor) fields))
+    | Array.null fields
+    , native <- representation value
+    , String.indexOf (Pattern "std::rc::Rc<") native == Just 0 = Just (native <> "::" <> ctor)
+  identify _ = Nothing
+
 codegenExpr_ :: ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) =
   let
@@ -1722,89 +1745,93 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
     in genAbs valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive paramsArr (Func (map (\_ -> Any) paramsArr) Any) body
   PrimUndefined -> "crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
   CtorSaturated (Qualified mbMod _) _ (ProperName tyNameStr) (Ident ctorName) fields ->
-    let
-      modPrefix = getTyPrefix currentMod (Qualified mbMod (Ident tyNameStr))
-      structKey = modPrefix <> sanitizeIdent tyNameStr
-    in case Map.lookup structKey globalClassFields of
-      Just classFields -> 
-        let
-          structName = case mbMod of
-            Just (ModuleName mn) -> 
-               let mnStr = String.replaceAll (Pattern ".") (Replacement "_") mn
-               in if mnStr == currentMod then "crate::" <> sanitizeIdent tyNameStr else "Purs_" <> mnStr <> "::" <> sanitizeIdent tyNameStr
-            Nothing -> "crate::" <> sanitizeIdent tyNameStr
-          structFieldsCode = String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
-            let (Tuple fieldName expectedTy) = fromMaybe (Tuple ("field" <> show i) Any) (Array.index classFields i)
-                subsequent = Array.drop (i + 1) fields
-                aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
-                valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForV false val
-                valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
-                resCode = boxUnbox valueEnums currentMod expectedTy valTy valCode
-                _ = if structName == "Purs_Data_Show::Show" then Debug.trace ("SHOW CtorSaturated field=" <> fieldName <> " expectedTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true expectedTy <> " valTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true valTy <> " valCode=" <> valCode <> " resCode=" <> resCode) \_ -> unit else unit
-            in sanitizeIdent fieldName <> ": " <> resCode
-          ) fields)
-        in "std::rc::Rc::new(" <> structName <> " { " <> structFieldsCode <> " })"
+    case shareNullaries (nullaryValue valueEnums currentMod aritiesMap globalClassFields bound)
+      (Set.union alive (Set.union (freeVariables expr) (Set.fromFoldable (Map.keys bound)))) expr of
+      Just shared -> codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock shared
       Nothing ->
         let
-           enumPrefix = case mbMod of
-             Just (ModuleName mn) -> 
-                let mnStr = String.replaceAll (Pattern ".") (Replacement "_") mn
-                in if mnStr == currentMod then "crate::" else "Purs_" <> mnStr <> "::"
-             Nothing -> "crate::"
-           enumName = sanitizeIdent tyNameStr
-           ctorClean = sanitizeIdent ctorName
-           operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
-             (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
-           source = consumedConstructorSource operandType
-             ("std::rc::Rc<" <> enumPrefix <> enumName <> ">") ctorName alive
-             (map (\(Tuple _ val) -> val) fields)
-           values = map (\(Tuple _ val) -> val) fields
-           candidates = ownedFieldSources valueEnums currentMod aritiesMap globalClassFields bound alive values
-           transfer = do
-             name <- source
-             owned <- Array.find (\candidate -> candidate.source == name && candidate.constructor == enumPrefix <> enumName <> "::" <> ctorClean) candidates
-             rewritten <- traverse (rewriteOwnedFields valueEnums currentMod aritiesMap globalClassFields bound owned) values
-             pure { owned, rewritten }
-           -- Evaluate every field before touching the old node. Keep the source
-           -- alive even if a field stores it: get_mut then detects that alias.
-           aliveForFields = case source of
-             Just name -> Set.insert name alive
-             Nothing -> alive
-           
-           renderFields fieldBound fieldAlive fieldValues = if Array.null fieldValues then "" else
-               "(" <> String.joinWith ", " (Array.mapWithIndex (\i val ->
-                 let subsequent = Array.drop (i + 1) fieldValues
-                     aliveForV = Set.union fieldAlive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
-                     valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields fieldBound aliveForV false val
-                     valTy = inferTypeExpr currentMod aritiesMap globalClassFields fieldBound val
-                     ctorFqn = (case mbMod of
-                       Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
-                       Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_") <> ctorName
-                     expectedFieldTy = case Map.lookup ctorFqn aritiesMap of
-                       Just ctorTy -> fromMaybe Any (Array.index (extractAllArgTypes ctorTy) i)
-                       Nothing -> Any
-                 in boxUnbox valueEnums currentMod expectedFieldTy valTy valCode
-               ) fieldValues) <> ")"
-           ctorModule = case mbMod of
-             Just (ModuleName mn) -> mn
-             Nothing -> currentMod
-           constructed = enumPrefix <> enumName <> "::" <> ctorClean <> renderFields bound aliveForFields values
-           fallback = case source of
-             Nothing -> "std::rc::Rc::new(" <> constructed <> ")"
-             Just name ->
-               "{ let _rebuilt = " <> constructed <> "; let mut _reused = " <> name <> "; " <>
-               "if let std::option::Option::Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { " <>
-               "*_slot = _rebuilt; _reused } else { std::rc::Rc::new(_rebuilt) } }"
-        in if isValueEnum valueEnums ctorModule tyNameStr then constructed else case transfer of
-             Nothing -> fallback
-             Just { owned, rewritten } ->
-               let rebuilt = enumPrefix <> enumName <> "::" <> ctorClean <>
-                     renderFields (bindOwnedFields owned bound) alive rewritten
-               in "{ let mut " <> owned.source <> " = " <> owned.source <> "; " <>
-                  "let _taken = std::rc::Rc::get_mut(&mut " <> owned.source <> ").and_then(|node| node.__purust_take()); " <>
-                  "match _taken { std::option::Option::Some(" <> ownedFieldsPattern owned <> ") => { let _rebuilt = " <> rebuilt <> "; " <>
-                  "*std::rc::Rc::get_mut(&mut " <> owned.source <> ").unwrap() = _rebuilt; " <> owned.source <> " }, " <>
-                  "std::option::Option::None => " <> fallback <> ", _ => unreachable!() } }"
+          modPrefix = getTyPrefix currentMod (Qualified mbMod (Ident tyNameStr))
+          structKey = modPrefix <> sanitizeIdent tyNameStr
+        in case Map.lookup structKey globalClassFields of
+          Just classFields ->
+            let
+              structName = case mbMod of
+                Just (ModuleName mn) ->
+                   let mnStr = String.replaceAll (Pattern ".") (Replacement "_") mn
+                   in if mnStr == currentMod then "crate::" <> sanitizeIdent tyNameStr else "Purs_" <> mnStr <> "::" <> sanitizeIdent tyNameStr
+                Nothing -> "crate::" <> sanitizeIdent tyNameStr
+              structFieldsCode = String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) ->
+                let (Tuple fieldName expectedTy) = fromMaybe (Tuple ("field" <> show i) Any) (Array.index classFields i)
+                    subsequent = Array.drop (i + 1) fields
+                    aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
+                    valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForV false val
+                    valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
+                    resCode = boxUnbox valueEnums currentMod expectedTy valTy valCode
+                    _ = if structName == "Purs_Data_Show::Show" then Debug.trace ("SHOW CtorSaturated field=" <> fieldName <> " expectedTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true expectedTy <> " valTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true valTy <> " valCode=" <> valCode <> " resCode=" <> resCode) \_ -> unit else unit
+                in sanitizeIdent fieldName <> ": " <> resCode
+              ) fields)
+            in "std::rc::Rc::new(" <> structName <> " { " <> structFieldsCode <> " })"
+          Nothing ->
+            let
+               enumPrefix = case mbMod of
+                 Just (ModuleName mn) ->
+                    let mnStr = String.replaceAll (Pattern ".") (Replacement "_") mn
+                    in if mnStr == currentMod then "crate::" else "Purs_" <> mnStr <> "::"
+                 Nothing -> "crate::"
+               enumName = sanitizeIdent tyNameStr
+               ctorClean = sanitizeIdent ctorName
+               operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
+                 (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+               source = consumedConstructorSource operandType
+                 ("std::rc::Rc<" <> enumPrefix <> enumName <> ">") ctorName alive
+                 (map (\(Tuple _ val) -> val) fields)
+               values = map (\(Tuple _ val) -> val) fields
+               candidates = ownedFieldSources valueEnums currentMod aritiesMap globalClassFields bound alive values
+               transfer = do
+                 name <- source
+                 owned <- Array.find (\candidate -> candidate.source == name && candidate.constructor == enumPrefix <> enumName <> "::" <> ctorClean) candidates
+                 rewritten <- traverse (rewriteOwnedFields valueEnums currentMod aritiesMap globalClassFields bound owned) values
+                 pure { owned, rewritten }
+               -- Evaluate every field before touching the old node. Keep the source
+               -- alive even if a field stores it: get_mut then detects that alias.
+               aliveForFields = case source of
+                 Just name -> Set.insert name alive
+                 Nothing -> alive
+
+               renderFields fieldBound fieldAlive fieldValues = if Array.null fieldValues then "" else
+                   "(" <> String.joinWith ", " (Array.mapWithIndex (\i val ->
+                     let subsequent = Array.drop (i + 1) fieldValues
+                         aliveForV = Set.union fieldAlive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
+                         valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields fieldBound aliveForV false val
+                         valTy = inferTypeExpr currentMod aritiesMap globalClassFields fieldBound val
+                         ctorFqn = (case mbMod of
+                           Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
+                           Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_") <> ctorName
+                         expectedFieldTy = case Map.lookup ctorFqn aritiesMap of
+                           Just ctorTy -> fromMaybe Any (Array.index (extractAllArgTypes ctorTy) i)
+                           Nothing -> Any
+                     in boxUnbox valueEnums currentMod expectedFieldTy valTy valCode
+                   ) fieldValues) <> ")"
+               ctorModule = case mbMod of
+                 Just (ModuleName mn) -> mn
+                 Nothing -> currentMod
+               constructed = enumPrefix <> enumName <> "::" <> ctorClean <> renderFields bound aliveForFields values
+               fallback = case source of
+                 Nothing -> "std::rc::Rc::new(" <> constructed <> ")"
+                 Just name ->
+                   "{ let _rebuilt = " <> constructed <> "; let mut _reused = " <> name <> "; " <>
+                   "if let std::option::Option::Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { " <>
+                   "*_slot = _rebuilt; _reused } else { std::rc::Rc::new(_rebuilt) } }"
+            in if isValueEnum valueEnums ctorModule tyNameStr then constructed else case transfer of
+                 Nothing -> fallback
+                 Just { owned, rewritten } ->
+                   let rebuilt = enumPrefix <> enumName <> "::" <> ctorClean <>
+                         renderFields (bindOwnedFields owned bound) alive rewritten
+                   in "{ let mut " <> owned.source <> " = " <> owned.source <> "; " <>
+                      "let _taken = std::rc::Rc::get_mut(&mut " <> owned.source <> ").and_then(|node| node.__purust_take()); " <>
+                      "match _taken { std::option::Option::Some(" <> ownedFieldsPattern owned <> ") => { let _rebuilt = " <> rebuilt <> "; " <>
+                      "*std::rc::Rc::get_mut(&mut " <> owned.source <> ").unwrap() = _rebuilt; " <> owned.source <> " }, " <>
+                      "std::option::Option::None => " <> fallback <> ", _ => unreachable!() } }"
   CtorDef _ (ProperName tyNameStr) (Ident ctorName) fields -> 
       let enumPrefix = if currentMod == tyNameStr then "crate::" else "Purs_" <> currentMod <> "::" 
           rustCtor = "crate::" <> sanitizeIdent tyNameStr <> "::" <> sanitizeIdent ctorName
