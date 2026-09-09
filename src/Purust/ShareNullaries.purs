@@ -1,4 +1,4 @@
-module Purust.ShareNullaries (shareNullaries) where
+module Purust.ShareNullaries (shareNullaries, reuseNullaries) where
 
 import Prelude
 
@@ -10,6 +10,30 @@ import Data.Tuple (Tuple(..))
 import PureScript.Backend.Optimizer.CoreFn (ExprType, Ident(..))
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..))
 import PureScript.Backend.Optimizer.Syntax (BackendSyntax(..), Level(..))
+import PureScript.Backend.Optimizer.Syntax as Syn
+
+-- In the successful arm of a tag test, a native local already is this nullary
+-- value. Reuse it in strict constructor trees; normal liveness retains any
+-- aliases needed afterwards. Stop at calls and scopes rather than introducing
+-- captures or carrying a branch fact into deferred computations.
+reuseNullaries
+  :: (NeutralExpr -> Maybe { key :: String, ty :: ExprType })
+  -> (NeutralExpr -> String)
+  -> String
+  -> NeutralExpr
+  -> NeutralExpr
+  -> NeutralExpr
+reuseNullaries identify representation key existing = go
+  where
+  go expr@(NeutralExpr syn) = case identify expr of
+    Just info | info.key == key -> NeutralExpr (Typed info.ty existing)
+    _ -> case syn of
+      Typed ty inner | representation expr == representation inner ->
+        NeutralExpr (Typed ty (go inner))
+      Syn.TypeApp inner ty -> NeutralExpr (Syn.TypeApp (go inner) ty)
+      CtorSaturated qualified dt typeName ctor fields ->
+        NeutralExpr (CtorSaturated qualified dt typeName ctor (map (map go) fields))
+      _ -> expr
 
 -- Share repeated native nullary values only among direct constructor fields.
 -- The binding belongs to this construction: there is no global retained root.

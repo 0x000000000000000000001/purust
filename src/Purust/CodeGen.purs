@@ -12,7 +12,7 @@ import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import Purust.LocalNames (renameLocals)
-import Purust.ShareNullaries (shareNullaries)
+import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
 import Purust.DataLayout (ValueEnums, isValueEnum)
@@ -1161,6 +1161,25 @@ nullaryValue valueEnums currentMod aritiesMap globalClassFields bound expr = do
     , String.indexOf (Pattern "std::rc::Rc<") native == Just 0 = Just (native <> "::" <> ctor)
   identify _ = Nothing
 
+-- Only a positive tag test on a borrowed native local establishes this fact.
+-- Matching a nullary expression in the body also proves the payload is empty.
+reuseTestedNullaries :: ValueEnums -> String -> Map String ExprType -> Map String (Array (Tuple String ExprType)) -> Map String ExprType -> NeutralExpr -> NeutralExpr -> NeutralExpr
+reuseTestedNullaries valueEnums currentMod aritiesMap globalClassFields bound cond body =
+  case tested cond of
+    Just { key, value } -> reuseNullaries
+      (nullaryValue valueEnums currentMod aritiesMap globalClassFields bound)
+      representation key value body
+    Nothing -> body
+  where
+  representation value = codegenExprTypeWithValueEnums valueEnums currentMod false
+    (inferTypeExpr currentMod aritiesMap globalClassFields bound value)
+  tested wrapped@(NeutralExpr (Typed _ inner))
+    | representation wrapped == representation inner = tested inner
+  tested (NeutralExpr (Syn.TypeApp inner _)) = tested inner
+  tested (NeutralExpr (PrimOp (Op1 (OpIsTag (Qualified _ (Ident ctor))) value)))
+    | isBorrowableLocal representation value = Just { key: representation value <> "::" <> ctor, value }
+  tested _ = Nothing
+
 codegenExpr_ :: ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) =
   let
@@ -1382,7 +1401,9 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
       "}"
   Branch branches def ->
     let
-      branchesArr = NonEmptyArray.toArray branches
+      branchesArr = map (\(Pair cond body) -> Pair cond
+        (reuseTestedNullaries valueEnums currentMod aritiesMap globalClassFields bound cond body))
+        (NonEmptyArray.toArray branches)
       branchTy = inferTypeExpr currentMod aritiesMap globalClassFields bound expr
       genBranchBody body = boxUnbox valueEnums currentMod branchTy
         (inferTypeExpr currentMod aritiesMap globalClassFields bound body)
