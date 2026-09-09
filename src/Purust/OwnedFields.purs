@@ -1,4 +1,4 @@
-module Purust.OwnedFields (OwnedFields, fieldSources, rewriteFields) where
+module Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields) where
 
 import Prelude
 
@@ -21,6 +21,15 @@ type OwnedFields =
   , names :: Array String
   , types :: Array ExprType
   }
+
+-- Only walk a strict projection chain: a let beginning with a call, branch or
+-- closure does not establish that any constructor field will be read now.
+projectionChain :: NeutralExpr -> Array NeutralExpr
+projectionChain expr@(NeutralExpr syn) = case syn of
+  Typed _ inner -> projectionChain inner
+  TypeApp inner _ -> projectionChain inner
+  Accessor base (GetCtorField _ _ _ _ _ _) -> [expr] <> projectionChain base
+  _ -> []
 
 -- Candidates must be unconditional projections of native locals. The caller
 -- supplies representations and constructor fields derived from the TAST.
