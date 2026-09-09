@@ -16,6 +16,7 @@ import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
 import Purust.DataLayout (ValueEnums, isValueEnum)
+import Purust.ThunkFusion (optimizeThunkProducers)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
 import PureScript.Backend.Optimizer.CoreFn as CoreFn
 import Debug as Debug
@@ -53,6 +54,7 @@ globalCaptured = unsafePerformEffect (Ref.new Set.empty)
 -- foreign function with a similar spelling can never become a cell helper.
 type ReuseContext =
   { workers :: Set String
+  , privateWorkers :: Set String
   , constructors :: Map String
       { name :: Qualified Ident, resultType :: ExprType, typeName :: String }
   }
@@ -109,12 +111,14 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
 
     -- Internal workers receive a consumed cell as their final argument. Their
     -- public counterparts retain the original ABI and allocation behaviour.
-    namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) backendMod.bindings
+    reservedGlobals = Set.fromFoldable (Array.mapMaybe (map sanitizeIdent <<< String.stripPrefix (Pattern (modNameStr <> "_"))) (Array.fromFoldable (Map.keys globalAritiesMap)))
+    fused = optimizeThunkProducers sanitizeIdent reservedGlobals backendMod.name backendMod.bindings
+    namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) fused.bindings
     -- The global signature map also contains local foreign declarations,
     -- which have no binding body here but still reserve their Rust names.
     bindingNames = Set.union
       (Set.fromFoldable (Array.concatMap (map (\(Tuple (Ident name) _) -> sanitizeIdent name) <<< _.bindings) namedGroups))
-      (Set.fromFoldable (Array.mapMaybe (map sanitizeIdent <<< String.stripPrefix (Pattern (modNameStr <> "_"))) (Array.fromFoldable (Map.keys globalAritiesMap))))
+      reservedGlobals
     reusableDecls = Array.filter (\decl -> not (isValueEnum valueEnums modNameStr decl.name)
       && representation (ADT decl.name [unwrap backendMod.name, decl.name] []) == "std::rc::Rc<crate::" <> sanitizeIdent decl.name <> ">"
       && Array.any (Array.null <<< _.fields) decl.constructors
@@ -149,6 +153,9 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
     workers = Array.concatMap (\group -> Array.mapMaybe (prepareWorker group) group.bindings) namedGroups
     reuseContext =
       { workers: Set.fromFoldable (map _.original workers)
+      , privateWorkers: Set.union
+          (Set.fromFoldable (map (\worker -> modNameStr <> "_" <> worker.name) workers))
+          (Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name) fused.workers)
       , constructors: Map.fromFoldable (map (\helper -> Tuple (modNameStr <> "_" <> helper.ctorName)
           { name: Qualified Nothing (Ident helper.name), resultType: helper.resultType, typeName: helper.typeName }) (Map.values rebuilders))
       }
@@ -761,7 +768,7 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
           
         bodyCodeFinal = bodyCodeWithLoop
       in
-        (if isFunc && Array.any (\original -> identName == original <> "__purust_reuse") (Array.fromFoldable reuseContext.workers) then "fn " else "pub fn ") <> identName <> "(" <> paramsCode <> ")" <> (if retCode == "" then "" else " -> " <> retCode) <> " {\n" <>
+        (if isFunc && Set.member identName reuseContext.privateWorkers then "fn " else "pub fn ") <> identName <> "(" <> paramsCode <> ")" <> (if retCode == "" then "" else " -> " <> retCode) <> " {\n" <>
         "    // AST: " <> printAST expr <> "\n" <>
         bodyCodeFinal <> "\n" <>
         "}\n\n"
