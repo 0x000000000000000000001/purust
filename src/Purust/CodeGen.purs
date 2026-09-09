@@ -1025,6 +1025,22 @@ isBorrowableLocal operandType operand =
   go (NeutralExpr (Syn.TypeApp inner _)) = go inner
   go _ = false
 
+-- Reuse only a native local projected by the constructor being rebuilt, after
+-- its last use. Non-local bases and representation conversions keep allocating.
+consumedConstructorSource :: (NeutralExpr -> String) -> String -> String -> Set String -> Array NeutralExpr -> Maybe String
+consumedConstructorSource operandType resultType ctorName alive fields =
+  Array.head (Array.mapMaybe source fields)
+  where
+  source (NeutralExpr (Typed _ inner)) = source inner
+  source (NeutralExpr (Syn.TypeApp inner _)) = source inner
+  source (NeutralExpr (Accessor base (GetCtorField _ _ _ (Ident projectedCtor) _ _)))
+    | projectedCtor == ctorName
+    , operandType base == resultType
+    , isBorrowableLocal operandType base =
+        Array.head (Array.filter (\name -> not (Set.member name alive))
+          (Array.fromFoldable (freeVariables base)))
+  source _ = Nothing
+
 codegenExpr_ :: ValueEnums -> String -> Set.Set String -> Set.Set String -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) =
   let
@@ -1586,11 +1602,21 @@ codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesM
              Nothing -> "crate::"
            enumName = sanitizeIdent tyNameStr
            ctorClean = sanitizeIdent ctorName
+           operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
+             (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
+           source = consumedConstructorSource operandType
+             ("std::rc::Rc<" <> enumPrefix <> enumName <> ">") ctorName alive
+             (map (\(Tuple _ val) -> val) fields)
+           -- Evaluate every field before touching the old node. Keep the source
+           -- alive even if a field stores it: get_mut then detects that alias.
+           aliveForFields = case source of
+             Just name -> Set.insert name alive
+             Nothing -> alive
            
            fieldsCode = if Array.null fields then "" else 
                "(" <> String.joinWith ", " (Array.mapWithIndex (\i (Tuple _ val) -> 
                  let subsequent = Array.drop (i + 1) fields
-                     aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
+                     aliveForV = Set.union aliveForFields (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
                      valCode = codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings Nothing aritiesMap globalClassFields bound aliveForV false val
                      valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
                      ctorFqn = (case mbMod of
@@ -1605,7 +1631,12 @@ codegenExpr_ valueEnums currentMod allZeroArity allMacroBindings mbLoop aritiesM
              Just (ModuleName mn) -> mn
              Nothing -> currentMod
            constructed = enumPrefix <> enumName <> "::" <> ctorClean <> fieldsCode
-        in if isValueEnum valueEnums ctorModule tyNameStr then constructed else "std::rc::Rc::new(" <> constructed <> ")"
+        in if isValueEnum valueEnums ctorModule tyNameStr then constructed else case source of
+             Nothing -> "std::rc::Rc::new(" <> constructed <> ")"
+             Just name ->
+               "{ let _rebuilt = " <> constructed <> "; let mut _reused = " <> name <> "; " <>
+               "if let Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { " <>
+               "*_slot = _rebuilt; _reused } else { std::rc::Rc::new(_rebuilt) } }"
   CtorDef _ (ProperName tyNameStr) (Ident ctorName) fields -> 
       let enumPrefix = if currentMod == tyNameStr then "crate::" else "Purs_" <> currentMod <> "::" 
           rustCtor = "crate::" <> sanitizeIdent tyNameStr <> "::" <> sanitizeIdent ctorName

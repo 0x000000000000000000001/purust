@@ -75,6 +75,18 @@ fn correctness() {
         drop(changed);
         assert_eq!(key(&old), -9);
     }
+    let original = leaf(41);
+    let nested = ConsumedNodes_nestOriginal(original);
+    assert_eq!((key(&nested), key(node(&nested).2)), (42, 41));
+    let weak = Rc::downgrade(node(&nested).2);
+    drop(nested);
+    assert!(weak.upgrade().is_none(), "Storing the source must not create a cycle");
+
+    let original = leaf(41);
+    let weak = Rc::downgrade(&original);
+    let changed = ConsumedNodes_changeRoot(1, original);
+    assert_eq!(key(&changed), 42);
+    assert!(weak.upgrade().is_none(), "A weak reference must not see the changed value");
 }
 
 fn allocation_budgets() -> (usize, usize, usize) {
@@ -85,8 +97,7 @@ fn allocation_budgets() -> (usize, usize, usize) {
     let tree = ConsumedNodes_repeatRoot(iterations, 1, tree);
     let unique = ALLOCS.load(Ordering::Relaxed) - start;
     assert_eq!(key(&tree), 7 + iterations);
-    // These are pre-optimization ceilings, not required allocation counts.
-    assert!(unique <= iterations as usize, "Unique root: {unique}");
+    assert_eq!(unique, 0, "A consumed unique root must reuse its cell");
     drop(tree);
 
     let mut tree = leaf(7);
@@ -107,7 +118,9 @@ fn allocation_budgets() -> (usize, usize, usize) {
     let path = ALLOCS.load(Ordering::Relaxed) - start;
     let (left, root_key, right) = node(&tree);
     assert_eq!((key(left), root_key, key(right)), (7 + iterations, 0, 17));
-    assert!(path <= 2 * iterations as usize, "Unique path: {path}");
+    // The outer cell is reused; transferring its child to the recursive call
+    // without a transient shared reference is a separate optimization.
+    assert!(path <= iterations as usize, "Unique path: {path}");
     (unique, shared, path)
 }
 

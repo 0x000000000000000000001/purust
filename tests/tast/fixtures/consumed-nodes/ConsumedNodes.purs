@@ -17,6 +17,11 @@ changeLeft delta (Node left key right) = Node (changeRoot delta left) key right
 retainOriginal :: Int -> Tree -> Versions
 retainOriginal delta tree = Versions (changeRoot delta tree) tree
 
+-- The reconstructed node contains its original version as a child.
+nestOriginal :: Tree -> Tree
+nestOriginal Empty = Empty
+nestOriginal tree@(Node left key _) = Node left (key + 1) tree
+
 -- Each iteration consumes its accumulator, making uniqueness useful throughout.
 repeatRoot :: Int -> Int -> Tree -> Tree
 repeatRoot 0 _ tree = tree
