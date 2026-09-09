@@ -37,6 +37,12 @@ try {
     assert.equal((body.match(/let mut _record_child = /g) ?? []).length, 1, name);
     assert.match(body, /_base\.set_b\(crate::Value::Unit\);/, name);
   }
+  for (const name of ['updateDeep', 'callbackDeep', 'captureLeaf', 'callbackDeepPayloads']) {
+    const body = bodies.get(name);
+    assert.equal((body.match(/let mut _record_child(?:_\d+)? = /g) ?? []).length, 2, name);
+    assert.match(body, /_record_child\.set_d\(crate::Value::Unit\);/, name);
+    assert.ok(body.indexOf('let _record_child_1_update_0 = ') < body.lastIndexOf('let mut _base = '), name);
+  }
   for (const name of ['retain', 'capturedBase', 'openRow']) {
     assert.doesNotMatch(bodies.get(name), /let _record_update_/, name);
   }

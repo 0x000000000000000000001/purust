@@ -82,6 +82,78 @@ fn check_child_reuse() {
         RecordRootMove_callbackNestedPayloads(first, second, RecordRootMove_nestedPayloads(())))).is_err());
     assert_eq!(Rc::strong_count(&drops), 1, "Staged child values release their captures on panic");
 }
+fn deep() -> Value {
+    Value::Record_a_b(PerceusPtr::new(Record_a_b {
+        a: Some(mk_int(5)), b: Some(Value::Record_c_d(PerceusPtr::new(Record_c_d {
+            c: Some(mk_int(7)), d: Some(Value::Record_e_f(PerceusPtr::new(Record_e_f {
+                e: Some(mk_int(11)), f: Some(mk_int(13))
+            })))
+        })))
+    }))
+}
+fn deep_values(r: &Value) -> [i64; 4] {
+    [r.get_a().unwrap_int(), r.get_b().get_c().unwrap_int(),
+     r.get_b().get_d().get_e().unwrap_int(), r.get_b().get_d().get_f().unwrap_int()]
+}
+fn leaf_address(r: &Value) -> usize {
+    let Value::Record_e_f(ptr) = r.get_b().get_d() else { panic!("leaf") };
+    &*ptr as *const Record_e_f as usize
+}
+fn check_record_path() {
+    for mask in 0..8 {
+        let r = deep();
+        let pointers = [address(&r), child_address(&r), leaf_address(&r)];
+        let root = if mask & 1 != 0 { Some(r.clone()) } else { None };
+        let child = if mask & 2 != 0 { Some(r.get_b()) } else { None };
+        let leaf = if mask & 4 != 0 { Some(r.get_b().get_d()) } else { None };
+        let changed = RecordRootMove_updateDeep(10, r);
+        assert_eq!(deep_values(&changed), [15, 27, 41, 33]);
+        assert_eq!(address(&changed) == pointers[0], mask & 1 == 0);
+        assert_eq!(child_address(&changed) == pointers[1], mask & 3 == 0);
+        assert_eq!(leaf_address(&changed) == pointers[2], mask == 0);
+        if let Some(r) = root { assert_eq!(deep_values(&r), [5, 7, 11, 13]); }
+        if let Some(b) = child {
+            assert_eq!(b.get_c().unwrap_int(), 7);
+            assert_eq!(b.get_d().get_e().unwrap_int(), 11);
+            assert_eq!(b.get_d().get_f().unwrap_int(), 13);
+        }
+        if let Some(d) = leaf {
+            assert_eq!(d.get_e().unwrap_int(), 11); assert_eq!(d.get_f().unwrap_int(), 13);
+        }
+    }
+    let calls = Rc::new(RefCell::new(Vec::new()));
+    let old = deep();
+    let callback = || {
+        let old = old.clone(); let calls = calls.clone();
+        Func1::Shared(Rc::new(move |x: i64| {
+            calls.borrow_mut().push(x); assert_eq!(deep_values(&old), [5, 7, 11, 13]); x + 1
+        }))
+    };
+    let changed = RecordRootMove_callbackDeep(callback(), callback(), callback(), callback(), old.clone());
+    assert_eq!(deep_values(&changed), [6, 8, 12, 14]);
+    assert_eq!(*calls.borrow(), [5, 7, 11, 13]);
+    calls.borrow_mut().clear();
+    let fail = Func1::Static(|_: i64| -> i64 { panic!("leaf RHS") });
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(||
+        RecordRootMove_callbackDeep(callback(), callback(), callback(), fail, old.clone()))).is_err());
+    assert_eq!(*calls.borrow(), [5, 7, 11]);
+    assert_eq!(deep_values(&old), [5, 7, 11, 13]);
+    let mut r = deep(); let mut b = r.get_b(); let mut d = b.get_d();
+    d.set_f(Value::Func1(Func1::Static(|_| mk_int(99)))); b.set_d(d); r.set_b(b);
+    let changed = RecordRootMove_captureLeaf(r);
+    assert_eq!(changed.get_b().get_d().get_e().unwrap_int(), 12);
+    assert_eq!((changed.get_b().get_d().get_f().unwrap_func1())(Value::Unit).unwrap_int(), 11);
+
+    let drops = Rc::new(()); let held = drops.clone();
+    let first = Func1::Shared(Rc::new(move |_: Rc<Payload>| {
+        let held = held.clone();
+        Rc::new(Payload::Payload(Func1::Shared(Rc::new(move |_| { let _keep = &held; 10 }))))
+    }));
+    let second = Func1::Static(|_: Rc<Payload>| -> Rc<Payload> { panic!("leaf payload") });
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(||
+        RecordRootMove_callbackDeepPayloads(first, second, RecordRootMove_deepPayloads(())))).is_err());
+    assert_eq!(Rc::strong_count(&drops), 1);
+}
 fn main() {
     for (a, b) in [(0, 0), (7, 11), (-3, 9)] {
         let original = pair(a, b); let ptr = address(&original);
@@ -159,5 +231,6 @@ fn main() {
         RecordRootMove_callbackPayloads(first, second, r))).is_err());
     assert_eq!(Rc::strong_count(&drops), 1);
     check_child_reuse();
-    println!("Record root/child reuse: unique addresses, shared roots and children, last uses, callback order, captured old versions, repeated closures, panic/overflow and temporary drops checked.");
+    check_record_path();
+    println!("Record path reuse: unique addresses, all 8 root/child/leaf sharing masks, last uses, callback order, captured old versions, repeated closures, panic/overflow and temporary drops checked.");
 }

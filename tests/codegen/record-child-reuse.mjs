@@ -33,6 +33,30 @@ add('convertedChild', [record], record, update(r, change(new Typed(int, get(r, '
 add('duplicateRootField', [record], record, new Update(r, [new Prop('b', change(get(r, 'b'))), new Prop('b', change(get(r, 'b')))]));
 add('duplicateChildField', [record], record, update(r, new Update(get(r, 'b'), [new Prop('c', get(r, 'a')), new Prop('c', get(r, 'a'))])));
 add('capturedRoot', [record], new Func([int], record), new Typed(new Func([int], record), new Abs([param(1)], update())));
+const leaf = new Record(new Row([new Tuple('e', int), new Tuple('f', int)], Nothing.value));
+const middle = l => new Record(new Row([new Tuple('c', int), new Tuple('d', l), new Tuple('z', l)], Nothing.value));
+const deep = root(middle(leaf));
+const dr = new Typed(deep, local(0));
+const db = get(dr, 'b');
+const dd = get(db, 'd');
+const leafChange = source => new Update(source, [new Prop('e', new Lit(new LitInt(3)))]);
+const deepChange = (value = leafChange(dd), b = db, r = dr) => new Update(r, [new Prop('b', new Update(b, [new Prop('d', value)]))]);
+add('deep', [deep], deep, deepChange());
+add('deepWrapped', [deep], deep, deepChange(new TypeApp(new Typed(leaf, leafChange(new Typed(leaf, get(new Typed(middle(leaf), db), 'd')))), int)));
+add('otherDeepRoot', [deep, deep], deep, deepChange(leafChange(get(get(new Typed(deep, local(1)), 'b'), 'd'))));
+add('wrongPath', [deep], deep, deepChange(leafChange(get(get(dr, 'z'), 'd'))));
+add('wrongLeafField', [deep], deep, deepChange(leafChange(get(db, 'z'))));
+add('calledLeaf', [deep, new Func([leaf], leaf)], deep, deepChange(leafChange(new Typed(leaf, new App(local(1), [dd])))));
+add('convertedLeaf', [deep], deep, deepChange(leafChange(new Typed(int, dd))));
+const openLeaf = new Record(new Row([new Tuple('e', int)], new Just(new TypeVar('r'))));
+const openDeep = root(middle(openLeaf));
+const odr = new Typed(openDeep, local(0));
+add('openLeaf', [openDeep], openDeep, deepChange(leafChange(get(get(odr, 'b'), 'd')), get(odr, 'b'), odr));
+add('twoLeaves', [deep], deep, new Update(dr, [new Prop('b', new Update(db, [new Prop('d', leafChange(dd)), new Prop('z', leafChange(get(db, 'z')))]))]));
+const deeper = root(middle(middle(leaf)));
+const rr = new Typed(deeper, local(0));
+const rb = get(rr, 'b'); const rd = get(rb, 'd');
+add('threeChildren', [deeper], deeper, deepChange(new Update(rd, [new Prop('d', leafChange(get(rd, 'd')))]), rb, rr));
 const generated = codegenModule(empty)(empty)({ name: 'ChildReuse', dataDecls: [], classDecls: [] })({ name: 'ChildReuse', bindings: [{ recursive: false, bindings }] });
 const bodies = new Map(generated.split(/^pub fn /m).slice(1).map(body => [body.match(/^ChildReuse_(\w+)\(/)?.[1], body]));
 for (const name of ['plain', 'wrapped', 'twoChildren']) {
@@ -47,4 +71,14 @@ for (const name of ['otherRoot', 'otherField', 'calledChild', 'liveRoot', 'openC
   assert.ok(bodies.has(name), name);
   assert.doesNotMatch(bodies.get(name), /let mut _record_child = /, name);
 }
-console.log('Record child reuse: closed TAST rows, same local/field, wrappers, one-child limit, sharing/liveness and fallback guards checked.');
+for (const name of ['deep', 'deepWrapped', 'twoLeaves', 'threeChildren']) {
+  const body = bodies.get(name);
+  assert.equal((body.match(/let mut _record_child(?:_\d+)? = /g) ?? []).length, name === 'threeChildren' ? 3 : 2, name);
+  assert.match(body, /_record_child\.set_d\(crate::Value::Unit\);/, name);
+  assert.ok(body.indexOf('let _record_child_1_update_') < body.lastIndexOf('let mut _base = '), name);
+  assert.ok(body.indexOf('_record_child.set_d(_record_child_1);') < body.indexOf('_base.set_b(_record_child);'), name);
+}
+for (const name of ['otherDeepRoot', 'wrongPath', 'wrongLeafField', 'calledLeaf', 'convertedLeaf', 'openLeaf']) {
+  assert.equal((bodies.get(name).match(/let mut _record_child(?:_\d+)? = /g) ?? []).length, 1, name);
+}
+console.log('Record child reuse: closed TAST rows, same local/field, wrappers, one path across three child levels, sibling limit, sharing/liveness and fallback guards checked.');

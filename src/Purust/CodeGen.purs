@@ -16,7 +16,7 @@ import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
 import Purust.ReuseFields (scalarFieldUpdate)
-import Purust.RecordUpdates (childRecordUpdate)
+import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpdate)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import Purust.FunctionFusion (countedFunctionProducers)
@@ -1436,52 +1436,50 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
             && Set.isEmpty (Set.intersection baseVars alive)
             && not (Set.isEmpty (Set.intersection baseVars propVars))
         _ -> false
-      valueName i = "_record_update_" <> show i
-      childValueName j = "_record_child_update_" <> show j
-      -- Reuse at most one immediate child. Finish all RHS evaluations before
-      -- detaching it; no callback can observe the temporary vacant slot.
-      childPlans = map (\(Prop k v) -> childRecordUpdate
-        (inferTypeExpr currentMod aritiesMap globalClassFields bound base) operandType
-        (\root -> isUnconvertedLocal operandType root && freeVariables root == baseVars) k v) propsArr
-      childIndex = if moveAfterProps
-        && Array.length (Array.nub (map (\(Prop k _) -> k) propsArr)) == Array.length propsArr
-        then Array.findIndex (case _ of
-          Just _ -> true
-          _ -> false) childPlans
-        else Nothing
-      childPlan i = if childIndex == Just i then fromMaybe Nothing (Array.index childPlans i) else Nothing
+      -- Flatten replacements in source order before detaching any level. The
+      -- source root remains alive throughout, including inside opaque callbacks.
+      plan = recordUpdate (inferTypeExpr currentMod aritiesMap globalClassFields bound base) operandType
+        (\root -> isUnconvertedLocal operandType root && freeVariables root == baseVars) propsArr
+      childName depth = "_record_child" <> if depth == 0 then "" else "_" <> show depth
+      valueName depth i = (if depth == 0 then "_record" else childName (depth - 1)) <> "_update_" <> show i
+      stagedValues depth (RecordUpdate replacements) = Array.concat (Array.mapWithIndex (\i (Prop _ replacement) ->
+        case replacement of
+          RecordValue value -> [Tuple (valueName depth i) value]
+          RecordChild child -> stagedValues (depth + 1) child) replacements)
+      staged = stagedValues 0 plan
       boxedValue aliveForValue v =
         let valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForValue false v
             valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
         in boxUnbox valueEnums currentMod Any valTy valCode
-      propsCode = Array.mapWithIndex (\i (Prop k v) -> 
-        let subsequentProps = Array.drop (i + 1) propsArr
-            laterVars = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
-            aliveForProp = if moveAfterProps then Set.union baseVars laterVars else laterVars
-        in case childPlan i of
-          Just childProps -> String.joinWith "\n    " (Array.mapWithIndex (\j (Prop _ cv) ->
-            let laterChildVars = Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) aliveForProp (Array.drop (j + 1) childProps)
-            in "let " <> childValueName j <> " = " <> boxedValue laterChildVars cv <> ";") childProps)
-          Nothing -> if moveAfterProps then "let " <> valueName i <> " = " <> boxedValue aliveForProp v <> ";"
-            else "_base.set_" <> sanitizeIdent k <> "(" <> boxedValue aliveForProp v <> ");"
-      ) propsArr
+      propsCode = if moveAfterProps then Array.mapWithIndex (\i (Tuple name v) ->
+        let laterVars = Array.foldl (\acc (Tuple _ sv) -> Set.union acc (freeVariables sv))
+              (Set.union baseVars alive) (Array.drop (i + 1) staged)
+        in "let " <> name <> " = " <> boxedValue laterVars v <> ";") staged
+        else Array.mapWithIndex (\i (Prop k v) ->
+          let laterVars = Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) alive (Array.drop (i + 1) propsArr)
+          in "_base.set_" <> sanitizeIdent k <> "(" <> boxedValue laterVars v <> ");") propsArr
       aliveForBase = if moveAfterProps then alive else Set.union alive propVars
       baseCode = "    let mut _base = " <> codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n"
       valuesCode = "    " <> String.joinWith "\n    " propsCode <> "\n"
-      setters = Array.mapWithIndex (\i (Prop k _) -> case childPlan i of
-        Nothing -> "_base.set_" <> sanitizeIdent k <> "(" <> valueName i <> ");"
-        Just childProps ->
-          "let mut _record_child = _base.get_" <> sanitizeIdent k <> "();\n    " <>
-          "_base.set_" <> sanitizeIdent k <> "(crate::Value::Unit);\n    " <>
-          String.joinWith "\n    " (Array.mapWithIndex (\j (Prop ck _) ->
-            "_record_child.set_" <> sanitizeIdent ck <> "(" <> childValueName j <> ");") childProps) <>
-          "\n    _base.set_" <> sanitizeIdent k <> "(_record_child);") propsArr
+      -- One child per level makes depth-based temporary names unambiguous.
+      -- Detach outside-in, restore inside-out; make_mut copies shared versions.
+      setters depth parent (RecordUpdate replacements) = String.joinWith "\n    "
+        (Array.mapWithIndex (\i (Prop k replacement) ->
+          let setter = parent <> ".set_" <> sanitizeIdent k
+          in case replacement of
+            RecordValue _ -> setter <> "(" <> valueName depth i <> ");"
+            RecordChild child ->
+              "let mut " <> childName depth <> " = " <> parent <> ".get_" <> sanitizeIdent k <> "();\n    " <>
+              setter <> "(crate::Value::Unit);\n    " <>
+              setters (depth + 1) (childName depth) child <>
+              "\n    " <> setter <> "(" <> childName depth <> ");") replacements)
     in
       "{\n" <>
-      (if moveAfterProps then valuesCode <> baseCode <> "    " <> String.joinWith "\n    " setters <> "\n"
+      (if moveAfterProps then valuesCode <> baseCode <> "    " <> setters 0 "_base" plan <> "\n"
        else baseCode <> valuesCode) <>
       "    _base\n" <>
       "}"
+
   Branch branches def ->
     let
       branchesArr = map (\(Pair cond body) -> Pair cond

@@ -58,6 +58,27 @@ callbackNestedPayloads :: (Payload -> Payload) -> (Payload -> Payload)
   -> { a :: Int, b :: { c :: Payload, d :: Payload } }
 callbackNestedPayloads first second r = r { b = r.b { c = first r.b.c, d = second r.b.d } }
 
+callbackDeep :: (Int -> Int) -> (Int -> Int) -> (Int -> Int) -> (Int -> Int) -> Deep -> Deep
+callbackDeep first second third fourth r =
+  r { a = first r.a
+    , b = r.b { c = second r.b.c
+              , d = r.b.d { e = third r.b.d.e, f = fourth r.b.d.f }
+              }
+    }
+
+captureLeaf :: { a :: Int, b :: { c :: Int, d :: { e :: Int, f :: Unit -> Int } } }
+  -> { a :: Int, b :: { c :: Int, d :: { e :: Int, f :: Unit -> Int } } }
+captureLeaf r = r { b = r.b { d = r.b.d { e = r.b.d.e + 1, f = \_ -> r.b.d.e } } }
+
+deepPayloads :: Unit -> { a :: Int, b :: { c :: Int, d :: { e :: Payload, f :: Payload } } }
+deepPayloads _ = { a: 0, b: { c: 0, d: { e: Payload (\_ -> 1), f: Payload (\_ -> 2) } } }
+
+callbackDeepPayloads :: (Payload -> Payload) -> (Payload -> Payload)
+  -> { a :: Int, b :: { c :: Int, d :: { e :: Payload, f :: Payload } } }
+  -> { a :: Int, b :: { c :: Int, d :: { e :: Payload, f :: Payload } } }
+callbackDeepPayloads first second r =
+  r { b = r.b { d = r.b.d { e = first r.b.d.e, f = second r.b.d.f } } }
+
 openRow :: forall r. { score :: Int | r } -> { score :: Int | r }
 openRow r = r { score = r.score + 1 }
 
