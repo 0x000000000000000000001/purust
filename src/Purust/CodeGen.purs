@@ -643,7 +643,6 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
           _ -> "unknown"
         identName = if rawIdentName == "main" then "main" else modNameStr <> "_" <> rawIdentName
         inferredType = fromMaybe Any (Map.lookup identName mergedArities)
-        _dbg = unsafePerformEffect (if identName == "Data_Symbol_reifySymbol" then log ("reifySymbol type: " <> printType inferredType) else pure unit)
         innerExpr = case expr of
            NeutralExpr (Typed _ inner) -> inner
            NeutralExpr inner -> NeutralExpr inner
@@ -655,9 +654,6 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
               retType = extractFinalRetType inferredType
               argTypes = allArgTypes
               extracted = extractAbsParams (Array.length argTypes) innerExpr
-              _debug = unsafePerformEffect (log ("FUNCTION " <> identName <> " args: " <> show (Array.length argTypes) <> " extracted: " <> (case extracted of
-                Just _ -> "Just"
-                Nothing -> "Nothing")))
               isMatchingAbs = case extracted of
                 Just _ -> true
                 Nothing -> false
@@ -1377,7 +1373,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                                             Nothing -> valTy
                                      findFieldTy _ _ = valTy
                                  in findFieldTy p (unwrapType ty)
-                 in Debug.trace ("LITRECORD expStr=" <> codegenExprTypeWithValueEnums valueEnums currentMod true expectedTy <> ", actStr=" <> codegenExprTypeWithValueEnums valueEnums currentMod true valTy <> " for " <> p) \_ -> sanitizeIdent p <> ": " <> boxUnbox valueEnums currentMod expectedTy valTy valCode
+                 in sanitizeIdent p <> ": " <> boxUnbox valueEnums currentMod expectedTy valTy valCode
               ) propsArr
               fields = String.joinWith ", " propsCode
             in "std::rc::Rc::new(" <> structName <> " { " <> fields <> " })"

@@ -179,7 +179,6 @@ main = launchAff_ do
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let argTypes = extractAllArgTypes ty
                     args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprTypeWithValueEnums globalValueEnums modName true argTy) argTypes
-                    _ = Debug.trace ("genFallback " <> unwrap name <> " args: " <> show args) \_ -> unit
                     retTyStr = codegenExprTypeWithValueEnums globalValueEnums modName true (extractFinalRetType ty)
                     defaultRet = case retTyStr of
                           "i64" -> "0"
@@ -191,8 +190,6 @@ main = launchAff_ do
                 in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> " <> retTyStr <> " { " <> defaultRet <> " }\n"
               else ""
 
-          let _ = Debug.trace ("Found FFI for " <> modNameStr <> " at: " <> show ffiPathMb) \_ -> unit
-          liftEffect $ Console.log ("Found FFI for " <> modNameStr <> " at: " <> show ffiPathMb)
           ffiContent <- case ffiPathMb of
             Just ffiPath -> do
               content <- FS.readTextFile UTF8 ffiPath

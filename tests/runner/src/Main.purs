@@ -1,12 +1,14 @@
 module Main where
 
 import Prelude
-import A (foo)
-import B (Foo(..))
-import Effect (Effect)
 import Effect.Console (log)
 
-main :: Effect Unit
+x :: forall a. a -> String
+x a = y "Test"
+  where
+  y :: forall a. Show a => a -> String
+  y a = show (a :: a)
+
 main = do
-  let tmp = foo X
+  log (x 0)
   log "Done"
