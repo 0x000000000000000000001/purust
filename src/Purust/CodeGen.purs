@@ -18,6 +18,7 @@ import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFi
 import Purust.ReuseFields (scalarFieldUpdate)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import Purust.ThunkFusion (optimizeThunkProducers)
+import Purust.FunctionFusion (countedFunctionProducers)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
 import PureScript.Backend.Optimizer.CoreFn as CoreFn
 import Debug as Debug
@@ -56,6 +57,7 @@ globalCaptured = unsafePerformEffect (Ref.new Set.empty)
 type ReuseContext =
   { workers :: Set String
   , privateWorkers :: Set String
+  , functionIterators :: Set String
   , constructors :: Map String
       { name :: Qualified Ident, resultType :: ExprType, typeName :: String }
   }
@@ -154,6 +156,8 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
     workers = Array.concatMap (\group -> Array.mapMaybe (prepareWorker group) group.bindings) namedGroups
     reuseContext =
       { workers: Set.fromFoldable (map _.original workers)
+      , functionIterators: Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name)
+          (countedFunctionProducers backendMod.name namedGroups)
       , privateWorkers: Set.union
           (Set.fromFoldable (map (\worker -> modNameStr <> "_" <> worker.name) workers))
           (Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name) fused.workers)
@@ -672,11 +676,19 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
                           workerParams workerTypes
                         passedArgs = map (\name -> name <> ".clone()") deduped
                         call = identName <> "(" <> String.joinWith ", " (Array.take prefixArity passedArgs) <> ")"
-                      in
-                        "{\nfn " <> identName <> "(" <> workerArgs <> ") -> "
+                        fallback =
+                          "{\nfn " <> identName <> "(" <> workerArgs <> ") -> "
                           <> codegenExprTypeWithValueEnums valueEnums modNameStr true workerReturn <> " {\n"
                           <> "    loop {\n        break " <> workerCode <> ";\n    }\n}\n"
                           <> "(" <> call <> ")(" <> String.joinWith ", " (Array.drop prefixArity passedArgs) <> ")\n}"
+                      in case deduped, argTypes, retType of
+                        [count, callback, seed], [Int, Func [Int] Int, Int], Int
+                          | Set.member identName reuseContext.functionIterators ->
+                            "if " <> count <> " >= 0 { let mut _function_count = " <> count <>
+                            "; let mut _function_result = " <> seed <> "; while _function_count > 0 { " <>
+                            "_function_result = (" <> callback <> ")(_function_result); _function_count -= 1; } " <>
+                            "_function_result } else " <> fallback
+                        _, _, _ -> fallback
                 Nothing -> 
                    let shapeTypeToAST :: ExprType -> NeutralExpr -> ExprType
                        shapeTypeToAST currentTy (NeutralExpr (Typed ty _)) = ty
