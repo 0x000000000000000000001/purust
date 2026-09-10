@@ -18,6 +18,8 @@ import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
 import Purust.ReuseFields (scalarFieldUpdate)
 import Purust.ChildCalls as ChildCalls
+import Purust.ChildBranches as ChildBranches
+import Purust.ChildBranchPrinter (predicateFunction)
 import Purust.ChildUpdates (childUpdate)
 import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpdate)
 import Purust.DataLayout (ValueEnums, isValueEnum)
@@ -63,6 +65,7 @@ type ReuseContext =
   , privateWorkers :: Set String
   , functionIterators :: Set String
   , childCases :: Map String (Array ChildCalls.ConstructorCase)
+  , postChildCases :: Map String { branch :: ChildCalls.ConstructorCase, name :: String }
   , closedCalls :: Set String
   , plainTrees :: Set String
   , constructors :: Map String
@@ -161,28 +164,63 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
         pure { original: modNameStr <> "_" <> sanitizeIdent name, name: workerName, ty: workerTy
              , expr: NeutralExpr (Typed workerTy (NeutralExpr (Abs workerParams rewritten))) }
     workers = Array.concatMap (\group -> Array.mapMaybe (prepareWorker group) group.bindings) namedGroups
+    workerOriginals = Set.fromFoldable (map _.original workers)
+    -- These layouts contain only this tree and native Copy fields. Destruction
+    -- cannot invoke an opaque payload destructor or closure while borrowed.
+    plainTrees = Set.fromFoldable (Array.mapMaybe (\decl ->
+      let native = "std::rc::Rc<crate::" <> sanitizeIdent decl.name <> ">"
+      in if Array.all (\ctor -> Array.all (\ty -> representation ty == native
+          || copyScalarType valueEnums modNameStr ty) ctor.fields) decl.constructors
+        then Just native else Nothing) reusableDecls)
+    copyTagType ty = case unwrapType ty of
+      ADT _ _ _ -> copyScalarType valueEnums modNameStr ty
+      _ -> false
+    closedCalls = Set.map (\name -> modNameStr <> "_" <> sanitizeIdent name)
+      (ChildCalls.closedFunctions backendMod.name namedGroups)
+    nativeConstructors = Map.fromFoldable (Array.concatMap (\decl ->
+      let resultType = ADT decl.name [unwrap backendMod.name, decl.name] []
+          native = "crate::" <> sanitizeIdent decl.name
+          repr = representation resultType
+      in if repr == "std::rc::Rc<" <> native <> ">" || (repr == native && copyTagType resultType)
+        then map (\ctor -> Tuple ctor.name { resultType, fields: ctor.fields }) decl.constructors
+        else []) coreFnMod.dataDecls)
+    constructorInfo (Qualified mbMod (Ident name)) =
+      if mbMod == Nothing || mbMod == Just backendMod.name then Map.lookup name nativeConstructors else Nothing
+    reservedPredicateNames = Set.unions
+      [ bindingNames
+      , Set.fromFoldable (map _.name (Map.values rebuilders))
+      , Set.fromFoldable (map _.name workers)
+      ]
     prepareChildCases (Tuple (Ident name) expr) = do
       let ty = inferTypeExpr modNameStr globalAritiesMap globalClassFields Map.empty expr
           args = extractAllArgTypes ty
       Tuple params body <- extractAbsParams (Array.length args) expr
-      let copyTag ty = case unwrapType ty of
-            ADT _ _ _ -> copyScalarType valueEnums modNameStr ty
-            _ -> false
-          cases = ChildCalls.constructorCases representation copyTag
+      let cases = ChildCalls.constructorCases representation copyTagType
             params args (extractFinalRetType ty) body
       if Array.null cases then Nothing else Just (Tuple (modNameStr <> "_" <> sanitizeIdent name) cases)
+    preparePostChildCase (Tuple (Ident name) expr) = do
+      let fullName = modNameStr <> "_" <> sanitizeIdent name
+          predicateName = sanitizeIdent name <> "__purust_child_rebuilds"
+          ty = inferTypeExpr modNameStr globalAritiesMap globalClassFields Map.empty expr
+          args = extractAllArgTypes ty
+      guard (Set.member fullName closedCalls && Set.member fullName workerOriginals
+        && Set.member (representation (extractFinalRetType ty)) plainTrees
+        && not (Set.member predicateName reservedPredicateNames))
+      Tuple params body <- extractAbsParams (Array.length args) expr
+      result <- ChildBranches.constructorPredicate representation copyTagType constructorInfo
+        params args (extractFinalRetType ty) body
+      guard (result.predicate /= ChildBranches.Constant false)
+      let generatedName = modNameStr <> "_" <> predicateName
+          branch = { guards: [], constructor: result.constructor, typeName: result.typeName, fieldParams: result.fieldParams }
+      code <- predicateFunction representation sanitizeIdent constructorInfo args generatedName result.predicate
+      pure { fullName, branch, name: generatedName, code }
+    postHelpers = Array.concatMap (Array.mapMaybe preparePostChildCase <<< _.bindings) namedGroups
     reuseContext =
-      { workers: Set.fromFoldable (map _.original workers)
+      { workers: workerOriginals
       , childCases: Map.fromFoldable (Array.concatMap (Array.mapMaybe prepareChildCases <<< _.bindings) namedGroups)
-      , closedCalls: Set.map (\name -> modNameStr <> "_" <> sanitizeIdent name)
-          (ChildCalls.closedFunctions backendMod.name namedGroups)
-      -- These recursive layouts contain only this tree and native Copy fields.
-      -- Their destruction cannot run an opaque payload destructor or closure.
-      , plainTrees: Set.fromFoldable (Array.mapMaybe (\decl ->
-          let native = "std::rc::Rc<crate::" <> sanitizeIdent decl.name <> ">"
-          in if Array.all (\ctor -> Array.all (\ty -> representation ty == native
-              || copyScalarType valueEnums modNameStr ty) ctor.fields) decl.constructors
-            then Just native else Nothing) reusableDecls)
+      , postChildCases: Map.fromFoldable (map (\helper -> Tuple helper.fullName { branch: helper.branch, name: helper.name }) postHelpers)
+      , closedCalls
+      , plainTrees
       , functionIterators: Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name)
           (countedFunctionProducers backendMod.name namedGroups)
       , privateWorkers: Set.union
@@ -206,7 +244,7 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
     bindingsRes = Array.foldl (\acc group ->
       let res = codegenBindingGroup valueEnums coreFnMod.name modNameStr Set.empty reuseContext acc.arities globalClassFields group
       in { code: acc.code <> res.code, arities: res.arities }
-    ) { code: rebuildersCode, arities: Map.union workerArities (Map.union helperArities globalAritiesMap) } (namedGroups <> workerGroups)
+    ) { code: rebuildersCode <> foldMap _.code postHelpers, arities: Map.union workerArities (Map.union helperArities globalAritiesMap) } (namedGroups <> workerGroups)
 
     bindingsCode = bindingsRes.code
     
@@ -1405,18 +1443,19 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
             directName (NeutralExpr (Syn.TypeApp inner _)) = directName inner
             directName (NeutralExpr (Var qualified@(Qualified _ (Ident name)))) = Just (Tuple qualified (getTyPrefix currentMod qualified <> sanitizeIdent name))
             directName _ = Nothing
-            workerCall = do
+            workerWithArgs movedArgs = do
               Tuple (Qualified mbMod (Ident name)) fullName <- directName fn
               fnType <- Map.lookup fullName aritiesMap
               if not (Set.member fullName reuseContext.workers)
-                || Array.length (extractAllArgTypes fnType) /= NonEmptyArray.length args
+                || Array.length (extractAllArgTypes fnType) /= Array.length movedArgs
                 || codegenExprTypeWithValueEnums valueEnums currentMod false appTy /= "std::rc::Rc<" <> fields.nativeType <> ">"
-                then Nothing else case rewritten of
-                  NeutralExpr (App _ movedArgs) ->
-                    let worker = NeutralExpr (Var (Qualified mbMod (Ident (sanitizeIdent name <> "__purust_reuse"))))
-                        cell = NeutralExpr (Local (Just (Ident fields.source)) (Level (-1)))
-                    in Just (genApp valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields movedBound alive appTy worker (Array.snoc (NonEmptyArray.toArray movedArgs) cell))
-                  _ -> Nothing
+                then Nothing else
+                  let worker = NeutralExpr (Var (Qualified mbMod (Ident (sanitizeIdent name <> "__purust_reuse"))))
+                      cell = NeutralExpr (Local (Just (Ident fields.source)) (Level (-1)))
+                  in Just (genApp valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields movedBound alive appTy worker (Array.snoc movedArgs cell))
+            workerCall = case rewritten of
+              NeutralExpr (App _ movedArgs) -> workerWithArgs (NonEmptyArray.toArray movedArgs)
+              _ -> Nothing
             typeRepresentation = codegenExprTypeWithValueEnums valueEnums currentMod false
             representation value = typeRepresentation
               (inferTypeExpr currentMod aritiesMap globalClassFields movedBound value)
@@ -1458,6 +1497,31 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                         aritiesMap globalClassFields bound (Set.insert fields.source alive) false test
                   pure (if condition.matches then "(" <> code <> ")" else "!(" <> code <> ")")) branch.guards
                 pure { update, guards }) cases)
+            postChildPlan = do
+              Tuple _ fullName <- directName fn
+              post <- Map.lookup fullName reuseContext.postChildCases
+              guard (Set.member ("std::rc::Rc<" <> fields.nativeType <> ">") reuseContext.plainTrees)
+              movedArgs <- case rewritten of
+                NeutralExpr (App _ xs) -> Just (NonEmptyArray.toArray xs)
+                _ -> Nothing
+              let qualified@(Qualified _ (Ident ctor)) = post.branch.constructor
+                  ProperName typeName = post.branch.typeName
+              helper <- Map.lookup (getTyPrefix currentMod qualified <> sanitizeIdent ctor) reuseContext.constructors
+              guard (ctor == fields.constructorName && helper.typeName == typeName
+                && typeRepresentation helper.resultType == "std::rc::Rc<" <> fields.nativeType <> ">")
+              update <- childUpdate typeRepresentation representation closedCall
+                (copyScalarType valueEnums currentMod) post.branch fields movedArgs
+              -- The predicate and fallback both receive the computed child.
+              -- Rebuild the argument permutation from fields, never from the
+              -- original call expression, which would execute recursion twice.
+              argumentFields <- traverse (\i -> Array.findIndex (_ == i) post.branch.fieldParams)
+                (Array.mapWithIndex (\i _ -> i) movedArgs)
+              computedArgs <- traverse (\i -> do
+                name <- Array.index fields.names i
+                ty <- Array.index fields.types i
+                pure (NeutralExpr (Typed ty (NeutralExpr (Local (Just (Ident name)) (Level (-1))))))) argumentFields
+              afterCall <- workerWithArgs computedArgs
+              pure { update, name: post.name, argumentFields, afterCall }
             reuseCall call = "{ let mut " <> fields.source <> " = " <> fields.source <> "; " <>
               "let _taken = std::rc::Rc::get_mut(&mut " <> fields.source <> ").and_then(|node| node.__purust_take()); " <>
               "match _taken { std::option::Option::Some(" <> ownedFieldsPattern fields <> ") => " <> call <> ", " <>
@@ -1466,8 +1530,30 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
           Nothing -> fallback
           Just call ->
             let normal = reuseCall call
+                postNormal = case postChildPlan of
+                  Nothing -> normal
+                  Just post ->
+                    let replacement = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing
+                          aritiesMap globalClassFields movedBound alive false post.update.replacement
+                        reference i = "_purust_post_field_" <> show i
+                        references = Array.mapWithIndex (\i _ -> reference i) fields.names
+                        pattern = fields.constructor <> "(" <> String.joinWith ", " references <> ")"
+                        copiedScalars = String.joinWith " " (Array.mapMaybe (\(Tuple i ty) ->
+                          if copyScalarType valueEnums currentMod ty then
+                            map (\name -> "let mut " <> name <> " = (*" <> reference i <> ").clone();") (Array.index fields.names i)
+                          else Nothing) (Array.mapWithIndex Tuple fields.types))
+                        childName = fromMaybe "_purust_post_child" (Array.index fields.names post.update.index)
+                        predicate = post.name <> "(" <> String.joinWith ", " (map reference post.argumentFields) <> ")"
+                    in "{ /* purust child call: post-call fields */ let mut " <> fields.source <> " = " <> fields.source <> "; " <>
+                      "if let std::option::Option::Some(_purust_post_slot) = std::rc::Rc::get_mut(&mut " <> fields.source <> ") { " <>
+                      "let " <> pattern <> " = _purust_post_slot else { unreachable!() }; " <> copiedScalars <> " " <>
+                      "let mut " <> childName <> " = std::mem::replace(" <> reference post.update.index <> ", (*" <> reference post.update.sibling <> ").clone()); " <>
+                      "let _purust_post_child = " <> replacement <> "; *" <> reference post.update.index <> " = _purust_post_child; " <>
+                      "if " <> predicate <> " { " <> fields.source <> " } else { " <>
+                      "let std::option::Option::Some(" <> ownedFieldsPattern fields <> ") = _purust_post_slot.__purust_take() else { unreachable!() }; " <>
+                      post.afterCall <> " } } else " <> normal <> " }"
             in case childPlan of
-              Nothing -> normal
+              Nothing -> postNormal
               Just { update, guards } ->
                 let replacement = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing
                       aritiesMap globalClassFields movedBound alive false update.replacement
@@ -1486,7 +1572,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                       "let _purust_new_child = " <> replacement <> "; *" <> reference update.index <> " = _purust_new_child; " <>
                       fields.source <> " } else " <> normal <> " }"
                 in if Array.null guards then fast else
-                  "if " <> String.joinWith " && " guards <> " { " <> fast <> " } else { " <> normal <> " }"
+                  "if " <> String.joinWith " && " guards <> " { " <> fast <> " } else { " <> postNormal <> " }"
       Nothing -> genApp valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive appTy fn (NonEmptyArray.toArray args)
   UncurriedApp fn args ->
     let appTy = inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr (UncurriedApp fn args))
