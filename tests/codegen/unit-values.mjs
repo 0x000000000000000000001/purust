@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { codegenModule, codegenPrelude } from '../../output/Purust.CodeGen/index.js';
 import { empty as emptyMap } from '../../output/Data.Map/index.js';
-import { empty as emptySet } from '../../output/Data.Set/index.js';
+import { singleton } from '../../output/Data.Set/index.js';
 import { Just, Nothing } from '../../output/Data.Maybe/index.js';
 import { Tuple } from '../../output/Data.Tuple/index.js';
 import { ADT, Any, Array as ArrayType, Func, Int, LitArray, LitRecord, Record as RecordType, Row, Unit } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
@@ -56,7 +56,7 @@ const additionalFFI = [
   ['console_ffi', 'purust-console/src/Effect/Console.rs'],
 ].map(([name, path]) => `mod ${name} {\n${readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8')}\n}`).join('\n');
 const runtime = fileURLToPath(new URL('../runtime/perceus_ptr/src/lib.rs', import.meta.url));
-const rust = `${codegenPrelude(emptySet)}
+const rust = `${codegenPrelude(singleton('no,yes'))}
 extern crate self as purust_core;
 #[path = ${JSON.stringify(runtime)}]
 mod perceus_ptr;
@@ -148,19 +148,19 @@ fn main() {
     let uncons = Data_Array_unconsImpl().unwrap_func1()(empty).unwrap_func1()(next);
     assert_eq!(uncons.unwrap_func1()(mk_array(vec![])).unwrap_int(), 42);
     assert_eq!(uncons.unwrap_func1()(mk_array(vec![mk_int(7), mk_int(8)])).unwrap_int(), 8);
-    for (assert_impl, check_throws) in [
-        (assert_ffi::Test_Assert_assertImpl as fn(Value, Value) -> Value,
-         assert_ffi::Test_Assert_checkThrows as fn(Value) -> Value),
-        (strings_assert_ffi::Test_Assert_assertImpl as fn(Value, Value) -> Value,
-         strings_assert_ffi::Test_Assert_checkThrows as fn(Value) -> Value),
-    ] {
-        assert!(matches!(assert_impl(mk_string("unit"), mk_bool(true)), Value::Unit));
-        let continuation = Value::Func1(Func1::Static(|unit: Value| {
-            unit.unwrap_unit();
-            mk_int(7)
-        }));
-        assert!(!check_throws(continuation).unwrap_bool(), "Unit conversion must not cause a caught panic");
-    }
+    let assertion = assert_ffi::Test_Assert_assertImpl("unit".to_owned(), true);
+    assert!(matches!(assertion.unwrap_func1()(Value::Unit), Value::Unit));
+    let continuation = Func1::Static(|(): ()| mk_int(7));
+    let check = assert_ffi::Test_Assert_checkThrows(continuation);
+    assert!(!check.unwrap_func1()(Value::Unit).unwrap_bool(), "Native Unit callback must not cause a caught panic");
+
+    // The strings fixture still has its separate legacy synchronous FFI.
+    assert!(matches!(strings_assert_ffi::Test_Assert_assertImpl(mk_string("unit"), mk_bool(true)), Value::Unit));
+    let continuation = Value::Func1(Func1::Static(|unit: Value| {
+        unit.unwrap_unit();
+        mk_int(7)
+    }));
+    assert!(!strings_assert_ffi::Test_Assert_checkThrows(continuation).unwrap_bool(), "Boxed Unit conversion must not cause a caught panic");
     assert!(matches!(console_ffi::Effect_Console_clear().unwrap_func1()(Value::Unit), Value::Unit));
     assert!(matches!(strings_console_ffi::Effect_Console_clear(), Value::Unit));
     // Different results expose accidental replacement of a continuation result

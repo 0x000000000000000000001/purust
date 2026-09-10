@@ -1,6 +1,7 @@
 module PolyConsumer where
 
 import Prelude
+import AnnotationScope (Wrapped(..), wrap)
 import Data.Array (length)
 import PolyLoop (class Monoidish, polyLoop, repeatWith)
 
@@ -26,3 +27,6 @@ mixed n initial = repeatWith (\acc add -> if add then acc + 2 else acc) true n i
 
 arrayLength :: Array Int -> Int
 arrayLength xs = length xs
+
+scopedWrapper :: Int -> Wrapped Int
+scopedWrapper = wrap (\value -> Wrapped (value + 1))

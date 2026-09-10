@@ -36,7 +36,7 @@ One of the pain points with FFI in alternative backends is the boilerplate (manu
 `purust` aims to be fully aligned with the current v0.15+ ecosystem (and v0.16+ soon). It takes full advantage of modern Rust, including its powerful type system and advanced concurrency primitives.
 
 ### 6. Native Parallelism behind Aff
-Historical hurdles involved mapping PureScript’s asynchronous monad (`Aff`) without introducing massive overhead. Today, the game has changed. `purust` maps `Aff` to async Rust (e.g. `tokio` tasks), bringing true, shared-memory parallelism to PureScript. A heavy CPU-bound parallel workload naturally distributes across your CPU cores, scaling linearly.
+The `--threaded` mode generates atomic shared ownership (`Arc`) and requires shared callbacks to implement `Send + Sync`. The Rust Aff interpreter uses Tokio for asynchronous work. Fibers execute synchronously until they suspend; callback resumptions can run on different workers. The executable waits for all active fibers, including children that outlive their parent. `Ref.modify` and AVar queues use mutexes to protect shared state. Synchronous CPU work is not automatically distributed across cores by `forkAff`.
 
 ## How to use
 
@@ -130,3 +130,24 @@ To run the test suite:
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
+
+## Concurrent Aff programs
+
+Add `--threaded` to the backend arguments for programs using the Rust Aff FFI:
+
+```yaml
+workspace:
+  backend:
+    cmd: ../purust/bin/purust
+    args: [--main, Main, --source, output, --out, output/purust_output, --threaded]
+```
+
+The generated executable installs the Aff runtime and keeps it alive until active
+fibers finish. The default mode retains non-atomic ownership for programs that do
+not share values between threads. Rust FFI remains subject to the compiler's
+thread-safety checks; threaded code cannot capture a non-`Send` or non-`Sync` value
+in a shared callback. Ownership rendering preserves Rust literals and comments.
+
+The sibling `purust-aff/bin/test -c` rebuilds the compiler and validates the Aff
+suite, concurrent Ref/AVar integration, and children that outlive their parents.
+`purust-aff/bin/test --smoke` runs the small initial Aff scenario.

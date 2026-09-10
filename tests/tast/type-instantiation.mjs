@@ -38,7 +38,7 @@ function run(command, args) {
 try {
   const output = join(directory, 'output');
   run(process.env.PURS ?? 'purs', ['compile', join(prelude, '**/*.purs'), join(partial, '**/*.purs'),
-    ...['Array', 'PolyLoop', 'PolyConsumer'].map(name => join(fixtures, `${name}.purs`)),
+    ...['Array', 'AnnotationScope', 'PolyLoop', 'PolyConsumer'].map(name => join(fixtures, `${name}.purs`)),
     '--codegen', 'corefn', '--output', output]);
   const json = JSON.parse(readFileSync(join(output, 'PolyLoop/corefn.json'), 'utf8'));
   assert.ok(Array.isArray(json.classDecls), 'PURS must be the TAST fork.');
@@ -87,7 +87,12 @@ try {
 use purust_core::*;
 use Purs_PolyLoop::*;
 use Purs_PolyConsumer::*;
+use Purs_AnnotationScope::*;
 fn main() {
+    // The payload's Int must not capture the callee's unrelated generic result.
+    match PolyConsumer_scopedWrapper(41).as_ref() {
+        Wrapped::Wrapped(value) => assert_eq!(value.unwrap_int(), 42),
+    }
     assert_eq!(PolyLoop_partialComposed(PolyLoop_Present(mk_int(42))), 42);
     for n in [0_i64, 1, 2, 7, 1000] {
         for initial in [-42_i64, 0, 17] {
@@ -111,12 +116,12 @@ fn main() {
     assert_eq!((int_first, number_middle, PolyConsumer_intPartial(2, 10)), (12, 11.25, 12));
     assert_eq!(PolyConsumer_arrayLength(mk_array(vec![])), 0);
     assert_eq!(PolyConsumer_arrayLength(mk_array(vec![mk_int(1), mk_int(2)])), 2);
-    println!("TAST instantiation: native Int/Number loops, two quantifiers, partial application and generic dictionaries checked across modules.");
+    println!("TAST instantiation: native Int/Number loops, two quantifiers, partial application, generic dictionaries and lexical result types checked across modules.");
 }
 `);
   const binary = join(directory, 'checks');
   run('rustc', ['--edition=2021', '-C', 'opt-level=1', source, '-o', binary,
-    '-L', `dependency=${directory}`, ...['purust_core', 'Purs_PolyLoop', 'Purs_PolyConsumer']
+    '-L', `dependency=${directory}`, ...['purust_core', 'Purs_PolyLoop', 'Purs_PolyConsumer', 'Purs_AnnotationScope']
       .flatMap(n => ['--extern', `${n}=${libraries.get(n)}`])]);
   process.stdout.write(run(binary, []));
 } finally {

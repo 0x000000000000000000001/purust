@@ -23,6 +23,26 @@ suspendVary n step acc = suspendVary (n - 1) (step + n) (\_ -> acc unit + step *
 fusedVary :: Int -> Int
 fusedVary offset = suspendVary 3 2 (\_ -> 7) unit + offset
 
+-- The constructor alias and polymorphic consumer must expose the same lambda
+-- structure as the direct function cases above, without losing type scopes.
+newtype Suspended a = Suspended (Unit -> a)
+
+suspendValue :: forall a. (Unit -> a) -> Suspended a
+suspendValue = Suspended
+
+forceValue :: forall a. Suspended a -> a
+forceValue (Suspended action) = action unit
+
+suspendWrapped :: Int -> Suspended Int -> Suspended Int
+suspendWrapped 0 acc = acc
+suspendWrapped n acc = suspendWrapped (n - 1) (suspendValue \_ -> forceValue acc + 2)
+
+fusedWrapped :: Int -> Int
+fusedWrapped offset = forceValue (suspendWrapped 1000 (Suspended \_ -> 7)) + offset
+
+fusedWrappedAlias :: Int -> Int
+fusedWrappedAlias offset = forceValue (suspendWrapped 1000 (suspendValue \_ -> 11)) + offset
+
 fusedZero :: Int -> Int
 fusedZero offset = suspendAdds 0 2 (\_ -> 7) unit + offset
 

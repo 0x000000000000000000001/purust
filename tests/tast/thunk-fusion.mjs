@@ -25,7 +25,7 @@ try {
   run(process.execPath, ['--stack-size=65536', join(root, 'bin/purust.js'),
     '--source', output, '--out', rust, '--main', 'ThunkFusion']);
   const generated = readFileSync(join(rust, 'Purs_ThunkFusion/src/lib.rs'), 'utf8');
-  for (const producer of ['suspendAdds', 'suspendOrder', 'suspendVary']) {
+  for (const producer of ['suspendAdds', 'suspendOrder', 'suspendVary', 'suspendWrapped']) {
     assert.match(generated, new RegExp(`\\nfn ThunkFusion_${producer}__purust_strict_thunk_\\d+\\(`));
     assert.doesNotMatch(generated, new RegExp(`pub fn ThunkFusion_${producer}__purust_strict_thunk_`));
   }
@@ -35,7 +35,7 @@ try {
     const end = generated.indexOf('\n\npub fn ', start + 1);
     return generated.slice(start, end < 0 ? undefined : end);
   }
-  for (const name of ['fusedAdds', 'fusedOrder', 'fusedVary']) {
+  for (const name of ['fusedAdds', 'fusedOrder', 'fusedVary', 'fusedWrapped', 'fusedWrappedAlias']) {
     assert.match(body(name), /__purust_strict_thunk_/, name);
   }
   for (const name of ['unknownInputs', 'opaqueSeed', 'savedThunk', 'twice', 'overwrite',
