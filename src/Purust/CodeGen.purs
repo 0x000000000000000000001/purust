@@ -19,6 +19,7 @@ import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFi
 import Purust.ReuseFields (scalarFieldUpdate)
 import Purust.ChildCalls as ChildCalls
 import Purust.ChildBranches as ChildBranches
+import Purust.RecordBorrows (recordProjection)
 import Purust.ChildBranchPrinter (predicateFunction)
 import Purust.ChildUpdates (childUpdate)
 import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpdate)
@@ -294,6 +295,24 @@ codegenPrelude fields =
          "        }\n" <>
          "    }\n"
     ) validUniqueFields
+
+    -- Keep the ordinary owned getters for escaping values. Scalar consumers
+    -- can borrow a whole projection path and copy only its final primitive.
+    borrowMethods = Array.foldMap (\f ->
+      let sf = sanitizeIdent f
+          matchArms = Array.foldMap (\shape ->
+             let structName = shapeToStructName shape
+             in if Array.elem f (String.split (Pattern ",") shape) then
+                  "            Value::" <> structName <> "(r) => r." <> sf <> ".as_ref().unwrap(),\n"
+                else ""
+          ) validShapes
+      in "    pub fn __purust_borrow_" <> sf <> "(&self) -> &UnknownType {\n" <>
+         "        match self {\n" <> matchArms <>
+         "            Value::Record_a(r) => r." <> sf <> ".as_ref().unwrap(),\n" <>
+         "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
+         "        }\n" <>
+         "    }\n"
+    ) validUniqueFields
     
     setMethods = Array.foldMap (\f -> 
       let sf = sanitizeIdent f
@@ -411,6 +430,7 @@ codegenPrelude fields =
   "        if let Value::Record_a(r) = self { r.tag } else { panic!(\"Expected Record_a for tag\"); }\n" <>
   "    }\n" <>
   getMethods <>
+  borrowMethods <>
   setMethods <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
@@ -1292,6 +1312,38 @@ reuseTestedNullaries valueEnums currentMod aritiesMap globalClassFields bound co
 codegenExpr_ :: ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) =
   let
+    borrowedRecordScalar :: ExprType -> NeutralExpr -> Maybe String
+    borrowedRecordScalar expected value = do
+      projection <- recordProjection
+        (inferTypeExpr currentMod aritiesMap globalClassFields bound)
+        (codegenExprTypeWithValueEnums valueEnums currentMod false)
+        expected value
+      -- These labels do not have runtime getters in codegenPrelude.
+      if Array.any (\field -> Array.elem field [ "", "unwrap", "clone", "as_ref", "tag", "vals", "call" ]) projection.fields
+        then Nothing
+        else do
+          name <- localName projection.root
+          method <- case expected of
+            Int -> Just "unwrap_int"
+            Number -> Just "unwrap_number"
+            Boolean -> Just "unwrap_bool"
+            Char -> Just "unwrap_char"
+            _ -> Nothing
+          let path = "(&" <> name <> ")" <> Array.foldMap
+                (\field -> ".__purust_borrow_" <> sanitizeIdent field <> "()") projection.fields
+          pure ("/* purust record: borrowed scalar */(" <> path <> ")." <> method <> "()")
+      where
+      localName (NeutralExpr (Typed _ inner)) = localName inner
+      localName (NeutralExpr (Syn.TypeApp inner _)) = localName inner
+      localName (NeutralExpr (Local mbId lvl)) = Just case mbId of
+        Just (Ident name) -> sanitizeIdent name
+        Nothing -> "lvl_" <> show (unwrap lvl)
+      localName _ = Nothing
+
+    scalarOperand expected value actual raw = fromMaybe
+      (boxUnbox valueEnums currentMod expected actual raw)
+      (borrowedRecordScalar expected value)
+
     isEffectNode :: NeutralExpr -> Boolean
     isEffectNode (NeutralExpr e) = case e of
       EffectBind _ _ _ _ -> true
@@ -1423,7 +1475,9 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         let innerCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
             innerTy = inferTypeExpr currentMod aritiesMap globalClassFields bound inner
             fixedTy = inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr (Typed ty inner))
-        in "/* Typed " <> codegenExprTypeWithValueEnums valueEnums currentMod true ty <> " <- " <> codegenExprTypeWithValueEnums valueEnums currentMod true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox valueEnums currentMod fixedTy innerTy innerCode
+        in fromMaybe
+          ("/* Typed " <> codegenExprTypeWithValueEnums valueEnums currentMod true ty <> " <- " <> codegenExprTypeWithValueEnums valueEnums currentMod true innerTy <> " : " <> printAST inner <> " */" <> boxUnbox valueEnums currentMod fixedTy innerTy innerCode)
+          (borrowedRecordScalar fixedTy expr)
 
   App fn args -> 
     let appTy = inferTypeExpr currentMod aritiesMap globalClassFields bound expr
@@ -1679,7 +1733,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
             aliveForCond = Set.union alive (Set.union (freeVariables body) varsSubsequent)
             condCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForCond false cond
             condTy = inferTypeExpr currentMod aritiesMap globalClassFields bound cond
-            condFinal = boxUnbox valueEnums currentMod Boolean condTy condCode
+            condFinal = scalarOperand Boolean cond condTy condCode
         in "if " <> condFinal <> " {\n        " <> genBranchBody body <> "\n    }") branchesArr
       defCode = "{\n        " <> genBranchBody def <> "\n    }"
     in
@@ -1694,16 +1748,16 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
           _, _ -> alive
         aStrRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForA false a
     in case op of
-      OpBooleanNot -> "!(" <> boxUnbox valueEnums currentMod Boolean aTy aStrRaw <> " /* aTy: " <> codegenExprTypeWithValueEnums valueEnums currentMod true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of
+      OpBooleanNot -> "!(" <> scalarOperand Boolean a aTy aStrRaw <> " /* aTy: " <> codegenExprTypeWithValueEnums valueEnums currentMod true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of
         NeutralExpr (App fn _) -> printType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) <> ", lvl_3 in bound: " <> (case Map.lookup "lvl_3" bound of
           Just t -> printType t
           Nothing -> "none") <> ", lvl_3 in arities: " <> (case Map.lookup "lvl_3" aritiesMap of
           Just t -> printType t
           Nothing -> "none")
         _ -> "not app") <> " */)"
-      OpIntBitNot -> "!(" <> boxUnbox valueEnums currentMod Int aTy aStrRaw <> ")"
-      OpIntNegate -> "-(" <> boxUnbox valueEnums currentMod Int aTy aStrRaw <> ")"
-      OpNumberNegate -> "-(" <> boxUnbox valueEnums currentMod Number aTy aStrRaw <> ")"
+      OpIntBitNot -> "!(" <> scalarOperand Int a aTy aStrRaw <> ")"
+      OpIntNegate -> "-(" <> scalarOperand Int a aTy aStrRaw <> ")"
+      OpNumberNegate -> "-(" <> scalarOperand Number a aTy aStrRaw <> ")"
       OpArrayLength -> "((" <> boxUnbox valueEnums currentMod Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
       OpIsTag (Qualified mbMod (Ident ctorName)) -> 
         case unwrapType aTy of
@@ -1732,12 +1786,14 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         bTy = inferTypeExpr currentMod aritiesMap globalClassFields bound b
         aStrRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForA false a
         bStrRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false b
-        aStrInt = boxUnbox valueEnums currentMod Int aTy aStrRaw
-        bStrInt = boxUnbox valueEnums currentMod Int bTy bStrRaw
-        aStrBool = boxUnbox valueEnums currentMod Boolean aTy aStrRaw
-        bStrBool = boxUnbox valueEnums currentMod Boolean bTy bStrRaw
-        aStrNum = boxUnbox valueEnums currentMod Number aTy aStrRaw
-        bStrNum = boxUnbox valueEnums currentMod Number bTy bStrRaw
+        aStrInt = scalarOperand Int a aTy aStrRaw
+        bStrInt = scalarOperand Int b bTy bStrRaw
+        aStrBool = scalarOperand Boolean a aTy aStrRaw
+        bStrBool = scalarOperand Boolean b bTy bStrRaw
+        aStrNum = scalarOperand Number a aTy aStrRaw
+        bStrNum = scalarOperand Number b bTy bStrRaw
+        aStrChar = scalarOperand Char a aTy aStrRaw
+        bStrChar = scalarOperand Char b bTy bStrRaw
         aStrStr = boxUnbox valueEnums currentMod String aTy aStrRaw
         bStrStr = boxUnbox valueEnums currentMod String bTy bStrRaw
     in case op of
@@ -1771,12 +1827,12 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
       OpStringOrd OpGte -> "(" <> aStrStr <> " >= " <> bStrStr <> ")"
       OpStringOrd OpLt -> "(" <> aStrStr <> " < " <> bStrStr <> ")"
       OpStringOrd OpLte -> "(" <> aStrStr <> " <= " <> bStrStr <> ")"
-      OpCharOrd OpEq -> "(" <> boxUnbox valueEnums currentMod Char aTy aStrRaw <> " == " <> boxUnbox valueEnums currentMod Char bTy bStrRaw <> ")"
-      OpCharOrd OpNotEq -> "(" <> boxUnbox valueEnums currentMod Char aTy aStrRaw <> " != " <> boxUnbox valueEnums currentMod Char bTy bStrRaw <> ")"
-      OpCharOrd OpGt -> "(" <> boxUnbox valueEnums currentMod Char aTy aStrRaw <> " > " <> boxUnbox valueEnums currentMod Char bTy bStrRaw <> ")"
-      OpCharOrd OpGte -> "(" <> boxUnbox valueEnums currentMod Char aTy aStrRaw <> " >= " <> boxUnbox valueEnums currentMod Char bTy bStrRaw <> ")"
-      OpCharOrd OpLt -> "(" <> boxUnbox valueEnums currentMod Char aTy aStrRaw <> " < " <> boxUnbox valueEnums currentMod Char bTy bStrRaw <> ")"
-      OpCharOrd OpLte -> "(" <> boxUnbox valueEnums currentMod Char aTy aStrRaw <> " <= " <> boxUnbox valueEnums currentMod Char bTy bStrRaw <> ")"
+      OpCharOrd OpEq -> "(" <> aStrChar <> " == " <> bStrChar <> ")"
+      OpCharOrd OpNotEq -> "(" <> aStrChar <> " != " <> bStrChar <> ")"
+      OpCharOrd OpGt -> "(" <> aStrChar <> " > " <> bStrChar <> ")"
+      OpCharOrd OpGte -> "(" <> aStrChar <> " >= " <> bStrChar <> ")"
+      OpCharOrd OpLt -> "(" <> aStrChar <> " < " <> bStrChar <> ")"
+      OpCharOrd OpLte -> "(" <> aStrChar <> " <= " <> bStrChar <> ")"
       OpBooleanOrd OpEq -> "(" <> aStrBool <> " == " <> bStrBool <> ")"
       OpBooleanOrd OpNotEq -> "(" <> aStrBool <> " != " <> bStrBool <> ")"
       OpBooleanOrd OpGt -> "(" <> aStrBool <> " > " <> bStrBool <> ")"

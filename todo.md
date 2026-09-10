@@ -1,18 +1,18 @@
 # Plan de performance de Purust
 
-Mis à jour le 10 septembre 2026. La nouvelle extension B13/B14 décide après le calcul de l’enfant si le helper ne ferait que reconstruire le parent. Cinq paires du code réellement généré donnent **16,590 → 12,640 ms** sur la suite (**−3,950 ms, −23,8 %**), dont **RBTree 15,498 → 11,528 ms**. Les cinq paires sont favorables ; les optimisations suivantes restent à mesurer. [Rapport](../../altbak.pub-purust/scratch/rust-post-call-child-integration-20260910/REPORT.md).
+Mis à jour le 10 septembre 2026. Les projections de records vers des scalaires sont maintenant empruntées quand les rangées fermées du TAST prouvent le chemin. Cinq paires du code réellement généré donnent **Records 0,625 → 0,353 ms (−0,272 ms, −43,5 %)**, avec **110 000 → 20 000 clones** et toujours **3 allocations/libérations**. La suite passe de **12,455 → 12,084 ms**, mais cet écart comprend la variation de RBTree : le gain solidement attribuable reste 0,272 ms. **27 tests de génération, 16 tests TAST et les 14 résultats du runner** passent. [Rapport](../../altbak.pub-purust/scratch/rust-record-borrow-integration-20260910/REPORT.md). B14 reste partiel ; B22 reste vert.
 
 ## Point de départ
 
 | Benchmark | Rust compilé, README officiel | Rust natif optimisé, dernière colonne |
 | --- | ---: | ---: |
-| RBTree | 15,956 ms | 36,070 ms |
-| Church | 0,174 ms | 0,001 ms |
-| Deep Record Updates | 0,647 ms | 0,004 ms |
+| RBTree | 11,754 ms | 36,070 ms |
+| Church | 0,183 ms | 0,001 ms |
+| Deep Record Updates | 0,674 ms | 0,004 ms |
 | LazyEvaluation | ≈ 0 ms, arrondi | ≈ 0 ms, arrondi |
-| **Total** | **17,12 ms** | **36,13 ms** |
+| **Total** | **12,98 ms** | **36,13 ms** |
 
-Source : [README du checkout normal d'altbak.pub](../../altbak.pub/README.md#rust), relevé le 10 septembre. Celui du worktree peut être plus ancien. RBTree représente environ 93 % du total documenté et le compilé est déjà plus rapide que le natif de cette colonne. Le gain de chaque intégration est établi sur sa propre comparaison appariée, avec le même TAST et les mêmes dépendances.
+Source : [README du checkout normal d'altbak.pub](../../altbak.pub/README.md#rust), relevé le 10 septembre. Celui du worktree peut être plus ancien. RBTree représente environ 91 % du total documenté et le compilé est déjà plus rapide que le natif de cette colonne. Le gain de chaque intégration est établi sur sa propre comparaison appariée, avec le même TAST et les mêmes dépendances.
 
 La [réutilisation du chemin jusqu’à la feuille](../../altbak.pub-purust/scratch/rust-record-path-20260909/REPORT.md) donne **Records 0,768 → 0,624 ms (−18,8 %)** sur cinq paires favorables. **10 003 → 3 allocations/libérations** : seules les trois cellules initiales sont allouées. Le total mesuré **19,434 → 19,322 ms (−0,6 %)** reste un petit écart face à la dispersion ; **22 tests de génération, 13 tests TAST et 14 résultats du runner** passent. La règle suit un enfant par niveau, avec copie lorsque les versions sont partagées.
 
@@ -67,7 +67,7 @@ Le chemin unique de recoloration dans `Test_RBTree_insert` ne modifie désormais
 
 Constat : `Test_RBTree_depth` reçoit un `Rc<Tree>` possédé et clone ses enfants avant les appels récursifs. Le parcours pourrait emprunter l'arbre ; le coût de sa destruction doit rester inclus dans la comparaison.
 
-- [ ] Comparer le parcours actuel à un worker empruntant `&Tree`, sur le même arbre, avec construction et destruction identiques. Compter les incréments/décréments supprimés séparément du chronométrage.
+- [x] Comparer le parcours actuel à un worker empruntant `&Tree`, sur le même arbre, avec construction et destruction identiques. Le [prototype isolé](../../altbak.pub-purust/scratch/rust-borrowed-depth-20260910/REPORT.md) supprime 200 000 clones, mais le gain global de 0,103 ms est moins régulier : une des cinq paires est défavorable. Il reste hors du générateur ; les lectures de records ont été retenues pour cette étape.
 - [ ] Inférer un paramètre en lecture pour une fonction native directe : aucun stockage, retour, capture ou transfert opaque du paramètre. Commencer par une fonction récursive et une signature concrète issue du TAST.
 - [ ] Garder l'interface possédée aux frontières publiques et FFI, appeler le worker emprunté lorsque possible. Couvrir appels répétés, partages, résultats, destruction et usages ultérieurs ; intégrer puis mesurer.
 - [ ] Étendre aux fonctions voisines ou à plusieurs paramètres uniquement après avoir identifié un coût exécuté supplémentaire.
@@ -90,7 +90,8 @@ Constat confirmé dans l'assembleur : certains chemins appellent `Rc::get_mut` p
 - [x] **Records : déplacer la racine après les valeurs de remplacement.** Pour une base locale de record fermé, sans conversion ni usage ultérieur, `Update` calcule les valeurs dans l'ordre en gardant la base vivante, puis la déplace avant les setters existants. Les aliases retenus par les valeurs conservent le chemin de copie du runtime. Le code réellement généré supprime **10 000 allocations/libérations : 30 003 → 20 003**. Deux séries de cinq paires confirment **−10,5 %**, puis **−10,1 %** sur Records ; les dix paires réunies donnent **0,938 → 0,837 ms**. Le total est indécis. Racines uniques/partagées, usages ultérieurs, callbacks, captures de l'ancienne racine, exceptions et libérations vérifiés. [Fixture TAST](tests/tast/record-root-move.mjs), [rapport](../../altbak.pub-purust/scratch/rust-record-root-move-20260909/REPORT.md). B14 reste partiel, B22 reste vert.
 - [x] **Records : réutiliser un niveau enfant.** Une mise à jour du même enfant d’une racine locale consommée, prouvée par son layout TAST fermé, calcule les RHS avant de détacher puis réinstaller l’enfant. Les setters existants conservent les copies en présence d’alias. **20 003 → 10 003 allocations/libérations**, **0,861 → 0,767 ms (−10,9 %)** sur cinq paires du runner complet ; total indécis. Adresses uniques, partage indépendant de l’enfant, captures des anciennes versions, callbacks et libérations sur exception vérifiés. [Règle](src/Purust/RecordUpdates.purs), [rapport](../../altbak.pub-purust/scratch/rust-record-child-20260909/REPORT.md). B14 reste partiel et B22 reste vert.
 - [x] **Records : réutiliser le dernier niveau.** Le plan suit récursivement un enfant par niveau, avec validation du même chemin et du layout fermé TAST. Toutes les valeurs sont calculées avant le déplacement de la racine ; les enfants sont détachés puis réinstallés avec les setters existants. **10 003 → 3 allocations/libérations**, **0,768 → 0,624 ms (−18,8 %)** sur cinq paires ; total **19,434 → 19,322 ms**, petite baisse à relativiser. Les huit combinaisons de partage, les trois adresses uniques, les captures, callbacks et libérations sur exception passent. [Rapport](../../altbak.pub-purust/scratch/rust-record-path-20260909/REPORT.md). B14 reste partiel et B22 reste vert.
-- [ ] **Records résiduel : mesurer le coût des accès aux champs.** Le chemin unique n’alloue plus pendant les 10 000 mises à jour. Inspecter le code machine O1 des projections répétées et des champs `Option<Value>`, isoler un coût encore exécuté puis mesurer un prototype conservant les quatre champs du résultat. Les layouts typés/unboxés B21/B23 restent une piste distincte ; aucun gain supplémentaire n’est encore démontré.
+- [x] **Records : emprunter les projections vers des scalaires.** Une racine locale et des rangées fermées du TAST prouvent tout le chemin jusqu’à un `Int`, `Number`, `Boolean` ou `Char`, copié immédiatement. Les racines opaques, conversions et retours possédés gardent leur chemin existant. Cinq paires favorables donnent **0,625 → 0,353 ms (−43,5 %, −0,272 ms)**, plages **0,620–0,628 / 0,352–0,356 ms**. **110 000 → 20 000 clones**, trois allocations/libérations inchangées. La règle fonctionne aussi dans cinq modules de bibliothèque et reste indépendante des noms de benchmarks. [Analyse](src/Purust/RecordBorrows.purs), [fixture TAST](tests/tast/record-borrows.mjs), [rapport](../../altbak.pub-purust/scratch/rust-record-borrow-integration-20260910/REPORT.md). B14 reste partiel, B22 reste vert.
+- [ ] **Records résiduel : représentation et accès restants.** Les champs restent des `Option<Value>` et les setters/détachements gardent leurs accès possédés. Les layouts typés/unboxés B21/B23 demandent une nouvelle preuve et une mesure séparée ; le natif documenté reste à 0,004 ms.
 - [ ] **Fusion de thunks :** envisager les entrées inconnues seulement pour un cas utile mesuré, avec une preuve plus générale de terminaison et de sûreté arithmétique. Le benchmark LazyEvaluation actuel n'offre presque plus de gain.
 
 ## Pistes en réserve
