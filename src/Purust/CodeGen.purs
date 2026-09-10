@@ -27,6 +27,7 @@ import Purust.ClassFields (superclassFields)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import Purust.FunctionFusion (countedFunctionProducers)
+import Purust.Utf16 (runtimeHelpers, rustStringLiteral, rustCharLiteral)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
 import PureScript.Backend.Optimizer.CoreFn as CoreFn
 import Debug as Debug
@@ -458,6 +459,7 @@ codegenPrelude fields =
   setMethods <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
+  runtimeHelpers <>
   "pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
   "pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" <>
@@ -539,6 +541,29 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
     in if arity > 0 && arity <= 11 then "purust_core::Func" <> show arity <> "<" <> typeArgs <> ">"
        else "crate::UnknownType"
   _ -> "crate::UnknownType"
+
+-- A tail-call jump has no value to box. Detect it from the expression rather
+-- than the emitted Rust suffix: moving constructor fields can add outer blocks.
+continuesLoop :: String -> Maybe { name :: String, params :: Array String } -> NeutralExpr -> Boolean
+continuesLoop currentMod mbLoop = go
+  where
+  callee (NeutralExpr (Typed _ inner)) = callee inner
+  callee (NeutralExpr (Syn.TypeApp inner _)) = callee inner
+  callee (NeutralExpr (Var qualified@(Qualified _ (Ident name)))) =
+    Just (getTyPrefix currentMod qualified <> sanitizeIdent name)
+  callee (NeutralExpr (Local (Just (Ident name)) _)) = Just (sanitizeIdent name)
+  callee _ = Nothing
+
+  go (NeutralExpr syntax) = case syntax of
+    Typed _ inner -> go inner
+    Syn.TypeApp inner _ -> go inner
+    Let _ _ _ body -> go body
+    LetRec _ _ body -> go body
+    Branch branches fallback -> go fallback && Array.all (\(Pair _ body) -> go body) (NonEmptyArray.toArray branches)
+    App fn args -> case mbLoop, callee fn of
+      Just loop, Just name -> name == loop.name && NonEmptyArray.length args == Array.length loop.params
+      _, _ -> false
+    _ -> false
 
 boxUnbox :: ValueEnums -> Map.Map String (Array (Tuple String ExprType)) -> String -> ExprType -> ExprType -> String -> String
 boxUnbox valueEnums globalClassFields currentMod expected actual code =
@@ -785,7 +810,8 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
                 Just (Tuple _ body) -> 
                     let bodyRaw = codegenExpr_ valueEnums modNameStr allZeroArity reuseContext mbLoop mergedArities globalClassFields bound Set.empty false body
                         bodyTy = inferTypeExpr modNameStr mergedArities globalClassFields bound body
-                    in boxUnbox valueEnums globalClassFields modNameStr retType bodyTy bodyRaw
+                    in if continuesLoop modNameStr mbLoop body then bodyRaw
+                       else boxUnbox valueEnums globalClassFields modNameStr retType bodyTy bodyRaw
                 Nothing
                   | isSelfRecursive
                   , prefixArity <- leadingAbsArity expr
@@ -807,7 +833,8 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
                         workerLoop = Just { name: identName, params: workerParams }
                         workerBody = codegenExpr_ valueEnums modNameStr allZeroArity reuseContext workerLoop workerArities globalClassFields workerBound Set.empty false body
                         workerBodyType = inferTypeExpr modNameStr workerArities globalClassFields workerBound body
-                        workerCode = boxUnbox valueEnums globalClassFields modNameStr workerReturn workerBodyType workerBody
+                        workerCode = if continuesLoop modNameStr workerLoop body then workerBody
+                          else boxUnbox valueEnums globalClassFields modNameStr workerReturn workerBodyType workerBody
                         workerArgs = String.joinWith ", " $ Array.zipWith
                           (\name ty -> (if name == "_" then "" else "mut ") <> name <> ": " <> codegenExprTypeWithValueEnums valueEnums modNameStr false ty)
                           workerParams workerTypes
@@ -1520,7 +1547,9 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
       -- An erased annotation can still surround a real abstraction. Keep its
       -- inferred function shape instead of extracting zero parameters from Any.
       effectiveTy = inferTypeExpr currentMod aritiesMap globalClassFields bound expr
-    in case inner of
+    in if continuesLoop currentMod mbLoop inner then
+      codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
+    else case inner of
       NeutralExpr PrimUndefined | unwrapType ty == Unit -> "()"
       NeutralExpr (Let _ _ _ _) | unwrapType ty /= Any ->
         codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock (annotateScopedResult ty inner)
@@ -1857,9 +1886,11 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         (reuseTestedNullaries valueEnums currentMod aritiesMap globalClassFields bound cond body))
         (NonEmptyArray.toArray branches)
       branchTy = inferTypeExpr currentMod aritiesMap globalClassFields bound expr
-      genBranchBody body = boxUnbox valueEnums globalClassFields currentMod branchTy
-        (inferTypeExpr currentMod aritiesMap globalClassFields bound body)
-        (codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive false body)
+      genBranchBody body =
+        let raw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive false body
+        in if continuesLoop currentMod mbLoop body then raw
+           else boxUnbox valueEnums globalClassFields currentMod branchTy
+             (inferTypeExpr currentMod aritiesMap globalClassFields bound body) raw
       branchCode = Array.mapWithIndex (\i (Pair cond body) -> 
         let 
             subsequentBranches = Array.drop (i + 1) branchesArr
@@ -2197,8 +2228,8 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
   Lit lit -> case lit of
     LitInt i -> show i
     LitNumber n -> show n
-    LitString s -> "String::from(r#\"" <> s <> "\"#)"
-    LitChar c -> show c
+    LitString s -> rustStringLiteral s
+    LitChar c -> rustCharLiteral c
     LitBoolean b -> if b then "true" else "false"
     LitArray arr -> 
       let arrCode = Array.mapWithIndex (\i a -> 
@@ -2411,7 +2442,8 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                    innerBound = Array.foldl (\b (Tuple p ty) -> Map.insert (sanitizeIdent p) ty b) bound paramPairs
                    bodyRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields innerBound (freeVariables innerExpr) false innerExpr
                    bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields innerBound innerExpr
-                   boxedBody = boxUnbox valueEnums globalClassFields currentMod retType bodyTy bodyRaw
+                   boxedBody = if continuesLoop currentMod mbLoop innerExpr then bodyRaw
+                     else boxUnbox valueEnums globalClassFields currentMod retType bodyTy bodyRaw
                    
                    fnCode = "fn " <> fnName <> "(" <> allArgsCode <> ") -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> " {\n        loop {\n            break " <> boxedBody <> ";\n        }\n    }"
                    
