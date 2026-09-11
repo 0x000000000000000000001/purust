@@ -292,6 +292,7 @@ codegenPrelude fields =
       in "    pub fn get_" <> sf <> "(&self) -> UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
          "            Value::Record_a(r) => r." <> sf <> ".clone().unwrap(),\n" <>
+         "            Value::DynamicRecord(r) => r.get(" <> show f <> ").cloned().expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
          "    }\n"
@@ -308,8 +309,37 @@ codegenPrelude fields =
       "            Value::Record_a(r) => match name {\n" <>
       Array.foldMap (\f -> "                " <> show f <> " => r." <> sanitizeIdent f <> ".clone(),\n") validUniqueFields <>
       "                _ => None,\n            },\n" <>
+      "            Value::DynamicRecord(r) => r.get(name).cloned(),\n" <>
       "            _ => panic!(\"Expected record\"),\n" <>
       "        }\n    }\n"
+
+    -- Foreign insertion can extend a closed shape or use a runtime-only key.
+    -- Keep existing native shapes for replacements; only widen when necessary.
+    -- All updates use COW and retain the other values without evaluating them.
+    setKnownFields names = "match name {\n" <>
+      Array.foldMap (\f -> "                " <> show f <> " => { perceus_ptr::PerceusPtr::make_mut(r)." <>
+        sanitizeIdent f <> " = Some(value); return self; },\n") names <>
+      "                _ => {},\n            }"
+    copyFields names = Array.foldMap (\f ->
+      "                if let Some(value) = &r." <> sanitizeIdent f <>
+      " { fields.insert(" <> show f <> ".to_owned(), value.clone()); }\n") names
+    dynamicSetMethod =
+      "    pub fn __purust_set_field(mut self, name: &str, value: Value) -> Value {\n" <>
+      "        if matches!(self, Value::Thunk(_)) { self = self.resolve().clone(); }\n" <>
+      "        match &mut self {\n" <>
+      Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
+        "(r) => " <> setKnownFields (String.split (Pattern ",") shape) <> ",\n") validShapes <>
+      "            Value::Record_a(r) => " <> setKnownFields validUniqueFields <> ",\n" <>
+      "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(name.to_owned(), value); return self; },\n" <>
+      "            _ => panic!(\"Expected record\"),\n        }\n" <>
+      "        let mut fields = std::collections::BTreeMap::new();\n" <>
+      "        match &self {\n" <>
+      Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
+        "(r) => {\n" <> copyFields (String.split (Pattern ",") shape) <> "            },\n") validShapes <>
+      "            Value::Record_a(r) => {\n" <> copyFields validUniqueFields <> "            },\n" <>
+      "            _ => unreachable!(),\n        }\n" <>
+      "        fields.insert(name.to_owned(), value);\n" <>
+      "        Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))\n    }\n"
 
     -- Keep the ordinary owned getters for escaping values. Scalar consumers
     -- can borrow a whole projection path and copy only its final primitive.
@@ -324,6 +354,7 @@ codegenPrelude fields =
       in "    pub fn __purust_borrow_" <> sf <> "(&self) -> &UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
          "            Value::Record_a(r) => r." <> sf <> ".as_ref().unwrap(),\n" <>
+         "            Value::DynamicRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
          "    }\n"
@@ -347,6 +378,7 @@ codegenPrelude fields =
          "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
          "                mut_r." <> sf <> " = Some(val);\n" <>
          "            },\n" <>
+         "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" <> show f <> ".to_owned(), val); },\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
          "    }\n"
@@ -413,6 +445,7 @@ codegenPrelude fields =
   "    Class(std::rc::Rc<dyn std::any::Any>),\n" <>
   "    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" <>
   "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
+  "    DynamicRecord(perceus_ptr::PerceusPtr<std::collections::BTreeMap<String, Value>>),\n" <>
   recordVariants <>
   "}\n\n" <>
   "impl Value {\n" <>
@@ -455,6 +488,7 @@ codegenPrelude fields =
   "    }\n" <>
   getMethods <>
   dynamicGetMethod <>
+  dynamicSetMethod <>
   borrowMethods <>
   setMethods <>
   "}\n\n" <>
@@ -525,9 +559,21 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
   ADT className fqn _ -> 
     let modName = String.replaceAll (Pattern ".") (Replacement "_") (String.joinWith "_" (Array.dropEnd 1 fqn))
         actualClassName = fromMaybe className (Array.last fqn)
-    in if actualClassName == "Void" then "purust_core::Void"
+    -- Pipes' recursive newtype X = X X has no finite inhabitant and no
+    -- dataDecl layout. Use the native empty type, not a missing Rc<X>.
+    in if actualClassName == "Void" || (modName == "Pipes_Internal" && actualClassName == "X") then "purust_core::Void"
        else if modName == "Prim" || String.indexOf (Pattern "Prim_") modName == Just 0 || String.indexOf (Pattern "Prim") modName == Just 0 then "crate::UnknownType"
-           else if modName == "Effect" || modName == "Effect_Exception" || modName == "Effect_Console" || modName == "Effect_Ref" || modName == "Effect_Uncurried" || modName == "Control_Monad_ST_Internal" || modName == "Foreign" || modName == "Data_Array_ST" || String.indexOf (Pattern "Effect_Aff") modName == Just 0 then "crate::UnknownType"
+           else if modName == "Effect" || modName == "Effect_Exception" || modName == "Effect_Console" || modName == "Effect_Ref" || modName == "Effect_Uncurried" || modName == "Control_Monad_ST_Internal" || modName == "Foreign" || modName == "Data_Array_ST" then "crate::UnknownType"
+           -- Preserve the Aff runtime ABI without erasing native dictionary
+           -- layouts in sibling modules such as Effect.Aff.Class.
+           else if modName == "Effect_Aff" || modName == "Effect_Aff_AVar" || modName == "Effect_Aff_Compat" then "crate::UnknownType"
+           -- Exists hides its parameter but preserves the contained value; it
+           -- has no constructor or native struct to allocate.
+           else if modName == "Data_Exists" && actualClassName == "Exists" then "crate::UnknownType"
+           -- Free's private, constructorless Val stores heterogeneous bind
+           -- payloads via unsafeCoerce. Only this carrier uses Value; Free,
+           -- FreeView and the Step constructors keep their native layouts.
+           else if modName == "Control_Monad_Free" && actualClassName == "Val" then "crate::UnknownType"
            else if (modName == "Data_Function_Uncurried" || modName == "Control_Monad_ST_Uncurried") && (String.indexOf (Pattern "Fn") actualClassName == Just 0 || String.indexOf (Pattern "STFn") actualClassName == Just 0) then "crate::UnknownType"
            else if isValueEnum valueEnums modName actualClassName then
              (if modName == currentMod then "crate::" else "Purs_" <> modName <> "::") <> sanitizeIdent actualClassName
@@ -2653,6 +2699,9 @@ inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr expr) =
             NeutralExpr (Abs _ _) -> ty
             NeutralExpr (UncurriedAbs _ _) -> ty
             NeutralExpr (UncurriedEffectAbs _ _) -> ty
+            -- A global alias can instantiate a polymorphic result as another
+            -- function. Keep its TAST signature so boxUnbox adapts the arity.
+            NeutralExpr (Var _) -> ty
             _ | getArity ty /= getArity innerTy -> innerTy
             _ -> ty
           _, Func _ _ -> innerTy
