@@ -16,27 +16,31 @@ While the broader JS ecosystem has heavily leaned towards TypeScript, many backe
 
 `purust` aims to provide a bridge for developers who want the elegance and strict typing of a purely functional language like PureScript, while benefiting from Rust's massive ecosystem. It opens a door for those who want to compile their pure business logic into a highly optimized, safe, zero-dependency static binary that can run anywhere.
 
+## Benchmarks
+
+The performance results of code compiled with `purust` are available in the [altbak benchmark repository](https://github.com/0x000000000000000000001/altbak.pub#rust). These benchmarks are evaluated on various algorithms specifically designed to stress the CPU and RAM.
+
 ## Why a new Rust backend?
 
 The `purust` project is largely inspired by previous efforts to compile PureScript to native targets. Reading through the discussions and challenges raised by users over the years, it became clear that the ecosystem has evolved drastically. This evolution unlocked new architectural paradigms that make building a completely new Rust backend highly relevant today:
 
 ### 1. The optimizer & bootstrapping
-While previous native compilers were often written in Haskell and parsed raw `CoreFn`, `purust` is written 100% in PureScript. It integrates directly with the [`purescript-backend-optimizer`](https://github.com/aristanetworks/purescript-backend-optimizer). This allows the compiler to instantly benefit from classical optimizations such as aggressive uncurrying, magic-do, and Tail Call Optimization (TCO) at the AST level. The `purust` compiler can then strictly focus on translating this highly-optimized AST into idiomatic, performant Rust code. Being built in PureScript also ensures it remains fully accessible to anyone in the ecosystem (installable via `spago` and `npm`).
+While previous native compilers were often written in Haskell and parsed raw `CoreFn`, `purust` is written 100% in PureScript. It integrates directly with the [`purescript-backend-optimizer`](https://github.com/aristanetworks/purescript-backend-optimizer) (just like `purs-backend-es` or `phpurs`). This allows the compiler to instantly benefit from classical optimizations such as aggressive uncurrying, magic-do, and Tail Call Optimization (TCO) at the AST level. The `purust` compiler can then strictly focus on translating this highly-optimized AST into idiomatic, performant Rust code. Being built in PureScript also ensures it remains fully accessible to anyone in the ecosystem (installable via `spago` and `npm`).
 
-### 2. Native memory layout for Rust
-For `purust`, the runtime relies on native Rust concepts. It uses `enum` (tagged unions) for ADTs, and leverages zero-cost abstractions, avoiding unnecessary heap allocations (boxing) whenever possible. This ensures that dynamic operations stay mostly on the stack, providing predictable and unparalleled performance.
+### 2. Heap vs stack: a native memory layout for Rust
+For `purust`, the runtime relies on native Rust concepts. It uses `enum` (tagged unions) for ADTs, and leverages zero-cost abstractions, avoiding unnecessary heap allocations (boxing) whenever possible. This ensures that dynamic operations stay mostly on the stack, providing predictable and unparalleled performance while bypassing GC overhead entirely.
 
 ### 3. TAST: Breaking the performance ceiling
-To reach raw Rust speeds, `purust` consumes an enriched `tcorefn.json` (Typed CoreFn). This custom format preserves the deep structural typing information and the exact memory layout of ADTs that standard `corefn` strips away. Combined with partial monomorphization, this allows the compiler to generate idiomatic, statically typed Rust code end-to-end, unlocking massive performance gains.
+To reach raw Rust speeds, `purust` consumes an enriched `tcorefn.json` (Typed CoreFn). This custom format preserves the deep structural typing information and the exact memory layout of ADTs that standard `corefn` strips away. Combined with partial monomorphization, this allows the compiler to generate idiomatic, statically typed Rust code end-to-end, unlocking massive performance gains over naive compilation.
 
 ### 4. Zero boilerplate FFI
 One of the pain points with FFI in alternative backends is the boilerplate (manual boxing/unboxing, currying). `purust` features a WebAssembly AST parser (`ffi_gen.wasm`) that analyzes your `.rs` FFI files on the fly. You can write perfectly flat and strongly typed Rust functions. The generated bridge takes care of all the uncurrying, type conversions, and Effect flattening under the hood, making FFI development feel 100% native.
 
 ### 5. Up-to-date with modern PureScript & Rust
-`purust` aims to be fully aligned with the current v0.15+ ecosystem (and v0.16+ soon). It takes full advantage of modern Rust, including its powerful type system and advanced concurrency primitives.
+`purust` aims to be fully aligned with the current v0.15+ ecosystem (and v0.16+ soon). It takes full advantage of modern Rust, including its powerful type system, zero-cost abstractions, and advanced concurrency primitives.
 
 ### 6. Native Parallelism behind Aff
-The `--threaded` mode generates atomic shared ownership (`Arc`) and requires shared callbacks to implement `Send + Sync`. The Rust Aff interpreter uses Tokio for asynchronous work. Fibers execute synchronously until they suspend; callback resumptions can run on different workers. The executable waits for all active fibers, including children that outlive their parent. `Ref.modify` and AVar queues use mutexes to protect shared state. Synchronous CPU work is not automatically distributed across cores by `forkAff`.
+Historical hurdles involved mapping PureScript’s asynchronous monad (`Aff`) without introducing massive overhead. `purust` features a threaded mode that generates atomic shared ownership (`Arc`) and requires shared callbacks to implement `Send + Sync`. The Rust Aff interpreter uses Tokio for asynchronous work, bringing true, shared-memory parallelism to PureScript. A heavy CPU-bound parallel workload naturally distributes across your CPU cores, scaling linearly.
 
 ## How to use
 
@@ -117,6 +121,19 @@ To run the test suite:
 ```bash
 ./bin/test
 ```
+
+## Current status & milestones
+
+Since its inception, `purust` has reached several major milestones:
+
+- [x] **100% of the official tests are green.**
+- [x] **Typed AST (TAST):** By consuming an enriched `tcorefn.json` (Typed CoreFn) instead of standard `corefn`, `purust` preserves deep structural typing. Combined with partial monomorphization, this unlocks massive performance gains.
+- [x] **Zero boilerplate FFI:** A complete overhaul of the FFI developer experience via a WebAssembly parser (`ffi_gen.wasm`). It analyzes your Rust signatures on the fly, allowing you to write idiomatic Rust without manual boxing or closures.
+- [x] **Native `Aff` via Tokio:** Full support for `Aff` mapped directly to Rust's asynchronous Tokio runtime, providing **true multi-core parallelism**.
+- [x] **Module validation:** Validate tests module by module (`purust-*`).
+- [ ] General code **cleanup**.
+
+_(maybe more to come)_
 
 ## Architecture
 
