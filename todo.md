@@ -19,7 +19,8 @@ t -c
 `b` et `t` sont les alias existants de `bin/build` et `bin/test`.
 `--runtime rust` permet aussi une sélection ponctuelle sans changer de cible.
 Le contrat 0.18 fixe les entrées et limites de la première version HTML ;
-le test intégré réel `b -c; t -c` reste à exécuter en 0.22.
+le test intégré réel `b -c; t -c` est validé en 0.22 : build 0, HTML 2/2 et
+test 0 ; négatif séparé 2/3 avec sortie 101. La cible b8x est laissée sur Rust.
 La validation des autres backends
 porte sur les comportements déjà pris en charge, pas sur un nouveau portage
 complet de b8x vers chacun d'eux.
@@ -101,9 +102,13 @@ explicites.
 
 ### b8x
 
-- [`b8x/bin/test`](../../b8x/bin/test) délègue à [`b8x/bin/run`](../../b8x/bin/run).
-- `bin/run` sait actuellement exécuter JS, Go et PHP, mais pas Rust.
-- La configuration racine `b8x/spago.yaml` pointe vers la configuration JS.
+- Les branches historiques de [`b8x/bin/test`](../../b8x/bin/test) délèguent à
+  [`b8x/bin/run`](../../b8x/bin/run) ; le chemin Rust utilise le driver dédié.
+- `bin/run` exécute JS, Go et PHP, ainsi que les suites Rust `html` et
+  `html-negative` depuis 0.21–0.22, puis `html-decode` depuis 0.24 ; pas encore
+  les applications ou toute b8x.
+- La configuration racine `b8x/spago.yaml` pointe vers le profil Rust depuis
+  0.22. `html-decode`, choisi en 0.23, est raccordé et validé en 0.24.
 - b8x possède désormais une FFI `.rs` locale pour l'encodage/décodage HTML,
   validée en 0.14 ; les autres modules restent à inventorier et porter.
 - [`b8x/test/Main.purs`](../../b8x/test/Main.purs) dépend de `spec-node`,
@@ -2276,12 +2281,233 @@ du checkout, aucune base nettoyée, aucun conteneur redémarré ; les liens raci
 et `TARGET=js` sont conservés. Les fixtures temporaires sont supprimées par les
 tests ; les sauvegardes du nettoyage ne concernent ici que ces fixtures.
 
-**Prochain baby step — 0.22, Luna :** l'image est disponible et les conteneurs
+**Baby step suivant, réalisé en 0.22, Luna :** l'image est disponible et les conteneurs
 ont déjà été revalidés en 0.20. Examiner les bases sélectionnées, puis valider
 réellement `target rust` et **`b -c; t -c`** selon la section dédiée ci-dessous,
 avec statuts séparés et contrôle négatif. Les changements du driver rendent les
 anciens manifestes 0.20 périmés : reconstruire, ne pas contourner leur contrôle.
 Ne pas élargir encore les suites ni relancer les services métier.
+
+### Micro-étape 0.22 — Validation réelle des commandes intégrées
+
+Réalisée le 13 septembre 2026 sur `b8x/master`. Le checkout reste sur cette
+branche et sa cible persistante est désormais **Rust HTML**. Aucun service
+n'a été redémarré et aucune suite supplémentaire n'a été portée.
+
+| Commande réelle | Résultat |
+| --- | --- |
+| `bin/target rust` | Sortie 0, quatre liens Rust cohérents, `TARGET=rust`. |
+| `bin/b -c` | Sortie 0 ; reconstruction complète purust, TAST frais de 211 modules, Cargo Linux ARM64 et 22 sondes anti-fallback. |
+| `bin/t -c` | Sortie 0 ; deux tests HTML originaux réussis, nettoyage exécuté après les tests. |
+| `bin/t --runtime rust -b --suite html-negative` | Build réussi ; 2/3 tests, erreur finale Aff visible, sortie 101 conservée. |
+| `bin/t` après le négatif | Sortie 0, reprend bien l'artefact positif initial, pas la dernière suite construite. |
+| `bin/run --runtime rust -e Test` | Sortie 0 et 2/2, depuis l'hôte puis directement dans `api-cli`. |
+
+La sélection SQL de nettoyage était **vide** avant la séquence, juste avant
+`t -c` et après : **aucune base supprimée**. Ce contrôle valide le vrai chemin
+de nettoyage sans cible présente ; les suppressions et leurs erreurs restent
+couvertes sur fixtures en 0.21, pas par une suppression PostgreSQL réelle ici.
+
+Preuve : [`rapport 0.22`](../../b8x/run/bak/rust/output/integrated/cli-validation-gqBYgq/report.json),
+avec commandes/statuts/sorties séparés et contrôles de préservation.
+Artefacts prêts :
+[`HTML — build-RsKzF0`](../../b8x/run/bak/rust/output/integrated/html/build-RsKzF0/manifest.json),
+[`négatif — build-iBFVly`](../../b8x/run/bak/rust/output/integrated/html-negative/build-iBFVly/manifest.json).
+Chacun conserve le garde obligatoire et les 22 sondes réussies ; aucun fallback
+n'est atteint pendant les tests. Le conteneur et l'image sont ceux de 0.20,
+avec Rust/Cargo 1.96.0, cible `aarch64-unknown-linux-gnu`.
+
+La reconstruction a compilé 428 modules du backend. Le contenu du nouveau
+bundle retrouve exactement le SHA-256 `d50718c7…83c7b1` de 0.19/0.20 ; Spago
+l'a rendu exécutable (`100644` → `100755`). L'ancien bundle et son output sont
+conservés dans `purust/node_modules/.cache/purust-clean/build-rYEShy/`.
+Les inventaires JS/Go/PHP (chemins, types, tailles, dates de modification et
+inodes) sont inchangés ; les scripts et le Dockerfile ont les mêmes empreintes.
+**38 régressions rapides CLI/driver/garde sont également repassées.**
+
+Limite relevée : le build complet affiche **75 avertissements PureScript**
+(65 dans purust, 10 dans PBO), sans erreur, plus l'avertissement de format ancien
+de Spago. Ils sont consignés dans `build-clean.json` ; aucun nettoyage des sources
+du compilateur ou migration de configuration n'est inclus dans cette validation.
+Les 74 régressions compilateur de 0.19 n'ont pas été relancées, ses sources
+n'ayant pas été modifiées dans cette étape.
+
+**Baby step suivant, réalisé en 0.23, Astra :** choisir la prochaine spec b8x sans services
+pour M2, puis relever sa fermeture TAST et les FFI réellement atteignables.
+Fixer un périmètre et un critère de succès avant le portage ; ne pas porter
+préventivement les fallbacks HTML qui restent inaccessibles. Cette validation
+termine le raccordement HTML, pas M2 ni la suite complète b8x.
+
+### Micro-étape 0.23 — Choix et inventaire de la prochaine spec sans services
+
+Réalisée le 13 septembre 2026 sur `b8x/master`. **Choix retenu :
+`Util.Html.Encode.Test.DecodeHtmlEntities`**, spec originale de quatre tests,
+déjà collectée par `Util.Html.Encode.Test.Test` dans la suite b8x normale.
+Le portage 0.14 fournit déjà sa FFI Rust et inclut ses exemples dans les tests
+différentiels ; la spec PureScript complète n'avait pas encore été exécutée
+par le chemin intégré. C'est donc le plus petit élargissement utile après
+l'encodage. `RemoveComments` et `PadLeft` sont différés : leurs modules importent
+notamment Regex, le nettoyage HTML et des codecs génériques, absents de cette
+fermeture minimale ; leur inventaire détaillé n'est pas réalisé ici.
+
+**Preuve fraîche, pas seulement lecture des imports :**
+[`rapport TAST 0.23`](../../b8x/run/bak/rust/output/decode-discovery-2RT6F2/report.json),
+[`inventaire typé des foreigns`](../../b8x/run/bak/rust/output/decode-discovery-2RT6F2/foreign.json),
+[`main diagnostique`](../../b8x/run/bak/rust/output/decode-discovery-2RT6F2/Main.purs).
+Spago a résolu les sources hors ligne, puis le fork a produit un `purs graph`
+et un TAST neuf, tous avec sortie 0. Compilation TAST : environ deux secondes.
+Les types proviennent des annotations et de leur `typeTable`, avec les tableaux
+`dataDecls` et `classDecls` présents ; aucune inférence depuis du CoreFn non typé.
+
+- **211 modules**, dont **209 communs** avec le build HTML 0.22. Les deux
+  remplacements sont le main et la spec encodage→décodage ; aucune dépendance
+  supplémentaire. Aucun module `Core.*`, `Infra.*`, `Inter.*` ou `Node.*`.
+- **52 modules déclarent 275 foreigns**, exactement les mêmes symboles et
+  résolutions FFI qu'en 0.22. Aucune nouvelle déclaration FFI ni résolution `.rs`.
+- Le TAST de la spec contient **4 références à `it`, 12 à `decodeHtmlEntities`
+  et 0 à `encodeHtmlEntities`**. L'alias appelle
+  `Util_Html_Encode_Encode__decodeHtmlEntities`, de type TAST `String -> String`,
+  fourni par le fichier Rust existant ; l'encodeur est également présent dans
+  le module étranger, sans être appelé par cette spec.
+- Les neuf modules sans fichier Rust résolu et les 22 fallbacks du diagnostic
+  HTML sont consignés. Ce sont des déclarations conservées, pas la preuve
+  d'un appel exécuté. **L'absence de nouvelle déclaration ne prouve pas que
+  le nouveau chemin est libre de fallbacks : le build et les sondes seront
+  obligatoires en 0.24.** Ne pas porter ces fallbacks préventivement.
+
+| Test original de décodage | Assertions |
+| --- | --- |
+| Entités usuelles : balises, esperluette, guillemets, apostrophe, espace insécable | 5 |
+| HTML composé avec plusieurs entités | 1 |
+| Références décimales/hexadécimales, accent et chaînes sans entités | 5 |
+| Chaîne vide | 1 |
+
+Cette étape ne génère ni ne compile de Rust et n'exécute pas encore les quatre
+tests. Aucun driver, FFI, source compilateur ou script CLI n'a été modifié.
+Les deux états prêts de 0.22, leurs inputs, les liens et `TARGET=rust` sont
+vérifiés inchangés. Aucun accès Docker, service, build de bundle ou nettoyage DB.
+Le main et le TAST diagnostiques restent hors des sources du profil actif.
+
+#### Contrat de la micro-étape 0.24 — Luna, réalisé ci-dessous
+
+Raccorder **uniquement** la suite explicite `--suite html-decode` au runner
+existant. `html` reste le défaut avec ses **2 tests** ; `html-negative` garde
+ses **3 tests** et son échec intentionnel. Ne pas transformer silencieusement
+`html` en un agrégat de six tests.
+
+Fichiers et changements bornés :
+
+1. Ajouter `b8x/run/bak/rust/src/DecodeMain.purs`, module
+   `Test.Rust.DecodeHtmlEntities.Main`, d'après le main diagnostique : importer
+   la vraie spec, attendre la fin d'Aff et exiger `{ passed: 4, failed: 0,
+   pending: 0 }`, sinon lever une erreur. Ne pas recopier ses assertions.
+2. Enregistrer ce main, son chemin et `expectedTests: 4` dans
+   `driver/shared.mjs` ; ajouter la source originale de la spec dans
+   `driver/profile.mjs`. L'artefact sera séparé dans
+   `output/integrated/html-decode/<build-id>/`.
+3. Adapter `verifyExecution` sans affaiblir le négatif : appeler d'abord
+   `suiteConfig`, conserver le contrat strict de `html-negative`, et pour les
+   suites positives connues exiger sortie 0, résumé `N/N` selon leur
+   `expectedTests`, stderr vide et garde valide. Le `else` actuel suppose que
+   toute suite autre que `html` est négative : il ne convient pas à ce troisième cas.
+4. Mettre à jour l'aide de `cli/options.mjs` et `driver.mjs`, le README et les
+   fixtures `driver.test.mjs` / `cli.test.mjs` : sélection des trois suites,
+   défaut inchangé, mauvais main/compte refusé, pas de build implicite et codes
+   non nuls conservés. Aucun changement de cible, Dockerfile, ABI ou FFI requis.
+
+Validation attendue :
+
+```sh
+cd /Users/0x1/Documents/htdocs/b8x
+node --test run/bak/rust/tests/cli.test.mjs run/bak/rust/tests/driver.test.mjs run/bak/rust/tests/fallback-guard.test.mjs
+bin/b --runtime rust --suite html-decode
+bin/t --runtime rust --suite html-decode
+bin/run --runtime rust Test --suite html-decode
+```
+
+Exiger **4/4, sortie 0**, main exact et TAST frais de 211 modules, inventaire
+FFI qualifié, sondes anti-fallback complètes et aucun garde atteint. `t` et
+`bin/run` doivent utiliser le même artefact. Renouveler également une référence
+JS fraîche de cette seule spec dans un dossier isolé, avec le profil JS réel
+et les quatre mêmes tests ; réutiliser la méthode de `tests/html-runner.mjs`
+pour ne pas modifier les liens ni les sorties JS existantes.
+
+Les modifications du driver rendront les anciens manifestes périmés :
+reconstruire séparément `html` et `html-negative`, puis vérifier **2/2 → 0**,
+**2/3 → 101** et le défaut toujours `html` après les autres suites. Aucun besoin
+de `-c`, de rebuild du bundle, de nettoyage de bases ou de redémarrage d'image.
+Mettre à jour le todo avec les preuves, puis s'arrêter. Revenir à **Astra** si
+la génération, Cargo ou un fallback révèle un écart : aucun portage ou changement
+de runtime implicite dans cette micro-étape Luna. M2 reste ouvert.
+
+### Micro-étape 0.24 — Suite `html-decode` raccordée et validée
+
+Réalisée le 13 septembre 2026, en restant sur `b8x/master` avec `TARGET=rust`.
+Le nouveau [`src/DecodeMain.purs`](../../b8x/run/bak/rust/src/DecodeMain.purs)
+importe les quatre tests originaux, attend leur fin et exige 4 réussites,
+aucun échec ni attente. Aucune assertion n'est recopiée ou modifiée.
+
+La suite est enregistrée dans `driver/shared.mjs`, sa source b8x dans
+`driver/profile.mjs`, et les aides CLI/driver listent les trois suites.
+`verifyExecution` valide d'abord le catalogue, puis exige pour une suite positive
+connue une ligne de résumé exacte `N/N tests passed`, le code 0, stderr vide
+et le garde valide. `html-negative` conserve son contrat strict et sa sortie
+non nulle. `html` reste le défaut à deux tests, pas un agrégat encodage+décodage.
+
+**Trois régressions d'abord rouges, puis 41 tests rapides verts** : sélection
+de la suite et de son main, mauvais compte/manifeste refusé, résumé de type
+`14/4` refusé, codes 86/101/139 conservés, aucun build implicite, défaut et liens
+inchangés. Les 38 régressions précédentes sont conservées.
+
+| Contrôle réel | Résultat |
+| --- | --- |
+| `t --runtime rust --suite html-decode` avant le premier build | Sortie 1, artefact absent ; aucune compilation implicite. |
+| `b --runtime rust --suite html-decode` | Sortie 0, TAST frais et Cargo Linux ARM64. |
+| `t --runtime rust --suite html-decode` | **4/4, sortie 0**. |
+| `bin/run --runtime rust Test --suite html-decode` | **4/4, sortie 0**, même artefact que `t`. |
+| Référence JS fraîche et isolée | **4/4, sortie 0**, même spec et même main. |
+| `html` reconstruit séparément | **2/2, sortie 0**. |
+| `html-negative` reconstruit via `t -b` | **2/3, sortie 101**, assertion intentionnelle et erreur finale Aff visibles. |
+| `t` après les autres suites | Reprend le build d'encodage, **2/2, sortie 0**. |
+| Décodage après les autres suites, puis `bin/run -e` dans `api-cli` | **4/4, sortie 0**, toujours le même build de décodage. |
+
+Preuve complète :
+[`rapport 0.24`](../../b8x/run/bak/rust/output/integrated/decode-validation-VMdIuO/report.json).
+Les trois artefacts sont prêts et leurs inputs revalidés :
+[`décodage — build-uusUwx`](../../b8x/run/bak/rust/output/integrated/html-decode/build-uusUwx/manifest.json),
+[`encodage — build-CaVKqf`](../../b8x/run/bak/rust/output/integrated/html/build-CaVKqf/manifest.json),
+[`négatif — build-fnu6d5`](../../b8x/run/bak/rust/output/integrated/html-negative/build-fnu6d5/manifest.json).
+Chacun comporte **211 modules TAST, 275 déclarations FFI et 22 sondes de garde
+réussies** ; aucun fallback n'est atteint par ces exécutions. Le décodage
+sélectionne bien sa spec, pas celle d'encodage.
+
+La référence JS utilise le vrai profil `run/bak/js`, son lockfile `spec` 8.1.1,
+et **212 modules** incluant `Util.Runtime` pour l'import direct de la FFI JS.
+Compilation et exécution sont isolées du vieil output ; sources, FFI copiées,
+JS généré et lockfile sont identifiés par empreinte. Aucun mélange avec les
+overrides Rust ; les 12 assertions d'origine sont exécutées via la vraie spec.
+
+**Correction de compatibilité annexe, prouvée par exécution :** l'ajout du main
+dans `src/` rendait le préparateur historique `prepare.mjs` invalide, car son
+graphe ne recevait pas la source `DecodeHtmlEntities.purs`. Le
+[`reproducteur rouge`](../../b8x/run/bak/rust/output/prepare-8u1W1Z/commands.json)
+montre `Module …DecodeHtmlEntities was not found`. Une ligne ajoutée à sa liste
+de sources rétablit la commande ; la
+[`preuve verte`](../../b8x/run/bak/rust/output/prepare-LPZiH8/manifest.json)
+conserve son entrée encodage et sa fermeture de 211 modules. Aucun élargissement
+de FFI ou du compilateur n'a été nécessaire.
+
+Les inventaires JS/Go/PHP, liens racine, scripts partagés, Dockerfile et bundle
+purust sont inchangés. Aucun `-c`, nettoyage DB, rebuild de bundle/image ou
+redémarrage de conteneur. Le garde et l'ABI ne changent pas ; les 75 avertissements
+compilateur relevés en 0.22 restent hors de cette étape, sans nouveau build du
+compilateur ni relance de ses 74 régressions propres.
+
+**Prochain baby step — Astra :** choisir une première spec sans services hors
+encodage/décodage HTML et relever le delta de modules/FFI avant tout portage,
+en comparant notamment les candidats utilitaires laissés de côté en 0.23.
+Les six tests HTML originaux passent désormais via deux suites explicites ;
+cela ne couvre toujours pas tous les tests sans services et ne clôt pas M2.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -2308,7 +2534,7 @@ Ne pas élargir encore les suites ni relancer les services métier.
   scripts partagés est réalisé en 0.21, validé sur fixtures.
 - [x] Fixer le contrat de sélection et d'exécution Rust V1 (0.18).
 - [x] Implémenter `target rust` et l'override `--runtime rust` selon ce contrat
-  (0.21, fixtures ; validation réelle en 0.22).
+  (fixtures 0.21 et validation réelle 0.22).
 - [x] Propager explicitement runtime et suite dans l'enchaînement build/test/run
   Rust (0.21 : les scripts utilisent le même driver, sans passer par `_shared`).
 - [x] Réutiliser la cible persistante de `env/dev/target.env`, avec priorité
@@ -2320,7 +2546,7 @@ Ne pas élargir encore les suites ni relancer les services métier.
   `spago.yaml` pendant l'essai isolé.
 - [x] Définir le comportement avec et sans build préalable (contrat 0.18).
 - [x] Implémenter et valider ce comportement dans le driver (0.20) et les
-  fixtures CLI (0.21 ; séquence réelle restant en 0.22) : vérifier que le
+  fixtures CLI (0.21), puis la séquence réelle (0.22) : vérifier que le
   binaire lancé correspond au profil et au point d'entrée demandés. Conserver
   la signification de `bin/test -c`, qui nettoie les bases, pas la compilation.
 - [x] Conserver le dispatch et les corps des branches JS, Go et PHP lorsqu'aucune
@@ -2384,21 +2610,23 @@ avec l'image API Rust construite et utilisée par `api-cli`, avant d'élargir le
 graphe des tests. Ce contrôle valide les commandes usuelles, pas seulement le
 harness diagnostique M1 ; le contrat est défini en 0.18 et le raccordement
 est implémenté en 0.19–0.21. L'image/API est disponible (preuve 0.20).
+**Contrôle HTML réalisé en 0.22**, avec le sélecteur DB vide ; à répéter lors
+des élargissements suivants.
 
-- [ ] Luna, au contrat stabilisé par Astra : sélectionner explicitement Rust
+- [x] Luna, au contrat stabilisé par Astra : sélectionner explicitement Rust
   via `target rust` une fois cette commande raccordée, puis tester la séquence
   demandée **`b -c; t -c`** dans b8x (`b` = `bin/build`, `t` = `bin/test`).
-- [ ] Vérifier que `b -c` reconstruit le backend et les sorties du profil Rust
+- [x] Vérifier que `b -c` reconstruit le backend et les sorties du profil Rust
   conformément au contrat : TAST frais du fork, génération Rust et compilation
   Cargo pour la plateforme d'exécution, sans toucher aux artefacts JS/Go/PHP.
-- [ ] Vérifier que `t -c` exécute le résultat de ce build dans `api-cli` et
+- [x] Vérifier que `t -c` exécute le résultat de ce build dans `api-cli` et
   conserve le sens de `-c` : nettoyage des bases de test, pas compilation.
-  Contrôler le périmètre de ces bases avant le nettoyage.
-- [ ] Consigner séparément les codes de sortie de `b` et de `t`, le profil,
+  Contrôler le périmètre de ces bases avant le nettoyage (0.22 : aucune cible).
+- [x] Consigner séparément les codes de sortie de `b` et de `t`, le profil,
   le point d'entrée, le nombre de tests et l'artefact réellement exécuté.
   Le `;` lance aussi `t` si `b` échoue : ne jamais valider alors un ancien
   binaire. Pour arrêter au premier échec, exécuter `b -c && t -c`.
-- [ ] Exiger le succès de la spec HTML ciblée et revalider séparément la
+- [x] Exiger le succès de la spec HTML ciblée et revalider séparément la
   fixture négative par le chemin intégré : échec non nul, erreur visible,
   aucun fallback silencieux. Le périmètre limité doit être explicite dans la
   sélection et le résumé ; cette réussite ne vaut pas validation de toute b8x.
@@ -2644,9 +2872,15 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   18 contrôles Docker verts, HTML positif/négatif, fraîcheur et interruption).
 - [x] Astra : réaliser le raccordement CLI 0.21 au contrat 0.18, en réutilisant
   le driver éprouvé (38 tests rapides verts, dont 20 sur fixtures CLI).
-- [ ] Luna : une fois ce raccordement implémenté et l'image API Rust disponible,
-  valider `target rust` puis **`b -c; t -c`**, selon la section de validation
-  intégrée après la phase 2 ; ne pas lancer cette étape avant ses prérequis.
+- [x] Luna : valider réellement `target rust` puis **`b -c; t -c`** (0.22 :
+  sorties 0/0, HTML 2/2 ; négatif séparé 101, sélecteur DB vide, cible Rust conservée).
+- [x] Astra : choisir la prochaine spec sans services pour M2 et inventorier
+  sa fermeture TAST/FFI (0.23 : décodage HTML, 4 tests/12 assertions, 211 modules,
+  mêmes 275 foreigns, aucun nouveau portage).
+- [x] Luna : raccorder `--suite html-decode` (0.24 : 4/4 Rust et JS frais,
+  anciennes suites 2/2→0 et 2/3→101, 41 régressions rapides vertes).
+- [ ] Astra : choisir la prochaine spec sans services hors codec HTML et
+  inventorier son delta TAST/FFI avant tout portage.
 - [ ] Astra : poursuivre, lors de l'élargissement M2, la qualification des bindings et fallbacks conservés,
   dont les autres opérations de records, selon les chemins réellement atteints ;
   porter ou éliminer par preuve, sans portage préventif de `unsafeDelete`.
