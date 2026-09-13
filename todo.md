@@ -8,7 +8,7 @@ Permettre à la suite de tests de b8x d'être compilée et exécutée avec purus
 en utilisant des FFI Rust locales (`.rs`), tout en conservant les chemins JS,
 Go et PHP existants.
 
-Interface retenue en 0.18, non encore implémentée pour Rust :
+Interface retenue en 0.18, implémentée pour Rust HTML en 0.19–0.21 :
 
 ```sh
 target rust
@@ -17,9 +17,9 @@ t -c
 ```
 
 `b` et `t` sont les alias existants de `bin/build` et `bin/test`.
-`--runtime rust` permettra aussi une sélection ponctuelle sans changer de cible.
+`--runtime rust` permet aussi une sélection ponctuelle sans changer de cible.
 Le contrat 0.18 fixe les entrées et limites de la première version HTML ;
-le test intégré `b -c; t -c` reste à exécuter après son implémentation.
+le test intégré réel `b -c; t -c` reste à exécuter en 0.22.
 La validation des autres backends
 porte sur les comportements déjà pris en charge, pas sur un nouveau portage
 complet de b8x vers chacun d'eux.
@@ -2072,7 +2072,7 @@ pas pris en charge par V1 et doit être refusé plutôt que prétendre nettoyer.
    produire un build HTML portable, le compiler dans `api-cli`, éprouver le
    garde et le lancer par son manifeste. Valider les entrées positive/négative
    et le rejet des artefacts périmés, sans modifier les scripts partagés.
-3. **0.21 — Astra : sélection et raccordement CLI.** Ajouter le dispatch Rust
+3. **0.21 — Astra : sélection et raccordement CLI, réalisé ci-dessous.** Ajouter le dispatch Rust
    et les options du contrat, puis la bascule sûre `target rust` ; réutiliser le
    driver éprouvé. Tester arguments/dispatch/liens/codes/signaux avec de fausses
    commandes sur des fixtures, sans basculer le checkout ni effacer de bases.
@@ -2220,11 +2220,68 @@ compilateur de 0.19 ne sont pas relancées dans cette étape. Les empreintes des
 scripts partagés, du Dockerfile et des liens racine sont vérifiées inchangées.
 Usage et prérequis décrits dans le [`README Rust`](../../b8x/run/bak/rust/README.md).
 
-**Prochain baby step — 0.21, Astra :** raccorder ce driver éprouvé à la sélection
+**Baby step suivant, réalisé en 0.21, Astra :** raccorder ce driver éprouvé à la sélection
 et aux commandes `target` / `bin/build` / `bin/test` / `bin/run`, selon le contrat
 0.18, avec tests de dispatch/options/liens/codes/signaux sur fixtures.
 Ne pas élargir le graphe HTML. La vraie séquence **`b -c; t -c`** reste en 0.22,
 après ce raccordement et vérification explicite du périmètre des bases à nettoyer.
+
+### Micro-étape 0.21 — Raccordement CLI Rust V1
+
+Réalisée le 13 septembre 2026 sur `b8x/master`, sans changement de branche.
+**HTML uniquement : graphe et FFI de 0.20 inchangés ; M2 reste ouvert.**
+
+- [`bin/_rust`](../../b8x/bin/_rust) sélectionne le chemin Rust avant les effets
+  de `_shared`. `b`, `t`, `bin/build`, `bin/test` et `bin/run` transmettent les
+  options validées au driver. Le chemin historique reste inchangé sans Rust.
+  L'override ponctuel prime ; le défaut persistant exige des liens cohérents et
+  ignore l'ancien `TARGET` exporté sur l'hôte.
+- [`cli/target.mjs`](../../b8x/run/bak/rust/cli/target.mjs) prévalide le profil et
+  les quatre liens, utilise le vrai `spago.yaml` Rust, publie `target.env` en
+  dernier et restaure les liens en cas d'échec. Les vrais répertoires/fichiers,
+  liens non gérés, caches existants et Composer/vendor ne sont pas supprimés.
+  Un conflit de rollback conserve le fichier concurrent et un verrou visible.
+  Les allers-retours Rust↔JS/Go/PHP ne redémarrent aucun conteneur.
+- `t -b` et `bin/run -b Test` lancent la même suite seulement après succès du
+  build. Le défaut est toujours `html` ; `html-negative` reste séparé. Options
+  inconnues/incomplètes, suite inconnue, filtres, applications, bundle/watch et
+  `run -p` sortent 2 avant mutation. Seule la syntaxe `--runtime rust` est ajoutée.
+- `b -c` accepte `--clean` / `--compiler-too`. Après invalidation de sa suite,
+  il sauvegarde les seuls `purust/output` et `purust/bin/purust.js` dans
+  `node_modules/.cache/purust-clean/build-…`, puis reconstruit le bundle via npm.
+  Les sources `.spago`, preuves historiques et autres backends restent intacts.
+  Le TAST et Cargo utilisent un export neuf, comme chaque build du driver.
+  Un échec de reconstruction laisse un état `failed`, jamais l'ancien binaire.
+- `t -c` conserve le sélecteur SQL et le nettoyage après exécution/interruption,
+  une seule fois. Les identifiants sont échappés, les erreurs SQL/transport sont
+  visibles ; le code du test est prioritaire lorsqu'il échoue aussi. Les `_`
+  du sélecteur historique restent des jokers SQL : contrôler la liste en 0.22.
+- `bin/run -e` remplace son wrapper par le driver (`process.execve`, Node 24
+  vérifié), puis le binaire Linux est exécuté directement sous supervision,
+  sans shell ni Cargo. Les codes 101/139 et signaux 130/143 sont conservés.
+  Le worker sait aussi lancer le manifeste courant depuis le conteneur ; build
+  et nettoyage DB directs dans celui-ci sont refusés. L'entrypoint utilise le
+  bon nom de configuration Rust pour un futur rebuild/recréation de l'image wrap.
+  Ce rebuild n'est pas requis pour la validation hôte 0.22.
+
+**Validation : 38 tests rapides verts**, dont 20 tests dans
+[`cli.test.mjs`](../../b8x/run/bak/rust/tests/cli.test.mjs) et les 18 régressions
+driver/garde existantes. Les fixtures couvrent les chemins avec espaces, la
+sélection, chaque échec de publication des liens, les fichiers concurrents,
+les erreurs de build/nettoyage, les signaux et l'entrypoint des quatre profils.
+Une copie du vrai driver prouve que l'état est déjà `building` lors du faux npm,
+puis `failed` et inexécutable après son échec. Vérifications de syntaxe Bash/Node
+et `git diff --check` réussies. Aucun build compilateur/Cargo réel, aucune bascule
+du checkout, aucune base nettoyée, aucun conteneur redémarré ; les liens racine
+et `TARGET=js` sont conservés. Les fixtures temporaires sont supprimées par les
+tests ; les sauvegardes du nettoyage ne concernent ici que ces fixtures.
+
+**Prochain baby step — 0.22, Luna :** l'image est disponible et les conteneurs
+ont déjà été revalidés en 0.20. Examiner les bases sélectionnées, puis valider
+réellement `target rust` et **`b -c; t -c`** selon la section dédiée ci-dessous,
+avec statuts séparés et contrôle négatif. Les changements du driver rendent les
+anciens manifestes 0.20 périmés : reconstruire, ne pas contourner leur contrôle.
+Ne pas élargir encore les suites ni relancer les services métier.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -2248,23 +2305,26 @@ après ce raccordement et vérification explicite du périmètre des bases à ne
   chemin internes/relatives (0.19, génération et déplacement en deux modes).
 - [x] Dans le driver isolé, distinguer la racine b8x de l'installation de
   purust et utiliser cet export pour Cargo Linux (0.20). Le raccordement aux
-  scripts partagés reste en 0.21.
+  scripts partagés est réalisé en 0.21, validé sur fixtures.
 - [x] Fixer le contrat de sélection et d'exécution Rust V1 (0.18).
-- [ ] Implémenter `target rust` et l'override `--runtime rust` selon ce contrat.
-- [ ] Propager le runtime de `bin/test` vers `bin/build` et `bin/run`.
-- [ ] Réutiliser la cible persistante de `env/dev/target.env`, avec priorité
+- [x] Implémenter `target rust` et l'override `--runtime rust` selon ce contrat
+  (0.21, fixtures ; validation réelle en 0.22).
+- [x] Propager explicitement runtime et suite dans l'enchaînement build/test/run
+  Rust (0.21 : les scripts utilisent le même driver, sans passer par `_shared`).
+- [x] Réutiliser la cible persistante de `env/dev/target.env`, avec priorité
   de l'option CLI et transmission explicite au conteneur selon 0.18 ; ne pas
   introduire une seconde variable de sélection concurrente.
-- [ ] Séparer TAST, cache Spago et sorties Cargo du profil Rust. Utiliser
+- [x] Séparer TAST, cache Spago et sorties Cargo du profil Rust. Utiliser
   `--source` et `--out` explicitement ; leur défaut est relatif au répertoire
   de travail. Ne pas écraser les cibles des liens JS `output`, `.spago` et
   `spago.yaml` pendant l'essai isolé.
 - [x] Définir le comportement avec et sans build préalable (contrat 0.18).
-- [ ] Implémenter et valider ce comportement : vérifier que le
+- [x] Implémenter et valider ce comportement dans le driver (0.20) et les
+  fixtures CLI (0.21 ; séquence réelle restant en 0.22) : vérifier que le
   binaire lancé correspond au profil et au point d'entrée demandés. Conserver
   la signification de `bin/test -c`, qui nettoie les bases, pas la compilation.
-- [ ] Conserver la détection et le comportement actuels des runtimes JS, Go et
-  PHP lorsqu'aucune cible/option Rust n'est demandée.
+- [x] Conserver le dispatch et les corps des branches JS, Go et PHP lorsqu'aucune
+  cible/option Rust n'est demandée (fixtures 0.21 ; pas de nouveaux builds natifs).
 
 Critère de sortie : le même test peut être lancé explicitement sous JS puis
 sous Rust, sans ambiguïté dans la configuration ni dans les artefacts.
@@ -2323,7 +2383,7 @@ Rust, et une suite corrigée termine avec un code nul après exécution complèt
 avec l'image API Rust construite et utilisée par `api-cli`, avant d'élargir le
 graphe des tests. Ce contrôle valide les commandes usuelles, pas seulement le
 harness diagnostique M1 ; le contrat est défini en 0.18 et le raccordement
-reste à implémenter en 0.19–0.21.
+est implémenté en 0.19–0.21. L'image/API est disponible (preuve 0.20).
 
 - [ ] Luna, au contrat stabilisé par Astra : sélectionner explicitement Rust
   via `target rust` une fois cette commande raccordée, puis tester la séquence
@@ -2582,8 +2642,8 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   (deux modes déplacés et exécutés, 51 codegen + 23 TAST verts).
 - [x] Astra : réaliser le driver isolé 0.20 (18 régressions rapides et
   18 contrôles Docker verts, HTML positif/négatif, fraîcheur et interruption).
-- [ ] Astra : réaliser le raccordement CLI 0.21 au contrat 0.18, en réutilisant
-  le driver éprouvé, avant d'élargir la suite.
+- [x] Astra : réaliser le raccordement CLI 0.21 au contrat 0.18, en réutilisant
+  le driver éprouvé (38 tests rapides verts, dont 20 sur fixtures CLI).
 - [ ] Luna : une fois ce raccordement implémenté et l'image API Rust disponible,
   valider `target rust` puis **`b -c; t -c`**, selon la section de validation
   intégrée après la phase 2 ; ne pas lancer cette étape avant ses prérequis.
