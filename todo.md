@@ -1,16 +1,19 @@
 # Faire tourner les tests b8x avec des FFI Rust `.rs`
 
-Mis à jour le 13 septembre 2026.
+Mis à jour le 14 septembre 2026.
 
-**État courant (bloc 0.48 terminé) :** **`b -c; t -c` validé 238/238**,
-build prêt `build-eikxGO`, nettoyage DB vide, 85 gardes forcés et aucun atteint.
-Les 63 tests String sont intégrés au défaut HTML + Stash + HTML Clean, avec
-leurs assertions originales. Les trois FFI String sont portées, avec tables
-Unicode 16 qualifiées face au JS ; les opérations JSDate/BigInt/Variant
-inutilisées restent des dettes distinctes. b8x reste sur **master**.
-**Bloc 0.49 en cours : Variant Encoding — Astra**, 21 tests recensés supplémentaires
-(cible 259 sans services, pas encore validée), puis 27 intégrations vers 286.
-M2/M4 restent ouverts.
+**État courant (bloc 0.49 terminé) :** **`b -c; t -c` validé 259/259**,
+build prêt `build-904tIn`, nettoyage DB vide, 78 gardes forcés et aucun atteint.
+Les 21 tests Variant Encoding rejoignent HTML + Stash + HTML Clean + String,
+avec leurs assertions originales. Les 259 tests sans services recensés sont
+intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
+**edge**. Les API FFI inutilisées restent des dettes distinctes.
+**Bloc 0.50 en cours — Astra : 27 tests d'intégration PostgreSQL/RabbitMQ**,
+pour atteindre 286/286. Environ **91 % du comptage des tests**, pas du travail.
+M2/M4 restent ouverts jusqu'à la qualification de la suite complète.
+Le profil Spago est en cours d'extension pour les intégrations : le manifeste
+259/259 ci-dessus est une preuve du bloc 0.49, pas un build courant après ces
+changements. Un nouveau `b -c` sera nécessaire avant le prochain `t -c`.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
 
@@ -150,11 +153,11 @@ explicites.
   [`b8x/bin/run`](../../b8x/bin/run) ; le chemin Rust utilise le driver dédié.
 - `bin/run` exécute JS, Go et PHP, ainsi que les suites Rust `html` et
   `html-negative` depuis 0.21–0.22, puis `html-decode` depuis 0.24.
-  Depuis le bloc 0.48, le défaut Rust est l'agrégat **238 tests HTML Encode
-  + Decode + Stash + HTML Clean + String** ; `--suite string` sélectionne
-  63 tests, `stash` 41, `html-clean` 128 et `remove-comments` 20. Pas encore
-  les autres applications ou toute b8x. Les défauts 0.32/0.46/0.47 contenaient
-  47/67/175 tests.
+  Depuis le bloc 0.49, le défaut Rust est l'agrégat **259 tests HTML Encode
+  + Decode + Stash + HTML Clean + String + Variant Encoding** ;
+  `--suite variant-encoding` sélectionne 21 tests, `string` 63, `stash` 41,
+  `html-clean` 128 et `remove-comments` 20. Restent les 27 tests d'intégration.
+  Les défauts 0.32/0.46/0.47/0.48 contenaient 47/67/175/238 tests.
 - La configuration racine `b8x/spago.yaml` pointe vers le profil Rust depuis
   0.22. `html-decode`, choisi en 0.23, est raccordé et validé en 0.24.
 - b8x possède une FFI `.rs` locale pour l'encodage/décodage HTML, validée en
@@ -5347,7 +5350,7 @@ conserve les six différences initiales, pas un succès actuel.
 **238 des 286 tests recensés passent par défaut (~83 % du comptage des tests,
 pas du travail). Restent 48 tests : 21 sans services et 27 intégrations.**
 
-#### Bloc 0.49 — Variant Encoding (en cours)
+#### Bloc 0.49 — Variant Encoding (terminé)
 
 Objectif : intégrer les **21 tests originaux** de
 `Util.Type.Variant.Encoding.Encoding.Test.Test`, pour atteindre les **259 tests
@@ -5374,9 +5377,9 @@ Les **27 tests d'intégration PostgreSQL/RabbitMQ** restent ensuite un bloc
 distinct, avec clients/Promise/Aff et autorisations de nettoyage à qualifier,
 pour l'objectif final **286/286** sans filtre obligatoire.
 
-Résultat intermédiaire : **21/21 natifs Linux**, **78 gardes forcés et aucun
+Premier résultat : **21/21 natifs Linux**, **78 gardes forcés et aucun
 atteint**, `variant-encoding-block-V4M2Gh/attempt-eldVLz/report.json`.
-Le défaut est raccordé à **259**, validation CLI complète en cours.
+Le défaut est raccordé à **259**, validation CLI complète réussie ci-dessous.
 
 - Profil : cinq specs originales, dépendance `heterogeneous` 0.7.0 sans
   changement de package set ; fermeture explicite de 259 modules TAST.
@@ -5394,7 +5397,7 @@ Le défaut est raccordé à **259**, validation CLI complète en cours.
   `SharedRecord` est le carrier partagé de STObject/Object, accessible aux
   lecteurs Foreign sans cycle de dépendances entre bibliothèques. Les copies
   restent superficielles et les callbacks s'exécutent hors verrou.
-- Sept FFI atteintes portées : `Yoga.JSON._unsafeStringify`,
+- Sept fonctions FFI du chemin JSON portées et testées : `Yoga.JSON._unsafeStringify`,
   `Record.Builder.copyRecord/unsafeInsert`, `Foreign.Object._mapWithKey`,
   `Foreign.Index.unsafeReadPropImpl`, `Foreign.tagOf/typeOf`.
   Propriété absente → `undefined` natif (`Unit`, comme le JS de Data.Unit),
@@ -5411,15 +5414,84 @@ Le défaut est raccordé à **259**, validation CLI complète en cours.
 - Limites explicites : ni toute l'API Yoga.JSON/Foreign, ni tous les usages
   d'objets JS ne sont qualifiés. Restent parsing/pretty-print, BigInt,
   null/Nullable, omission de fonctions/undefined lors de la sérialisation,
-  prototypes et objets opaques externes. L'ordre des records nus passés
+  cycles, prototypes et objets opaques externes. L'ordre des records nus passés
   directement à `unsafeStringify` reste à qualifier séparément ; le chemin
   validé des records utilise `writeImpl`/Builder. `unvariant`/`unvariantF`
   et les arités supérieures à 12 restent hors qualification.
 
-La validation finale doit conserver : 259 par `b -c; t -c`, 21 explicites,
-négatif 101, défaut identique après les suites explicites et bases vides.
-Les premiers diagnostics d'échec restent conservés, pas publiés comme builds
-prêts ; les fixtures TAST VariantF et STObject sont rejouées sur le bundle final.
+Validation finale, `variant-encoding-block-V4M2Gh/validation.json`,
+`complete: true` :
+
+- **`bin/b -c; bin/t -c` → 0/0, 259/259**, 300 modules TAST frais,
+  **78 gardes forcés et aucun atteint**, nettoyage DB `[]`.
+  Build `build-904tIn`, manifeste
+  `c225b9ab17747256410f0702e5c4a32d5242c637e8efe3804087d38174dfbe85`.
+- **21/21 explicites**, `build-OAYbzD`, 259 modules frais ; négatif **2/3 → 101**,
+  `build-1LuTJ2`. Ensuite `bin/t` reprend exactement `build-904tIn`, **259/259**.
+  Sources originales de l'inventaire, inputs et bundle revérifiés ; bases
+  contrôlées vides avant/après. Aucun changement des assertions d'origine.
+- **67 tests driver/CLI**, **62 tests codegen** ; JSON Rc/Arc sur macOS
+  `purust-json-NJGQba` et Linux `purust-json-G37dNY` ; VariantF TAST frais Rc/Arc
+  sur macOS `purust-variant-f-sX6H7J` et Linux `purust-variant-f-TN44U1`.
+  STObject : 10 tests natifs par mode sur TAST frais, plus Stash dans le défaut
+  Linux. Les 73 avertissements existants du build propre restent signalés.
+- Le build propre conserve le bundle
+  `67e7aefc000f8a07d5bbe680455227cbedb34aa5ab1209d7699f7f69b3e90fec`.
+  Les premiers diagnostics d'échec restent conservés, pas publiés comme prêts.
+
+#### Bloc 0.50 — Intégrations (en cours, Astra)
+
+Objectif : les **27 tests originaux restants** (Core 3, EventStore 13,
+Projection 11), puis **286/286 par `target rust; b -c; t -c`** sans filtre.
+
+Premières preuves du 14 septembre, dossier diagnostique
+`b8x/run/bak/rust/output/integrations-block-sQXXt8/` :
+
+- [x] Services existants disponibles ; inventaire des bases `store_test_%` /
+  `edge_test_%` vide avant essais. Aucun redémarrage, aucune base modifiée.
+- [x] Entrée `Test.Rust.Integrations.Main` : les trois agrégats originaux,
+  comptage strict 27 succès, zéro échec/attente ; défaut 259 inchangé.
+- [x] Dépendances du profil materialisées hors ligne, graphe officiel et TAST
+  frais : **1 315 modules**, compilation réussie. Les imports applicatifs
+  entraînent aussi des modules UI ; ce n'est pas une sélection de tests UI.
+- [x] Première génération Rust réussie (88 s). Fermeture Cargo statique :
+  **806 crates natives**, **452 foreigns sans FFI Rust** dans cette fermeture.
+  Ce comptage ne prouve pas qu'elles sont toutes exécutées : garder les gardes
+  et porter selon les chemins effectivement nécessaires.
+- [x] Premier défaut de l'audit corrigé : échappement Rust `loop` → `loop_kw`.
+  Indexation des références en une passe ; régressions ciblées 8/8.
+- [x] Métadonnées Cargo de cette fermeture dépassant 32 Mio : borne explicite
+  128 Mio pour cette commande, défaut 32 Mio conservé ailleurs ; comptage UTF-8
+  et refus d'une sortie tronquée couverts. **72 tests driver/CLI passent**.
+- [x] Première vérification Linux : 69 erreurs de champs `async`/`match`/`where`
+  corrigées avec des identifiants Rust bruts, sans changer leurs labels JSON
+  ni les champs distincts suffixés `_kw`. Contrôles natifs Rc/Arc ajoutés ;
+  ces erreurs ont disparu dans la fermeture applicative réelle.
+- [x] Noms des trois dictionnaires anonymes de `Util.Type.Row.HasNestedKey`
+  contenant des Symbol littéraux : guillemets échappés, point traité de façon
+  identique dans la déclaration et l'appel. Régression native avec appels
+  intermodules ; aucune collision de déclarations dans le TAST inspecté.
+  **63 tests codegen passent**, compilateur reconstruit (63 avertissements
+  de source préexistants, zéro erreur pour le build incrémental).
+- [ ] Obtenir puis lever les erreurs de compilation natives, qualifier les
+  sondes des nouvelles signatures opaques avant toute exécution de la suite.
+- [ ] Config/Promise/Aff et accès PostgreSQL natifs ; RabbitMQ et cache selon
+  les chemins atteints, en conservant transactions, erreurs et libérations.
+- [ ] Raccordement CLI explicite puis défaut 286 uniquement après exécution
+  native complète ; régression des 259 tests et nettoyage final.
+
+- **Astra** : établir la fermeture réelle et les premiers arrêts natifs ;
+  qualifier les clients PostgreSQL/RabbitMQ, leurs représentations et les
+  interactions Promise/Aff nécessaires. Ne pas porter préventivement toutes
+  les API JSDate/BigInt/JSON qui ne sont pas atteintes.
+- Précontrôler les services et la portée du nettoyage. Si des données
+  préexistantes ou un redémarrage hors périmètre sont en jeu, demander
+  l'autorisation nécessaire avant de les toucher.
+- **Luna**, après stabilisation des contrats : compléter les régressions,
+  raccorder les specs originales et maintenir les 259 succès précédents.
+- Enchaîner le lot sans pause par bug : intégrations explicites puis défaut
+  complet, gardes forcés/non atteints, négatif 101, défaut stable et nettoyage
+  vérifié. Fermer M2/M4 uniquement lorsque les 286 tests sont réellement validés.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 

@@ -16,7 +16,7 @@ import { Just } from '../../output/Data.Maybe/index.js';
 import { Tuple } from '../../output/Data.Tuple/index.js';
 import { ADT, Any, Func, Int, LitInt, LitRecord, LitString, Prop, Qualified, String as StringType }
   from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
-import { Abs, Accessor, GetProp, Lit, Local, Op2, OpAdd, OpIntNum, PrimOp, Typed, Var }
+import { Abs, Accessor, App, GetProp, Lit, Local, Op2, OpAdd, OpIntNum, PrimOp, TypeApp, Typed, Var }
   from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
 
 const name = 'ClassRecordValues';
@@ -24,6 +24,9 @@ const any = Any.value;
 const int = Int.value;
 const reflect = new ADT('Reflect', [name, 'Reflect'], []);
 const top = new ADT('Top', [name, 'Top'], []);
+// TypeTable decodes the display name as an FQN; hand-built optimizer tests
+// also use the short name. Constructor identity must come from fqn itself.
+const qualifiedTop = new ADT(`${name}.Top`, [name, 'Top'], []);
 const payload = new ADT('Payload', [name, 'Payload'], []);
 const effect = new ADT('Effect', ['Effect', 'Effect'], [int]);
 const declarations = [
@@ -42,6 +45,8 @@ const method = typed(new Func([any], StringType.value),
   new Abs([param('ignored', 0)], new Lit(new LitString('bound symbol'))));
 const calculate = typed(new Func([int], int), new Abs([param('n', 1)],
   new PrimOp(new Op2(new OpIntNum(OpAdd.value), local('n', 1), new Lit(new LitInt(2))))));
+const dictionaryConstructor = (module, result) => typed(new Func([any], result),
+  new TypeApp(typed(new Func([any], result), new Var(new Qualified(new Just(module), 'Top$Dict'))), any));
 const bindings = [
   // The declaration itself deliberately has no class annotation.
   new Tuple('rawReflect', record([['reflectSymbol', method]])),
@@ -62,9 +67,21 @@ const bindings = [
   new Tuple('convertReflect', typed(new Func([any], reflect), new Abs([param('dictionary', 0)], typed(reflect, local('dictionary', 0))))),
   new Tuple('retainPayload', typed(new Func([any], payload), new Abs([param('input', 0)], typed(payload, local('input', 0))))),
   new Tuple('retainEffect', typed(new Func([any], effect), new Abs([param('input', 0)], typed(effect, local('input', 0))))),
+  new Tuple('construct', typed(new Func([any], top), new Abs([param('input', 0)],
+    typed(top, new App(dictionaryConstructor(name, top), [local('input', 0)]))))),
+  new Tuple('constructQualified', typed(new Func([any], top), new Abs([param('input', 0)],
+    typed(top, new App(dictionaryConstructor(name, qualifiedTop), [local('input', 0)]))))),
 ];
 const generated = codegenModule(emptyMap)(fields)({ name, classDecls: declarations, dataDecls: [] })
   ({ name, bindings: [{ recursive: false, bindings }] });
+assert.doesNotMatch(generated, /ClassRecordValues_Top_dollar_Dict\(/);
+for (const [module, result] of [['Other', top], [name, payload]]) {
+  const other = codegenModule(emptyMap)(fields)({ name, classDecls: declarations, dataDecls: [] })
+    ({ name, bindings: [{ recursive: false, bindings: [new Tuple('ordinary',
+      typed(new Func([any], result), new Abs([param('input', 0)],
+        typed(result, new App(dictionaryConstructor(module, result), [local('input', 0)])))))] }] });
+  assert.ok(other.includes(`${module}_Top_dollar_Dict(`), 'unproven constructors must retain their ordinary call');
+}
 const shapes = insertSet(ordString)('Reflect0,calculate,tick')(singleton('reflectSymbol'));
 const runtime = fileURLToPath(new URL('../runtime/perceus_ptr/src/lib.rs', import.meta.url));
 const main = `
@@ -79,12 +96,18 @@ fn main() {
         Value::Int(counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as i64 + 1)
     })));
     let native = ClassRecordValues_convert(ClassRecordValues_rawTop(action.clone()));
+    let constructed = ClassRecordValues_construct(ClassRecordValues_rawTop(action.clone()));
+    let qualified = ClassRecordValues_constructQualified(ClassRecordValues_rawTop(action.clone()));
+    assert_eq!((qualified.calculate)(40), 42);
+    assert_eq!((constructed.calculate)(40), 42);
+    assert_eq!(((constructed.Reflect0)(Value::Unit).reflectSymbol)(Value::Unit), "bound symbol");
     assert_eq!(runs.load(std::sync::atomic::Ordering::SeqCst), 0, "converting a dictionary must not run methods or effects");
     assert_eq!((native.calculate)(40), 42);
     assert_eq!(((native.Reflect0)(Value::Unit).reflectSymbol)(Value::Unit), "bound symbol");
     assert_eq!(native.tick.unwrap_func1()(Value::Unit).unwrap_int(), 1);
     assert_eq!(native.tick.unwrap_func1()(Value::Unit).unwrap_int(), 2);
     let boxed = Value::Class(std::rc::Rc::new(native.clone()));
+    assert!(std::rc::Rc::ptr_eq(&native, &ClassRecordValues_construct(boxed.clone())));
     assert!(std::rc::Rc::ptr_eq(&native, &ClassRecordValues_convert(boxed.clone())), "native class conversion must preserve identity");
     let cell = perceus_ptr::PerceusPtr::new(Thunk::default());
     assert!(cell.value.set(boxed).is_ok());

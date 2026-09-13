@@ -873,7 +873,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
       code = foldMap (\(Tuple ident expr) ->
       let
         rawIdentName = case ident of
-          Ident i -> sanitizeIdent (String.replaceAll (Pattern ".") (Replacement "_") i)
+          Ident i -> sanitizeIdent i
           _ -> "unknown"
         identName = modNameStr <> "_" <> rawIdentName
         inferredType = fromMaybe Any (Map.lookup identName mergedArities)
@@ -1169,6 +1169,20 @@ genApp valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalC
         getInner (NeutralExpr (Typed _ inner)) = getInner inner
         getInner (NeutralExpr (Syn.TypeApp inner _)) = getInner inner
         getInner e = e
+        -- TAST retains the record -> native class type of a dictionary
+        -- newtype constructor, even when PBO omits its private $Dict binding.
+        -- Require the exact qualified class and constructor convention; a
+        -- similarly named ordinary function must keep its normal call.
+        dictionaryResult =
+          let result = applicationResultType 1 (inferTypeExpr modNameStr aritiesMap globalClassFields bound fn)
+          in case getInner fn, unwrapType result of
+            NeutralExpr (Var qualified@(Qualified _ (Ident name))), ADT _ fqn _
+              | Just className <- Array.last fqn
+              , name == className <> "$Dict"
+              , getTyPrefix modNameStr qualified <> sanitizeIdent className == String.joinWith "_" fqn
+              , Map.member (String.joinWith "_" fqn) globalClassFields
+              , Array.length argsArray == 1 -> Just result
+            _, _ -> Nothing
         argsFree = map freeVariables argsArray
         operandType operand = codegenExprTypeWithValueEnums valueEnums modNameStr false
           (inferTypeExpr modNameStr aritiesMap globalClassFields bound operand)
@@ -1225,7 +1239,11 @@ genApp valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalC
                 isTco = case mbLoop, mbFnName of
                   Just { name: ln, params: lp }, Just n -> n == ln && m == Array.length lp
                   _, _ -> false
-            in if isTco then
+            in case dictionaryResult, Array.head argsArray, Array.head argsCodeArray of
+               Just result, Just argument, Just code ->
+                 boxUnbox valueEnums globalClassFields modNameStr result
+                   (inferTypeExpr modNameStr aritiesMap globalClassFields bound argument) code
+               _, _, _ -> if isTco then
                  case mbLoop of
                    Just { name: ln, params: lp } ->
                        let tempsCode = tcoTemps lp
@@ -2836,10 +2854,13 @@ getArity _ = 0
 
 
 -- A raw field identifier cannot be spliced into Record_* or get_/set_* names.
--- Keep this fix local to the qualified record case; preserve other spellings
--- and the existing public/FFI naming convention, including the distinct final_kw.
+-- Preserve public/FFI spellings and distinct fields such as match_kw. Raw
+-- identifiers are used only at the actual struct field declaration/access.
 recordFieldIdent :: String -> String
 recordFieldIdent "final" = "r#final"
+recordFieldIdent "async" = "r#async"
+recordFieldIdent "match" = "r#match"
+recordFieldIdent "where" = "r#where"
 recordFieldIdent field = sanitizeIdent field
 
 sanitizeIdent :: String -> String
@@ -2847,7 +2868,9 @@ sanitizeIdent s =
   let s1 = String.replaceAll (Pattern "'") (Replacement "_prime") s
       s2 = String.replaceAll (Pattern "$") (Replacement "_dollar_") s1
       s3 = String.replaceAll (Pattern "-") (Replacement "_minus_") s2
-      s4 = String.replaceAll (Pattern ".") (Replacement "_dot_") s3
+      -- Anonymous instance dictionaries can contain quoted Symbol literals.
+      s4 = String.replaceAll (Pattern "\"") (Replacement "_quote_")
+        (String.replaceAll (Pattern ".") (Replacement "_dot_") s3)
   in if s4 == "type" then "type_kw" 
      else if s4 == "fn" then "fn_kw" 
      else if s4 == "break" then "break_kw"
