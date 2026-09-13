@@ -19,6 +19,7 @@ import Purust.CodeGen (codegenModuleWithValueEnums, codegenPrelude, sanitizeIden
 import Purust.DataLayout (valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Threading (threadedRust, threadedPrelude)
+import Purust.Runtime (writeRuntime, runtimeDependency)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
@@ -239,6 +240,7 @@ main = launchAff_ do
     when (not srcExists) do
       FS.mkdir outDir
       FS.mkdir (outDir <> "/src")
+    writeRuntime outDir
     
     
     allModules <- Ref.read modulesRef
@@ -273,10 +275,10 @@ main = launchAff_ do
     let preludeRsContent = (if threaded then threadedPrelude else identity) (codegenPrelude allShapes)
     
     let mainModuleSanitized = String.replaceAll (Pattern ".") (Replacement "_") mainModule
-    let workspaceMembers = "\"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })))
+    let workspaceMembers = "\"perceus_ptr\", \"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String { code :: String, imports :: Array String })))
     let runsAff = threaded && Map.member "Effect_Aff" allModules
     let affDependency = if runsAff then "Purs_Effect_Aff = { path = \"Purs_Effect_Aff\" }\n" else ""
-    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\n"
+    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n" <> runtimeDependency threaded "perceus_ptr"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") (configureThreading threaded (rootCargoToml <> affDependency))
     
     let runMain = "let _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)"
@@ -288,7 +290,7 @@ main = launchAff_ do
     when (not coreExists) do
       FS.mkdir coreDir
       FS.mkdir (coreDir <> "/src")
-    FS.writeTextFile UTF8 (coreDir <> "/Cargo.toml") $ configureThreading threaded "[package]\nname = \"purust_core\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n"
+    FS.writeTextFile UTF8 (coreDir <> "/Cargo.toml") $ configureThreading threaded ("[package]\nname = \"purust_core\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> runtimeDependency threaded "../perceus_ptr" <> "fancy-regex = \"0.13\"\n")
     FS.writeTextFile UTF8 (coreDir <> "/src/lib.rs") preludeRsContent
     
     _ <- foldl (\eff (Tuple k { code: v, imports: imp }) -> eff *> do
@@ -297,7 +299,7 @@ main = launchAff_ do
       when (not modExists) do
         FS.mkdir modDir
         FS.mkdir (modDir <> "/src")
-      let modDeps = "purust_core = { path = \"../purust_core\" }\nperceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }\nfancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") (fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))))
+      let modDeps = "purust_core = { path = \"../purust_core\" }\n" <> runtimeDependency threaded "../perceus_ptr" <> "fancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") (fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))))
       let modCargoToml = "[package]\nname = \"Purs_" <> k <> "\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> modDeps
       FS.writeTextFile UTF8 (modDir <> "/Cargo.toml") (configureThreading threaded modCargoToml)
       let transImps = fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))
@@ -313,7 +315,5 @@ main = launchAff_ do
 configureThreading :: Boolean -> String -> String
 configureThreading false = identity
 configureThreading true =
-  String.replaceAll (Pattern "perceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\" }")
-    (Replacement "perceus_ptr = { path = \"/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr\", features = [\"threaded\"] }")
-    <<< String.replaceAll (Pattern "[dependencies]\n")
-      (Replacement "[dependencies]\ntokio = { version = \"1.53.1\", features = [\"rt-multi-thread\", \"time\", \"sync\", \"macros\"] }\n")
+  String.replaceAll (Pattern "[dependencies]\n")
+    (Replacement "[dependencies]\ntokio = { version = \"1.53.1\", features = [\"rt-multi-thread\", \"time\", \"sync\", \"macros\"] }\n")

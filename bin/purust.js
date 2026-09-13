@@ -3298,6 +3298,18 @@ var alaF2 = /* @__PURE__ */ alaF()()()();
 var foldr = function(dict) {
   return dict.foldr;
 };
+var traverse_ = function(dictApplicative) {
+  var applySecond5 = applySecond(dictApplicative.Apply0());
+  var pure24 = pure(dictApplicative);
+  return function(dictFoldable) {
+    var foldr22 = foldr(dictFoldable);
+    return function(f) {
+      return foldr22(function($454) {
+        return applySecond5(f($454));
+      })(pure24(unit));
+    };
+  };
+};
 var foldl = function(dict) {
   return dict.foldl;
 };
@@ -40571,6 +40583,58 @@ var codegenModuleWithValueEnums = function(valueEnums) {
   };
 };
 
+// output/Purust.Runtime/foreign.js
+import { Buffer as Buffer2 } from "node:buffer";
+
+// tests/runtime/perceus_ptr/Cargo.toml
+var Cargo_default = "W3BhY2thZ2VdCm5hbWUgPSAicGVyY2V1c19wdHIiCnZlcnNpb24gPSAiMC4xLjAiCmVkaXRpb24gPSAiMjAyNCIKCltmZWF0dXJlc10KdGhyZWFkZWQgPSBbXQoKW2RlcGVuZGVuY2llc10K";
+
+// tests/runtime/perceus_ptr/src/lib.rs
+var lib_default = "I1tjZmcobm90KGZlYXR1cmUgPSAidGhyZWFkZWQiKSldCm1vZCBsb2NhbDsKI1tjZmcobm90KGZlYXR1cmUgPSAidGhyZWFkZWQiKSldCnB1YiB1c2Ugc2VsZjo6bG9jYWw6Oio7CgojW2NmZyhmZWF0dXJlID0gInRocmVhZGVkIildCm1vZCB0aHJlYWRlZDsKI1tjZmcoZmVhdHVyZSA9ICJ0aHJlYWRlZCIpXQpwdWIgdXNlIHNlbGY6OnRocmVhZGVkOjoqOwo=";
+
+// tests/runtime/perceus_ptr/src/local.rs
+var local_default = "dXNlIHN0ZDo6cHRyOjpOb25OdWxsOwp1c2Ugc3RkOjphbGxvYzo6e2FsbG9jLCBkZWFsbG9jLCBMYXlvdXR9Owp1c2Ugc3RkOjpvcHM6OkRlcmVmOwoKc3RydWN0IFBlcmNldXNCb3g8VD4gewogICAgY291bnQ6IHUzMiwKICAgIGRhdGE6IFQsCn0KCnB1YiBzdHJ1Y3QgUGVyY2V1c1B0cjxUPiB7CiAgICBwdHI6IE5vbk51bGw8UGVyY2V1c0JveDxUPj4sCn0KCmltcGw8VD4gUGVyY2V1c1B0cjxUPiB7CiAgICAvLy8gVmFsZXVyIG1hcnF1YW50IGxlIHBvaW50ZXVyIGNvbW1lICJpbW1vcnRlbCIuCiAgICBwdWIgY29uc3QgU1RJQ0tZX0NPVU5UOiB1MzIgPSB1MzI6Ok1BWDsKCiAgICBwdWIgZm4gbmV3KGRhdGE6IFQpIC0+IFNlbGYgewogICAgICAgIGxldCBsYXlvdXQgPSBMYXlvdXQ6Om5ldzo6PFBlcmNldXNCb3g8VD4+KCk7CiAgICAgICAgdW5zYWZlIHsKICAgICAgICAgICAgbGV0IHB0ciA9IGFsbG9jKGxheW91dCkgYXMgKm11dCBQZXJjZXVzQm94PFQ+OwogICAgICAgICAgICBpZiBwdHIuaXNfbnVsbCgpIHsKICAgICAgICAgICAgICAgIHN0ZDo6YWxsb2M6OmhhbmRsZV9hbGxvY19lcnJvcihsYXlvdXQpOwogICAgICAgICAgICB9CiAgICAgICAgICAgIHN0ZDo6cHRyOjp3cml0ZShwdHIsIFBlcmNldXNCb3ggeyBjb3VudDogMSwgZGF0YSB9KTsKICAgICAgICAgICAgUGVyY2V1c1B0ciB7CiAgICAgICAgICAgICAgICBwdHI6IE5vbk51bGw6Om5ld191bmNoZWNrZWQocHRyKSwKICAgICAgICAgICAgfQogICAgICAgIH0KICAgIH0KCiAgICAvLy8gUGVybWV0IGRlIGZvcmNlciBtYW51ZWxsZW1lbnQgbGUgY29tcHRldXIgcG91ciBsZXMgdGVzdHMKICAgICNbY2ZnKHRlc3QpXQogICAgcHViIHVuc2FmZSBmbiBzZXRfY291bnQoJnNlbGYsIGNvdW50OiB1MzIpIHsKICAgICAgICBsZXQgYiA9IHNlbGYucHRyLmFzX3B0cigpOwogICAgICAgIHVuc2FmZSB7ICgqYikuY291bnQgPSBjb3VudDsgfQogICAgfQoKICAgIC8vLyBWw6lyaWZpZSBzaSBsZSBwb2ludGV1ciBlc3QgdW5pcXVlIChsZSBmYW1ldXggRkJJUCkKICAgIHB1YiBmbiBpc191bmlxdWUoJnNlbGYpIC0+IGJvb2wgewogICAgICAgIHVuc2FmZSB7IHNlbGYucHRyLmFzX3JlZigpLmNvdW50ID09IDEgfQogICAgfQoKICAgIC8vLyBSZW52b2llIGxlIGNvbXB0ZXVyIGRlIHLDqWbDqXJlbmNlcwogICAgcHViIGZuIGNvdW50KCZzZWxmKSAtPiB1MzIgewogICAgICAgIHVuc2FmZSB7IHNlbGYucHRyLmFzX3JlZigpLmNvdW50IH0KICAgIH0KCiAgICAvLy8gRXhwbGljaXRlbWVudCBkcm9wIGxlIHBvaW50ZXVyCiAgICBwdWIgZm4gZHJvcF9leHBsaWNpdChzZWxmKSB7CiAgICAgICAgLy8gbm90aGluZyB0byBkbywgdGFraW5nIG93bmVyc2hpcCB3aWxsIGRyb3AgaXQKICAgIH0KfQoKaW1wbDxUOiBDbG9uZT4gUGVyY2V1c1B0cjxUPiB7CiAgICBwdWIgZm4gbWFrZV9tdXQodGhpczogJm11dCBTZWxmKSAtPiAmbXV0IFQgewogICAgICAgIGlmICF0aGlzLmlzX3VuaXF1ZSgpIHsKICAgICAgICAgICAgKnRoaXMgPSBQZXJjZXVzUHRyOjpuZXcoKCoqdGhpcykuY2xvbmUoKSk7CiAgICAgICAgfQogICAgICAgIHVuc2FmZSB7ICZtdXQgKCp0aGlzLnB0ci5hc19wdHIoKSkuZGF0YSB9CiAgICB9CgogICAgLy8vIFVuc2FmZSBtdXRhdGlvbiB3aXRob3V0IGNoZWNraW5nIHJlZmNvdW50LiBVc2VkIGZvciBMZXRSZWMga25vdC10eWluZy4KICAgIHB1YiB1bnNhZmUgZm4gZm9yY2VfbXV0KHRoaXM6ICZtdXQgU2VsZikgLT4gJm11dCBUIHsKICAgICAgICB1bnNhZmUgeyAmbXV0ICgqdGhpcy5wdHIuYXNfcHRyKCkpLmRhdGEgfQogICAgfQp9CgppbXBsPFQ+IENsb25lIGZvciBQZXJjZXVzUHRyPFQ+IHsKICAgIGZuIGNsb25lKCZzZWxmKSAtPiBTZWxmIHsKICAgICAgICB1bnNhZmUgewogICAgICAgICAgICBsZXQgYiA9IHNlbGYucHRyLmFzX3B0cigpOwogICAgICAgICAgICBsZXQgY291bnQgPSAoKmIpLmNvdW50OwogICAgICAgICAgICBpZiBjb3VudCAhPSBTZWxmOjpTVElDS1lfQ09VTlQgewogICAgICAgICAgICAgICAgLy8gTGUgc2F0dXJhdGluZ19hZGQgaWNpIHByb3TDqGdlIGNvbnRyZSBsJ292ZXJmbG93LiAKICAgICAgICAgICAgICAgIC8vIEVuIGNhcyBkJ292ZXJmbG93IG5hdHVyZWwsIMOnYSBkZXZpZW5kcmEgU1RJQ0tZX0NPVU5ULCBldCDDp2EgYmxvcXVlcmEgw6AgbCdpbmZpbmkgKGxlYWtlZCkuCiAgICAgICAgICAgICAgICAoKmIpLmNvdW50ID0gY291bnQuc2F0dXJhdGluZ19hZGQoMSk7CiAgICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgUGVyY2V1c1B0ciB7IHB0cjogc2VsZi5wdHIgfQogICAgfQp9CgppbXBsPFQ+IERyb3AgZm9yIFBlcmNldXNQdHI8VD4gewogICAgZm4gZHJvcCgmbXV0IHNlbGYpIHsKICAgICAgICB1bnNhZmUgewogICAgICAgICAgICBsZXQgYiA9IHNlbGYucHRyLmFzX3B0cigpOwogICAgICAgICAgICBsZXQgY291bnQgPSAoKmIpLmNvdW50OwogICAgICAgICAgICBpZiBjb3VudCAhPSBTZWxmOjpTVElDS1lfQ09VTlQgewogICAgICAgICAgICAgICAgbGV0IG5ld19jb3VudCA9IGNvdW50IC0gMTsKICAgICAgICAgICAgICAgICgqYikuY291bnQgPSBuZXdfY291bnQ7CiAgICAgICAgICAgICAgICBpZiBuZXdfY291bnQgPT0gMCB7CiAgICAgICAgICAgICAgICAgICAgc3RkOjpwdHI6OmRyb3BfaW5fcGxhY2UoJm11dCAoKmIpLmRhdGEpOwogICAgICAgICAgICAgICAgICAgIGxldCBsYXlvdXQgPSBMYXlvdXQ6Om5ldzo6PFBlcmNldXNCb3g8VD4+KCk7CiAgICAgICAgICAgICAgICAgICAgZGVhbGxvYyhiIGFzICptdXQgdTgsIGxheW91dCk7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICB9CiAgICB9Cn0KCmltcGw8VD4gRGVyZWYgZm9yIFBlcmNldXNQdHI8VD4gewogICAgdHlwZSBUYXJnZXQgPSBUOwogICAgZm4gZGVyZWYoJnNlbGYpIC0+ICZTZWxmOjpUYXJnZXQgewogICAgICAgIHVuc2FmZSB7ICZzZWxmLnB0ci5hc19yZWYoKS5kYXRhIH0KICAgIH0KfQoKI1tjZmcodGVzdCldCm1vZCB0ZXN0cyB7CiAgICB1c2Ugc3VwZXI6Oio7CiAgICB1c2Ugc3RkOjpzeW5jOjphdG9taWM6OntBdG9taWNVc2l6ZSwgT3JkZXJpbmd9OwoKICAgIHN0YXRpYyBEUk9QX0NPVU5UOiBBdG9taWNVc2l6ZSA9IEF0b21pY1VzaXplOjpuZXcoMCk7CgogICAgc3RydWN0IERyb3BUcmFja2VyOwoKICAgIGltcGwgRHJvcCBmb3IgRHJvcFRyYWNrZXIgewogICAgICAgIGZuIGRyb3AoJm11dCBzZWxmKSB7CiAgICAgICAgICAgIERST1BfQ09VTlQuZmV0Y2hfYWRkKDEsIE9yZGVyaW5nOjpTZXFDc3QpOwogICAgICAgIH0KICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiB0ZXN0X3VuaXF1ZV9hbmRfZHJvcCgpIHsKICAgICAgICBEUk9QX0NPVU5ULnN0b3JlKDAsIE9yZGVyaW5nOjpTZXFDc3QpOwogICAgICAgIHsKICAgICAgICAgICAgbGV0IHB0ciA9IFBlcmNldXNQdHI6Om5ldyhEcm9wVHJhY2tlcik7CiAgICAgICAgICAgIGFzc2VydCEocHRyLmlzX3VuaXF1ZSgpKTsKICAgICAgICAgICAgYXNzZXJ0X2VxIShwdHIuY291bnQoKSwgMSk7CiAgICAgICAgfQogICAgICAgIGFzc2VydF9lcSEoRFJPUF9DT1VOVC5sb2FkKE9yZGVyaW5nOjpTZXFDc3QpLCAxKTsKICAgIH0KCiAgICAjW3Rlc3RdCiAgICBmbiB0ZXN0X2Nsb25lX3NoYXJpbmcoKSB7CiAgICAgICAgRFJPUF9DT1VOVC5zdG9yZSgwLCBPcmRlcmluZzo6U2VxQ3N0KTsKICAgICAgICB7CiAgICAgICAgICAgIGxldCBwdHIxID0gUGVyY2V1c1B0cjo6bmV3KERyb3BUcmFja2VyKTsKICAgICAgICAgICAgbGV0IHB0cjIgPSBwdHIxLmNsb25lKCk7CiAgICAgICAgICAgIAogICAgICAgICAgICBhc3NlcnQhKCFwdHIxLmlzX3VuaXF1ZSgpKTsKICAgICAgICAgICAgYXNzZXJ0X2VxIShwdHIxLmNvdW50KCksIDIpOwogICAgICAgICAgICBhc3NlcnRfZXEhKHB0cjIuY291bnQoKSwgMik7CgogICAgICAgICAgICBkcm9wKHB0cjEpOwogICAgICAgICAgICBhc3NlcnRfZXEhKHB0cjIuY291bnQoKSwgMSk7CiAgICAgICAgICAgIGFzc2VydCEocHRyMi5pc191bmlxdWUoKSk7IC8vIEZCSVAgY29uZGl0aW9uIHJlLWVuYWJsZWQhCiAgICAgICAgICAgIGFzc2VydF9lcSEoRFJPUF9DT1VOVC5sb2FkKE9yZGVyaW5nOjpTZXFDc3QpLCAwKTsKICAgICAgICB9CiAgICAgICAgYXNzZXJ0X2VxIShEUk9QX0NPVU5ULmxvYWQoT3JkZXJpbmc6OlNlcUNzdCksIDEpOwogICAgfQoKICAgICNbdGVzdF0KICAgIGZuIHRlc3Rfc3RpY2t5X3NoYXJpbmcoKSB7CiAgICAgICAgRFJPUF9DT1VOVC5zdG9yZSgwLCBPcmRlcmluZzo6U2VxQ3N0KTsKICAgICAgICB7CiAgICAgICAgICAgIGxldCBwdHIxID0gUGVyY2V1c1B0cjo6bmV3KERyb3BUcmFja2VyKTsKICAgICAgICAgICAgdW5zYWZlIHsgcHRyMS5zZXRfY291bnQoUGVyY2V1c1B0cjo6PERyb3BUcmFja2VyPjo6U1RJQ0tZX0NPVU5UKSB9OwogICAgICAgICAgICAKICAgICAgICAgICAgbGV0IHB0cjIgPSBwdHIxLmNsb25lKCk7CiAgICAgICAgICAgIGFzc2VydF9lcSEocHRyMS5jb3VudCgpLCBQZXJjZXVzUHRyOjo8RHJvcFRyYWNrZXI+OjpTVElDS1lfQ09VTlQpOwogICAgICAgICAgICBhc3NlcnRfZXEhKHB0cjIuY291bnQoKSwgUGVyY2V1c1B0cjo6PERyb3BUcmFja2VyPjo6U1RJQ0tZX0NPVU5UKTsKICAgICAgICAgICAgCiAgICAgICAgICAgIGRyb3AocHRyMSk7CiAgICAgICAgICAgIC8vIERyb3Agc2hvdWxkbid0IGRlY3JlbWVudAogICAgICAgICAgICBhc3NlcnRfZXEhKHB0cjIuY291bnQoKSwgUGVyY2V1c1B0cjo6PERyb3BUcmFja2VyPjo6U1RJQ0tZX0NPVU5UKTsKICAgICAgICAgICAgCiAgICAgICAgICAgIGRyb3AocHRyMik7CiAgICAgICAgICAgIC8vIERyb3BUcmFja2VyIHNob3VsZG4ndCBiZSBkcm9wcGVkLCBtZW1vcnkgaXMgbGVha2VkIGRlbGliZXJhdGVseQogICAgICAgIH0KICAgICAgICBhc3NlcnRfZXEhKERST1BfQ09VTlQubG9hZChPcmRlcmluZzo6U2VxQ3N0KSwgMCk7CiAgICB9CgogICAgI1tkZXJpdmUoQ2xvbmUpXQogICAgc3RydWN0IFJlY29yZF9hIHsKICAgICAgICBhOiBpNjQsCiAgICB9CgogICAgZm4gY291bnRfdXAobXV0IHY6IFBlcmNldXNQdHI8UmVjb3JkX2E+LCBuOiBpNjQpIC0+IFBlcmNldXNQdHI8UmVjb3JkX2E+IHsKICAgICAgICBpZiBuID09IDAgewogICAgICAgICAgICB2CiAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgbGV0IG11dCBfYmFzZSA9IHY7CiAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgIGxldCBfbXV0ID0gUGVyY2V1c1B0cjo6bWFrZV9tdXQoJm11dCBfYmFzZSk7CiAgICAgICAgICAgICAgICBfbXV0LmEgPSBfbXV0LmEgKyAxOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGNvdW50X3VwKF9iYXNlLCBuIC0gMSkKICAgICAgICB9CiAgICB9CgogICAgI1t0ZXN0XQogICAgZm4gdGVzdF9mYmlwX3JlY3Vyc2l2ZSgpIHsKICAgICAgICBsZXQgaW5pdGlhbCA9IFBlcmNldXNQdHI6Om5ldyhSZWNvcmRfYSB7IGE6IDAgfSk7CiAgICAgICAgbGV0IHJlc3VsdCA9IGNvdW50X3VwKGluaXRpYWwsIDUpOwogICAgICAgIGFzc2VydF9lcSEocmVzdWx0LmEsIDUpOwogICAgfQp9Cg==";
+
+// tests/runtime/perceus_ptr/src/threaded.rs
+var threaded_default = "dXNlIHN0ZDo6b3BzOjpEZXJlZjsKdXNlIHN0ZDo6c3luYzo6QXJjOwoKLy8vIFNoYXJlZCBpbW11dGFibGUgZGF0YSB3aXRoIGNvcHktb24td3JpdGUgdXBkYXRlcyBpbiBjb25jdXJyZW50IHByb2dyYW1zLgpwdWIgc3RydWN0IFBlcmNldXNQdHI8VD4oQXJjPFQ+KTsKCmltcGw8VD4gUGVyY2V1c1B0cjxUPiB7CiAgICBwdWIgY29uc3QgU1RJQ0tZX0NPVU5UOiB1MzIgPSB1MzI6Ok1BWDsKICAgIHB1YiBmbiBuZXcodmFsdWU6IFQpIC0+IFNlbGYgewogICAgICAgIFNlbGYoQXJjOjpuZXcodmFsdWUpKQogICAgfQogICAgcHViIGZuIGlzX3VuaXF1ZSgmc2VsZikgLT4gYm9vbCB7CiAgICAgICAgQXJjOjpzdHJvbmdfY291bnQoJnNlbGYuMCkgPT0gMQogICAgfQogICAgcHViIGZuIGNvdW50KCZzZWxmKSAtPiB1MzIgewogICAgICAgIEFyYzo6c3Ryb25nX2NvdW50KCZzZWxmLjApLm1pbih1MzI6Ok1BWCBhcyB1c2l6ZSkgYXMgdTMyCiAgICB9CiAgICBwdWIgZm4gZHJvcF9leHBsaWNpdChzZWxmKSB7fQp9CmltcGw8VDogQ2xvbmU+IFBlcmNldXNQdHI8VD4gewogICAgcHViIGZuIG1ha2VfbXV0KHRoaXM6ICZtdXQgU2VsZikgLT4gJm11dCBUIHsKICAgICAgICBBcmM6Om1ha2VfbXV0KCZtdXQgdGhpcy4wKQogICAgfQogICAgLy8vIEluaXRpYWxpemF0aW9uIGlzIHBlcm1pdHRlZCBvbmx5IGJlZm9yZSB0aGUgdmFsdWUgaGFzIGJlZW4gc2hhcmVkLgogICAgcHViIHVuc2FmZSBmbiBmb3JjZV9tdXQodGhpczogJm11dCBTZWxmKSAtPiAmbXV0IFQgewogICAgICAgIEFyYzo6Z2V0X211dCgmbXV0IHRoaXMuMCkuZXhwZWN0KCJjYW5ub3QgaW5pdGlhbGl6ZSBhIHB1Ymxpc2hlZCB2YWx1ZSIpCiAgICB9Cn0KaW1wbDxUPiBDbG9uZSBmb3IgUGVyY2V1c1B0cjxUPiB7CiAgICBmbiBjbG9uZSgmc2VsZikgLT4gU2VsZiB7CiAgICAgICAgU2VsZihzZWxmLjAuY2xvbmUoKSkKICAgIH0KfQppbXBsPFQ+IERlcmVmIGZvciBQZXJjZXVzUHRyPFQ+IHsKICAgIHR5cGUgVGFyZ2V0ID0gVDsKICAgIGZuIGRlcmVmKCZzZWxmKSAtPiAmVCB7CiAgICAgICAgJnNlbGYuMAogICAgfQp9Cg==";
+
+// output/Purust.Runtime/foreign.js
+var runtimeFiles = [
+  { path: "Cargo.toml", content: Cargo_default },
+  { path: "src/lib.rs", content: lib_default },
+  { path: "src/local.rs", content: local_default },
+  { path: "src/threaded.rs", content: threaded_default }
+].map(({ path: path3, content }) => ({ path: path3, content: Buffer2.from(content, "base64").toString("utf8") }));
+
+// output/Purust.Runtime/index.js
+var traverse_2 = /* @__PURE__ */ traverse_(applicativeEffect)(foldableArray);
+var when3 = /* @__PURE__ */ when(applicativeEffect);
+var writeRuntime = function(outDir) {
+  var runtimeDir = outDir + "/perceus_ptr";
+  return function __do() {
+    traverse_2(function(directory) {
+      return function __do2() {
+        var exists2 = exists(directory)();
+        return when3(!exists2)(mkdir(directory))();
+      };
+    })([runtimeDir, runtimeDir + "/src"])();
+    return traverse_2(function(file) {
+      return writeTextFile(UTF8.value)(runtimeDir + ("/" + file.path))(file.content);
+    })(runtimeFiles)();
+  };
+};
+var runtimeDependency = function(threaded) {
+  return function(relativePath) {
+    return 'perceus_ptr = { path = "' + (relativePath + ('"' + ((function() {
+      if (threaded) {
+        return ', features = ["threaded"]';
+      }
+      ;
+      return "";
+    })() + " }\n")));
+  };
+};
+
 // output/Purust.Threading/foreign.js
 function mapCode(source2, transform) {
   let result = "", start = 0, i = 0;
@@ -40658,7 +40722,7 @@ var pure110 = /* @__PURE__ */ pure(applicativeEffect);
 var toUnfoldable14 = /* @__PURE__ */ toUnfoldable4(unfoldableArray);
 var nub5 = /* @__PURE__ */ nub(ordString);
 var eq211 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqInt));
-var when3 = /* @__PURE__ */ when(applicativeEffect);
+var when4 = /* @__PURE__ */ when(applicativeEffect);
 var applySecond4 = /* @__PURE__ */ applySecond(applyEffect);
 var fromFoldable27 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordString);
 var lookup16 = /* @__PURE__ */ lookup2(ordString);
@@ -40671,14 +40735,10 @@ var configureThreading = function(v) {
   }
   ;
   if (v) {
-    var $213 = replaceAll('perceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }')('perceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr", features = ["threaded"] }');
-    var $214 = replaceAll("[dependencies]\n")('[dependencies]\ntokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync", "macros"] }\n');
-    return function($215) {
-      return $213($214($215));
-    };
+    return replaceAll("[dependencies]\n")('[dependencies]\ntokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync", "macros"] }\n');
   }
   ;
-  throw new Error("Failed pattern match at Main (line 313, column 1 - line 313, column 50): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 315, column 1 - line 315, column 50): " + [v.constructor.name]);
 };
 var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ liftEffect3(argv))(function(args) {
   var threaded = elem6("--threaded")(args);
@@ -40696,14 +40756,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
         return "Main";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 47, column 34 - line 49, column 53): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 48, column 34 - line 50, column 53): " + [v1.constructor.name]);
     }
     ;
     if (v instanceof Nothing) {
       return "Main";
     }
     ;
-    throw new Error("Failed pattern match at Main (line 46, column 20 - line 50, column 39): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 47, column 20 - line 51, column 39): " + [v.constructor.name]);
   })();
   return discard1(liftEffect3(log2("Generating Rust code for " + mainModule)))(function() {
     var sourceDir = (function() {
@@ -40720,14 +40780,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
           return "output";
         }
         ;
-        throw new Error("Failed pattern match at Main (line 54, column 34 - line 56, column 55): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 55, column 34 - line 57, column 55): " + [v1.constructor.name]);
       }
       ;
       if (v instanceof Nothing) {
         return "output";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 53, column 19 - line 57, column 41): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 54, column 19 - line 58, column 41): " + [v.constructor.name]);
     })();
     return bind26(coreFnModulesFromOutput(sourceDir))(function(finalModules) {
       var buildGlobalTypes = function(modules) {
@@ -40815,7 +40875,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                 return v1.value0;
               }
               ;
-              throw new Error("Failed pattern match at Main (line 70, column 24 - line 80, column 38): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at Main (line 71, column 24 - line 81, column 38): " + [v1.constructor.name]);
             };
             var processBind = function(a) {
               return function(v1) {
@@ -40830,7 +40890,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                       return getTy2(extractAnn(v1.value0.value2));
                     }
                     ;
-                    throw new Error("Failed pattern match at Main (line 84, column 26 - line 86, column 61): " + [v2.constructor.name]);
+                    throw new Error("Failed pattern match at Main (line 85, column 26 - line 87, column 61): " + [v2.constructor.name]);
                   })();
                   if (tyMb instanceof Just) {
                     return insert111(modPrefix + sanitizeIdent(v1.value0.value1))(tyMb.value0)(a);
@@ -40840,7 +40900,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     return a;
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 87, column 18 - line 89, column 29): " + [tyMb.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 88, column 18 - line 90, column 29): " + [tyMb.constructor.name]);
                 }
                 ;
                 if (v1 instanceof Rec) {
@@ -40856,7 +40916,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                           return getTy2(extractAnn(v2.value2));
                         }
                         ;
-                        throw new Error("Failed pattern match at Main (line 92, column 28 - line 94, column 63): " + [v3.constructor.name]);
+                        throw new Error("Failed pattern match at Main (line 93, column 28 - line 95, column 63): " + [v3.constructor.name]);
                       })();
                       if (tyMb2 instanceof Just) {
                         return insert111(modPrefix + sanitizeIdent(v2.value1))(tyMb2.value0)(a$prime);
@@ -40866,12 +40926,12 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         return a$prime;
                       }
                       ;
-                      throw new Error("Failed pattern match at Main (line 95, column 20 - line 97, column 32): " + [tyMb2.constructor.name]);
+                      throw new Error("Failed pattern match at Main (line 96, column 20 - line 98, column 32): " + [tyMb2.constructor.name]);
                     };
                   })(a)(v1.value0);
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 82, column 27 - line 98, column 24): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 83, column 27 - line 99, column 24): " + [v1.constructor.name]);
               };
             };
             var acc11 = foldl16(processBind)(acc)(v.decls);
@@ -40885,7 +40945,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                   return a;
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 103, column 15 - line 105, column 29): " + [v1.value1.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 104, column 15 - line 106, column 29): " + [v1.value1.constructor.name]);
               };
             })(acc11)(toUnfoldable8(v.foreign));
             var acc3 = foldl16(function(a) {
@@ -40896,8 +40956,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     var fqn = snoc(modPath)(decl.name);
                     var retTy = new ADT(decl.name, fqn, []);
                     var ty = (function() {
-                      var $155 = length(ctor.fields) > 0;
-                      if ($155) {
+                      var $154 = length(ctor.fields) > 0;
+                      if ($154) {
                         return new Func(ctor.fields, retTy);
                       }
                       ;
@@ -40967,8 +41027,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         };
                         var genFallback = function(name2) {
                           return function(ty) {
-                            var $166 = !member11(modPrefix + sanitizeIdent(unwrap10(name2)))(empty3);
-                            if ($166) {
+                            var $165 = !member11(modPrefix + sanitizeIdent(unwrap10(name2)))(empty3);
+                            if ($165) {
                               var retTyStr = codegenExprTypeWithValueEnums(globalValueEnums)(modName)(true)(extractFinalRetType(ty));
                               var defaultRet = (function() {
                                 if (retTyStr === "i64") {
@@ -41010,8 +41070,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                             var content = readTextFile(UTF8.value)(ffiPathMb.value0)();
                             var missingStubs = foldMap28(function(tup) {
                               if (tup.value1 instanceof Just) {
-                                var $170 = contains("fn " + (modPrefix + sanitizeIdent(unwrap10(tup.value0))))(content);
-                                if ($170) {
+                                var $169 = contains("fn " + (modPrefix + sanitizeIdent(unwrap10(tup.value0))))(content);
+                                if ($169) {
                                   return "";
                                 }
                                 ;
@@ -41022,7 +41082,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return "";
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 195, column 57 - line 201, column 42): " + [tup.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 196, column 57 - line 202, column 42): " + [tup.constructor.name]);
                             })(toUnfoldable8(v1.foreign));
                             return content + ("\n\n" + missingStubs);
                           }
@@ -41037,11 +41097,11 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return "";
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 204, column 54 - line 206, column 38): " + [tup.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 205, column 54 - line 207, column 38): " + [tup.constructor.name]);
                             })(toUnfoldable8(v1.foreign));
                           }
                           ;
-                          throw new Error("Failed pattern match at Main (line 192, column 25 - line 207, column 46): " + [ffiPathMb.constructor.name]);
+                          throw new Error("Failed pattern match at Main (line 193, column 25 - line 208, column 46): " + [ffiPathMb.constructor.name]);
                         })();
                         var rawModules = toUnfoldable14(collectModulesModule(v1));
                         var extractModules = function(s) {
@@ -41052,8 +41112,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                               var isValid2 = function(c) {
                                 return c >= "A" && c <= "Z" || (c >= "a" && c <= "z" || (c >= "0" && c <= "9" || c === "_"));
                               };
-                              var $184 = length4(mod5) > 0 && (length4(mod5) < 100 && all2(isValid2)(toCharArray(mod5)));
-                              if ($184) {
+                              var $183 = length4(mod5) > 0 && (length4(mod5) < 100 && all2(isValid2)(toCharArray(mod5)));
+                              if ($183) {
                                 return new Just(mod5);
                               }
                               ;
@@ -41064,7 +41124,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                               return Nothing.value;
                             }
                             ;
-                            throw new Error("Failed pattern match at Main (line 211, column 17 - line 216, column 37): " + [v3.constructor.name]);
+                            throw new Error("Failed pattern match at Main (line 212, column 17 - line 217, column 37): " + [v3.constructor.name]);
                           })(drop(1)(split("Purs_")(s)));
                         };
                         var extractedModules = extractModules(rsFile + ("\n" + ffiContent));
@@ -41072,8 +41132,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         var coreImports = nub5(mapMaybe(function(n) {
                           var nStr = replaceAll(".")("_")(n);
                           var isSelf = nStr === modName;
-                          var $186 = n === "Prim" || (eq211(indexOf2("Prim.")(n))(new Just(0)) || isSelf);
-                          if ($186) {
+                          var $185 = n === "Prim" || (eq211(indexOf2("Prim.")(n))(new Just(0)) || isSelf);
+                          if ($185) {
                             return Nothing.value;
                           }
                           ;
@@ -41111,21 +41171,22 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     return "output/purust_output";
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 234, column 34 - line 236, column 69): " + [v1.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 235, column 34 - line 237, column 69): " + [v1.constructor.name]);
                 }
                 ;
                 if (v instanceof Nothing) {
                   return "output/purust_output";
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 233, column 18 - line 237, column 55): " + [v.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 234, column 18 - line 238, column 55): " + [v.constructor.name]);
               })();
               return function __do() {
                 var srcExists = exists(outDir + "/src")();
-                when3(!srcExists)(function __do2() {
+                when4(!srcExists)(function __do2() {
                   mkdir(outDir)();
                   return mkdir(outDir + "/src")();
                 })();
+                writeRuntime(outDir)();
                 var allModules = read(modulesRef)();
                 var tcRef = $$new(empty2)();
                 var initTc = toUnfoldable8(allModules);
@@ -41153,11 +41214,11 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return acc;
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 257, column 19 - line 259, column 35): " + [v1.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 259, column 19 - line 261, column 35): " + [v1.constructor.name]);
                             };
                           })(v.value1)(toUnfoldable14(v.value1));
-                          var $197 = size2(newImps) > size2(v.value1);
-                          if ($197) {
+                          var $196 = size2(newImps) > size2(v.value1);
+                          if ($196) {
                             return function __do3() {
                               write(true)(changed)();
                               return modify_(insert111(v.value0)(newImps))(tcRef)();
@@ -41170,13 +41231,13 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     })(pure110(unit))(arr)();
                     var isChanged = read(changed)();
                     if (isChanged) {
-                      return $lazy_loop(267)();
+                      return $lazy_loop(269)();
                     }
                     ;
                     return unit;
                   };
                 });
-                var loop = $lazy_loop(251);
+                var loop = $lazy_loop(253);
                 loop();
                 var finalTcMap = read(tcRef)();
                 var allShapes = foldl17(function(acc) {
@@ -41192,7 +41253,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                   return identity17;
                 })()(codegenPrelude(allShapes));
                 var mainModuleSanitized = replaceAll(".")("_")(mainModule);
-                var workspaceMembers = '"purust_core", ' + joinWith(", ")(map59(function(v) {
+                var workspaceMembers = '"perceus_ptr", "purust_core", ' + joinWith(", ")(map59(function(v) {
                   return '"Purs_' + (v.value0 + '"');
                 })(toUnfoldable8(allModules)));
                 var runsAff = threaded && member14("Effect_Aff")(allModules);
@@ -41203,7 +41264,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                   ;
                   return "";
                 })();
-                var rootCargoToml = "[workspace]\nmembers = [\n  " + (workspaceMembers + ('\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + (mainModuleSanitized + (' = { path = "Purs_' + (mainModuleSanitized + '" }\npurust_core = { path = "purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\n')))));
+                var rootCargoToml = "[workspace]\nmembers = [\n  " + (workspaceMembers + ('\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + (mainModuleSanitized + (' = { path = "Purs_' + (mainModuleSanitized + ('" }\npurust_core = { path = "purust_core" }\n' + runtimeDependency(threaded)("perceus_ptr")))))));
                 writeTextFile(UTF8.value)(outDir + "/Cargo.toml")(configureThreading(threaded)(rootCargoToml + affDependency))();
                 var runMain = "let _effect = Purs_" + (mainModuleSanitized + "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)");
                 var mainBody = (function() {
@@ -41216,11 +41277,11 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                 writeTextFile(UTF8.value)(outDir + "/src/main.rs")("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    " + (mainBody + "\n}\n"))();
                 var coreDir = outDir + "/purust_core";
                 var coreExists = exists(coreDir)();
-                when3(!coreExists)(function __do2() {
+                when4(!coreExists)(function __do2() {
                   mkdir(coreDir)();
                   return mkdir(coreDir + "/src")();
                 })();
-                writeTextFile(UTF8.value)(coreDir + "/Cargo.toml")(configureThreading(threaded)('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n'))();
+                writeTextFile(UTF8.value)(coreDir + "/Cargo.toml")(configureThreading(threaded)('[package]\nname = "purust_core"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' + (runtimeDependency(threaded)("../perceus_ptr") + 'fancy-regex = "0.13"\n')))();
                 writeTextFile(UTF8.value)(coreDir + "/src/lib.rs")(preludeRsContent)();
                 foldl16(function(eff) {
                   return function(v) {
@@ -41228,15 +41289,15 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                       var modDir = outDir + ("/Purs_" + v.value0);
                       return function __do2() {
                         var modExists = exists(modDir)();
-                        when3(!modExists)(function __do3() {
+                        when4(!modExists)(function __do3() {
                           mkdir(modDir)();
                           return mkdir(modDir + "/src")();
                         })();
-                        var modDeps = 'purust_core = { path = "../purust_core" }\nperceus_ptr = { path = "/Users/0x1/Documents/htdocs/purust/purust/tests/runtime/perceus_ptr" }\nfancy-regex = "0.13"\n' + joinWith("\n")(map59(function(i) {
+                        var modDeps = 'purust_core = { path = "../purust_core" }\n' + (runtimeDependency(threaded)("../perceus_ptr") + ('fancy-regex = "0.13"\n' + joinWith("\n")(map59(function(i) {
                           return "Purs_" + (i + (' = { path = "../Purs_' + (i + '" }')));
                         })(fromMaybe([])(map121(function(s) {
                           return toUnfoldable14(s);
-                        })(lookup16(v.value0)(finalTcMap)))));
+                        })(lookup16(v.value0)(finalTcMap)))))));
                         var modCargoToml = '[package]\nname = "Purs_' + (v.value0 + ('"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' + modDeps));
                         writeTextFile(UTF8.value)(modDir + "/Cargo.toml")(configureThreading(threaded)(modCargoToml))();
                         var transImps = fromMaybe([])(map121(function(s) {

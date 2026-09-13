@@ -1,5 +1,9 @@
 package:
   name: purust
+  bundle:
+    extra_args:
+      - "--loader:.rs=base64"
+      - "--loader:.toml=base64"
   dependencies:
     - aff
     - argonaut-codecs

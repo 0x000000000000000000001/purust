@@ -1,6 +1,6 @@
 # Faire tourner les tests b8x avec des FFI Rust `.rs`
 
-Mis à jour le 12 septembre 2026.
+Mis à jour le 13 septembre 2026.
 
 ## Objectif
 
@@ -8,15 +8,19 @@ Permettre à la suite de tests de b8x d'être compilée et exécutée avec purus
 en utilisant des FFI Rust locales (`.rs`), tout en conservant les chemins JS,
 Go et PHP existants.
 
-Interface proposée, non encore implémentée :
+Interface retenue en 0.18, non encore implémentée pour Rust :
 
 ```sh
-./bin/test --runtime rust
+target rust
+b -c
+t -c
 ```
 
-Le chemin Rust devra sélectionner explicitement son backend, son point d'entrée
-et ses répertoires. Le nom exact de l'option reste à fixer en phase 1 ; conserver
-la compatibilité des commandes existantes. La validation des autres backends
+`b` et `t` sont les alias existants de `bin/build` et `bin/test`.
+`--runtime rust` permettra aussi une sélection ponctuelle sans changer de cible.
+Le contrat 0.18 fixe les entrées et limites de la première version HTML ;
+le test intégré `b -c; t -c` reste à exécuter après son implémentation.
+La validation des autres backends
 porte sur les comportements déjà pris en charge, pas sur un nouveau portage
 complet de b8x vers chacun d'eux.
 
@@ -38,7 +42,7 @@ du compilateur.
 - **Phase 0 — tranche verticale** : choisir le premier test, comprendre le
   graphe de dépendances, analyser le Rust généré et diagnostiquer un échec de
   résolution FFI.
-- **Phase 1 — profil Rust** : décider de l'interface `--runtime rust`, de la
+- **Phase 1 — profil Rust** : décider du raccordement `target rust` / `--runtime rust`, de la
   séparation des sorties et de la compatibilité avec les runners existants.
 - **Phase 2 — runner** : concevoir la séparation Node/backend-neutre, le
   contrat de sortie, l'attente des callbacks et les codes d'erreur.
@@ -155,7 +159,7 @@ collecte générale est un chantier distinct, sauf blocage mesuré des tests b8x
 
 ## Définition de terminé
 
-- La commande intégrée retenue (proposition : `./bin/test --runtime rust`)
+- La commande intégrée retenue (`target rust` puis `t`, ou `t --runtime rust`)
   sélectionne toujours la configuration Rust.
 - Un sous-ensemble de tests b8x purs compile avec le TAST du fork local et
   s'exécute réellement sous Cargo.
@@ -178,7 +182,8 @@ terminer successivement. La phase 0 nécessite un minimum des phases 1, 2, 3,
 4 et 7 : environnement isolé, runner Spec compatible, FFI d'encodage,
 `--threaded` et contrôle des FFI manquantes.
 
-1. **M1** : référence JS ciblée, puis les deux tests existants sous Rust et
+1. **M1 — validé le 12 septembre 2026 (0.17), réconcilié sur `master`** :
+   référence JS ciblée, puis les deux tests existants sous Rust et
    une fixture négative, avec TAST frais et FFI réelle. Les FFI de bibliothèques
    nécessaires au runner sont des prérequis supplémentaires au fichier b8x.
 2. **M2** : intégration aux scripts b8x et ensemble des tests sans services,
@@ -209,15 +214,18 @@ But : valider le pipeline complet avec le moins de variables possible.
   29 symboles remplacés par des fallbacks, dont 20 encore référencés dans le
   Rust produit (micro-étape 0.3). Une référence conservée ne prouve pas à elle
   seule que le test exécutera ce chemin.
-- [ ] Valider les prérequis Spec/Now et leurs dépendances ; la présence d'un
+- [x] Valider les prérequis Spec/Now et leurs dépendances pour cette tranche ; la présence d'un
   fichier ne prouve pas sa compatibilité. `Test.Spec.Console.write` et
   `Effect.Now.now` sont validées isolément (0.4–0.5). `Data.Exists` est
   corrigé et validé en 0.6, `Data.Lazy` en 0.8, `MonadAff` en 0.9 et
   `freeMonadRec` en 0.10 et `Pipes.Internal.X` en 0.11. Le `cargo check`
   du graphe complet passe. `Record.Unsafe.unsafeSet` est corrigé en 0.13.
   Avec la vraie FFI HTML (0.14), les deux tests ciblés passent, résumé
-  `2/2 tests passed` et sortie 0. Le chemin positif est validé ; le chemin
-  négatif et les fallbacks conservés restent à qualifier (13 référencés).
+  `2/2 tests passed` et sortie 0. En 0.15, la fixture négative termine aussi
+  son résumé et sort avec un code non nul ; son erreur Aff finale est désormais
+  affichée en Rust (0.16). Les 22 fallbacks conservés sont qualifiés pour ces
+  exécutions en 0.17 : 13 référencés mais non atteints, 9 sans référence hors
+  définition. Leur sémantique générale n'est ni portée ni validée.
 - [x] Ajouter une seule FFI `.rs` nécessaire au runner :
   `purust-spec/src/Test/Spec/Console.rs` (micro-étape 0.4).
 - [x] Vérifier que `findFfiFile ".rs"` découvre bien ce fichier local voisin.
@@ -239,8 +247,11 @@ But : valider le pipeline complet avec le moins de variables possible.
 - [x] Valider une exécution complète de la spec ciblée avec la vraie FFI HTML
   Rust : deux tests, quatre assertions, résumé complet et sortie 0 (0.14).
   Les cas vides verts de 0.12–0.13, obtenus avec le fallback, ne comptaient pas.
-- [ ] Vérifier séparément un test qui réussit et un test qui doit échouer.
-- [ ] Vérifier les codes de sortie et les messages d'erreur.
+- [x] Vérifier séparément un test qui réussit et un test qui doit échouer :
+  référence JS fraîche et Rust, résumés complets et codes nuls/non nuls (0.15).
+- [x] Vérifier les codes de sortie et les messages d'erreur de cette tranche :
+  contrôles JS/Rust positifs et négatifs verts ; l'erreur Aff finale est
+  affichée une fois, les erreurs interceptées restent silencieuses (0.16).
 
 Critère de sortie : un test b8x réel, avec une FFI Rust réelle, passe de
 PureScript à TAST, puis à Rust/Cargo, avec un résultat observable correct.
@@ -1571,7 +1582,7 @@ Preuves :
 [`provenance native`](../../b8x/run/bak/rust/output/html-ffi-fixed-QCPrdm/execution-provenance.json),
 [`binary.json`](../../b8x/run/bak/rust/output/html-ffi-fixed-QCPrdm/binary.json).
 
-**Prochain baby step — Astra :** valider une fixture volontairement fautive
+**Baby step suivant, réalisé en 0.15 avec un écart restant — Astra :** valider une fixture volontairement fautive
 avec la vraie FFI HTML, dans une entrée diagnostique séparée, sans modifier
 les specs b8x. Exiger une assertion effectivement échouée, un résumé cohérent,
 une terminaison bornée et un code non nul ; distinguer l'échec attendu d'une
@@ -1585,6 +1596,558 @@ contrat d'erreur stabilisés.
 M1 reste incomplet tant que ce contrôle négatif, la référence JS fraîche et
 la qualification des fallbacks pertinents ne sont pas validés. L'exécution
 positive des deux tests avec une vraie FFI Rust est désormais acquise.
+
+### Micro-étape 0.15 — Contrôle négatif et référence JS fraîche
+
+Réalisée le 12 septembre 2026. Diagnostic et régressions seulement : aucun
+changement des specs b8x, de la FFI HTML, du compilateur, du runtime ou des
+scripts partagés `bin/test`. Arrêt au premier écart de comportement confirmé.
+
+**Fixture et commandes reproductibles :**
+
+La nouvelle entrée
+[`Test.Rust.HtmlNegative.Main`](../../b8x/run/bak/rust/tests/fixtures/html-negative/Main.purs)
+exécute les deux tests originaux, puis ajoute une assertion volontairement
+fausse : `encodeHtmlEntities "<div>" =? "INTENTIONAL_HTML_MISMATCH"`.
+Elle attend le résultat de Spec, imprime les compteurs exacts, puis lève
+`HTML_NEGATIVE_EXPECTED_FAILURE` si les trois tests ne sont pas tous réussis.
+Le contrôle positif conserve le point d'entrée original sans modification.
+
+```sh
+cd /Users/0x1/Documents/htdocs/b8x
+node run/bak/rust/tests/html-runner.mjs
+```
+
+Le harness recrée les graphes et sorties JS/TAST/Rust dans un dossier neuf.
+Il utilise les sources déjà présentes des lockfiles JS et Rust, sans fetch,
+service externe ou changement de profil. **212 modules JS frais** par cas,
+avec `spec` **8.1.1** ; **211 modules TAST frais** par cas, avec l'override
+`purust-spec` **8.1.2**. La dépendance de la FFI JS vers `Util.Runtime`,
+invisible au graphe PureScript, est explicitement incluse côté JS.
+Un lien `node_modules` est créé seulement dans le nouveau diagnostic, vers
+les dépendances existantes du profil JS ; les liens racine restent inchangés.
+
+**Résultats du lancement 0.15, avant le correctif 0.16 :**
+
+| Cas | Résumé | Code processus | Erreur finale Aff sur stderr |
+| --- | --- | --- | --- |
+| JS positif | 2/2 | 0 | Sans objet |
+| JS négatif | 2/3 | 1 | Présente |
+| Rust positif, threaded | 2/2 | 0 | Sans objet |
+| Rust négatif, threaded | 2/3 | 101 | **Absente** |
+
+Les deux cas négatifs affichent l'assertion fautive avec la vraie valeur
+`"&#x3C;div&#x3E;"`, puis `passed=2, failed=1, pending=0`. Le reporter affiche
+donc bien le message d'assertion en Rust : l'écart concerne uniquement
+l'erreur Aff finale **non interceptée**, après le résumé.
+
+Les compilations JS et TAST, générations Rust et builds Cargo réussissent.
+Builds Rust positif/négatif : environ **18,60 s / 18,24 s** ; exécutions :
+**0,41 s / 0,37 s**. Aucun timeout ni signal. Les codes 1 et 101 satisfont
+le critère « non nul » ; leur différence n'est pas le défaut identifié.
+Les deux graphes Rust conservent **43 fichiers FFI**, **22 fallbacks** dont
+**13 référencés**. Les deux symboles HTML proviennent de la vraie FFI locale.
+Les fallbacks ne sont pas remplacés ou instrumentés pour ce diagnostic.
+
+**Écart et régression rouge :**
+
+Le runtime [`purust_aff_run_main`](../purust-aff/src/Effect/Aff.rs) attend les
+fibres puis transmet son erreur finale à `purust_exception_raise`.
+Dans [`Effect/Exception.rs`](../purust-exceptions/src/Effect/Exception.rs),
+cette primitive utilise `resume_unwind`, volontairement sans hook de panic
+pour que les exceptions interceptées ne produisent pas de diagnostic parasite.
+À la frontière finale du programme, aucun affichage ne précède cette remontée :
+le processus Rust échoue avec stderr vide, alors que JS affiche le marqueur
+`HTML_NEGATIVE_EXPECTED_FAILURE` et sa stack.
+
+[`verify-html-runner.mjs`](../../b8x/run/bak/rust/tests/verify-html-runner.mjs)
+vérifie les quatre résultats et exige ce marqueur sur stderr des cas négatifs.
+Il est appelé automatiquement à la fin du harness. La commande complète
+termine donc désormais avec **sortie 1**, sur l'échec explicite :
+`rust: the final uncaught Aff error message is missing from stderr`.
+Les quatre exécutions ont terminé ; cela ne signifie pas que leur contrat
+global est validé. Ne pas enlever cette vérification pour rendre le test vert.
+
+Contrôle de la preuve conservée, sans recompilation :
+
+```sh
+node run/bak/rust/tests/verify-html-runner.mjs \
+  run/bak/rust/output/html-runner-sl5K8G/report.json
+```
+
+**Preuves et provenance :**
+[`report.json`](../../b8x/run/bak/rust/output/html-runner-sl5K8G/report.json),
+[`JS positif`](../../b8x/run/bak/rust/output/html-runner-sl5K8G/js-positive-execution.json),
+[`JS négatif`](../../b8x/run/bak/rust/output/html-runner-sl5K8G/js-negative-execution.json),
+[`Rust positif`](../../b8x/run/bak/rust/output/html-runner-sl5K8G/rust-positive-execution.json),
+[`Rust négatif`](../../b8x/run/bak/rust/output/html-runner-sl5K8G/rust-negative-execution.json),
+[`FFI négatives`](../../b8x/run/bak/rust/output/html-runner-sl5K8G/rust-negative/foreign.json).
+Le dossier contient également chaque commande de compilation/génération/build
+et ses sorties. Un premier diagnostic `html-runner-Y0dOdI` avait déjà montré
+le même écart ; le dernier lancement valide le harness final avec son assertion.
+
+Empreintes des sources, lockfiles, FFI Rust, code généré et binaires vérifiées
+après les exécutions. Le bundle est inchangé depuis 0.13 :
+`689c42cfe194acc820ab0b1c276f321487fa0776b9e5c7c6c1ca7ce422b937f9`.
+Fork : `0.15.16`, binaire développement `65010ea… DIRTY` identifié par SHA-256
+dans le rapport. Syntaxe Node et `git diff --check` réussis. Les 73 régressions
+compilateur/runtime et la parité FFI exhaustive de 0.14 ne sont pas relancées :
+aucun de ces composants n'a changé.
+
+**Baby step suivant, réalisé en 0.16 — Astra :** corriger seulement le reporting des erreurs
+Aff non interceptées à la frontière `purust_aff_run_main`. Afficher une fois
+l'erreur finale sur stderr, avec le nom/message et la conversion de chaîne
+appropriée, puis conserver une sortie non nulle. Ne pas ajouter un affichage
+global à `purust_exception_raise` : les erreurs interceptées doivent rester
+silencieuses. Préserver l'attente des fibres, les nettoyages et les vraies
+panics Rust. Ajouter un petit reproducteur couvrant succès, erreur interceptée,
+erreur non interceptée (dont Unicode) et panic native, puis relancer les
+régressions Aff pertinentes et `html-runner.mjs`. Luna pourra ensuite dérouler
+les variantes au contrat stabilisé.
+
+À l'issue de 0.15, M1 reste incomplet : la référence JS fraîche et les contrôles
+positif/négatif sont acquis, mais le reporting final et la qualification des
+fallbacks pertinents restent à terminer. Aucun portage supplémentaire dans
+cette étape.
+
+### Micro-étape 0.16 — Reporting final des erreurs Aff
+
+Réalisée le 12 septembre 2026. Le changement de runtime se limite à neuf lignes
+dans [`purust_aff_run_main`](../purust-aff/src/Effect/Aff.rs) : après l'attente
+des fibres et la propagation prioritaire d'une éventuelle panic native,
+formater l'erreur finale avec `Effect_Exception_showErrorImpl`, convertir la
+chaîne PureScript vers UTF-8 avec `purust_string_to_utf8_lossy`, écrire une
+ligne sur stderr, puis relever l'exception d'origine. Un échec d'écriture est
+ignoré pour préserver cette exception. `purust_exception_raise`, les hooks
+de panic, le compilateur et la FFI HTML restent inchangés.
+
+**Régression rouge puis verte :**
+
+[`error-reporting.mjs`](../purust-aff/test/error-reporting.mjs) compile
+**107 modules TAST frais** et un exemple Cargo threaded, puis lance chaque
+scénario dans un processus séparé, borné à 15 secondes. Il utilise les vraies
+FFI et vérifie leurs empreintes après exécution. La fixture
+[`Test.ErrorReporting`](../purust-aff/test/Test/ErrorReporting.purs) couvre :
+
+- succès et erreurs Aff/Effect interceptées : sortie 0, stderr vide ;
+- erreurs Aff et Effect non interceptées : nettoyages exécutés, nom/message
+  Unicode exact sur stderr, affiché une seule fois, sortie 101 ;
+- exception synchrone du main : l'enfant termine avant la sortie 101 ;
+- panics Rust synchrones et dans Aff : diagnostic natif conservé, sans
+  doublon ni reformatage en erreur PureScript ; l'enfant survivant termine ;
+- stderr non inscriptible : le driver intercepte la remontée finale et
+  vérifie le type ainsi que le nom/message de l'exception originale.
+
+Avant le correctif, le cas Unicode échoue parce que stderr est vide :
+[`preuve rouge`](</var/folders/w9/l8bnb22d6c75c401f71djbt00000gn/T/purust-aff-errors-LXcPxH/commands.json>).
+Après le correctif, **9 scénarios passent** :
+[`rapport vert`](</var/folders/w9/l8bnb22d6c75c401f71djbt00000gn/T/purust-aff-errors-FiRRsP/report.json>).
+Ce test est également raccordé au runner complet
+[`purust-aff/bin/test`](../purust-aff/bin/test), sans alourdir `--smoke`.
+
+**Commandes et validations :**
+
+```sh
+cd /Users/0x1/Documents/htdocs/purust/purust-aff
+PURS=/Users/0x1/Documents/htdocs/purescript/.stack-work/dist/aarch64-osx/ghc-9.8.4/build/purs/purs ./bin/test
+
+cd /Users/0x1/Documents/htdocs/b8x
+node run/bak/rust/tests/html-runner.mjs
+```
+
+La suite Aff complète passe, y compris après raccordement des neuf nouveaux
+scénarios : **45 contrôles Aff**, concurrence Ref/AVar, durées de vie et trois
+sorties d'échec attendues ; runner global **sortie 0**.
+[`Journal complet`](</tmp/purust-aff-suite-XXXXXX.log>) et
+[`rapport des neuf scénarios intégrés`](</var/folders/w9/l8bnb22d6c75c401f71djbt00000gn/T/purust-aff-errors-zciNeQ/report.json>).
+La compilation PureScript
+fraîche du runner porte sur **242 modules**, sans erreur ni avertissement.
+Un essai direct Spago avait utilisé le compilateur standard 0.15.15 : ses
+sorties sans TAST ont été écartées puis régénérées avec le fork explicitement
+sélectionné ; elles ne servent à aucune validation native.
+
+Le harness HTML et son vérificateur terminent avec **sortie 0**. Chaque
+contrôle repart de sources fraîches : **212 modules JS / 211 modules TAST**.
+Les positifs terminent avec `2/2 tests passed`, sortie 0 et stderr vide.
+Les négatifs terminent avec `2/3 tests passed`, les compteurs `2/1/0` et les
+codes attendus non nuls (JS 1, Rust 101). Le Rust affiche exactement :
+
+```text
+Error: HTML_NEGATIVE_EXPECTED_FAILURE: the suite contains an intentional assertion failure
+```
+
+Preuves HTML :
+[`rapport des quatre contrôles`](../../b8x/run/bak/rust/output/html-runner-4POjqb/report.json),
+[`exécution Rust négative`](../../b8x/run/bak/rust/output/html-runner-4POjqb/rust-negative-execution.json).
+Les commandes, sorties de compilation et empreintes sont conservées dans
+le même dossier. SHA-256 de la FFI Aff testée :
+`645c2a2752e90e04d2b80729453f76e558b7c71d74f38a89ffbc77a0ad5e2f53`.
+Le bundle reste `689c42cf…b937f9` et le fork `0.15.16` identifié dans les
+rapports. `rustfmt --edition 2021 --check`, syntaxe Bash/Node et
+`git diff --check` passent. Les 73 tests du compilateur et la parité HTML
+exhaustive de 0.14 ne sont pas relancés ; les composants concernés sont
+inchangés, les régressions Aff pertinentes sont relancées ici.
+
+**Baby step suivant, réalisé en 0.17 — Astra :** qualifier les **22 fallbacks conservés**
+(13 référencés dans le dernier inventaire). Sur les contrôles HTML positif
+et négatif, établir une preuve reproductible qu'aucun fallback silencieux
+n'est exécuté, avec un garde vérifiable et une distinction entre absence
+de référence et chemin non atteint. S'arrêter au premier appel manquant
+avéré et définir alors son portage ou son élimination ; aucun portage
+préventif, notamment de `unsafeDelete`. Luna pourra répéter les contrôles
+une fois ce protocole stabilisé. Aucune intégration au `b8x/bin/test` ici.
+
+À l'issue de 0.16, M1 reste incomplet sur cette qualification et sa revue finale ;
+la vraie FFI HTML, les références fraîches, les résumés, les codes de sortie
+et les diagnostics d'erreur de la tranche ciblée sont désormais validés.
+
+### Micro-étape 0.17 — Fallbacks qualifiés sur la tranche M1
+
+Réalisée le 12 septembre 2026. Aucun portage, aucune suppression de binding,
+aucun changement du compilateur, des FFI ou des scripts partagés b8x.
+L'option diagnostique `--guard-fallbacks` de
+[`html-runner.mjs`](../../b8x/run/bak/rust/tests/html-runner.mjs) reconstruit les
+graphes JS/TAST et instrumente seulement le nouveau Cargo généré, avant build.
+Sans cette option, le runner conserve la génération normale.
+
+**Garde et preuve de son fonctionnement :**
+
+[`fallback-guard.mjs`](../../b8x/run/bak/rust/tests/fallback-guard.mjs) croise
+le manifeste FFI du résolveur avec les définitions Rust. Il exige une unique
+définition et un corps de fallback connu ; une forme absente, dupliquée ou
+inconnue arrête le diagnostic. Le relevé des références textuelles précède
+l'ajout des sondes, pour ne pas compter les appels de contrôle comme usages.
+
+Chaque corps factice devient une écriture du marqueur
+`PURUST_FFI_FALLBACK_REACHED:<symbole>` suivie de `std::process::exit(86)`.
+Les signatures sont conservées. Ce garde ne peut pas être absorbé par
+`catch_unwind` ou Aff, contrairement à une simple panic. Un exemple Cargo
+séparé appelle chacun des **22 vrais symboles instrumentés**, sous
+`catch_unwind`, avec des arguments Rust valides et sans `unsafe`.
+Les **44 appels forcés** (22 par graphe) donnent exactement le marqueur
+attendu, stdout vide et sortie 86. Une panic ou un retour factice ne satisfait
+pas ce contrôle. Le manifeste généré reçoit seulement les dépendances locales
+nécessaires à cet exemple ; aucune dépendance publiée supplémentaire.
+
+**Inventaire recalculé, identique dans les deux graphes :**
+
+| Fonctions | Nombre | Référence hors définition |
+| --- | --- | --- |
+| `Data.Symbol.unsafeCoerce` | 1 | Oui |
+| `Control.Extend.arrayExtend` | 1 | Oui |
+| `Data.Show.Generic.intercalate` | 1 | Oui |
+| `Test.Spec.Runner.exit` | 1 | Oui |
+| `Data.Date` : `canonicalDateImpl`, `calcWeekday`, `calcDiff` | 3 | Oui |
+| `Data.DateTime` : `calcDiff`, `adjustImpl` | 2 | Oui |
+| `Data.DateTime.Instant` : `fromDateTimeImpl`, `toDateTimeImpl` | 2 | Oui |
+| `Data.Int.fromStringAsImpl` | 1 | Oui |
+| `Test.Spec.Assertions.unsafeStringify` | 1 | Oui |
+| `Record.Unsafe.unsafeDelete` | 1 | Non |
+| `Data.Int.Bits` : les sept fonctions | 7 | Non |
+| `Effect.Now.getTimezoneOffset` | 1 | Non |
+
+Total : **22 fallbacks, 13 référencés et 9 présents seulement comme définitions**.
+Les deux contrôles HTML n'en atteignent **aucun**, garde actif. Ce constat
+concerne ces entrées, données et exécutions ; il ne prouve ni l'inutilité globale
+des 13 chemins conservés, ni la validité des stubs sur les autres tests.
+Les signatures des stubs ne deviennent pas des contrats FFI à porter.
+
+**Reproduction et résultats :**
+
+```sh
+cd /Users/0x1/Documents/htdocs/b8x
+node --test run/bak/rust/tests/fallback-guard.test.mjs
+node run/bak/rust/tests/html-runner.mjs --guard-fallbacks
+node run/bak/rust/tests/html-runner.mjs
+```
+
+Les **7 tests du garde** passent : reconnaissance des corps, références,
+exclusion des vraies FFI, rejet des définitions ambiguës, sondes obligatoires
+et distinction entre fallback atteint et assertion volontairement échouée.
+Les deux runners complets terminent avec **sortie 0** ; le vérificateur exige
+les 22 sondes pour chaque résultat Rust annoncé comme instrumenté.
+Chaque cas compile **212 modules JS ou 211 modules TAST frais**, sans cache
+de compilation PureScript réutilisé, avec les mêmes FFI réelles qu'en 0.16.
+
+- Positifs JS/Rust : `2/2 tests passed`, sortie 0, stderr vide.
+- Négatifs JS/Rust : `2/3 tests passed`, compteurs `2/1/0`, codes 1/101,
+  erreur finale `HTML_NEGATIVE_EXPECTED_FAILURE` visible.
+- Avec/sans garde : stdout, stderr et statut Rust identiques pour chaque
+  entrée. Les empreintes des inputs sont identiques ; les **213 fichiers Rust
+  originaux par graphe** concordent, en utilisant l'empreinte avant modification
+  pour les fichiers instrumentés. Seuls les corps de fallback, l'exemple et
+  son manifeste constituent l'instrumentation diagnostique.
+
+Preuves finales :
+[`rapport avec garde`](../../b8x/run/bak/rust/output/html-runner-hLH8iC/report.json),
+[`inventaire et sondes positifs`](../../b8x/run/bak/rust/output/html-runner-hLH8iC/rust-positive/fallback-guard.json),
+[`inventaire et sondes négatifs`](../../b8x/run/bak/rust/output/html-runner-hLH8iC/rust-negative/fallback-guard.json),
+[`rapport sans garde`](../../b8x/run/bak/rust/output/html-runner-sGc2vO/report.json).
+Chaque dossier conserve commandes, sorties, empreintes et binaires. Le premier
+essai instrumenté `html-runner-3XpJMs` était déjà vert ; la dernière relance
+valide le classement statique final et sa comparaison sans instrumentation.
+Le bundle reste `689c42cf…b937f9`, le fork `0.15.16` et la FFI Aff
+`645c2a27…d5e2f53`. Syntaxe Node et `git diff --check` passent.
+Les suites Aff et compilateur ne sont pas relancées : aucun de leurs fichiers
+n'a changé dans cette étape.
+
+**Revue technique M1 : validée pour la tranche définie.** Les deux tests b8x inchangés
+et la fixture négative tournent avec leurs vraies FFI, une référence JS fraîche,
+des résumés/codes/diagnostics conformes et aucun fallback atteint sous garde
+éprouvé. Les validations Aff de 0.16 couvrent l'attente et les nettoyages.
+Cela ne valide pas M2 : le garde reste diagnostique, les stubs restent générés
+normalement et `b8x/bin/test` ne sélectionne pas encore Rust.
+
+**Incident Git résolu sur `master`, à la demande de l'utilisateur :** le checkout b8x était passé
+de `custom-prompts` à `master` pendant le dernier contrôle. Le reflog indique
+`b824377376 checkout: moving from custom-prompts to master` ;
+`html-runner.mjs` et `verify-html-runner.mjs` étaient en conflit `deleted by us`,
+et `tests/fixtures/html-negative/Main.purs` avait disparu du checkout.
+Les deux runners ont été conservés dans leur version validée, la fixture
+restaurée à l'identique depuis `c829468c7e` (SHA-256
+`182c6ba401057063726cad1c014893e3e42b1820e2631586da0a3d2a0ed05165`).
+Ces trois fichiers et les deux fichiers du garde sont indexés ; aucun conflit
+Git ne reste. Aucun commit, cherry-pick ou changement de branche effectué.
+Le Dockerfile modifié par l'utilisateur est laissé intact et hors index.
+Les empreintes de toutes les sources/FFI et des artefacts des deux rapports
+0.17 concordent de nouveau avec le checkout restauré ; les 7 tests Node passent.
+
+La revalidation complète sur `master` est verte :
+`node run/bak/rust/tests/html-runner.mjs --guard-fallbacks` termine avec sortie 0,
+après les quatre contrôles JS/Rust (positifs 2/2, négatifs 2/3 avec codes 1/101),
+**44 sondes forcées** et aucun fallback atteint par les tests HTML. Chaque
+contrôle repart d'une compilation fraîche (212 modules JS / 211 modules TAST).
+Les empreintes sources/FFI/génération/binaires sont vérifiées après exécution.
+[`Rapport de revalidation sur master`](../../b8x/run/bak/rust/output/html-runner-MCdD70/report.json).
+
+**Baby step suivant, réalisé en 0.18 — Astra :** définir le contrat du premier raccordement
+Rust à `b8x/bin/test` (phase 1 / début M2), borné à cette spec et sélectionné
+explicitement. Fixer l'interface CLI, l'exécution locale ou Docker, les sorties
+isolées, le contrôle obligatoire des FFI manquantes et le traitement des options
+existantes (`--build`, `--bundle`, `--clean-dbs`), sans changer le comportement
+par défaut JS/Go/PHP. Découper ensuite une première implémentation vérifiable ;
+ne pas élargir encore le graphe ni porter les 22 fallbacks préventivement.
+Luna pourra dérouler la matrice d'options une fois ce contrat stabilisé,
+notamment la validation intégrée `b -c; t -c` décrite après la phase 2.
+
+### Micro-étape 0.18 — Contrat du raccordement Rust V1
+
+Défini le 13 septembre 2026 par lecture des scripts et des artefacts M1.
+**Conception seulement : aucun script modifié, aucune commande de build,
+aucune bascule de cible ou exécution Docker dans cette étape.** M2 reste ouvert.
+
+**Constats qui déterminent le contrat :**
+
+- [`bin/target`](../../b8x/bin/target) refuse Rust et attend
+  `spago.rust.yaml`, alors que le profil existant s'appelle `spago.yaml`.
+  Il supprime actuellement plusieurs chemins racine et redémarre le groupe API.
+- [`bin/build`](../../b8x/bin/build) et [`bin/run`](../../b8x/bin/run) déduisent
+  JS/Go/PHP des fichiers de sortie. `bin/run` recherche un module avant cette
+  détection et transforme certains échecs 139 en succès.
+- Le fork TAST et les overrides `purust-*` sont accessibles sur l'hôte.
+  Le montage de [`run/bak`](../../b8x/run/docker/_shared/config/api/_shared.yml)
+  est déjà disponible dans `api-cli`, mais pas les dépôts frères purust.
+- [`src/Main.purs`](src/Main.purs) émet le chemin macOS absolu de `perceus_ptr`
+  dans tous les manifestes Cargo concernés, y compris via `configureThreading`.
+  Copier seulement le Cargo généré dans Linux ne suffit donc pas.
+
+#### Interface et périmètre
+
+| Commande | Contrat Rust V1 |
+| --- | --- |
+| `target rust` | Sélection persistante du profil Rust de test ; annoncer explicitement « HTML uniquement, pas toute b8x ». Ne lance aucun build. |
+| `b` | Générer un TAST frais et le Rust avec le bundle purust identifié, puis compiler le binaire Linux dans `api-cli`. |
+| `b -c` | Reconstruire aussi le bundle du backend purust et nettoyer les artefacts générés Rust concernés avant reconstruction. Ne reconstruit ni le compilateur Haskell ni l'image Docker. |
+| `t` | Exécuter le dernier build réussi et encore valide de la suite demandée dans `api-cli`, sans build implicite. |
+| `t -b` / `t --build` | Effectuer `b` pour le même runtime et la même suite, puis tester seulement si le build réussit. |
+| `t -c` / `t --clean-dbs` | Même exécution que `t`, avec le nettoyage des bases de test prévu par le runner ; ce n'est pas un nettoyage de compilation. |
+| `b --runtime rust`, `t --runtime rust` | Même chemin, sans modifier les liens ni la cible persistante. L'override explicite prime sur la cible sélectionnée. |
+| `--suite html` | Suite par défaut Rust V1 : les deux tests HTML originaux, entrée `Test.Rust.EncodeHtmlEntities.Main`. |
+| `--suite html-negative` | Entrée diagnostique distincte `Test.Rust.HtmlNegative.Main` ; trois tests dont un volontairement faux, sortie non nulle attendue par le validateur, jamais transformée en succès par `t`. |
+| `bin/run --runtime rust Test --suite …` | Même exécution que `t`, sans nettoyage de bases ; résolution par le manifeste Rust, pas par la recherche JS de `*.Main`. |
+
+`--suite` s'applique à `b`, `t` et à l'entrée `Test` de `bin/run` ; le défaut
+est toujours `html`, jamais « la dernière suite construite ». Les deux entrées
+ont des artefacts séparés. Toute exécution affiche runtime, suite, point
+d'entrée, identifiant de build et nombre de tests attendu (2 ou 3).
+Les autres suites, applications et filtres génériques (`--example`, etc.)
+sont refusés avec un diagnostic explicite dans cette V1, pas ignorés ni présentés
+comme pris en charge. Le filtre générique reste une étape ultérieure de M2.
+
+Pour Rust V1, `--bundle`, `--watch` et le chemin Spago de `bin/run -p` sont
+refusés avant compilation/nettoyage, avec sortie 2. `bin/run -e` est conservé
+par exécution directe du binaire. `b -c` accepte ses alias `--clean` et
+`--compiler-too`. Les options inconnues, valeurs manquantes et suites inconnues
+échouent aussi avec sortie 2. Ces restrictions ne changent pas les branches
+JS/Go/PHP existantes. Aucun mode `--runtime` autre que `rust` n'est ajouté en V1.
+`bin/run -b` / `--build` suit le même enchaînement que `t -b` : build sur
+l'hôte, puis exécution seulement après succès ; il est refusé dans le conteneur.
+
+#### Sélection, hôte et conteneur
+
+- Sur l'hôte, le mode Rust vient de `--runtime rust` ou de la cible persistante
+  `TARGET=rust` écrite par `target` dans `env/dev/target.env`. Sans override,
+  vérifier la cohérence de cette sélection persistante avec les liens racine :
+  une contradiction doit échouer, pas retomber sur JS. L'override ponctuel
+  autorise les liens d'une autre cible puisqu'il ne les utilise pas.
+  Un ancien `TARGET` exporté dans le shell ne doit pas
+  écraser ce choix. Sans demande Rust, conserver le dispatch historique.
+- `target rust` doit prévalider le profil et les liens, utiliser le vrai
+  `run/bak/rust/spago.yaml`, puis remplacer seulement les liens gérés. Ne pas
+  supprimer les répertoires réels, les caches JS/Go/PHP, `vendor` ou les fichiers
+  Composer. Revenir à l'état antérieur si une mise à jour échoue. Tester aussi
+  le retour de Rust vers chaque cible existante sur des fixtures de fichiers.
+- Ne pas redémarrer automatiquement tout le groupe API pour ce profil de test.
+  L'image construite/recréation de `api-cli` relève d'un prérequis explicite.
+  Transmettre runtime, suite et chemin relatif du build aux commandes internes
+  du conteneur : ne dépendre ni de son ancien `TARGET`, ni de son lien `output`.
+  Aligner également le cas Rust de l'entrypoint sur le vrai nom du profil lors
+  d'une recréation ultérieure ; aucune promesse d'exécution des services métier
+  avec ce profil HTML. Les autres services ne doivent pas être relancés ici.
+- **Build orchestré depuis l'hôte uniquement en V1** : fork sélectionné via
+  `PURS` absolu ou découverte unique vérifiée ; Spago et overrides du profil
+  isolé ; génération purust avec `--threaded`. Pas d'utilisation du `purs` npm
+  standard de l'image. Un `b` directement dans le conteneur est refusé clairement.
+- **Cargo et exécution dans `api-cli`** : vérifier Linux, architecture, versions
+  Rust/Cargo attendues (1.96.0) et accès au build partagé. Un conteneur absent
+  ou inadéquat produit un échec ; ni création/rebuild d'image automatique, ni
+  repli vers un binaire macOS. Les arguments passent correctement les chemins
+  avec espaces ; les signaux atteignent le processus natif.
+
+#### Artefacts, fraîcheur et FFI
+
+- Utiliser `run/bak/rust/output/integrated/<suite>/<build-id>/` pour le TAST,
+  le Cargo et les rapports, avec répertoire de travail isolé pour `.purmeta`.
+  Ne pas dépendre des liens racine pendant la génération. Séparer les caches
+  Cargo Linux par architecture de tous les anciens caches/binaries macOS.
+- Rendre l'export Cargo autonome **dans purust** : embarquer une copie identifiée
+  de `perceus_ptr` et émettre des chemins relatifs depuis la racine, `purust_core`
+  et les modules. Préserver le mode `threaded`. Ne pas monter `/Users/0x1` dans
+  Docker ni maintenir un remplacement ad hoc de chemins après chaque génération.
+  Les autres dépendances de chemin doivent rester dans l'export ; conserver
+  les versions résolues dans `Cargo.lock`. Le premier build peut télécharger les
+  dépendances Cargo nécessaires ; `t` ne résout ni ne télécharge de dépendances.
+- Garder le contrôle anti-fallback obligatoire pour les artefacts de test V1 :
+  manifeste FFI, garde explicite et sondes de 0.17 éprouvées avant publication.
+  Une nouvelle forme non prise en charge arrête le build au lieu d'être ignorée.
+  Le garde reste actif dans le binaire lancé par `t`, y compris après interception
+  d'une erreur Aff. Aucun portage préventif des 22 fallbacks actuels.
+- Publier un manifeste « prêt » seulement après build et sondes réussis : suite,
+  main, plateforme, versions/empreintes du fork et du bundle, lockfiles, sources,
+  FFI, runtime embarqué, options et binaire. `t` côté hôte vérifie la fraîcheur
+  des inputs ; le lanceur Linux vérifie plateforme, manifeste et binaire.
+- Dès qu'un `b` Rust aux arguments valides commence, marquer sa suite comme non
+  exécutable jusqu'au succès. Un échec de prérequis/build laisse ce statut :
+  `t` ne réutilise pas l'ancien binaire même si l'utilisateur a tapé `b -c; t -c`.
+  Un artefact absent, modifié, périmé ou de mauvaise plateforme doit demander
+  une reconstruction et sortir non nul. Conserver les diagnostics de l'échec.
+- `b -c` ne nettoie que les artefacts générés identifiés du backend/profil Rust ;
+  pas les sources de dépendances ni les preuves historiques 0.1–0.17. La portée
+  exacte du nettoyage est testée avant tout essai sur le checkout réel.
+
+#### Sorties et nettoyage
+
+Les échecs de génération, Cargo, validation FFI, test et transport Docker restent
+non nuls à travers tous les wrappers. Sortie 86 réservée au garde ; les panics
+natives et le code 139 ne sont jamais convertis en succès sur le chemin Rust.
+Conserver les diagnostics et l'attente de `purust_aff_run_main`, sans `exit(0)`
+prématuré. Tester aussi un signal et l'échec du build avant lancement des tests.
+
+Pour `t -c` lancé sur l'hôte, préserver la cible et le moment du nettoyage
+actuel (trap après exécution/interruption), en vérifiant explicitement les bases
+de test concernées. Ne pas élargir leur sélection. Un échec de nettoyage doit
+être visible et non nul si les tests ont réussi ; si les tests ont échoué,
+préserver leur code et signaler séparément le nettoyage. Une erreur d'arguments
+ne déclenche pas de nettoyage. L'appel direct avec `-c` dans le conteneur n'est
+pas pris en charge par V1 et doit être refusé plutôt que prétendre nettoyer.
+
+#### Découpage et validations — état actualisé
+
+1. **0.19 — Astra : export Cargo portable, réalisé ci-dessous.** Corriger uniquement l'embarquement
+   et les chemins de `perceus_ptr` dans purust. Sur un petit TAST frais, vérifier
+   l'export déplacé, l'absence de dépendance absolue hôte et la conservation des
+   modes normal/threaded ; lancer les régressions compilateur pertinentes.
+   Ne pas toucher encore à `target`, `b`, `t` ou au déploiement Docker.
+2. **0.20 — Astra : driver Rust isolé.** Réutiliser préparation/FFI de M1,
+   produire un build HTML portable, le compiler dans `api-cli`, éprouver le
+   garde et le lancer par son manifeste. Valider les entrées positive/négative
+   et le rejet des artefacts périmés, sans modifier les scripts partagés.
+3. **0.21 — Astra : sélection et raccordement CLI.** Ajouter le dispatch Rust
+   et les options du contrat, puis la bascule sûre `target rust` ; réutiliser le
+   driver éprouvé. Tester arguments/dispatch/liens/codes/signaux avec de fausses
+   commandes sur des fixtures, sans basculer le checkout ni effacer de bases.
+4. **0.22 — Luna au contrat stabilisé : validation intégrée réelle.** Image et
+   services nécessaires prêts, vérifier le périmètre de nettoyage, puis exécuter
+   `target rust`, **`b -c; t -c`** (ou `b -c && t -c`). Contrôler les deux statuts
+   et le résumé limité à HTML. Exécuter séparément `b --suite html-negative`,
+   puis `t --suite html-negative` et exiger son échec attendu. Faire la revue des
+   branches JS/Go/PHP affectées avant d'élargir la suite pour M2.
+
+**Baby step suivant, réalisé en 0.19.** La preuve Docker et le test `b -c; t -c` sont
+désormais positionnés dans ce raccordement ; ils ne précèdent pas sa conception.
+
+### Micro-étape 0.19 — Export Cargo portable
+
+Réalisée le 13 septembre 2026, dans purust uniquement. Aucun changement des
+scripts b8x, de sa cible, du Dockerfile ou des sources du runtime. b8x reste
+sur `master` ; purust conserve sa branche `edge` préexistante.
+
+**Implémentation :**
+
+- [`Purust.Runtime`](src/Purust/Runtime.purs) exporte `perceus_ptr/Cargo.toml`
+  et ses trois fichiers Rust dans chaque workspace généré. Le bundle contient
+  leurs octets issus des fichiers canoniques de `tests/runtime/perceus_ptr` ;
+  les loaders esbuild sont configurés dans `spago.yaml`. Aucun chemin hôte
+  n'est résolu à l'exécution du bundle pour retrouver ce runtime.
+- [`Main`](src/Main.purs) déclare ce membre du workspace et émet uniquement
+  `perceus_ptr` ou `../perceus_ptr` comme dépendance, selon le manifeste.
+  La feature `threaded` est ajoutée explicitement à la dépendance ; elle ne
+  dépend plus du remplacement d'une chaîne contenant un chemin absolu.
+- Le runtime embarqué est réécrit lors d'une régénération dans un répertoire
+  existant. Les sources canoniques restent inchangées, comparées octet par octet.
+  Le bundle suivi `bin/purust.js` est reconstruit.
+
+**Régression et preuves :**
+
+[`portable-cargo.mjs`](tests/tast/portable-cargo.mjs), intégré à `test:tast`,
+compile **33 modules TAST frais** avec le fork explicitement sélectionné.
+Il copie le bundle seul dans un dossier distinct, génère les deux modes,
+altère une copie du runtime puis vérifie sa restauration par régénération.
+Chaque export est ensuite déplacé dans un chemin contenant des espaces,
+sans laisser de copie au chemin initial.
+
+`cargo metadata --offline` confirme qu'une seule instance de `perceus_ptr`
+est résolue, à l'intérieur de l'export, avec la feature correcte. Tous les
+manifestes et dépendances Cargo de chemin sont internes et relatifs.
+Les deux binaires se compilent et s'exécutent avec `--offline --locked`,
+sortie 0 et marqueur exact `PORTABLE_CARGO_OK`.
+Les contrôles natifs valident aussi le copy-on-write dans les deux modes et
+`Send + Sync` / le partage entre threads dans le mode threaded : **5 contrôles
+runtime normaux et 2 threaded**. Les quatre tests historiques locaux partagent
+`DROP_COUNT` ; après un échec concurrent observé, ils sont lancés avec
+`--test-threads=1`, sans modifier le runtime ni leurs assertions.
+
+La preuve initiale rouge constate l'absence du runtime dans l'ancien export :
+[`commandes`](</tmp/purust-portable-9P6MIG/commands.json>).
+Preuve finale verte : [`rapport`](</tmp/purust-portable-SJ7kgN/report.json>) et
+[`commandes complètes`](</tmp/purust-portable-SJ7kgN/commands.json>).
+Le rapport conserve versions, empreintes du bundle, des quatre fichiers du
+runtime, des sources PureScript et des fixtures, lockfiles et binaires.
+SHA-256 du bundle : `d50718c73a8bb4995327903a77b4072fd22a90d7e4adc32142e37dcc9983c7b1`.
+
+**Validation :** `npm run build` réussit ; **51 tests codegen et 23 tests TAST**
+passent avec `--test-concurrency=2`. Trois timeouts du premier lancement
+codegen à concurrence par défaut passent isolément, puis dans cette relance
+complète, sans allonger les délais. Le test portable final est aussi relancé
+séparément après ajout de ses contrôles natifs. Syntaxe Node, `rustfmt --check`
+des nouvelles fixtures et `git diff --check` passent. Les avertissements
+préexistants de `Main.purs` et des tests locaux du runtime ne sont pas nettoyés.
+
+**Prochain baby step — 0.20, Astra :** raccorder cet export portable à un
+driver isolé b8x : génération sur l'hôte, Cargo/exécution dans `api-cli`,
+garde anti-fallback et manifeste de fraîcheur, contrôles HTML positif/négatif.
+La compilation Linux/Docker n'est pas encore validée par 0.19 ; aucun
+`target rust`, `b -c` ou `t -c` n'a été lancé.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -1604,22 +2167,26 @@ positive des deux tests avec une vraie FFI Rust est désormais acquise.
 - [ ] Fixer explicitement le binaire du fork PureScript, la version Spago,
   le backend recompilé et leurs révisions. Réutiliser la méthode des runners
   `purust-*` validés, en vérifiant les chemins depuis le répertoire de travail.
-- [ ] Pour le runner final, rendre portables les chemins du runtime et les
-  dépendances Cargo ; distinguer la racine b8x de l'installation de purust.
-- [ ] Fixer puis ajouter l'option de sélection Rust à `b8x/bin/test`
-  (proposition : `--runtime rust`).
+- [x] Rendre l'export Cargo portable avec runtime embarqué et dépendances de
+  chemin internes/relatives (0.19, génération et déplacement en deux modes).
+- [ ] Dans le runner final, distinguer la racine b8x de l'installation de
+  purust et utiliser cet export pour Cargo Linux (0.20).
+- [x] Fixer le contrat de sélection et d'exécution Rust V1 (0.18).
+- [ ] Implémenter `target rust` et l'override `--runtime rust` selon ce contrat.
 - [ ] Propager le runtime de `bin/test` vers `bin/build` et `bin/run`.
-- [ ] Ajouter un équivalent par variable d'environnement seulement si les
-  scripts auxiliaires en ont besoin, avec une priorité claire de l'option CLI.
+- [ ] Réutiliser la cible persistante de `env/dev/target.env`, avec priorité
+  de l'option CLI et transmission explicite au conteneur selon 0.18 ; ne pas
+  introduire une seconde variable de sélection concurrente.
 - [ ] Séparer TAST, cache Spago et sorties Cargo du profil Rust. Utiliser
   `--source` et `--out` explicitement ; leur défaut est relatif au répertoire
   de travail. Ne pas écraser les cibles des liens JS `output`, `.spago` et
   `spago.yaml` pendant l'essai isolé.
-- [ ] Définir le comportement avec et sans build préalable : vérifier que le
+- [x] Définir le comportement avec et sans build préalable (contrat 0.18).
+- [ ] Implémenter et valider ce comportement : vérifier que le
   binaire lancé correspond au profil et au point d'entrée demandés. Conserver
   la signification de `bin/test -c`, qui nettoie les bases, pas la compilation.
 - [ ] Conserver la détection et le comportement actuels des runtimes JS, Go et
-  PHP lorsque `--runtime rust` n'est pas demandé.
+  PHP lorsqu'aucune cible/option Rust n'est demandée.
 
 Critère de sortie : le même test peut être lancé explicitement sous JS puis
 sous Rust, sans ambiguïté dans la configuration ni dans les artefacts.
@@ -1671,6 +2238,34 @@ son portage FFI et ses dépendances restent à valider avant M1.
 
 Critère de sortie : une suite volontairement fautive échoue réellement sous
 Rust, et une suite corrigée termine avec un code nul après exécution complète.
+
+### Validation intégrée — `b -c; t -c`
+
+À réaliser **après la définition du contrat et le raccordement des phases 1–2**,
+avec l'image API Rust construite et utilisée par `api-cli`, avant d'élargir le
+graphe des tests. Ce contrôle valide les commandes usuelles, pas seulement le
+harness diagnostique M1 ; le contrat est défini en 0.18 et le raccordement
+reste à implémenter en 0.19–0.21.
+
+- [ ] Luna, au contrat stabilisé par Astra : sélectionner explicitement Rust
+  via `target rust` une fois cette commande raccordée, puis tester la séquence
+  demandée **`b -c; t -c`** dans b8x (`b` = `bin/build`, `t` = `bin/test`).
+- [ ] Vérifier que `b -c` reconstruit le backend et les sorties du profil Rust
+  conformément au contrat : TAST frais du fork, génération Rust et compilation
+  Cargo pour la plateforme d'exécution, sans toucher aux artefacts JS/Go/PHP.
+- [ ] Vérifier que `t -c` exécute le résultat de ce build dans `api-cli` et
+  conserve le sens de `-c` : nettoyage des bases de test, pas compilation.
+  Contrôler le périmètre de ces bases avant le nettoyage.
+- [ ] Consigner séparément les codes de sortie de `b` et de `t`, le profil,
+  le point d'entrée, le nombre de tests et l'artefact réellement exécuté.
+  Le `;` lance aussi `t` si `b` échoue : ne jamais valider alors un ancien
+  binaire. Pour arrêter au premier échec, exécuter `b -c && t -c`.
+- [ ] Exiger le succès de la spec HTML ciblée et revalider séparément la
+  fixture négative par le chemin intégré : échec non nul, erreur visible,
+  aucun fallback silencieux. Le périmètre limité doit être explicite dans la
+  sélection et le résumé ; cette réussite ne vaut pas validation de toute b8x.
+- [ ] Répéter ce contrôle après élargissement aux suites sans services pour
+  M2, puis sur la suite complète pour M4, sans exclusions cachées.
 
 ## Phase 3 — Inventaire et portage des FFI b8x
 
@@ -1887,9 +2482,31 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
 - [x] Astra : porter le premier fichier `Util/Html/Encode/Encode.rs` et vérifier
   les deux symboles étrangers (0.14 : 22 722 cas de parité par mode,
   deux tests b8x originaux réussis, résumé complet et sortie 0).
-- [ ] Astra : valider la fixture négative avec la vraie FFI, les codes de
-  sortie/messages et la référence JS fraîche, selon le contrat 0.14,
-  avant tout portage supplémentaire.
-- [ ] Astra : poursuivre la qualification des bindings et fallbacks conservés,
+- [x] Astra : exécuter la fixture négative avec la vraie FFI et renouveler
+  la référence JS fraîche (0.15 : positifs 2/2, négatifs 2/3 et codes non nuls ;
+  écart confirmé sur le message final Aff en Rust).
+- [x] Astra : corriger le reporting final des erreurs Aff non interceptées
+  selon le contrat 0.15 et rendre `html-runner.mjs` vert avant tout portage
+  supplémentaire ; conserver le silence des erreurs interceptées
+  (0.16 : neuf régressions, suites Aff/concurrence/durée de vie et quatre
+  contrôles HTML verts).
+- [x] Astra : qualifier les 22 fallbacks sur les contrôles M1 positif/négatif
+  (0.17 : garde éprouvé par 44 appels forcés, aucun fallback atteint dans
+  les contrôles HTML, sorties avec/sans garde identiques ; preuve technique M1).
+- [x] Réconcilier sur `master`, selon le choix de l'utilisateur, les deux
+  runners en conflit et la fixture absente après la bascule de branche.
+  Cinq fichiers diagnostiques indexés, aucun commit ni changement de branche,
+  Dockerfile utilisateur préservé ; empreintes 0.17 retrouvées et revalidation
+  complète avec garde réussie sur `master` (`html-runner-MCdD70`).
+- [x] Astra : fixer le contrat CLI et découper le premier raccordement Rust
+  (0.18 : conception seulement, aucune intégration exécutée).
+- [x] Astra : réaliser 0.19, l'export Cargo portable avec `perceus_ptr` embarqué
+  (deux modes déplacés et exécutés, 51 codegen + 23 TAST verts).
+- [ ] Astra : réaliser le driver isolé 0.20, puis le raccordement CLI 0.21,
+  au contrat 0.18, avant d'élargir la suite.
+- [ ] Luna : une fois ce raccordement implémenté et l'image API Rust disponible,
+  valider `target rust` puis **`b -c; t -c`**, selon la section de validation
+  intégrée après la phase 2 ; ne pas lancer cette étape avant ses prérequis.
+- [ ] Astra : poursuivre, lors de l'élargissement M2, la qualification des bindings et fallbacks conservés,
   dont les autres opérations de records, selon les chemins réellement atteints ;
   porter ou éliminer par preuve, sans portage préventif de `unsafeDelete`.
