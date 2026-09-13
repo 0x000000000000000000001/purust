@@ -8,6 +8,13 @@ Permettre à la suite de tests de b8x d'être compilée et exécutée avec purus
 en utilisant des FFI Rust locales (`.rs`), tout en conservant les chemins JS,
 Go et PHP existants.
 
+**Critère d'arrivée confirmé :** après `target rust` et le build habituel,
+`t -c` doit lancer **par défaut toute la suite active b8x**, comme dans le
+workflow JS/Go, avec les assertions originales, les intégrations et le
+nettoyage des bases. Aucune sélection `--suite` ne doit être nécessaire pour
+obtenir la suite complète. Les suites HTML actuelles sont des validations
+intermédiaires ; un code 0 sur ce sous-ensemble ne clôt pas cet objectif.
+
 Interface retenue en 0.18, implémentée pour Rust HTML en 0.19–0.21 :
 
 ```sh
@@ -120,6 +127,21 @@ explicites.
   désigne ici une couche b8x, pas un troisième serveur à déployer.
 - Les clients PostgreSQL et RabbitMQ utilisent `Promise` et `Promise.Aff` à
   leur frontière FFI : leur pont Rust est un prérequis des intégrations.
+- Inventaire 0.25 : **46 specs feuilles, 286 déclarations de tests actifs**,
+  dont 259 sans services et 27 d'intégration. Les 6 tests HTML validés font
+  partie des 259 ; les 41 tests Stash sont le prochain bloc choisi, pas encore
+  exécuté sous Rust. Ces nombres sont un relevé des sources, pas un bilan
+  d'exécution de la suite complète.
+- Portage 0.27 : `Foreign/Object/ST.rs` fournit maintenant `STObject` et ses
+  quatre primitives différées. Sur 66 modules TAST frais, Cargo et les dix
+  tests natifs passent dans chacun des modes normal/threaded. Le diagnostic
+  Stash complet (228 modules) dépasse ce blocage, puis échoue sur le type natif
+  `Foreign.Object.Object` absent : 218 occurrences du même diagnostic E0425.
+  Aucun des 41 tests Stash n'a encore été exécuté en Rust.
+- En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
+  depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
+  neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
+  modifié pour contourner ce contrôle.
 
 ### purust
 
@@ -164,10 +186,11 @@ collecte générale est un chantier distinct, sauf blocage mesuré des tests b8x
 
 ## Définition de terminé
 
-- La commande intégrée retenue (`target rust` puis `t`, ou `t --runtime rust`)
-  sélectionne toujours la configuration Rust.
-- Un sous-ensemble de tests b8x purs compile avec le TAST du fork local et
-  s'exécute réellement sous Cargo.
+- La commande intégrée retenue (`target rust`, build habituel, puis `t -c`)
+  sélectionne Rust et exécute par défaut toute la suite active, sans `--suite`.
+  La sélection ponctuelle `t --runtime rust -c` suit le même contrat.
+- Le sous-ensemble pur initial constitue M1, pas la définition de terminé ;
+  toute la suite doit compiler avec le TAST du fork local et s'exécuter en Rust.
 - Une FFI `.rs` locale est découverte, incluse et exécutée ; aucun fallback vide
   n'est silencieusement utilisé.
 - Les succès et les échecs des tests donnent les bons codes de sortie.
@@ -194,8 +217,8 @@ terminer successivement. La phase 0 nécessite un minimum des phases 1, 2, 3,
 2. **M2** : intégration aux scripts b8x et ensemble des tests sans services,
    identifiés par leur graphe de dépendances, quel que soit leur dossier.
 3. **M3** : contrats des clients PostgreSQL/RabbitMQ et pont Promise/Aff validés.
-4. **M4** : suites EventStore, projections et suite complète b8x ; aucun test
-   actif retiré pour obtenir une réussite.
+4. **M4** : suites EventStore, projections et suite complète b8x derrière
+   `t -c` sans filtre ; aucun test actif retiré pour obtenir une réussite.
 
 Préparer le contrôle des FFI absentes avant M1. La portabilité Docker et la
 généralisation de l'interface des scripts peuvent suivre cette première preuve.
@@ -2509,6 +2532,361 @@ en comparant notamment les candidats utilitaires laissés de côté en 0.23.
 Les six tests HTML originaux passent désormais via deux suites explicites ;
 cela ne couvre toujours pas tous les tests sans services et ne clôt pas M2.
 
+### Micro-étape 0.25 — Inventaire de la suite complète et choix du bloc Stash
+
+Réalisée le 13 septembre 2026 sur `b8x/master`, `TARGET=rust`, sans portage.
+Le chemin réel est [`Test.Main`](../../b8x/test/Main.purs) → `Core.spec`,
+`Infra.spec`, `Util.spec`. Le relevé suit les appels `.spec`, pas seulement les
+noms de fichiers ou les imports : **70 modules de collecte/specs, 46 specs
+feuilles et 286 sites `it` à titre littéral**. Aucun `xit`, `fit` ou `pending`
+relevé dans cet arbre. Il ne s'agit pas d'une exécution ni d'une nouvelle
+référence JS/Go complète.
+
+Preuves : [`inventaire détaillé`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/inventory.json),
+[`script reproductible`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/inventory.mjs).
+Les arêtes de collecte, chemins, lignes des tests et empreintes des sources
+sont conservés. Les compteurs statiques devront être confrontés aux résumés
+réels à M2/M4 ; ne pas déduire un pourcentage de travail restant de 6/286.
+
+| Bloc réellement collecté | Specs | Tests | Services / état Rust |
+| --- | ---: | ---: | --- |
+| Core : `HandleCommand` | 1 | 3 | PostgreSQL et fixture RabbitMQ ; non porté. |
+| Infra EventStore : `Append`, `Load` | 2 | 13 | PostgreSQL et fixture RabbitMQ ; non porté. |
+| Infra Projection : `HandleProjectionReadFind` | 1 | 11 | PostgreSQL et fixture RabbitMQ ; non porté. |
+| Util Debug / Stash | 8 | 41 | Sans service ; prochain bloc, TAST seulement. |
+| Util Html / Clean | 9 | 128 | Sans service ; non porté. |
+| Util Html / Encode | 2 | 6 | 2 encodage + 4 décodage validés en 0.24, séparément. |
+| Util Type / String | 18 | 63 | Sans service ; non porté. |
+| Util Type / Variant / Encoding | 5 | 21 | Sans service ; non porté. |
+| **Total** | **46** | **286** | **259 sans services + 27 d'intégration.** |
+
+**Détail des specs feuilles**, avec le préfixe de chaque bloc omis :
+
+- Core / Infra : `HandleCommand` (3), `Append` (5), `Load` (8),
+  `HandleProjectionReadFind` (11).
+- Stash : `UnsafeStash` (8), `UnsafeGetStashWithDefault` (8), `UnsafeDidStash`
+  (5), `UnsafeDropStash` (4), `UnsafeGetStashAndDrop` (4), `UnsafePushToStash`
+  (5), `UnsafeIncrementStash` (4), `UnsafeClearStash` (3).
+- Html Clean : `CleanAttributesInTag` (16), `CleanAttributesInTags` (19),
+  `FindUnescapedQuote` (15), `RemoveAttribute` (12), `RemoveComments` (20),
+  `RemoveDataAttributes` (16), `Untag` (19), `UntagExcept` (7), `UntagOnly` (4).
+- Html Encode : `EncodeHtmlEntities` (2), `DecodeHtmlEntities` (4).
+- String : `CaseTo` (1), les sept `CaseToPascal/Camel/Snake/Kebab/Constant/Train/Header`
+  (1 chacun), les sept `IsPascal/Camel/Snake/Kebab/Constant/Train/HeaderCased`
+  (1 chacun), `PadLeft` (15), `PadRight` (14), `Slugify` (19).
+- Variant Encoding : `EncodeValueJson` (3), `WriteForeign` (3), `EncodeJsonWith`
+  (3), `ReadForeign` (6), `DecodeJsonWith` (6). Le fichier `DecodeJson.purs`
+  déclare bien le dernier nom de module ; le relevé suit la déclaration.
+
+Les collecteurs `Core.Message.Command.Handle.Test.Integration.Test`,
+`Infra.EventStore.Postgres.Test.Integration.Test` et
+`Infra.Projection.Postgres.Finder.Test.Integration.Test` construisent le client
+RabbitMQ différé, créent les bases via `createTestDbs` et gèrent les clients
+PostgreSQL avec `bracket`/`afterAll_`. Les 3 tests Core sont donc des intégrations,
+pas des tests purs à placer dans M2. Cela décrit leurs fixtures, sans prouver un
+échange RabbitMQ dans chacun des 27 cas. `Util.Lexicon.Test` est un module de
+lexique, pas une spec supplémentaire.
+
+#### Choix du bloc et preuve TAST
+
+[`Comparaison des candidats`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/candidates.json)
+par parcours des imports depuis les sources du profil Rust inchangé :
+
+- **Stash** : seulement `Foreign` et `Foreign.Object` absents des sources
+  actives. `Util.Debug.Stash.Stash` est entièrement PureScript, sans FFI b8x
+  locale à créer ; il utilise Ref, Object, ST et Unsafe.Coerce.
+- `RemoveComments` et `PadLeft` : le module de nettoyage HTML importe aussi
+  Regex et les codecs génériques. La frontière manquante comprend
+  `Effect.Random`, `Foreign`, `Record.Builder`, `Yoga.JSON` et
+  `Yoga.JSON.Generics.TaggedSumRep`. La fermeture complète n'est pas compilée ici.
+- Variant Encoding : ajoute encore `Data.Variant`, `Foreign.Index`,
+  `Foreign.Object` et `Heterogeneous.Folding` à cette frontière. Différé.
+
+Ces limites sont des modules absents à la frontière du profil, pas l'inventaire
+exhaustif de leurs propres dépendances. Ne pas les porter préventivement.
+
+[`Rapport frais`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/report.json),
+[`main diagnostique`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/Main.purs),
+[`FFI typées`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/foreign.json) :
+
+- Le main importe l'agrégateur Stash original, attend la fin de Spec et exige
+  41 réussites, zéro échec et zéro attente. **Il n'a pas été exécuté.**
+- Pour ce diagnostic seulement, les sources locales `purust-foreign` et
+  `purust-foreign-object` sont ajoutées explicitement au graphe, avec leurs
+  configurations et sources identifiées par empreinte. Aucun changement du YAML,
+  lockfile ou glob actif ; leur intégration Spago reste à faire.
+- `purs --version`, `spago sources --offline --json`, `purs graph` et compilation
+  `--codegen corefn` : **sortie 0** ; TAST neuf compilé en environ **2,2 secondes**.
+- **228 modules** : 208 communs avec le décodage, 20 ajoutés et 3 retirés
+  (main décodage, sa spec et le codec HTML). Aucun module
+  `Core.*`, `Infra.*`, `Inter.*` ou `Node.*` dans cette fermeture.
+- Les **41 références `Test.Spec.it`** sont retrouvées dans le TAST des huit
+  specs, avec les mêmes comptes que dans les sources.
+- **54 modules déclarent 295 foreigns** : 22 déclarations nouvelles et les deux
+  foreigns HTML retirés. Les nouveaux modules `Foreign`, `Foreign.Object` et
+  `Foreign.Object.ST` n'ont aucun `.rs` résolu. Ce nombre de 22 ne représente ni
+  les anciens fallbacks HTML ni une obligation de porter 22 fonctions d'emblée.
+- Le TAST conserve `typeTable`, les annotations étrangères, les quantificateurs,
+  `dataDecls` et `classDecls`. `Object a`, `STObject r a` et l'utilisation explicite
+  de `Foreign` dans `_stash :: Ref (Object Foreign)` doivent guider le contrat
+  natif ; ne pas attribuer cette hétérogénéité explicite à un effacement des types.
+
+[`Parcours conservatif des références TAST`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/reachability.json)
+depuis le main : **six nouveaux symboles étrangers référencés** :
+
+| Opération Stash / Object | Frontière FFI nouvelle |
+| --- | --- |
+| Initialiser / vider l'objet | `Foreign_Object_empty` |
+| Lire / tester la présence d'une clé | `Foreign_Object__lookup` |
+| Copier avant modification, exécuter la région ST | `Foreign_Object__copyST`, `Foreign_Object_runST` |
+| Insérer / remplacer une valeur | `Foreign_Object_ST_poke` |
+| Supprimer une clé | `Foreign_Object_ST_delete` |
+
+Les 16 autres nouvelles déclarations ne sont pas référencées par ce parcours,
+dont les cinq fonctions d'inspection de `Foreign`. **Ce n'est pas une preuve
+d'élimination par le générateur ni une trace d'exécution.** Le Rust généré,
+le premier `cargo check` et les gardes devront confirmer la frontière nécessaire.
+Le parcours résout les références qualifiées rencontrées hors `Prim.undefined`,
+nœud du TAST à ne pas confondre avec une FFI native validée.
+
+#### Contrat de la micro-étape 0.26 — réalisé ci-dessous
+
+**Astra**, selon la répartition déjà fixée pour le générateur, l'ABI et les
+premiers diagnostics. Cible : le stockage `_stash` et les opérations Object/ST
+ci-dessus, en commençant par le chemin stockage/lecture/suppression exercé par
+les **8 tests originaux `UnsafeStash`**. Ne pas commencer les codecs, Regex,
+les services ou les 22 déclarations en bloc.
+
+1. Générer le Rust du diagnostic isolé et lancer un `cargo check` borné dans
+   l'image existante ; relever le premier blocage concret, sans changer le profil
+   actif ni forger un artefact prêt.
+2. Isoler ce blocage dans un reproducteur court. Examiner les types natifs de
+   `Object a`, `STObject r a`, `Foreign` et Ref, la copie avant mutation et les
+   callbacks de `_lookup`. Conserver le singleton `_stash` entre opérations ;
+   ne pas remplacer son comportement par un stockage spécial dans une FFI b8x.
+3. Fixer le contrat du **premier correctif/portage seulement**, avec signatures
+   issues du TAST et commande de validation. Arrêt sur ce diagnostic et ce
+   contrat. Le portage viendra ensuite, avec référence JS fraîche, puis les
+   8 cas, puis les 41 cas Stash et les gardes.
+
+**Raccordement ultérieur vers `t -c` :** après validation de Stash, agréger les
+specs originales déjà portées (6 HTML + 41 Stash = 47) derrière le défaut Rust,
+avec un périmètre partiel affiché et un compteur exact. Les sélections ciblées
+restent des outils de diagnostic. Puis élargir ce même agrégat aux **259 tests
+sans services pour M2**, puis aux **286 tests actifs pour M4** (recalculer ces
+nombres si les sources évoluent), sans exclusions silencieuses. Ce raccordement
+n'est pas effectué en 0.25 : `t` choisit encore HTML 2/2.
+
+**Préservation et fraîcheur :** les trois états/manifests intégrés, leurs inputs
+courants, les liens et `TARGET=rust` sont vérifiés inchangés pendant le diagnostic.
+[`Écart avec les inputs du build 0.24`](../../b8x/run/bak/rust/output/suite-discovery-hXVAsI/baseline.json) :
+le binaire `purs` a changé avant le diagnostic (empreinte actuelle
+`31c8fb80912fd243cbbca7b464aaa86ba28cca3ca740b9c17e50ca37cf885a90`).
+Le contrôle a refusé de traiter l'ancien build comme frais ; il faudra
+reconstruire avant le prochain `t`. Aucun compilateur, bundle, FFI, script actif,
+source b8x, Dockerfile ou cible modifié par 0.25. Aucun Docker, accès aux services,
+nettoyage DB, build Rust ou redémarrage. **M2 reste ouvert.**
+
+### Micro-étape 0.26 — Premier blocage natif Stash isolé
+
+Réalisée le 13 septembre 2026 sur `b8x/master`, `TARGET=rust`. Aucun portage,
+changement de générateur, de profil actif ou de binaire prêt. Le diagnostic
+utilise l'image `api-cli` existante, Rust/Cargo **1.96.0**, cible Linux ARM64,
+sans accès PostgreSQL/RabbitMQ, sans nettoyage DB ni redémarrage.
+
+[`Bilan vérifié`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/summary.json),
+[`diagnostic complet`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/full/report.json),
+[`diagnostic réduit`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/minimal/report.json).
+
+| Contrôle réel | Résultat |
+| --- | --- |
+| TAST neuf du Stash complet | 228 modules, sortie 0, environ 2,3 s. |
+| Génération Rust `--threaded` | Sortie 0, environ 8,4 s. |
+| `cargo check --offline --message-format=json -j 1` dans `api-cli` | **101**, environ 14,6 s ; 5 erreurs `E0425`, toutes sur `STObject`. |
+| Reproducteur réduit : TAST puis génération | 66 modules, sorties 0/0, environ 0,4/0,9 s. |
+| Cargo réduit, paquet `Purs_StashProbe` | **101**, environ 6,5 s ; les mêmes 5 erreurs dans `Purs_Foreign_Object_ST`. |
+| Contrats de la FFI JS originale `Foreign/Object/ST.js` | **8 contrôles passés**, sans compiler ni exécuter la suite b8x. |
+
+Chaque Cargo est borné à 90 secondes dans le worker, avec cible et dossier de
+sortie explicites. `cargo check` n'exécute aucun main. Les dépendances Cargo
+locales restent dans l'export ; aucun téléchargement n'est nécessaire.
+Les sorties complètes, arguments et diagnostics JSON sont conservés, notamment
+[`les cinq erreurs initiales`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/full/cargo-errors.json).
+
+#### Cause et réduction
+
+Premier diagnostic natif :
+`Purs_Foreign_Object_ST/src/lib.rs:55`, **cannot find type `STObject` in the crate root**.
+Les autres occurrences sont la closure de `peek` et les signatures des fallbacks
+`delete`, `peekImpl`, `poke` (lignes 60, 70, 72, 73).
+
+Le TAST contient bien `forall a r. STObject r a` et les retours `ST r ...`.
+`dataDecls` et `classDecls` sont vides dans ce module : **`STObject` est un
+`foreign import data`, pas un ADT PureScript dont le layout aurait été perdu**.
+La résolution FFI `.rs` renvoie `null` ; le générateur émet
+`Arc<crate::STObject>` dans le module propriétaire et
+`Arc<Purs_Foreign_Object_ST::STObject>` chez les consommateurs, mais aucun type
+natif `STObject` n'est défini. Les quatre primitives sont des `unimplemented!()`.
+
+[`StashProbe.purs`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/StashProbe.purs)
+réduit le cas à `removeKey = delete "key"`, typé
+`forall r. STObject r Int -> ST r (STObject r Int)`, avec les dépendances réelles
+de `Control.Monad.ST` et `Foreign.Object.ST`. Il n'importe ni Spec, ni Aff,
+ni le Stash b8x, ni `Foreign.Object`. Les 66 modules incluent les dépendances
+ST/Prelude/Effect/Ref ; ce n'est pas un faux module ST fourni pour l'occasion.
+Le check cible son paquet bibliothèque, sans exiger un main fictif.
+
+Cette réduction établit le premier prérequis manquant. Elle ne prouve pas que
+le reste de Stash compilera après sa correction. Aucun type factice ou alias
+`STObject = UnknownType` n'a été injecté pour obtenir un check vert.
+
+#### Contrat du premier portage — 0.27, Astra, réalisé ci-dessous
+
+**Seule cible fonctionnelle :** créer
+[`purust-foreign-object/src/Foreign/Object/ST.rs`](../purust-foreign-object/src/Foreign/Object/ST.rs)
+(fichier absent en 0.26), avec le type natif **`pub struct STObject`** et les
+quatre primitives étrangères du module. Ne pas remplacer la fonction PureScript
+`peek`, qui délègue à `peekImpl`, ni modifier le générateur pour transformer
+tous les types étrangers en valeurs indifférenciées.
+
+Le stockage natif est un objet mutable à clés `String`, partagé par identité.
+Conserver le pointeur typé `Rc<STObject>` / `Arc<STObject>` attendu par le Rust
+généré, une synchronisation sûre dans la variante threaded, et les conventions
+existantes de `purust-st` pour les actions différées. Les charges polymorphes
+utilisent l'ABI `Value` actuellement émise ; les clés restent des `String`
+natives. Ne pas ajouter d'`unsafe impl Send/Sync`, ni recréer un runtime ST/Aff.
+
+[`ABI issue du TAST et du Rust`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/abi.json).
+Dans la table, `V = crate::UnknownType` (alias de `Value`),
+`H = Arc<STObject>` en threaded, `Rc<STObject>` en mode normal :
+
+| Symbole Rust exact | Arguments → retour | Contrat |
+| --- | --- | --- |
+| `Foreign_Object_ST_new` | `() → V` | Retourne une action ST ; chaque exécution alloue un objet vide distinct. |
+| `Foreign_Object_ST_poke` | `(String, V, H) → V` | Action différée ; insère/remplace puis retourne le même handle. |
+| `Foreign_Object_ST_delete` | `(String, H) → V` | Action différée ; retire la clé, même absente, puis retourne le même handle. |
+| `Foreign_Object_ST_peekImpl` | `(Func1<V,V>, V, String, H) → V` | Action différée ; appelle `just` une fois si la clé propre existe, sinon retourne `nothing`. |
+
+Le `V` retourné est l'action ST, pas son résultat immédiat. À son exécution,
+les handles doivent être emballés de façon compatible avec les conversions
+`Value::Class` / `unwrap_class::<Rc/Arc<STObject>>()` des consommateurs générés.
+Cette conversion doit être vérifiée par un vrai aller-retour PureScript généré,
+pas seulement par des appels Rust directs aux nouvelles fonctions.
+
+Les huit contrôles sur le JS original, exécutés par
+[`abi.mjs`](../../b8x/run/bak/rust/output/stash-native-aDbCeg/abi.mjs), fixent :
+allocations indépendantes ; écriture différée et identité ; lecture différée et
+callback sélectionné ; suppression différée/rejouable ; conservation des autres
+clés et distinction absence/valeurs falsy ; références des tableaux/records ;
+absence d'une propriété seulement héritée (`toString`) ; callback de lecture
+réentrant qui supprime la même clé. **Relâcher le verrou avant le callback**.
+Ce sont des contrôles de primitives, pas les 8 tests `UnsafeStash` de b8x.
+Node signale uniquement le warning de package JS sans champ `type` ; aucun
+`package.json` n'est modifié pour le supprimer.
+
+**Validation prescrite en 0.26 pour 0.27, désormais réalisée :**
+
+1. Ajouter une régression TAST/native dédiée au module ST, avec un vrai parcours
+   allocation → écriture → `peek` PureScript → suppression. Vérifier les types,
+   les handles et les résultats sur le Rust généré, en modes normal et threaded.
+2. Reprendre les huit contrats JS en Rust, notamment la réentrance, l'absence
+   d'effet avant exécution et deux objets indépendants. Toute primitive du
+   module appelée doit être une FFI réelle, jamais un fallback ou un succès vide.
+3. Le contrôle Cargo ciblé doit devenir vert : dans chaque export neuf,
+   `cargo check --offline -p Purs_StashProbe`, puis la régression native dédiée
+   via `cargo test --offline -p Purs_StashProbe --test foreign_object_st`.
+   La fixture et le test sont maintenant créés ; ces commandes sont vertes
+   dans les deux modes (résultats 0.27 ci-dessous).
+4. Regénérer le diagnostic Stash complet, relever le prochain blocage et s'arrêter
+   avant de le corriger. Ne pas étendre ce portage à `Foreign.Object`, aux
+   codecs, au singleton, aux services ou à un nouveau flag CLI.
+
+#### Pré-requis suivants observés, non corrigés
+
+- `Foreign.Object.Object` n'a pas non plus de définition native dans l'export.
+  Son portage immutable et les frontières `_copyST`, `runST`, `empty`, `_lookup`
+  restent séparés. L'ABI générée de `_lookup` est actuellement un retour `V`
+  utilisé comme fonctions successives ; ne pas déduire une signature Rust
+  uncurried correcte du seul nom `Fn4` dans le TAST.
+- `_stash` est généré comme une fonction appelant `Effect_Ref__new` à chaque
+  invocation, sans mémorisation visible. **Observation de code, pas encore un
+  échec d'exécution reproduit** ; sa conservation entre opérations sera à
+  vérifier dès que le chemin natif pourra s'exécuter. Ne pas contourner cela
+  par une FFI spéciale b8x qui réimplémenterait le Stash.
+- Les copies avant mutation et les callbacks `_lookup` appartiennent au prochain
+  contrat Object, pas aux quatre primitives ST de 0.27. La simple disparition
+  des cinq erreurs `STObject` ne doit pas être comptée comme 8/8 ou 41/41.
+
+Les sources, le fork `purs` et le bundle purust sont identifiés par empreinte
+et vérifiés inchangés, ainsi que les trois états/manifests HTML, le YAML/lockfile
+Rust et les liens racine. Les deux diagnostics utilisent le même conteneur,
+la même image et le même `StartedAt` avant/après. Aucun `target`, `b -c` ou
+`t -c` lancé. Les anciens builds HTML restent périmés par le changement de
+`purs` relevé en 0.25. **Zéro test b8x exécuté en 0.26 ; M2 reste ouvert**.
+Le chemin prévu reste : prérequis Stash → 8 cas → 41 cas → agrégat de 47 tests
+par défaut → tous les tests sans services → suite complète derrière `t -c`.
+
+### Micro-étape 0.27 — FFI `Foreign.Object.ST` portée et validée
+
+**Réalisée avec Astra.** Seul fichier fonctionnel ajouté :
+[`Foreign/Object/ST.rs`](../purust-foreign-object/src/Foreign/Object/ST.rs).
+`STObject` possède un stockage `HashMap<String, Value>` protégé par `Mutex` ;
+le handle reste natif `Rc<STObject>` / `Arc<STObject>`, sans `unsafe impl`.
+Les quatre primitives renvoient des actions ST différées et rejouables.
+Le callback de lecture et la destruction d'une ancienne valeur se produisent
+après libération du verrou. Aucun changement du générateur ni de `Foreign.Object`.
+
+Régression ajoutée à la suite TAST existante :
+[`foreign-object-st.mjs`](tests/tast/foreign-object-st.mjs),
+[`StashProbe.purs`](tests/tast/fixtures/foreign-object-st/StashProbe.purs) et
+[`checks.rs`](tests/tast/fixtures/foreign-object-st/checks.rs).
+Le premier run a échoué sur l'absence réelle de `ST.rs`, après compilation TAST
+réussie. Avec le portage, chaque mode normal/threaded régénère son Rust depuis
+**66 modules TAST frais** : `cargo check --offline -p Purs_StashProbe` sort 0 et
+`cargo test --offline -p Purs_StashProbe --test foreign_object_st` passe **10/10**.
+Ce sont dix cas exécutés dans deux modes, pas vingt cas distincts ni des tests b8x.
+
+Les tests vérifient les huit contrats primitifs de 0.26, plus les parcours du
+PureScript généré : primitives et records, constructeurs `Maybe`, et boxing
+`Value::Class` du handle natif. Sont également vérifiées la conservation des
+références et leur libération, ainsi que la réentrance sans verrou conservé.
+L'export contient exactement une définition réelle de chaque foreign ST,
+sans `unimplemented!()`. Le lancement via `node --test` passe également ;
+`rustfmt --check` sur `ST.rs` et `git diff --check` sont verts.
+
+Commande reproductible depuis le dépôt compilateur, avec `PURS` pointant vers
+le binaire de notre fork TAST :
+
+```sh
+PURS=/chemin/vers/le/fork/purs node --test tests/tast/foreign-object-st.mjs
+```
+
+**Diagnostic complet et point d'arrêt :** l'export Stash neuf conserve ses
+228 modules. TAST et génération sortent 0 ; dans `api-cli` Linux ARM64,
+`Purs_Foreign_Object_ST` compile, puis Cargo sort **101 en 17,6 s** avec
+**218 erreurs E0425**, toutes `cannot find type Object in the crate root`
+dans `Purs_Foreign_Object`. La première est dans `Foreign_Object_values`,
+ligne 125 de l'export. Il s'agit de références répétées au même type natif
+manquant, pas de 218 causes indépendantes. Ce blocage n'est pas corrigé ici.
+
+Preuves : [bilan vérifié](../../b8x/run/bak/rust/output/stash-st-fixed-jNdIR7/summary.json),
+[commandes natives](../../b8x/run/bak/rust/output/stash-st-fixed-jNdIR7/purust-foreign-object-st-7ygqfY/commands.json),
+[rapport complet](../../b8x/run/bak/rust/output/stash-st-fixed-jNdIR7/full/report.json),
+[diagnostics Cargo](../../b8x/run/bak/rust/output/stash-st-fixed-jNdIR7/full/cargo-errors.json).
+`verify.mjs` dans ce dossier revérifie les empreintes et ces résultats.
+La FFI finale, les sources PureScript, le fork, le bundle, les trois
+états/manifests HTML, le profil Rust et les liens racine sont vérifiés inchangés
+entre les mesures finales et leur contrôle. Même conteneur, image et `StartedAt`.
+Les branches sont conservées, notamment b8x et `purust-foreign-object` sur `master`.
+Aucun `target`, `b -c`, `t -c`, rebuild d'image, redémarrage ou nettoyage DB.
+**Zéro test b8x exécuté en 0.27 ; le défaut reste HTML (2 tests), M2 reste ouvert.**
+
+**Prochaine micro-étape — 0.28, Astra :** isoler ce blocage `Foreign.Object`,
+qualifier l'ABI réelle et les contrats de copie/identité aux frontières
+`empty`, `_copyST`, `runST`, `_lookup`, puis fixer le portage minimal et sa
+régression. Ne pas déduire l'ABI de `_lookup` du seul `Fn4`, ni corriger
+préventivement le singleton `_stash`, les codecs ou les services.
+
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
 - [x] Ajouter la configuration dédiée `b8x/run/bak/rust/spago.yaml` et son
@@ -2569,6 +2947,10 @@ son portage FFI et ses dépendances restent à valider avant M1.
 - [ ] Identifier les imports Node réellement nécessaires à `Test.Main`.
 - [ ] Séparer la collecte des specs, l'exécution, le reporting et la sortie du
   processus.
+- [ ] Agréger les specs validées derrière la commande Rust sans filtre, en
+  annonçant explicitement tout périmètre encore partiel. À M2, le défaut couvre
+  toutes les specs sans services ; à M4, `t -c` couvre l'ensemble actif collecté
+  par `Core.spec`, `Infra.spec` et `Util.spec`, sans option `--suite`.
 - [ ] Pour le runner intégré, transmettre et appliquer réellement le filtre
   demandé. Tester le cas sans correspondance et le nombre attendu de tests ;
   un filtre d'exécution ne réduit pas à lui seul le graphe à compiler ni les
@@ -2631,7 +3013,9 @@ des élargissements suivants.
   aucun fallback silencieux. Le périmètre limité doit être explicite dans la
   sélection et le résumé ; cette réussite ne vaut pas validation de toute b8x.
 - [ ] Répéter ce contrôle après élargissement aux suites sans services pour
-  M2, puis sur la suite complète pour M4, sans exclusions cachées.
+  M2, puis sur la suite complète pour M4, **avec `t -c` sans `--suite`** et sans
+  exclusions cachées. Comparer aussi les specs et le nombre total exécutés à
+  la référence, pas seulement le code de sortie.
 
 ## Phase 3 — Inventaire et portage des FFI b8x
 
@@ -2879,8 +3263,24 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   mêmes 275 foreigns, aucun nouveau portage).
 - [x] Luna : raccorder `--suite html-decode` (0.24 : 4/4 Rust et JS frais,
   anciennes suites 2/2→0 et 2/3→101, 41 régressions rapides vertes).
-- [ ] Astra : choisir la prochaine spec sans services hors codec HTML et
-  inventorier son delta TAST/FFI avant tout portage.
+- [x] Astra : inventorier l'ensemble actif et choisir le prochain bloc sans
+  services hors codec HTML (0.25 : 286 tests statiques, dont 259 sans services ;
+  bloc Stash de 41 tests, TAST frais de 228 modules, six nouvelles FFI référencées
+  conservativement parmi 22 déclarations ajoutées ; aucun portage).
+- [x] Astra : qualifier le premier blocage natif Stash et fixer son contrat
+  minimal (0.26 : Cargo 101, 5 erreurs STObject ; même échec sur 66 modules,
+  huit contrats JS primitifs passés ; aucun portage ni test b8x exécuté).
+- [x] Astra : porter uniquement `Foreign/Object/ST.rs` et sa régression TAST/native
+  selon 0.26 (type STObject et quatre primitives, modes normal/threaded, effets
+  différés et handles vérifiés), puis relever le prochain blocage complet sans
+  le corriger (0.27 : Cargo ciblé vert, 10 tests natifs par mode ; Cargo Stash
+  atteint `Foreign.Object`, 218 occurrences du type `Object` manquant).
+- [ ] Astra : isoler `Foreign.Object` et qualifier le contrat natif minimal
+  `Object` / `empty` / `_copyST` / `runST` / `_lookup`, avec preuves JS/TAST/Rust
+  et plan de régression ; ne pas encore porter ni corriger le singleton (0.28).
+- [ ] Après portage/validation : raccorder Stash et l'agrégat HTML + Stash au
+  défaut Rust (47 tests), puis poursuivre son élargissement vers les 259 tests
+  sans services et les 286 tests actifs derrière `t -c`, sans filtre obligatoire.
 - [ ] Astra : poursuivre, lors de l'élargissement M2, la qualification des bindings et fallbacks conservés,
   dont les autres opérations de records, selon les chemins réellement atteints ;
   porter ou éliminer par preuve, sans portage préventif de `unsafeDelete`.
