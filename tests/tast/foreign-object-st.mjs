@@ -65,7 +65,7 @@ try {
     assert.ok(code.includes(threaded ? threadedRust(ffi) : ffi), 'Generated module must include the actual FFI');
     for (const name of input.foreign) assert.equal([...code.matchAll(new RegExp(`pub fn Foreign_Object_ST_${name}\\(`, 'g'))].length, 1);
     assert.ok(!code.includes('unimplemented!()'));
-    assert.match(code, /pub struct STObject\b/);
+    assert.match(code, /pub use purust_core::SharedRecord as STObject/);
     const tests = join(rust, 'Purs_StashProbe/tests'); mkdirSync(tests);
     const checks = readFileSync(join(fixture, 'checks.rs'), 'utf8');
     writeFileSync(join(tests, 'foreign_object_st.rs'), threaded ? threadedRust(checks) : checks);

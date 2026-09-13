@@ -14,6 +14,7 @@ import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import Purust.LocalNames (renameLocals)
 import Purust.ModuleValues as ModuleValues
+import Purust.RecordFields as RecordFields
 import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
@@ -50,6 +51,10 @@ import Partial.Unsafe (unsafeCrashWith)
 import Effect.Ref as Ref
 import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
+
+-- Includes the twelve arguments in the observed VariantF traversal path.
+maxNativeFunctionArity :: Int
+maxNativeFunctionArity = 12
 
 chunkArray :: forall a. Int -> Array a -> Array (Array a)
 chunkArray size arr =
@@ -262,17 +267,29 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
     classesCode <> "\n" <>
     bindingsCode
 
+-- The generic carrier owns Record_a; keep a closed { a :: ... } disjoint.
+-- Ordinary closed records always use Record_, so ClosedRecord_a cannot clash.
+recordStructName :: Array String -> String
+recordStructName fields = case String.joinWith "_" (map sanitizeIdent (Array.sortBy compare fields)) of
+  "" -> "Record_a"
+  "a" -> "ClosedRecord_a"
+  shape -> "Record_" <> shape
+
 codegenPrelude :: Set.Set String -> String
 codegenPrelude fields =
   let
     shapes = Array.fromFoldable fields
     
     uniqueFields = Array.fromFoldable (Set.fromFoldable (Array.concatMap (\shape -> String.split (Pattern ",") shape) shapes))
-    validUniqueFields = Array.filter (\f -> not (Set.member f (Set.fromFoldable ["unwrap", "clone", "as_ref", "tag", "vals", "call"])) && not (String.null f)) uniqueFields
+    validUniqueFields = Array.filter (not <<< String.null) uniqueFields
+    -- Legacy constructor metadata is not user record data. Reserved labels
+    -- live in closed shapes or DynamicRecord when an open record is extended.
+    genericFields = Array.filter (\f -> not (Array.elem f ["tag", "vals", "call"])) validUniqueFields
+    genericFieldArm f body = if Array.elem f genericFields then body else ""
     
     validShapes = Array.filter (\shape -> not (String.null shape)) shapes
 
-    shapeToStructName shape = "Record_" <> String.joinWith "_" (map sanitizeIdent (Array.sortBy compare (String.split (Pattern ",") shape)))
+    shapeToStructName = recordStructName <<< String.split (Pattern ",")
     
     recordStructs = Array.foldMap (\shape -> 
       let structName = shapeToStructName shape
@@ -298,7 +315,7 @@ codegenPrelude fields =
           ) validShapes
       in "    pub fn get_" <> sf <> "(&self) -> UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
-         "            Value::Record_a(r) => r." <> field <> ".clone().unwrap(),\n" <>
+         genericFieldArm f ("            Value::Record_a(r) => r." <> field <> ".clone().unwrap(),\n") <>
          "            Value::DynamicRecord(r) => r.get(" <> show f <> ").cloned().expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -314,7 +331,7 @@ codegenPrelude fields =
           (String.split (Pattern ",") shape) <>
         "                _ => None,\n            },\n") validShapes <>
       "            Value::Record_a(r) => match name {\n" <>
-      Array.foldMap (\f -> "                " <> show f <> " => r." <> recordFieldIdent f <> ".clone(),\n") validUniqueFields <>
+      Array.foldMap (\f -> "                " <> show f <> " => r." <> recordFieldIdent f <> ".clone(),\n") genericFields <>
       "                _ => None,\n            },\n" <>
       "            Value::DynamicRecord(r) => r.get(name).cloned(),\n" <>
       "            _ => panic!(\"Expected record\"),\n" <>
@@ -336,17 +353,26 @@ codegenPrelude fields =
       "        match &mut self {\n" <>
       Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
         "(r) => " <> setKnownFields (String.split (Pattern ",") shape) <> ",\n") validShapes <>
-      "            Value::Record_a(r) => " <> setKnownFields validUniqueFields <> ",\n" <>
+      "            Value::Record_a(r) => " <> setKnownFields genericFields <> ",\n" <>
       "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(name.to_owned(), value); return self; },\n" <>
       "            _ => panic!(\"Expected record\"),\n        }\n" <>
-      "        let mut fields = std::collections::BTreeMap::new();\n" <>
+      "        let mut fields = RecordFields::new();\n" <>
       "        match &self {\n" <>
       Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
         "(r) => {\n" <> copyFields (String.split (Pattern ",") shape) <> "            },\n") validShapes <>
-      "            Value::Record_a(r) => {\n" <> copyFields validUniqueFields <> "            },\n" <>
+      "            Value::Record_a(r) => {\n" <> copyFields genericFields <> "            },\n" <>
       "            _ => unreachable!(),\n        }\n" <>
       "        fields.insert(name.to_owned(), value);\n" <>
       "        Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))\n    }\n"
+
+    recordEntriesMethod =
+      "    pub fn __purust_record_fields(&self) -> Option<RecordFields> {\n" <>
+      "        let mut fields = RecordFields::new();\n        match self.resolve() {\n" <>
+      Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
+        "(r) => {\n" <> copyFields (String.split (Pattern ",") shape) <> "            },\n") validShapes <>
+      "            Value::Record_a(r) => {\n" <> copyFields genericFields <> "            },\n" <>
+      "            Value::DynamicRecord(r) => return Some((**r).clone()),\n" <>
+      "            _ => return None,\n        }\n        Some(fields)\n    }\n"
 
     -- Keep the ordinary owned getters for escaping values. Scalar consumers
     -- can borrow a whole projection path and copy only its final primitive.
@@ -361,7 +387,7 @@ codegenPrelude fields =
           ) validShapes
       in "    pub fn __purust_borrow_" <> sf <> "(&self) -> &UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
-         "            Value::Record_a(r) => r." <> field <> ".as_ref().unwrap(),\n" <>
+         genericFieldArm f ("            Value::Record_a(r) => r." <> field <> ".as_ref().unwrap(),\n") <>
          "            Value::DynamicRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -383,10 +409,10 @@ codegenPrelude fields =
       in "    pub fn set_" <> sf <> "(&mut self, val: UnknownType) {\n" <>
          "        if matches!(self, Value::Thunk(_)) { *self = self.resolve().clone(); }\n" <>
          "        match self {\n" <> matchArms <>
-         "            Value::Record_a(r) => {\n" <>
+         genericFieldArm f ("            Value::Record_a(r) => {\n" <>
          "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
          "                mut_r." <> field <> " = Some(val);\n" <>
-         "            },\n" <>
+         "            },\n") <>
          "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" <> show f <> ".to_owned(), val); },\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -415,11 +441,11 @@ codegenPrelude fields =
         "        }\n" <>
         "    }\n" <>
         "}\n\n"
-    ) (Array.range 1 11)
+    ) (Array.range 1 maxNativeFunctionArity)
     funcVariants = Array.foldMap (\arity -> 
       let typeParams = String.joinWith ", " (Array.replicate (arity + 1) "UnknownType")
       in "    Func" <> show arity <> "(Func" <> show arity <> "<" <> typeParams <> ">),\n"
-    ) (Array.range 1 11)
+    ) (Array.range 1 maxNativeFunctionArity)
     
     funcUnwraps = Array.foldMap (\arity -> 
       let typeParams = String.joinWith ", " (Array.replicate (arity + 1) "UnknownType")
@@ -427,7 +453,7 @@ codegenPrelude fields =
          "        let value = self.resolve();\n" <>
          (if arity == 1 then 
            "        if let Value::Func1(v) = value { v.clone() } else if let Value::Record_a(v) = value { v.call.clone().unwrap() } " <>
-           String.joinWith " " (map (\a -> "else if let Value::Func" <> show a <> "(v) = value { let f = v.clone(); Func1::Shared(std::rc::Rc::new(move |a0: UnknownType| -> UnknownType { crate::Value::Func" <> show (a - 1) <> "(Func" <> show (a - 1) <> "::Shared(std::rc::Rc::new({ let f2 = f.clone(); move |" <> String.joinWith ", " (map (\i -> "mut a" <> show i <> ": UnknownType") (Array.range 1 (a - 1))) <> "| -> UnknownType { f2(a0.clone(), " <> String.joinWith ", " (map (\i -> "a" <> show i) (Array.range 1 (a - 1))) <> ") } }))) })) }") (Array.range 2 11)) <>
+           String.joinWith " " (map (\a -> "else if let Value::Func" <> show a <> "(v) = value { let f = v.clone(); Func1::Shared(std::rc::Rc::new(move |a0: UnknownType| -> UnknownType { crate::Value::Func" <> show (a - 1) <> "(Func" <> show (a - 1) <> "::Shared(std::rc::Rc::new({ let f2 = f.clone(); move |" <> String.joinWith ", " (map (\i -> "mut a" <> show i <> ": UnknownType") (Array.range 1 (a - 1))) <> "| -> UnknownType { f2(a0.clone(), " <> String.joinWith ", " (map (\i -> "a" <> show i) (Array.range 1 (a - 1))) <> ") } }))) })) }") (Array.range 2 maxNativeFunctionArity)) <>
            " else { panic!(\"Expected Func1\"); }\n"
           else 
            let argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut a" <> show i <> ": UnknownType") (Array.replicate arity unit))
@@ -435,7 +461,7 @@ codegenPrelude fields =
            in "        if let Value::Func" <> show arity <> "(v) = value { v.clone() } else if let Value::Func1(v) = value { let f = v.clone(); Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsDecl <> "| -> UnknownType { " <> bodyInner <> " })) } else { panic!(\"Expected Func" <> show arity <> " or Func1 (curried) - got something else\"); }\n"
          ) <>
          "    }\n"
-    ) (Array.range 1 11)
+    ) (Array.range 1 maxNativeFunctionArity)
 
   in
   "#![allow(warnings)]\n\n" <>
@@ -454,7 +480,7 @@ codegenPrelude fields =
   "    Class(std::rc::Rc<dyn std::any::Any>),\n" <>
   "    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" <>
   "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
-  "    DynamicRecord(perceus_ptr::PerceusPtr<std::collections::BTreeMap<String, Value>>),\n" <>
+  "    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" <>
   recordVariants <>
   "}\n\n" <>
   "impl Value {\n" <>
@@ -472,7 +498,8 @@ codegenPrelude fields =
   "        if let Value::Int(v) = self.resolve() { *v } else { panic!(\"Expected Int\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_number(&self) -> f64 {\n" <>
-  "        if let Value::Number(v) = self.resolve() { *v } else { panic!(\"Expected Number\"); }\n" <>
+  "        // Foreign numbers can originate from a native PureScript Int.\n" <>
+  "        match self.resolve() { Value::Number(v) => *v, Value::Int(v) => *v as f64, _ => panic!(\"Expected Number\") }\n" <>
   "    }\n" <>
   "    pub fn unwrap_bool(&self) -> bool {\n" <>
   "        if let Value::Bool(v) = self.resolve() { *v } else { panic!(\"Expected Bool\"); }\n" <>
@@ -492,17 +519,18 @@ codegenPrelude fields =
   "    }\n" <>
   "    pub fn drop_explicit(self) {\n" <>
   "    }\n" <>
-  "    pub fn get_tag(&self) -> &'static str {\n" <>
+  "    pub fn __purust_ctor_tag(&self) -> &'static str {\n" <>
   "        if let Value::Record_a(r) = self.resolve() { r.tag } else { panic!(\"Expected Record_a for tag\"); }\n" <>
   "    }\n" <>
   getMethods <>
   dynamicGetMethod <>
   dynamicSetMethod <>
+  recordEntriesMethod <>
   borrowMethods <>
   setMethods <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
-  runtimeHelpers <> ModuleValues.runtime <>
+  runtimeHelpers <> ModuleValues.runtime <> RecordFields.runtime <>
   "pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
   "pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" <>
@@ -519,7 +547,7 @@ codegenPrelude fields =
   "    pub call: Option<Func1<UnknownType, UnknownType>>,\n" <>
   Array.foldMap (\field ->
     "    pub " <> recordFieldIdent field <> ": Option<UnknownType>,\n"
-  ) validUniqueFields <>
+  ) genericFields <>
   "}\n\n" <>
   recordStructs <>
   "\n\n" <>
@@ -584,11 +612,13 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
            else if modName == "Data_Exists" && actualClassName == "Exists" then "crate::UnknownType"
            -- VariantCase carries heterogeneous payloads and their comparators
            -- through unsafeCoerce. Preserve the contained Value, not Rc<opaque>;
-           -- VariantFCase and neighbouring dictionaries stay native.
-           else if modName == "Data_Variant_Internal" && actualClassName == "VariantCase" then "crate::UnknownType"
+           -- Both case carriers retain their payload; dictionaries stay native.
+           else if modName == "Data_Variant_Internal" && (actualClassName == "VariantCase" || actualClassName == "VariantFCase") then "crate::UnknownType"
            -- The public row variant is the { type, value } record transported
            -- by VariantRep, not a native ADT or one of Variant's dictionaries.
            else if modName == "Data_Variant" && actualClassName == "Variant" then "crate::UnknownType"
+           -- VariantFRep also transports its mapper alongside type and value.
+           else if modName == "Data_Functor_Variant" && actualClassName == "VariantF" then "crate::UnknownType"
            -- Free's private, constructorless Val stores heterogeneous bind
            -- payloads via unsafeCoerce. Only this carrier uses Value; Free,
            -- FreeView and the Step constructors keep their native layouts.
@@ -603,7 +633,7 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
         argStrs = map (codegenExprTypeWithValueEnums valueEnums currentMod false) args
         retStr = codegenExprTypeWithValueEnums valueEnums currentMod true ret
         typeArgs = String.joinWith ", " (argStrs <> [retStr])
-    in if arity > 0 && arity <= 11 then "purust_core::Func" <> show arity <> "<" <> typeArgs <> ">"
+    in if arity > 0 && arity <= maxNativeFunctionArity then "purust_core::Func" <> show arity <> "<" <> typeArgs <> ">"
        else "crate::UnknownType"
   _ -> "crate::UnknownType"
 
@@ -644,7 +674,7 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
       Func expArgs expRet, Func actArgs actRet ->
         let expArity = Array.length expArgs
             actArity = Array.length actArgs
-        in if expArity == actArity && expArity > 0 && expArity <= 11 then
+        in if expArity == actArity && expArity > 0 && expArity <= maxNativeFunctionArity then
              let
                expArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) expArgs
                actArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) actArgs
@@ -652,7 +682,7 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
                argsCall = String.joinWith ", " (Array.mapWithIndex (\i (Tuple expTy actTy) -> boxUnbox valueEnums globalClassFields currentMod actTy expTy ("_a" <> show i)) (Array.zip expArgs actArgs))
                retStr = codegenExprTypeWithValueEnums valueEnums currentMod true expRet
              in "purust_core::Func" <> show expArity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox valueEnums globalClassFields currentMod expRet actRet ("_f(" <> argsCall <> ")") <> " } }))"
-           else if actArity > expArity && expArity > 0 && actArity <= 11 then
+           else if actArity > expArity && expArity > 0 && actArity <= maxNativeFunctionArity then
              let
                expArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) expArgs
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
@@ -705,7 +735,7 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
       
       Func expArgs expRet, _ ->
         let arity = Array.length expArgs
-        in if (actStr == "crate::UnknownType" || actStr == "crate::Value") && arity > 0 && arity <= 11 then
+        in if (actStr == "crate::UnknownType" || actStr == "crate::Value") && arity > 0 && arity <= maxNativeFunctionArity then
              let
                expArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) expArgs
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
@@ -716,7 +746,7 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
 
       _, Func actArgs actRet ->
         let arity = Array.length actArgs
-        in if (expStr == "crate::UnknownType" || expStr == "crate::Value") && arity > 0 && arity <= 11 then
+        in if (expStr == "crate::UnknownType" || expStr == "crate::Value") && arity > 0 && arity <= maxNativeFunctionArity then
              let
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut _a" <> show i <> ": crate::UnknownType") actArgs)
                argsCall = String.joinWith ", " (Array.mapWithIndex (\i actTy -> boxUnbox valueEnums globalClassFields currentMod actTy Any ("_a" <> show i)) actArgs)
@@ -746,7 +776,7 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
                         let projection = "__purust_class_value.__purust_get_field(" <> show field <> ")"
                             message = show ("Missing field " <> field <> " for class " <> name)
                             converted = case unwrapType fieldType of
-                              Func arguments result | Array.length arguments > 0 && Array.length arguments <= 11 ->
+                              Func arguments result | Array.length arguments > 0 && Array.length arguments <= maxNativeFunctionArity ->
                                 -- TAST can omit an unused dictionary. Preserve that
                                 -- laziness: a missing method fails only if called.
                                 let parameters = Array.mapWithIndex (\index argument -> "_argument_" <> show index <> ": " <>
@@ -883,7 +913,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                   , prefixArity > 0
                   , remainingTypes <- Array.drop prefixArity argTypes
                   , not (Array.null remainingTypes)
-                  , Array.length remainingTypes <= 11
+                  , Array.length remainingTypes <= maxNativeFunctionArity
                   , Just (Tuple prefixParams body) <- extractAbsParams prefixArity expr ->
                       let
                         -- Preserve the public ABI. Within this wrapper, the
@@ -950,7 +980,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                          case unwrapType accTy of
                            Func argTys retTy ->
                              let arity = Array.length argTys
-                             in if arity > 0 && arity <= 11 then
+                             in if arity > 0 && arity <= maxNativeFunctionArity then
                                   let availableArgsCount = Array.length argsCodeAndType - idx
                                   in if availableArgsCount >= arity then
                                        let passedArgs = Array.slice idx (idx + arity) argsCodeAndType
@@ -1087,7 +1117,7 @@ genApp valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalC
             case unwrapType accTy of
               Func argTys retTy ->
                 let arity = Array.length argTys
-                in if arity > 0 && arity <= 11 then
+                in if arity > 0 && arity <= maxNativeFunctionArity then
                      let availableArgsCount = Array.length argsCodeArray - idx
                      in if availableArgsCount >= arity then
                           let passedArgs = Array.slice idx (idx + arity) argsCodeArray
@@ -1145,7 +1175,7 @@ genApp valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalC
         borrowFn = case unwrapType (inferTypeExpr modNameStr aritiesMap globalClassFields bound fn) of
           Func argTys _ ->
             let arity = Array.length argTys
-            in arity > 0 && arity <= 11 && Array.length argsArray >= arity
+            in arity > 0 && arity <= maxNativeFunctionArity && Array.length argsArray >= arity
               && String.indexOf (Pattern ("purust_core::Func" <> show arity <> "<")) (operandType fn) == Just 0
               && isUnconvertedLocal operandType fn
           _ -> false
@@ -1305,7 +1335,7 @@ genAbsWithEffect executeEffect valueEnums currentMod allZeroArity reuseContext m
         ) bound (Array.mapWithIndex Tuple paramsArr)
 
       arity = Array.length paramsArr
-      isFuncN = arity > 0 && arity <= 11 && arity == Array.length expectedArgTys
+      isFuncN = arity > 0 && arity <= maxNativeFunctionArity && arity == Array.length expectedArgTys
     in if isFuncN then
       let
         bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields newBound body
@@ -2019,7 +2049,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                    Nothing -> "Nothing") <> " */ "
                  receiver = "(" <> boxedA <> ")" <> if isValueEnum valueEnums modName actualClassName then "" else ".as_ref()"
              in debugComment <> "matches!(" <> receiver <> ", " <> enumName <> "::" <> cName <> suffix <> ")"
-          _ -> "(" <> boxUnbox valueEnums globalClassFields currentMod Any aTy aStrRaw <> ".get_tag() == \"" <> ctorName <> "\")"
+          _ -> "(" <> boxUnbox valueEnums globalClassFields currentMod Any aTy aStrRaw <> ".__purust_ctor_tag() == \"" <> ctorName <> "\")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op1 */"
   PrimOp (Op2 op a b) ->
     let aliveForA = Set.union alive (freeVariables b)
@@ -2315,8 +2345,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
       in "crate::mk_array(vec![" <> String.joinWith ", " arrCode <> "])"
     LitRecord props ->
       let arrProps = props
-          shape = String.joinWith "_" (map sanitizeIdent (Array.sortBy compare (map (\(Prop k _) -> k) arrProps)))
-          structName = if String.null shape then "Record_a" else "Record_" <> shape
+          structName = recordStructName (map (\(Prop k _) -> k) arrProps)
           fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
             let subsequent = Array.drop (i + 1) arrProps
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Prop _ sv) -> freeVariables sv) subsequent))
@@ -2463,8 +2492,8 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
           innerCall = "std::rc::Rc::new(" <> rustCtor <> "(" <> String.joinWith ", " (map (\a -> a <> ".clone()") argNames) <> "))"
       in if len == 0 then
            if isValueEnum valueEnums currentMod tyNameStr then rustCtor else "std::rc::Rc::new(" <> rustCtor <> ")"
-         else if len <= 11 then "purust_core::Func" <> show len <> "::Static(|" <> argsCode <> "| -> " <> retTyStr <> " { " <> innerCall <> " } as fn(" <> String.joinWith ", " (map (\i -> codegenExprTypeWithValueEnums valueEnums currentMod false (fromMaybe Any (Array.index argTys i))) (Array.range 0 (len - 1))) <> ") -> " <> retTyStr <> ")"
-         else "/* ERROR: Ctor with > 11 fields */ std::rc::Rc::new(" <> rustCtor <> ")"
+         else if len <= maxNativeFunctionArity then "purust_core::Func" <> show len <> "::Static(|" <> argsCode <> "| -> " <> retTyStr <> " { " <> innerCall <> " } as fn(" <> String.joinWith ", " (map (\i -> codegenExprTypeWithValueEnums valueEnums currentMod false (fromMaybe Any (Array.index argTys i))) (Array.range 0 (len - 1))) <> ") -> " <> retTyStr <> ")"
+         else "/* ERROR: Ctor with > 12 fields */ std::rc::Rc::new(" <> rustCtor <> ")"
 
   LetRec _ binds body ->
     let
@@ -2522,7 +2551,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                    
                    -- Bridge closure
                    arity = Array.length paramPairs
-                   bridgeCode = if arity > 0 && arity <= 11 then
+                   bridgeCode = if arity > 0 && arity <= maxNativeFunctionArity then
                        let
                            argsDecl = String.joinWith ", " (map (\(Tuple p ty) -> "mut " <> sanitizeIdent p <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs)
                            clones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)
@@ -2532,7 +2561,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                             "purust_core::Func" <> show arity <> "::Static(|" <> argsDecl <> "| -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> " {\n        " <> innerCall <> "\n    } as fn(" <> String.joinWith ", " (map (\(Tuple _ ty) -> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs) <> ") -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> ")"
                           else
                             "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new(move |" <> argsDecl <> "| -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> " {\n        " <> clones <> "\n        " <> innerCall <> "\n    }))"
-                     else "unimplemented!(\"LetRec arity > 11\")"
+                     else "unimplemented!(\"LetRec arity > 12\")"
                      
                    finalBridgeCode = boxUnbox valueEnums globalClassFields currentMod Any valTy bridgeCode
                    capturedClones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)

@@ -2,14 +2,15 @@
 
 Mis à jour le 13 septembre 2026.
 
-**État courant (bloc 0.47 terminé) :** **`b -c; t -c` validé 175/175**,
-build prêt `build-JvrREU`, nettoyage DB vide, 85 gardes forcés et aucun atteint.
-Les 128 tests HTML Clean sont intégrés au défaut HTML + Stash, avec leurs
-assertions originales : **108 tests supplémentaires**, sans compter deux fois
-RemoveComments. La FFI `_untag` est portée ; les opérations JSDate/BigInt/Variant
+**État courant (bloc 0.48 terminé) :** **`b -c; t -c` validé 238/238**,
+build prêt `build-eikxGO`, nettoyage DB vide, 85 gardes forcés et aucun atteint.
+Les 63 tests String sont intégrés au défaut HTML + Stash + HTML Clean, avec
+leurs assertions originales. Les trois FFI String sont portées, avec tables
+Unicode 16 qualifiées face au JS ; les opérations JSDate/BigInt/Variant
 inutilisées restent des dettes distinctes. b8x reste sur **master**.
-**Bloc 0.48 en cours : chaînes de caractères**, 63 tests recensés supplémentaires
-(cible 238 au total, pas encore validée). M2/M4 restent ouverts.
+**Bloc 0.49 en cours : Variant Encoding — Astra**, 21 tests recensés supplémentaires
+(cible 259 sans services, pas encore validée), puis 27 intégrations vers 286.
+M2/M4 restent ouverts.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
 
@@ -149,15 +150,17 @@ explicites.
   [`b8x/bin/run`](../../b8x/bin/run) ; le chemin Rust utilise le driver dédié.
 - `bin/run` exécute JS, Go et PHP, ainsi que les suites Rust `html` et
   `html-negative` depuis 0.21–0.22, puis `html-decode` depuis 0.24.
-  Depuis le bloc 0.47, le défaut Rust est l'agrégat **175 tests HTML Encode
-  + Decode + Stash + HTML Clean** ; `--suite stash` sélectionne 41 tests,
-  `--suite html-clean` 128 et `--suite remove-comments` 20. Pas encore les
-  autres applications ou toute b8x. Les défauts 0.32/0.46 contenaient 47/67 tests.
+  Depuis le bloc 0.48, le défaut Rust est l'agrégat **238 tests HTML Encode
+  + Decode + Stash + HTML Clean + String** ; `--suite string` sélectionne
+  63 tests, `stash` 41, `html-clean` 128 et `remove-comments` 20. Pas encore
+  les autres applications ou toute b8x. Les défauts 0.32/0.46/0.47 contenaient
+  47/67/175 tests.
 - La configuration racine `b8x/spago.yaml` pointe vers le profil Rust depuis
   0.22. `html-decode`, choisi en 0.23, est raccordé et validé en 0.24.
 - b8x possède une FFI `.rs` locale pour l'encodage/décodage HTML, validée en
-  0.14, et une pour `_untag`, validée en 0.47 ; les autres modules restent
-  à qualifier et porter selon les chemins réellement atteints.
+  0.14, une pour `_untag`, validée en 0.47, et les trois foreigns String,
+  validés en 0.48 ; les autres modules restent à qualifier et porter selon
+  les chemins réellement atteints.
 - [`b8x/test/Main.purs`](../../b8x/test/Main.purs) dépend de `spec-node`,
   `Node.Process` et `keepMainAlive`. Il utilise aussi `Effect.Now`, une API
   PureScript dont l'implémentation doit être disponible sous Rust, même avec
@@ -342,6 +345,12 @@ explicites.
   inchangé. **61 tests driver/CLI**, **11 788 cas de parité FFI par plateforme
   macOS/Linux**, distincts du comptage b8x. Les sources de l'inventaire sont
   inchangées : restent 63 tests String, 21 Variant Encoding et 27 intégrations.
+- Bloc 0.48 : les trois FFI String et les 18 specs originales sont intégrées.
+  **238/238 par `b -c; t -c`**, 63/63 explicites, négatif 101 et défaut
+  inchangé. **64 tests driver/CLI**, **216 026 comparaisons JS/Rust par
+  plateforme macOS/Linux**. Aucun changement du générateur/runtime : tables
+  de normalisation/casse Unicode 16 fixées dans le sidecar Cargo de la FFI.
+  Restent **21 tests Variant Encoding et 27 intégrations** dans l'inventaire.
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -5256,7 +5265,7 @@ historiques ; les derniers incluent aussi l'empreinte du helper UTF-16.
 **175 des 286 tests recensés passent désormais dans le défaut Rust (~61 %
 du comptage des tests, pas une estimation du travail restant).** M2/M4 restent ouverts.
 
-#### Bloc 0.48 — Chaînes de caractères (prochain lot)
+#### Contrat 0.48 — Chaînes de caractères
 
 Objectif : intégrer les **63 tests originaux de `Util.Type.String`** aux 175
 acquis, soit **238/238 par `b -c; t -c`**. L'inventaire des sources a été
@@ -5282,6 +5291,135 @@ PadLeft 15, PadRight 14 et Slugify 19.
 Puis : **Variant Encoding 21** (cible **259 tests sans services**) et
 **intégrations 27** (cible **286 tests actifs**). Ce sont des cibles issues de
 l'inventaire, pas des succès acquis ni un pourcentage de travail restant.
+
+#### Résultat 0.48 — Bloc String terminé
+
+**Réalisé le 13 septembre 2026**, b8x **master**, purust **edge**, sans modifier
+les assertions originales, le JS, les chemins JS/Go/PHP, le compilateur/PBO,
+le runtime ou l'image Docker. Les changements préexistants sont conservés.
+
+- **Premier résultat natif** : 267 modules TAST frais, 88 gardes forcés,
+  compilation réussie puis sortie **86** sur
+  `Util_Type_String_String_upperCaseFirst` (`build-wb9o9S`). La compilation
+  seule ne constituait pas un succès ; les trois FFI String manquaient.
+- **Portage** : `src/Util/Type/String/String.rs` fournit `removeAccents`,
+  `upperCaseFirst`, `lowerCaseFirst`, avec signatures natives `String -> String`.
+  NFD est appliqué aux séquences Unicode valides ; les unités UTF-16 isolées
+  sont conservées comme frontières. Seuls U+0300–U+036F sont retirés. La casse
+  porte sur la première unité UTF-16, avec expansions possibles, sans toucher
+  au suffixe ni transformer une paire de surrogates en caractère complet.
+- **Écart prouvé et résolu** : le premier contrôle exhaustif trouve six
+  différences avec les tables de casse standard de Rust : U+A7CE/A7CF,
+  U+A7D2/A7D3, U+A7D4/A7D5. Le JS de référence utilise Unicode 16. Le sidecar
+  `.rs.cargo.json` fixe `unicode-normalization =0.1.24` et
+  `unicode-case-mapping =1.0.0`, tous deux Unicode 16, plutôt qu'une liste
+  d'exceptions locale. Versions et tables sont vérifiées par le harness.
+  Références : [normalisation 0.1.24](https://docs.rs/crate/unicode-normalization/0.1.24/source/)
+  et [tables de casse Unicode 16](https://github.com/yeslogic/unicode-case-mapping).
+- **Régression permanente** : `run/bak/rust/tests/string-ffi.mjs` compare la
+  vraie FFI JS à la vraie `.rs`, avec les helpers UTF-16 réels :
+  **216 026/216 026 sur macOS et Linux**. Tous les premiers code units sont
+  testés pour les trois opérations ; tous les scalaires Unicode sont couverts
+  par lots pour NFD, plus expansions, ordre des marques, 5 000 chaînes
+  pseudo-aléatoires reproductibles et entrées longues. Ces comparaisons sont
+  distinctes des 63 tests b8x et ne qualifient pas toutes les API Data.String.
+- **Intégration** : 18 specs originales, soit CaseTo/CaseToX/IsXCased 15,
+  PadLeft 15, PadRight 14, Slugify 19. Premier run porté **63/63**
+  (`build-aCbgRK`), puis défaut **2 + 4 + 41 + 128 + 63 = 238**.
+  `--suite string` reste disponible. **64 tests driver/CLI passent**,
+  avec refus des succès partiels et de l'ancien défaut 175/175.
+- **Validation réelle** : **`bin/b -c; bin/t -c` → 0/0, 238/238**,
+  **289 modules TAST frais**, **85 gardes forcés et aucun atteint**, sélecteur
+  de nettoyage DB vérifié vide puis `[]`. Build **`build-eikxGO`**, manifeste
+  `2beda2103db3f56d066858d1c7e803a1e2584f7014513b867d99d83020dcb291`.
+  Le bundle recompilé garde l'empreinte `48906088…aa336` ; les 73 avertissements
+  existants du compilateur sont toujours signalés.
+- **Contrôles finaux** : String **63/63**, `build-wSGyoS`, 267 modules frais ;
+  négatif **2/3 → 101**, `build-H7HDsw`. Après les builds explicites, `bin/t`
+  reprend **le même `build-eikxGO`, 238/238**. Inputs, résolutions FFI/sidecar,
+  versions Cargo, manifeste et artefacts revérifiés. Aucune opération de
+  redémarrage Docker, de rebuild d'image ou de suppression de caches.
+
+Preuves : `b8x/run/bak/rust/output/string-block-Lv78QK/validation.json`,
+`finish.json`, `string-ffi-CtjQWN/report.json` (macOS),
+`string-ffi-UnXqsF/report.json` (Linux). `string-ffi-nwGNzi/report.json`
+conserve les six différences initiales, pas un succès actuel.
+**238 des 286 tests recensés passent par défaut (~83 % du comptage des tests,
+pas du travail). Restent 48 tests : 21 sans services et 27 intégrations.**
+
+#### Bloc 0.49 — Variant Encoding (en cours)
+
+Objectif : intégrer les **21 tests originaux** de
+`Util.Type.Variant.Encoding.Encoding.Test.Test`, pour atteindre les **259 tests
+sans services** par défaut avec `b -c; t -c` (238 + 21).
+
+- **Astra** : établir le premier résultat natif et qualifier les frontières
+  Variant/Foreign/records réellement atteintes. Le graphe source importe
+  Yoga.JSON, Foreign.Index, Heterogeneous.Folding, le registre de rangées et
+  la réflexion des tags. La fermeture exacte et les gardes atteints doivent
+  être mesurés ; ces imports ne prouvent pas que toutes leurs FFI sont requises.
+  Ne pas porter préventivement tout Yoga.JSON, BigInt ou `unvariant`/`revariant`.
+- **Luna** : étendre les régressions et raccorder les cinq specs une fois les
+  contrats de représentation nécessaires éprouvés ; réutiliser String/HTML.
+- Comptage : EncodeValueJson 3, WriteForeign 3, EncodeJsonWith 3,
+  ReadForeign 6, DecodeJsonWith 6. Sélectionner les modules déclarés :
+  `EncodeJson.purs` déclare **WriteForeign** et `DecodeJson.purs` **ReadForeign**.
+  Conserver aussi les assertions de refus (tag/payload absent ou inconnu).
+- Enchaîner corrections et validation du lot, sans pauses par micro-étape :
+  21 explicites, **259 par défaut**, gardes forcés/non atteints, négatif 101,
+  défaut stable après sélection explicite et nettoyage DB contrôlé. Les
+  succès précédents doivent rester valides ; ne pas modifier leurs assertions.
+
+Les **27 tests d'intégration PostgreSQL/RabbitMQ** restent ensuite un bloc
+distinct, avec clients/Promise/Aff et autorisations de nettoyage à qualifier,
+pour l'objectif final **286/286** sans filtre obligatoire.
+
+Résultat intermédiaire : **21/21 natifs Linux**, **78 gardes forcés et aucun
+atteint**, `variant-encoding-block-V4M2Gh/attempt-eldVLz/report.json`.
+Le défaut est raccordé à **259**, validation CLI complète en cours.
+
+- Profil : cinq specs originales, dépendance `heterogeneous` 0.7.0 sans
+  changement de package set ; fermeture explicite de 259 modules TAST.
+- Générateur : collision du record fermé `{ a }` avec `Record_a` résolue ;
+  `VariantF` et `VariantFCase` utilisent leur carrier de record réel, sans
+  transformer leurs dictionnaires en records dynamiques ; arité native
+  portée à 12 sur les chemins observés. L'accesseur constructeur devient
+  `__purust_ctor_tag`, distinct du champ utilisateur `tag`. `tag`/`vals`/`call`
+  restent des données dans les records fermés ou dynamiques.
+- Frontière numérique : `Foreign.readInt` appelle `readNumber`. Les `Int`
+  natifs boxés acceptent donc la projection vers `Number` ; les types natifs
+  connus restent distincts, les autres catégories sont toujours refusées.
+- Propriétés natives : `RecordFields` conserve l'ordre d'insertion, trie les
+  indices JS lors de l'énumération et conserve la position d'une clé remplacée.
+  `SharedRecord` est le carrier partagé de STObject/Object, accessible aux
+  lecteurs Foreign sans cycle de dépendances entre bibliothèques. Les copies
+  restent superficielles et les callbacks s'exécutent hors verrou.
+- Sept FFI atteintes portées : `Yoga.JSON._unsafeStringify`,
+  `Record.Builder.copyRecord/unsafeInsert`, `Foreign.Object._mapWithKey`,
+  `Foreign.Index.unsafeReadPropImpl`, `Foreign.tagOf/typeOf`.
+  Propriété absente → `undefined` natif (`Unit`, comme le JS de Data.Unit),
+  pas une fausse réussite du décodeur. L'insertion Builder force une forme
+  ordonnée même lorsque PBO élimine `copyRecord` sur le record vide : la
+  première version faisait **15/21**, les six différences JSON sont résolues.
+- Nombres JSON : version exacte `ryu-js =1.0.3`, conforme au format
+  [ECMAScript documenté](https://docs.rs/ryu-js/1.0.3/ryu_js/struct.Buffer.html),
+  via sidecar Cargo. Chaînes traitées en unités UTF-16, dont surrogates isolés.
+  Régression `tests/codegen/json-ffi.mjs` : **1 285 comparaisons JS/Rust** par
+  mode et plateforme, plus ordre des propriétés, COW, accès Foreign et callback
+  réentrant. Tous les code units sont couverts par lots ; ce nombre est
+  distinct des 21 tests b8x. **62 tests codegen et 67 driver/CLI passent**.
+- Limites explicites : ni toute l'API Yoga.JSON/Foreign, ni tous les usages
+  d'objets JS ne sont qualifiés. Restent parsing/pretty-print, BigInt,
+  null/Nullable, omission de fonctions/undefined lors de la sérialisation,
+  prototypes et objets opaques externes. L'ordre des records nus passés
+  directement à `unsafeStringify` reste à qualifier séparément ; le chemin
+  validé des records utilise `writeImpl`/Builder. `unvariant`/`unvariantF`
+  et les arités supérieures à 12 restent hors qualification.
+
+La validation finale doit conserver : 259 par `b -c; t -c`, 21 explicites,
+négatif 101, défaut identique après les suites explicites et bases vides.
+Les premiers diagnostics d'échec restent conservés, pas publiés comme builds
+prêts ; les fixtures TAST VariantF et STObject sont rejouées sur le bundle final.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -5751,9 +5889,12 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
 - [x] Bloc 0.47 : intégrer les 108 tests restants de nettoyage HTML, avec les
   chemins Regex et `_untag` nécessaires : **175/175 par `b -c; t -c`**,
   128/128 explicites, négatif 101 et défaut inchangé après les builds explicites.
-- [ ] Bloc 0.48 — Luna, Astra si écart de générateur/runtime : intégrer les
-  63 tests String, qualifier les trois FFI nécessaires et valider **238/238**
-  selon le contrat du bloc, sans pauses par micro-étape.
+- [x] Bloc 0.48 : trois FFI String et 63 tests originaux intégrés ;
+  **238/238 par `b -c; t -c`**, 63/63 explicites, négatif 101, défaut stable,
+  64 régressions driver/CLI et 216 026 comparaisons FFI par plateforme.
+- [ ] Bloc 0.49 — Astra, Luna après qualification des frontières : intégrer
+  les 21 tests Variant Encoding selon le contrat, cible **259/259** sans
+  services, avec négatif, gardes et nettoyage contrôlés.
 - [ ] Astra : qualifier séparément `unvariant`/`revariant`, son transport du
   payload via `Unit` et son callback rank-2 ; ne pas déclarer toute l'API Variant
   verte avec les seuls 12 contrats de représentation.

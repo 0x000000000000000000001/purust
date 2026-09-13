@@ -20,8 +20,9 @@ for (const current of ['Data_Variant', 'Consumer']) for (const isRet of [false, 
   for (const [module, name, value] of [
     ['Data.Variant', 'Variant', true], ['Data.Variant.Internal', 'VariantCase', true],
     ['Data.Variant', 'VariantEqs', false], ['Data.Variant', 'VariantShows', false],
-    ['Data.Variant.Internal', 'VariantFCase', false], ['Data.Variant.Internal', 'VariantTags', false],
-    ['Data.Functor.Variant', 'VariantF', false], ['Other', 'Variant', false], ['Data.Variant.Other', 'Variant', false],
+    ['Data.Variant.Internal', 'VariantFCase', true], ['Data.Variant.Internal', 'VariantTags', false],
+    ['Data.Functor.Variant', 'VariantF', true], ['Other', 'VariantF', false],
+    ['Data.Functor.Variant', 'VariantFMaps', false], ['Other', 'Variant', false], ['Data.Variant.Other', 'Variant', false],
   ]) {
     const prefix = module.replaceAll('.', '_') === current ? 'crate' : `Purs_${module.replaceAll('.', '_')}`;
     assert.equal(codegenExprType(current)(isRet)(adt(module,name)), value ? 'crate::UnknownType' : `std::rc::Rc<${prefix}::${name}>`);
@@ -79,7 +80,7 @@ try {
     assert.equal(build.status,0,build.stderr);
     const run=spawnSync(binary,[],{encoding:'utf8',timeout:10000}); assert.equal(run.status,0,run.stderr);
   }
-  console.log('Variant: 36 mapping boundaries; Value/native literals, scalar projections, native identity and negative receivers passed in Rc/Arc.');
+  console.log('Variant: 44 mapping boundaries; Value/native literals, scalar projections, native identity and negative receivers passed in Rc/Arc.');
 } finally {
   if(process.env.PURUST_VARIANT_CODEGEN_KEEP_OUTPUT) console.log(`Diagnostic: ${directory}`);
   else rmSync(directory,{recursive:true});

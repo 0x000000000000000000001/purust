@@ -62,7 +62,7 @@ fn main() {
     record.set_value(Value::Int(42));
     assert_eq!(RecursiveValues_field(record.clone()), 42);
     let mut wrapped = RecursiveValues_boxed(record.clone());
-    assert_eq!(wrapped.get_tag(), "Node");
+    assert_eq!(wrapped.__purust_ctor_tag(), "Node");
     assert_eq!(wrapped.__purust_borrow_value().unwrap_int(), 42);
     wrapped.set_value(Value::Int(43));
     assert_eq!(wrapped.get_value().unwrap_int(), 43);
