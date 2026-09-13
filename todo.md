@@ -8,7 +8,7 @@ Les 128 tests HTML Clean sont intégrés au défaut HTML + Stash, avec leurs
 assertions originales : **108 tests supplémentaires**, sans compter deux fois
 RemoveComments. La FFI `_untag` est portée ; les opérations JSDate/BigInt/Variant
 inutilisées restent des dettes distinctes. b8x reste sur **master**.
-**Prochain bloc 0.48 : chaînes de caractères**, 63 tests recensés supplémentaires
+**Bloc 0.48 en cours : chaînes de caractères**, 63 tests recensés supplémentaires
 (cible 238 au total, pas encore validée). M2/M4 restent ouverts.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
