@@ -278,7 +278,7 @@ codegenPrelude fields =
       let structName = shapeToStructName shape
           structFields = Array.filter (\f -> not (String.null f)) (String.split (Pattern ",") shape)
       in "#[derive(Clone, Default)]\npub struct " <> structName <> " {\n" <>
-         Array.foldMap (\f -> "    pub " <> sanitizeIdent f <> ": Option<UnknownType>,\n") structFields <>
+         Array.foldMap (\f -> "    pub " <> recordFieldIdent f <> ": Option<UnknownType>,\n") structFields <>
          "}\n\n"
     ) validShapes
 
@@ -289,15 +289,16 @@ codegenPrelude fields =
     
     getMethods = Array.foldMap (\f -> 
       let sf = sanitizeIdent f
+          field = recordFieldIdent f
           matchArms = Array.foldMap (\shape -> 
              let structName = shapeToStructName shape
              in if Array.elem f (String.split (Pattern ",") shape) then
-                  "            Value::" <> structName <> "(r) => r." <> sf <> ".clone().unwrap(),\n"
+                  "            Value::" <> structName <> "(r) => r." <> field <> ".clone().unwrap(),\n"
                 else ""
           ) validShapes
       in "    pub fn get_" <> sf <> "(&self) -> UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
-         "            Value::Record_a(r) => r." <> sf <> ".clone().unwrap(),\n" <>
+         "            Value::Record_a(r) => r." <> field <> ".clone().unwrap(),\n" <>
          "            Value::DynamicRecord(r) => r.get(" <> show f <> ").cloned().expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -309,11 +310,11 @@ codegenPrelude fields =
       "        match self.resolve() {\n" <>
       Array.foldMap (\shape ->
         "            Value::" <> shapeToStructName shape <> "(r) => match name {\n" <>
-        Array.foldMap (\f -> "                " <> show f <> " => r." <> sanitizeIdent f <> ".clone(),\n")
+        Array.foldMap (\f -> "                " <> show f <> " => r." <> recordFieldIdent f <> ".clone(),\n")
           (String.split (Pattern ",") shape) <>
         "                _ => None,\n            },\n") validShapes <>
       "            Value::Record_a(r) => match name {\n" <>
-      Array.foldMap (\f -> "                " <> show f <> " => r." <> sanitizeIdent f <> ".clone(),\n") validUniqueFields <>
+      Array.foldMap (\f -> "                " <> show f <> " => r." <> recordFieldIdent f <> ".clone(),\n") validUniqueFields <>
       "                _ => None,\n            },\n" <>
       "            Value::DynamicRecord(r) => r.get(name).cloned(),\n" <>
       "            _ => panic!(\"Expected record\"),\n" <>
@@ -324,10 +325,10 @@ codegenPrelude fields =
     -- All updates use COW and retain the other values without evaluating them.
     setKnownFields names = "match name {\n" <>
       Array.foldMap (\f -> "                " <> show f <> " => { perceus_ptr::PerceusPtr::make_mut(r)." <>
-        sanitizeIdent f <> " = Some(value); return self; },\n") names <>
+        recordFieldIdent f <> " = Some(value); return self; },\n") names <>
       "                _ => {},\n            }"
     copyFields names = Array.foldMap (\f ->
-      "                if let Some(value) = &r." <> sanitizeIdent f <>
+      "                if let Some(value) = &r." <> recordFieldIdent f <>
       " { fields.insert(" <> show f <> ".to_owned(), value.clone()); }\n") names
     dynamicSetMethod =
       "    pub fn __purust_set_field(mut self, name: &str, value: Value) -> Value {\n" <>
@@ -351,15 +352,16 @@ codegenPrelude fields =
     -- can borrow a whole projection path and copy only its final primitive.
     borrowMethods = Array.foldMap (\f ->
       let sf = sanitizeIdent f
+          field = recordFieldIdent f
           matchArms = Array.foldMap (\shape ->
              let structName = shapeToStructName shape
              in if Array.elem f (String.split (Pattern ",") shape) then
-                  "            Value::" <> structName <> "(r) => r." <> sf <> ".as_ref().unwrap(),\n"
+                  "            Value::" <> structName <> "(r) => r." <> field <> ".as_ref().unwrap(),\n"
                 else ""
           ) validShapes
       in "    pub fn __purust_borrow_" <> sf <> "(&self) -> &UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
-         "            Value::Record_a(r) => r." <> sf <> ".as_ref().unwrap(),\n" <>
+         "            Value::Record_a(r) => r." <> field <> ".as_ref().unwrap(),\n" <>
          "            Value::DynamicRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -368,12 +370,13 @@ codegenPrelude fields =
     
     setMethods = Array.foldMap (\f -> 
       let sf = sanitizeIdent f
+          field = recordFieldIdent f
           matchArms = Array.foldMap (\shape -> 
              let structName = shapeToStructName shape
              in if Array.elem f (String.split (Pattern ",") shape) then
                   "            Value::" <> structName <> "(r) => {\n" <>
                   "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
-                  "                mut_r." <> sf <> " = Some(val);\n" <>
+                  "                mut_r." <> field <> " = Some(val);\n" <>
                   "            },\n"
                 else ""
           ) validShapes
@@ -382,7 +385,7 @@ codegenPrelude fields =
          "        match self {\n" <> matchArms <>
          "            Value::Record_a(r) => {\n" <>
          "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
-         "                mut_r." <> sf <> " = Some(val);\n" <>
+         "                mut_r." <> field <> " = Some(val);\n" <>
          "            },\n" <>
          "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" <> show f <> ".to_owned(), val); },\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
@@ -515,7 +518,7 @@ codegenPrelude fields =
   "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
   "    pub call: Option<Func1<UnknownType, UnknownType>>,\n" <>
   Array.foldMap (\field ->
-    "    pub " <> sanitizeIdent field <> ": Option<UnknownType>,\n"
+    "    pub " <> recordFieldIdent field <> ": Option<UnknownType>,\n"
   ) validUniqueFields <>
   "}\n\n" <>
   recordStructs <>
@@ -2305,7 +2308,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                 vCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForV false v
                 vTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
                 vFinal = boxUnbox valueEnums globalClassFields currentMod Any vTy vCode
-            in sanitizeIdent k <> ": Some(" <> vFinal <> ")"
+            in recordFieldIdent k <> ": Some(" <> vFinal <> ")"
           ) arrProps)
       in "crate::Value::" <> structName <> "(perceus_ptr::PerceusPtr::new(" <> structName <> " { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
   Abs params body -> 
@@ -2787,6 +2790,13 @@ getArity (Func args t) = Array.length args + getArity t
 getArity _ = 0
 
 
+
+-- A raw field identifier cannot be spliced into Record_* or get_/set_* names.
+-- Keep this fix local to the qualified record case; preserve other spellings
+-- and the existing public/FFI naming convention, including the distinct final_kw.
+recordFieldIdent :: String -> String
+recordFieldIdent "final" = "r#final"
+recordFieldIdent field = sanitizeIdent field
 
 sanitizeIdent :: String -> String
 sanitizeIdent s = 

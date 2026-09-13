@@ -173,6 +173,21 @@ explicites.
   profil et à son lockfile. Les artefacts sont reconstruits avec le bundle
   0.31 ; les preuves HTML historiques ne sont pas promues artificiellement.
   **M2 reste ouvert : 47 tests exécutés, pas encore les 259 sans services.**
+- Diagnostic 0.33 : `RemoveComments` est retenu devant `PadLeft` ; son TAST
+  frais contient 247 modules et 20 tests, mais Cargo échoue dans `purust_core`
+  sur le champ de record Rust réservé `final` (14 erreurs). Le défaut est
+  reproduit sur deux modules, normal/threaded. Un échappement expérimental
+  limité aux champs lève ce cas et conserve `final` / `final_kw` distincts.
+  **Compilateur non corrigé, aucun des 20 tests b8x exécuté ; défaut 47 inchangé.**
+- Correctif 0.34 : le générateur échappe maintenant le champ natif `final`
+  en `r#final`, sans modifier les clés dynamiques ni les noms composites/FFI.
+  Régression permanente rouge puis verte : **3 tests natifs par mode**, avec
+  `final_kw` distinct ; **53 tests codegen** et les quatre suites ciblées de
+  records/valeurs de module passent. Le défaut est reconstruit avec le nouveau
+  bundle : `bin/t`, `bin/run Test` et **`bin/t -c` passent 47/47**, sortie 0.
+  `RemoveComments` dépasse `purust_core`, puis Cargo relève deux types natifs
+  absents : **35 erreurs Nullable et 82 BigInt**. Ses 20 tests restent non
+  exécutés ; prochaine qualification bornée : `Data.Nullable` (0.35).
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -3400,7 +3415,7 @@ liens racine et cible sont vérifiés inchangés. Même conteneur, image et
 des artefacts frais ; **`b -c` n'a pas été relancé** dans cette étape.
 **M2/M4 restent ouverts : le défaut couvre 47 tests, pas encore 259/286.**
 
-**Prochaine micro-étape — 0.33, Astra :** reprendre les candidats hors Stash
+**Contrat 0.33 — réalisé ci-dessous, Astra :** reprendre les candidats hors Stash
 de 0.25 (`RemoveComments` et `PadLeft`), comparer leur delta avec le profil
 désormais enrichi d'Object/ST, puis retenir une seule tranche. Produire son
 TAST frais et tenter un `cargo check` Linux borné dans un export diagnostique,
@@ -3408,6 +3423,197 @@ sans modifier le défaut actif de 47 tests. Relever le premier blocage concret
 et fixer le contrat du prochain correctif/portage seulement ; ne pas porter
 Regex/JSON/les services en bloc. Si Cargo passe, qualifier les fallbacks avant
 le premier run. Garder l'initialisation anticipée comme chantier distinct.
+
+### Micro-étape 0.33 — RemoveComments retenu, premier blocage isolé
+
+Diagnostic réalisé sur `b8x/master`, cible Rust, purust sur `edge`, sans portage
+ni modification du profil actif ou du compilateur. Le
+[bilan vérifié](../../b8x/run/bak/rust/output/next-slice-HjzJTe/summary.json)
+conserve les preuves et l'identité du défaut 47 tests.
+
+**Comparaison actualisée :** Object/Foreign sont désormais disponibles dans
+le profil, mais `RemoveComments` et `PadLeft` rencontrent tous deux la frontière
+`Effect.Random`, `Record.Builder`, `Yoga.JSON` et `Yoga.JSON.Generics.TaggedSumRep`.
+Après résolution diagnostique, les fermetures des specs seules comptent
+**214 modules contre 216**. `PadLeft` importe lui aussi le nettoyage HTML via
+`Util.Type.String.String` : il n'évite donc pas cette frontière. Choix retenu :
+**`Util.Html.Clean.Test.RemoveComments`, 20 tests originaux**, au graphe plus petit.
+Voir les comparaisons [profil actif](../../b8x/run/bak/rust/output/next-slice-HjzJTe/candidates-active.json)
+et [dépendances résolues](../../b8x/run/bak/rust/output/next-slice-HjzJTe/candidates-resolved.json).
+
+Le diagnostic possède son propre `spago.yaml`/lockfile, au package set 77.10.1.
+Il conserve les sources communes du profil, ajoute les sources locales
+`random`, `record`, `yoga-json`, `nullable`, `variant`, et résout les dépendances
+transitives hors ligne, notamment `js-date` 8.0.0, `js-bigints` 2.2.1 et
+`yoga-tree` 1.0.0. Aucun override ni lockfile du profil actif n'est changé.
+Les noms `JS.*` ici sont des modules de bibliothèques, pas des imports Node
+ni une validation de leurs FFI Rust.
+
+**Preuve complète avant le premier blocage :**
+
+- `purs graph`, TAST et génération threaded réussissent. Le main de diagnostic
+  importe la spec originale, attend Spec/Aff et exige 20/20, zéro attente.
+- **247 modules TAST frais**, soit **+29 / −13** par rapport au défaut de 231 ;
+  compilation TAST en environ **2,0 s**. Les 20 références `Test.Spec.it`
+  sont vérifiées dans le TAST. Aucun `Core.*`, `Infra.*`, `Inter.*`, `Node.*`.
+- **399 déclarations étrangères**, dont 102 nouvelles ; 93 ne sont pas
+  fournies textuellement par une `.rs` résolue. Ces nombres ne constituent
+  ni 102 portages nécessaires ni des fallbacks qualifiés par exécution.
+- Le [parcours conservatif TAST](../../b8x/run/bak/rust/output/next-slice-HjzJTe/reachability.json)
+  ne référence que quatre nouvelles FFI depuis ce main : `Data.String.CodePoints`
+  `_singleton`, `_toCodePointArray`, `_take`, `_unsafeCodePointAt0`.
+  Elles existent déjà dans la vraie `CodePoints.rs`. Ce relevé n'est ni une
+  trace d'exécution ni une preuve d'élimination des autres déclarations.
+- Cargo Linux confirme **217 crates natives `Purs_*`**. Le
+  [`cargo check`](../../b8x/run/bak/rust/output/next-slice-HjzJTe/cargo-check.json)
+  s'arrête en environ **3,0 s**, sortie **101**, avec **14 erreurs de syntaxe
+  dans `purust_core`** : `expected identifier, found reserved keyword final`.
+
+**Cause établie :** le record `{ b, current, final }` de `Yoga.Tree` entre dans
+la génération du support de records. `sanitizeIdent` ne traite pas `final` ;
+les structs et accès produits contiennent `pub final: …`, `r.final`,
+`make_mut(r).final`, etc. L'échec précède toute exécution de `RemoveComments`
+et toute qualification native de ses FFI. Ne pas modifier le code de Yoga.Tree,
+renommer la clé PureScript ni démarrer un portage JSON pour contourner ce point.
+
+**Réduction empirique :** le premier essai d'un module sans imports a buté sur
+la dépendance `Purs_Record_Unsafe` requise par les records générés ; ce problème
+de montage est conservé dans `normal-check.json`, pas compté comme une preuve
+du mot réservé. Le reproducteur qualifié inclut le vrai `Record.Unsafe` :
+**deux modules TAST**, sans Stash, Spec, Aff, Yoga, Regex ni FFI nouvelle.
+Il utilise `{ final :: Int, final_kw :: Int }`, construction, lecture empruntée,
+mise à jour ordinaire et opérations dynamiques de la vraie FFI Record.
+Les deux exports neufs [normal/threaded](../../b8x/run/bak/rust/output/next-slice-HjzJTe/minimal-report.json)
+reproduisent chacun **14 erreurs `final`, sortie 101**.
+
+**Expérience bornée, pas un correctif livré :** dans deux autres exports,
+seule l'orthographe des champs natifs devient `r#final` : 14 sites dans le
+support de records et un site de construction par mode. Les clés dynamiques
+restent `"final"`, les helpers `get_final` / `set_final` et les noms `Record_*`
+restent inchangés. Aucune modification de `final_kw`, de la FFI ni du bundle.
+Les [deux tests natifs par mode](../../b8x/run/bak/rust/output/next-slice-HjzJTe/experimental-proof.json)
+passent : champs distincts, lecture empruntée, mises à jour ordinaires/dynamiques,
+élargissement du record et conservation de l'original par copie-sur-écriture.
+`verify.mjs` contrôle le delta exact, à un saut de ligne terminal normalisé près.
+
+**Arrêt au contrat convenu :** aucun correctif permanent, aucun nouveau run
+b8x, pas de reprise du grand export pour découvrir/corriger d'autres erreurs.
+Les gardes des 93 déclarations ne sont pas qualifiés à ce stade, puisque Cargo
+ne passe pas. Les cinq états/manifests intégrés, leurs inputs, les sources/FFI,
+le bundle, liens et cible sont inchangés ; même conteneur/image/`StartedAt`.
+Aucun `target`, `b`, `t -c`, nettoyage DB, rebuild d'image ou redémarrage.
+**Défaut conservé : 47 tests. M2 et M4 restent ouverts.**
+
+#### Contrat 0.34 — Correctif borné de l'identifiant de champ `final` (réalisé)
+
+**Astra**, car le correctif concerne la génération Rust, pas le portage d'une FFI.
+
+1. Ajouter la régression permanente issue des deux modules ci-dessus, rouge
+   avec le bundle actuel. Garder `final` et `final_kw` dans le même record.
+2. Distinguer l'identifiant d'un champ Rust des noms composites de structs,
+   getters/setters et symboles FFI. L'expérience `r#final` qualifie cette
+   distinction pour le cas rencontré ; ne pas injecter `r#` au milieu de
+   `Record_*` / `get_*`, ni remplacer globalement `final` par `final_kw`.
+3. Appliquer l'échappement cohérent à tous les sites concernés : déclaration,
+   construction, accès/borrow, mise à jour et conversion vers record dynamique.
+   Conserver la clé logique PureScript `"final"`, la distinction des deux champs,
+   les types TAST et les conventions FFI existantes. Ne pas annoncer une
+   couverture générale de tous les labels/mots réservés avec ce seul cas.
+4. Reconstruire purust, valider les deux modes avec les vrais accès Record,
+   puis les régressions codegen/records pertinentes. Générer de nouveau le
+   diagnostic `RemoveComments` et relever le premier blocage résiduel, sans
+   corriger préventivement Yoga/Regex/Foreign ni élargir le défaut de 47.
+5. Un changement de bundle rend les builds CLI périmés : reconstruire et
+   revalider au minimum le défaut **47/47**, sans forger un état prêt ni
+   réutiliser les copies expérimentales. Qualifier les gardes avant tout
+   premier run des 20 tests si le grand Cargo passe.
+
+#### Résultat 0.34 — Champ `final` corrigé, défaut 47 revalidé
+
+Réalisé le 13 septembre 2026 sur b8x `master` (`98c43f7`) et purust `edge`
+(`64e05e3` + diff courant), sans commit ni changement de branche.
+
+Preuves conservées dans `b8x/run/bak/rust/output/` :
+
+- `field-keyword-0Hguvt/summary.json`, vérifié par `verify.mjs` ; commandes
+  des régressions dans `codegen.json`, `keyword.json` et `records.json`.
+- Rouge : `field-keyword-0Hguvt/purust-record-keyword-ct1H6K/commands.json` ;
+  ancien bundle `be8f645241def832099d958a96cc542819bd6c7f47175857290fb415c12a2f74`,
+  échec Cargo 101 sur **14 erreurs `final`**, avant ajout des tests Rust à l'export.
+- Vert : `field-keyword-0Hguvt/purust-record-keyword-3cE12h/commands.json` ;
+  nouveau bundle `772bce8b38d9d8259ceaeadd875cd91a5e07e993cdd821297cb9e6bfcc7685d9`.
+- Nouveau diagnostic `RemoveComments` : `remove-comments-2tYjyH/report.json`,
+  `cargo-check.json` et `cargo-errors.json` ; les copies expérimentales 0.33
+  n'ont pas servi de build de validation.
+
+**Correctif permanent.** `src/Purust/CodeGen.purs` sépare `recordFieldIdent`
+de `sanitizeIdent` : seul le champ natif `final` devient `r#final`. Déclarations,
+construction, getters, borrows, setters et conversions dynamiques sont cohérents.
+`Record_final_final_kw`, `get_final`, `set_final`, les clés `"final"` / `"final_kw"`
+et les conventions FFI restent inchangés. Ce n'est pas une couverture générale
+de tous les mots réservés ou collisions de labels Rust.
+
+Régression permanente : `tests/codegen/record-keyword.mjs`,
+`tests/tast/record-keyword.mjs` et `tests/tast/fixtures/record-keyword/`.
+Le runner compile **deux modules TAST frais**, emploie la vraie FFI
+`Record.Unsafe.rs`, vérifie l'export non retouché avec Cargo, puis exécute
+**trois tests natifs dans chacun des modes normal/threaded** : coexistence des
+champs, accès/borrow/update, record historique `Record_a`, clés dynamiques,
+élargissement et conservation de l'original par copy-on-write.
+
+Commandes de validation : fork local dans `PURS` et le `PATH` pour
+`npm run build`, puis `node tests/tast/record-keyword.mjs`,
+`node --test tests/codegen/*.mjs` et `node --test` sur
+`tests/tast/{record-borrows,record-root-move,record-set,module-values}.mjs`.
+Résultats : build **0 erreur, 65 avertissements existants**, **53/53 codegen**,
+**6 tests natifs du nouveau cas** et **quatre suites TAST ciblées vertes**.
+La suite TAST complète et les autres backends ne sont pas réexécutés ici.
+
+**CLI réel.** `bin/t` refuse d'abord l'ancien artefact à cause du nouveau
+`bin/purust.js` (sortie 1, `stale-default.json`). Après `env PURS=<fork> bin/b`,
+le build neuf `integrated/default/build-uBnwKL/manifest.json` contient
+**231 modules TAST**, 31 gardes natifs éprouvés par appels forcés et cinq
+fallbacks gardés hors fermeture native. `bin/t`, `bin/run Test` puis `bin/t -c`
+passent chacun **47/47**, sortie 0, aucun fallback gardé atteint.
+Le sélecteur DB est vérifié vide avant `-c` ; résultat `Rust database cleanup: []`,
+aucune base supprimée. `b -c` n'est pas répété : le compilateur vient d'être
+reconstruit explicitement et `bin/b` régénère déjà TAST/Cargo.
+Les quatre suites explicites n'ont pas été reconstruites avec ce bundle :
+leurs succès 0.32 restent historiques et leurs artefacts devront être rebâtis
+avant réexécution, sans contourner le contrôle de fraîcheur.
+
+**Prochain blocage mesuré.** Le diagnostic isolé régénère **247 modules TAST**
+et une fermeture Cargo de **217 crates PureScript**, avec le nouveau bundle.
+`cargo check --offline --locked --target aarch64-unknown-linux-gnu -p purust_output
+--bin purust_output --message-format=json` termine en environ cinq secondes,
+sortie **101**. `purust_core` compile ; les 117 erreurs E0425 restantes sont
+**35 occurrences de `Nullable` absent** dans `Purs_Data_Nullable` et
+**82 de `BigInt` absent** dans `Purs_JS_BigInt`. Le premier diagnostic observé
+est `Data_Nullable_toNullable`, ligne 64 de son export. Ces nombres décrivent
+ce run Cargo parallèle, pas 117 causes indépendantes ni un ordre garanti.
+
+Les types et FFI suivants ne sont pas corrigés ; **aucun des 20 tests
+RemoveComments n'est exécuté**, les 93 déclarations fallback de ce diagnostic
+restent à qualifier. Sources/FFI et profil b8x inchangés ; empreintes vérifiées.
+Même conteneur, image et `StartedAt` qu'en 0.33, sans rebuild ni redémarrage.
+**Défaut conservé et frais : 47 tests. M2 et M4 restent ouverts.**
+
+#### Contrat 0.35 — Qualifier `Data.Nullable` sans portage en bloc
+
+**Astra** : le type étranger polymorphe et son ABI exigent une qualification.
+
+1. Isoler `Data.Nullable` dans un petit reproducteur TAST frais, sans
+   Yoga/BigInt/Spec/b8x ; reproduire l'absence du type natif normal/threaded.
+2. Confronter le TAST, les signatures générées et la vraie FFI JS pour
+   `null`, `notNull`, `nullable` (`Fn3`), puis `toMaybe` / `toNullable`.
+   Fixer le contrat de représentation, les conversions, le partage et le cas
+   imbriqué `Nullable (Nullable a)` ; ne pas choisir un alias sur la seule
+   base de sa capacité à compiler.
+3. Définir la régression native/JS et le correctif minimal à partir de ces
+   preuves. Si une expérience Rust est nécessaire, la limiter aux exports
+   isolés et conserver une preuve exacte du delta.
+4. S'arrêter au diagnostic et au contrat : pas encore de portage permanent
+   Nullable, pas de correction BigInt ni d'élargissement du défaut 47.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -3816,9 +4022,18 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
 - [x] Astra : raccorder Stash et l'agrégat HTML + HTML Decode + Stash au défaut
   Rust, avec des artefacts frais et une validation CLI des **47 tests** (0.32 :
   `t -c` / `bin/run` 47/47, suites explicites vertes, négatif 101, 49 régressions).
-- [ ] Astra : comparer `RemoveComments` / `PadLeft` au profil enrichi,
+- [x] Astra : comparer `RemoveComments` / `PadLeft` au profil enrichi,
   choisir une seule tranche et qualifier son premier blocage TAST/Cargo/FFI
-  dans un diagnostic isolé, sans élargir le défaut ni porter en bloc (0.33).
+  dans un diagnostic isolé, sans élargir le défaut ni porter en bloc (0.33 :
+  RemoveComments, 247 modules ; champ Rust réservé `final`, reproduit sur deux
+  modules ; expérience native concluante normal/threaded, aucun test b8x lancé).
+- [x] Astra : corriger l'échappement du champ `final` au contrat 0.34,
+  ajouter les régressions permanentes et reconstruire/revalider le défaut 47
+  (53 codegen, 6 tests natifs, quatre suites TAST ciblées ; `t -c` 47/47).
+  Prochains types natifs absents : Nullable et BigInt, sans portage à cette étape.
+- [ ] Astra : isoler `Data.Nullable`, qualifier sa représentation/ABI et les
+  trois primitives FFI, puis fixer le contrat de correction et de régression
+  selon 0.35 ; pas de portage permanent ni d'élargissement du défaut à ce stade.
 - [ ] Astra : qualifier l'initialisation anticipée des modules et les bindings
   exclus du premier correctif ; ne pas annoncer une parité JS générale avec
   le seul partage paresseux (écart établi en 0.30).

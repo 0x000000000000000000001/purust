@@ -34767,77 +34767,84 @@ var sanitizeIdent = function(s) {
   var s2 = replaceAll("$")("_dollar_")(s1);
   var s3 = replaceAll("-")("_minus_")(s2);
   var s4 = replaceAll(".")("_dot_")(s3);
-  var $366 = s4 === "type";
-  if ($366) {
+  var $367 = s4 === "type";
+  if ($367) {
     return "type_kw";
   }
   ;
-  var $367 = s4 === "fn";
-  if ($367) {
+  var $368 = s4 === "fn";
+  if ($368) {
     return "fn_kw";
   }
   ;
-  var $368 = s4 === "break";
-  if ($368) {
+  var $369 = s4 === "break";
+  if ($369) {
     return "break_kw";
   }
   ;
-  var $369 = s4 === "mod";
-  if ($369) {
+  var $370 = s4 === "mod";
+  if ($370) {
     return "mod_kw";
   }
   ;
-  var $370 = s4 === "as";
-  if ($370) {
+  var $371 = s4 === "as";
+  if ($371) {
     return "as_kw";
   }
   ;
-  var $371 = s4 === "gen";
-  if ($371) {
+  var $372 = s4 === "gen";
+  if ($372) {
     return "gen_kw";
   }
   ;
-  var $372 = s4 === "use";
-  if ($372) {
+  var $373 = s4 === "use";
+  if ($373) {
     return "use_kw";
   }
   ;
-  var $373 = s4 === "pub";
-  if ($373) {
+  var $374 = s4 === "pub";
+  if ($374) {
     return "pub_kw";
   }
   ;
-  var $374 = s4 === "ref";
-  if ($374) {
+  var $375 = s4 === "ref";
+  if ($375) {
     return "ref_kw";
   }
   ;
-  var $375 = s4 === "mut";
-  if ($375) {
+  var $376 = s4 === "mut";
+  if ($376) {
     return "mut_kw";
   }
   ;
-  var $376 = s4 === "move";
-  if ($376) {
+  var $377 = s4 === "move";
+  if ($377) {
     return "move_kw";
   }
   ;
-  var $377 = s4 === "let";
-  if ($377) {
+  var $378 = s4 === "let";
+  if ($378) {
     return "let_kw";
   }
   ;
-  var $378 = s4 === "if";
-  if ($378) {
+  var $379 = s4 === "if";
+  if ($379) {
     return "if_kw";
   }
   ;
-  var $379 = s4 === "loop";
-  if ($379) {
+  var $380 = s4 === "loop";
+  if ($380) {
     return "loop_kw";
   }
   ;
   return s4;
+};
+var recordFieldIdent = function(v) {
+  if (v === "final") {
+    return "r#final";
+  }
+  ;
+  return sanitizeIdent(v);
 };
 var printType = function(v) {
   if (v instanceof Func) {
@@ -34975,7 +34982,7 @@ var printAST = function(v) {
     return "Fail(" + (v.value0 + ")");
   }
   ;
-  throw new Error("Failed pattern match at Purust.CodeGen (line 2545, column 31 - line 2570, column 36): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Purust.CodeGen (line 2548, column 31 - line 2573, column 36): " + [v.constructor.name]);
 };
 var ownedFieldsPattern = function(fields) {
   return fields.constructor + ("(" + (joinWith(", ")(map58(function(v) {
@@ -35028,7 +35035,7 @@ var getTyPrefix = function(modNameStr) {
       return replaceAll(".")("_")(modNameStr) + "_";
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 1023, column 46 - line 1025, column 81): " + [v.value0.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 1026, column 46 - line 1028, column 81): " + [v.value0.constructor.name]);
   };
 };
 var getArity = function(v) {
@@ -35065,7 +35072,7 @@ var freeVariables2 = function(v) {
         return "lvl_" + show16(unwrap9(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 2577, column 36 - line 2579, column 45): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 2580, column 36 - line 2582, column 45): " + [v.value0.constructor.name]);
     })());
   }
   ;
@@ -35087,7 +35094,7 @@ var freeVariables2 = function(v) {
         return "lvl_" + show16(unwrap9(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 2583, column 16 - line 2585, column 49): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 2586, column 16 - line 2588, column 49): " + [v.value0.constructor.name]);
     })();
     return union9(freeVariables2(v.value2))($$delete6(name2)(freeVariables2(v.value3)));
   }
@@ -35139,7 +35146,7 @@ var freeVariables2 = function(v) {
         return "lvl_" + show16(unwrap9(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 2598, column 16 - line 2600, column 49): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 2601, column 16 - line 2603, column 49): " + [v.value0.constructor.name]);
     })();
     var bodyVars = $$delete6(name2)(freeVariables2(v.value3));
     return union9(freeVariables2(v.value2))(bodyVars);
@@ -35174,7 +35181,7 @@ var freeVariables2 = function(v) {
           return insert21("lvl_" + show16(unwrap9(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 2609, column 60 - line 2611, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 2612, column 60 - line 2614, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(toArray3(v.value0));
     return difference6(freeVariables2(v.value1))(paramsVars);
@@ -35191,7 +35198,7 @@ var freeVariables2 = function(v) {
           return insert21("lvl_" + show16(unwrap9(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 2614, column 60 - line 2616, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 2617, column 60 - line 2619, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(v.value0);
     return difference6(freeVariables2(v.value1))(paramsVars);
@@ -35208,7 +35215,7 @@ var freeVariables2 = function(v) {
           return insert21("lvl_" + show16(unwrap9(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 2619, column 60 - line 2621, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 2622, column 60 - line 2624, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(v.value0);
     return difference6(freeVariables2(v.value1))(paramsVars);
@@ -35300,11 +35307,11 @@ var extractAbsParams = function(v) {
           return "lvl_" + show16(unwrap9(v22.value1));
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 791, column 42 - line 793, column 56): " + [v22.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 794, column 42 - line 796, column 56): " + [v22.value0.constructor.name]);
       })(toArray3(v1.value0));
       var len = length(pNames);
-      var $580 = v >= len;
-      if ($580) {
+      var $582 = v >= len;
+      if ($582) {
         var v2 = extractAbsParams(v - len | 0)(v1.value1);
         if (v2 instanceof Just) {
           return new Just(new Tuple(append16(pNames)(v2.value0.value0), v2.value0.value1));
@@ -35314,7 +35321,7 @@ var extractAbsParams = function(v) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 796, column 8 - line 798, column 28): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 799, column 8 - line 801, column 28): " + [v2.constructor.name]);
       }
       ;
       return Nothing.value;
@@ -35330,7 +35337,7 @@ var extractAbsParams = function(v) {
         return Nothing.value;
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 801, column 3 - line 803, column 23): " + [v2.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 804, column 3 - line 806, column 23): " + [v2.constructor.name]);
     }
     ;
     return Nothing.value;
@@ -35355,7 +35362,7 @@ var dedupArgs = function(arr) {
         };
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 2818, column 10 - line 2823, column 99): " + [count.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 2828, column 10 - line 2833, column 99): " + [count.constructor.name]);
     };
   };
   return foldl2(step2)({
@@ -35387,8 +35394,8 @@ var copyScalarType = function(enums) {
         var v1 = last(v.value1);
         if (v1 instanceof Just) {
           return isValueEnum(enums)((function() {
-            var $599 = length(v.value1) < 2;
-            if ($599) {
+            var $601 = length(v.value1) < 2;
+            if ($601) {
               return current;
             }
             ;
@@ -35400,7 +35407,7 @@ var copyScalarType = function(enums) {
           return false;
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1467, column 18 - line 1469, column 21): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1470, column 18 - line 1472, column 21): " + [v1.constructor.name]);
       }
       ;
       return false;
@@ -35503,12 +35510,12 @@ var consumedConstructorSource = function(operandType) {
                 return Nothing.value;
               };
               if (v instanceof Accessor && v.value1 instanceof GetCtorField) {
-                var $645 = v.value1.value3 === ctorName;
-                if ($645) {
-                  var $646 = operandType(v.value0) === resultType;
-                  if ($646) {
-                    var $647 = isBorrowableLocal(operandType)(v.value0);
-                    if ($647) {
+                var $647 = v.value1.value3 === ctorName;
+                if ($647) {
+                  var $648 = operandType(v.value0) === resultType;
+                  if ($648) {
+                    var $649 = isBorrowableLocal(operandType)(v.value0);
+                    if ($649) {
                       $tco_done = true;
                       return head(filter(function(name2) {
                         return !member10(name2)(alive);
@@ -35559,20 +35566,21 @@ var codegenPrelude = function(fields) {
   };
   var setMethods = foldMap111(function(f) {
     var sf = sanitizeIdent(f);
+    var field = recordFieldIdent(f);
     var matchArms = foldMap111(function(shape) {
       var structName = shapeToStructName(shape);
-      var $656 = elem5(f)(split(",")(shape));
-      if ($656) {
-        return "            Value::" + (structName + ("(r) => {\n" + ("                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" + ("                mut_r." + (sf + " = Some(val);\n            },\n")))));
+      var $658 = elem5(f)(split(",")(shape));
+      if ($658) {
+        return "            Value::" + (structName + ("(r) => {\n" + ("                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" + ("                mut_r." + (field + " = Some(val);\n            },\n")))));
       }
       ;
       return "";
     })(validShapes);
-    return "    pub fn set_" + (sf + ("(&mut self, val: UnknownType) {\n" + ("        if matches!(self, Value::Thunk(_)) { *self = self.resolve().clone(); }\n" + ("        match self {\n" + (matchArms + ("            Value::Record_a(r) => {\n" + ("                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" + ("                mut_r." + (sf + (" = Some(val);\n" + ("            },\n" + ("            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" + (show17(f) + (".to_owned(), val); },\n" + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))))));
+    return "    pub fn set_" + (sf + ("(&mut self, val: UnknownType) {\n" + ("        if matches!(self, Value::Thunk(_)) { *self = self.resolve().clone(); }\n" + ("        match self {\n" + (matchArms + ("            Value::Record_a(r) => {\n" + ("                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" + ("                mut_r." + (field + (" = Some(val);\n" + ("            },\n" + ("            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" + (show17(f) + (".to_owned(), val); },\n" + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))))));
   })(validUniqueFields);
   var setKnownFields = function(names) {
     return "match name {\n" + (foldMap111(function(f) {
-      return "                " + (show17(f) + (" => { perceus_ptr::PerceusPtr::make_mut(r)." + (sanitizeIdent(f) + " = Some(value); return self; },\n")));
+      return "                " + (show17(f) + (" => { perceus_ptr::PerceusPtr::make_mut(r)." + (recordFieldIdent(f) + " = Some(value); return self; },\n")));
     })(names) + "                _ => {},\n            }");
   };
   var recordVariants = foldMap111(function(shape) {
@@ -35585,21 +35593,22 @@ var codegenPrelude = function(fields) {
       return !$$null2(f);
     })(split(",")(shape));
     return "#[derive(Clone, Default)]\npub struct " + (structName + (" {\n" + (foldMap111(function(f) {
-      return "    pub " + (sanitizeIdent(f) + ": Option<UnknownType>,\n");
+      return "    pub " + (recordFieldIdent(f) + ": Option<UnknownType>,\n");
     })(structFields) + "}\n\n")));
   })(validShapes);
   var getMethods = foldMap111(function(f) {
     var sf = sanitizeIdent(f);
+    var field = recordFieldIdent(f);
     var matchArms = foldMap111(function(shape) {
       var structName = shapeToStructName(shape);
-      var $657 = elem5(f)(split(",")(shape));
-      if ($657) {
-        return "            Value::" + (structName + ("(r) => r." + (sf + ".clone().unwrap(),\n")));
+      var $659 = elem5(f)(split(",")(shape));
+      if ($659) {
+        return "            Value::" + (structName + ("(r) => r." + (field + ".clone().unwrap(),\n")));
       }
       ;
       return "";
     })(validShapes);
-    return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + ("            Value::Record_a(r) => r." + (sf + (".clone().unwrap(),\n" + ("            Value::DynamicRecord(r) => r.get(" + (show17(f) + (').cloned().expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))));
+    return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + ("            Value::Record_a(r) => r." + (field + (".clone().unwrap(),\n" + ("            Value::DynamicRecord(r) => r.get(" + (show17(f) + (').cloned().expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))));
   })(validUniqueFields);
   var funcWrappers = foldMap111(function(arity) {
     var typeParamsList = map58(function(i) {
@@ -35620,8 +35629,8 @@ var codegenPrelude = function(fields) {
   var funcUnwraps = foldMap111(function(arity) {
     var typeParams = joinWith(", ")(replicate(arity + 1 | 0)("UnknownType"));
     return "    pub fn unwrap_func" + (show16(arity) + ("(&self) -> Func" + (show16(arity) + ("<" + (typeParams + ("> {\n" + ("        let value = self.resolve();\n" + ((function() {
-      var $658 = arity === 1;
-      if ($658) {
+      var $660 = arity === 1;
+      if ($660) {
         return "        if let Value::Func1(v) = value { v.clone() } else if let Value::Record_a(v) = value { v.call.clone().unwrap() } " + (joinWith(" ")(map58(function(a) {
           return "else if let Value::Func" + (show16(a) + ("(v) = value { let f = v.clone(); Func1::Shared(std::rc::Rc::new(move |a0: UnknownType| -> UnknownType { crate::Value::Func" + (show16(a - 1 | 0) + ("(Func" + (show16(a - 1 | 0) + ("::Shared(std::rc::Rc::new({ let f2 = f.clone(); move |" + (joinWith(", ")(map58(function(i) {
             return "mut a" + (show16(i) + ": UnknownType");
@@ -35646,14 +35655,14 @@ var codegenPrelude = function(fields) {
   })(range2(1)(11));
   var dynamicGetMethod = "    pub fn __purust_get_field(&self, name: &str) -> Option<Value> {\n" + ("        match self.resolve() {\n" + (foldMap111(function(shape) {
     return "            Value::" + (shapeToStructName(shape) + ("(r) => match name {\n" + (foldMap111(function(f) {
-      return "                " + (show17(f) + (" => r." + (sanitizeIdent(f) + ".clone(),\n")));
+      return "                " + (show17(f) + (" => r." + (recordFieldIdent(f) + ".clone(),\n")));
     })(split(",")(shape)) + "                _ => None,\n            },\n")));
   })(validShapes) + ("            Value::Record_a(r) => match name {\n" + (foldMap111(function(f) {
-    return "                " + (show17(f) + (" => r." + (sanitizeIdent(f) + ".clone(),\n")));
+    return "                " + (show17(f) + (" => r." + (recordFieldIdent(f) + ".clone(),\n")));
   })(validUniqueFields) + '                _ => None,\n            },\n            Value::DynamicRecord(r) => r.get(name).cloned(),\n            _ => panic!("Expected record"),\n        }\n    }\n'))));
   var copyFields = function(names) {
     return foldMap111(function(f) {
-      return "                if let Some(value) = &r." + (sanitizeIdent(f) + (" { fields.insert(" + (show17(f) + ".to_owned(), value.clone()); }\n")));
+      return "                if let Some(value) = &r." + (recordFieldIdent(f) + (" { fields.insert(" + (show17(f) + ".to_owned(), value.clone()); }\n")));
     })(names);
   };
   var dynamicSetMethod = "    pub fn __purust_set_field(mut self, name: &str, value: Value) -> Value {\n" + ("        if matches!(self, Value::Thunk(_)) { self = self.resolve().clone(); }\n" + ("        match &mut self {\n" + (foldMap111(function(shape) {
@@ -35663,19 +35672,20 @@ var codegenPrelude = function(fields) {
   })(validShapes) + ("            Value::Record_a(r) => {\n" + (copyFields(validUniqueFields) + "            },\n            _ => unreachable!(),\n        }\n        fields.insert(name.to_owned(), value);\n        Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))\n    }\n")))))))))))));
   var borrowMethods = foldMap111(function(f) {
     var sf = sanitizeIdent(f);
+    var field = recordFieldIdent(f);
     var matchArms = foldMap111(function(shape) {
       var structName = shapeToStructName(shape);
-      var $659 = elem5(f)(split(",")(shape));
-      if ($659) {
-        return "            Value::" + (structName + ("(r) => r." + (sf + ".as_ref().unwrap(),\n")));
+      var $661 = elem5(f)(split(",")(shape));
+      if ($661) {
+        return "            Value::" + (structName + ("(r) => r." + (field + ".as_ref().unwrap(),\n")));
       }
       ;
       return "";
     })(validShapes);
-    return "    pub fn __purust_borrow_" + (sf + ("(&self) -> &UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + ("            Value::Record_a(r) => r." + (sf + (".as_ref().unwrap(),\n" + ("            Value::DynamicRecord(r) => r.get(" + (show17(f) + (').expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))));
+    return "    pub fn __purust_borrow_" + (sf + ("(&self) -> &UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + ("            Value::Record_a(r) => r." + (field + (".as_ref().unwrap(),\n" + ("            Value::DynamicRecord(r) => r.get(" + (show17(f) + (').expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))));
   })(validUniqueFields);
   return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Unit,\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + ("    DynamicRecord(perceus_ptr::PerceusPtr<std::collections::BTreeMap<String, Value>>),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    pub fn resolve(&self) -> &Self {\n" + ("        let mut value = self;\n" + ("        while let Value::Thunk(thunk) = value {\n" + ('            value = thunk.value.get().expect("recursive value used before initialization");\n' + ("        }\n" + ("        value\n" + ("    }\n" + ("    pub fn unwrap_unit(&self) {\n" + ('        if !matches!(self.resolve(), Value::Unit) { panic!("Expected Unit"); }\n' + ("    }\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self.resolve() { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ('        if let Value::Number(v) = self.resolve() { *v } else { panic!("Expected Number"); }\n' + ("    }\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self.resolve() { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self.resolve() { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self.resolve() { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ('        if let Value::Array(v) = self.resolve() { v.clone() } else { panic!("Expected Array"); }\n' + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        if let Value::Class(v) = self.resolve() { v.downcast_ref::<T>().unwrap() } else { panic!("Expected Class"); }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn get_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self.resolve() { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (dynamicGetMethod + (dynamicSetMethod + (borrowMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + (runtimeHelpers + (runtime + ("pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub value: std::sync::OnceLock<Value>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + (foldMap111(function(field) {
-    return "    pub " + (sanitizeIdent(field) + ": Option<UnknownType>,\n");
+    return "    pub " + (recordFieldIdent(field) + ": Option<UnknownType>,\n");
   })(validUniqueFields) + ("}\n\n" + (recordStructs + ("\n\n" + funcWrappers)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
 };
 var codegenExprTypeWithValueEnums = function(valueEnums) {
@@ -35710,46 +35720,46 @@ var codegenExprTypeWithValueEnums = function(valueEnums) {
         if (v instanceof ADT) {
           var modName = replaceAll(".")("_")(joinWith("_")(dropEnd(1)(v.value1)));
           var actualClassName = fromMaybe(v.value0)(last(v.value1));
-          var $661 = actualClassName === "Void" || modName === "Pipes_Internal" && actualClassName === "X";
-          if ($661) {
+          var $663 = actualClassName === "Void" || modName === "Pipes_Internal" && actualClassName === "X";
+          if ($663) {
             return "purust_core::Void";
           }
           ;
-          var $662 = modName === "Prim" || (eq114(indexOf2("Prim_")(modName))(new Just(0)) || eq114(indexOf2("Prim")(modName))(new Just(0)));
-          if ($662) {
-            return "crate::UnknownType";
-          }
-          ;
-          var $663 = modName === "Effect" || (modName === "Effect_Exception" || (modName === "Effect_Console" || (modName === "Effect_Ref" || (modName === "Effect_Uncurried" || (modName === "Control_Monad_ST_Internal" || (modName === "Foreign" || modName === "Data_Array_ST"))))));
-          if ($663) {
-            return "crate::UnknownType";
-          }
-          ;
-          var $664 = modName === "Effect_Aff" || (modName === "Effect_Aff_AVar" || modName === "Effect_Aff_Compat");
+          var $664 = modName === "Prim" || (eq114(indexOf2("Prim_")(modName))(new Just(0)) || eq114(indexOf2("Prim")(modName))(new Just(0)));
           if ($664) {
             return "crate::UnknownType";
           }
           ;
-          var $665 = modName === "Data_Exists" && actualClassName === "Exists";
+          var $665 = modName === "Effect" || (modName === "Effect_Exception" || (modName === "Effect_Console" || (modName === "Effect_Ref" || (modName === "Effect_Uncurried" || (modName === "Control_Monad_ST_Internal" || (modName === "Foreign" || modName === "Data_Array_ST"))))));
           if ($665) {
             return "crate::UnknownType";
           }
           ;
-          var $666 = modName === "Control_Monad_Free" && actualClassName === "Val";
+          var $666 = modName === "Effect_Aff" || (modName === "Effect_Aff_AVar" || modName === "Effect_Aff_Compat");
           if ($666) {
             return "crate::UnknownType";
           }
           ;
-          var $667 = (modName === "Data_Function_Uncurried" || modName === "Control_Monad_ST_Uncurried") && (eq114(indexOf2("Fn")(actualClassName))(new Just(0)) || eq114(indexOf2("STFn")(actualClassName))(new Just(0)));
+          var $667 = modName === "Data_Exists" && actualClassName === "Exists";
           if ($667) {
             return "crate::UnknownType";
           }
           ;
-          var $668 = isValueEnum(valueEnums)(modName)(actualClassName);
+          var $668 = modName === "Control_Monad_Free" && actualClassName === "Val";
           if ($668) {
+            return "crate::UnknownType";
+          }
+          ;
+          var $669 = (modName === "Data_Function_Uncurried" || modName === "Control_Monad_ST_Uncurried") && (eq114(indexOf2("Fn")(actualClassName))(new Just(0)) || eq114(indexOf2("STFn")(actualClassName))(new Just(0)));
+          if ($669) {
+            return "crate::UnknownType";
+          }
+          ;
+          var $670 = isValueEnum(valueEnums)(modName)(actualClassName);
+          if ($670) {
             return (function() {
-              var $669 = modName === currentMod;
-              if ($669) {
+              var $671 = modName === currentMod;
+              if ($671) {
                 return "crate::";
               }
               ;
@@ -35757,8 +35767,8 @@ var codegenExprTypeWithValueEnums = function(valueEnums) {
             })() + sanitizeIdent(actualClassName);
           }
           ;
-          var $670 = modName === currentMod;
-          if ($670) {
+          var $672 = modName === currentMod;
+          if ($672) {
             return "std::rc::Rc<crate::" + (sanitizeIdent(actualClassName) + ">");
           }
           ;
@@ -35770,8 +35780,8 @@ var codegenExprTypeWithValueEnums = function(valueEnums) {
           var arity = length(v.value0);
           var argStrs = map58(codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false))(v.value0);
           var typeArgs = joinWith(", ")(append16(argStrs)([retStr]));
-          var $674 = arity > 0 && arity <= 11;
-          if ($674) {
+          var $676 = arity > 0 && arity <= 11;
+          if ($676) {
             return "purust_core::Func" + (show16(arity) + ("<" + (typeArgs + ">")));
           }
           ;
@@ -35792,8 +35802,8 @@ var boxUnbox = function(valueEnums) {
             var expStr = codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(expected);
             var actStr = codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(actual);
             var v = (function() {
-              var $678 = expStr === "crate::UnknownType" && actStr === "std::rc::Rc<dyn Fn(crate::UnknownType) -> crate::UnknownType>";
-              if ($678) {
+              var $680 = expStr === "crate::UnknownType" && actStr === "std::rc::Rc<dyn Fn(crate::UnknownType) -> crate::UnknownType>";
+              if ($680) {
                 return trace2("BOXUNBOX DEBUG: expStr=" + (expStr + (" actStr=" + (actStr + (" expTy=" + (printType(expected) + (" actTy=" + (printType(actual) + (" expStr==actStr is " + show22(expStr === actStr))))))))))(function(v12) {
                   return unit;
                 });
@@ -35801,18 +35811,18 @@ var boxUnbox = function(valueEnums) {
               ;
               return unit;
             })();
-            var $679 = eq114(indexOf2("unimplemented!()")(code))(new Just(0)) || eq114(indexOf2("/* Typed ")(code))(new Just(0)) && (contains("unimplemented!()")(code) && !contains("\n")(code));
-            if ($679) {
-              return code;
-            }
-            ;
-            var $680 = drop3(length4(code) - 15 | 0)(code) === "continue;\n    }";
-            if ($680) {
-              return code;
-            }
-            ;
-            var $681 = expStr === actStr;
+            var $681 = eq114(indexOf2("unimplemented!()")(code))(new Just(0)) || eq114(indexOf2("/* Typed ")(code))(new Just(0)) && (contains("unimplemented!()")(code) && !contains("\n")(code));
             if ($681) {
+              return code;
+            }
+            ;
+            var $682 = drop3(length4(code) - 15 | 0)(code) === "continue;\n    }";
+            if ($682) {
+              return code;
+            }
+            ;
+            var $683 = expStr === actStr;
+            if ($683) {
               return code;
             }
             ;
@@ -35821,8 +35831,8 @@ var boxUnbox = function(valueEnums) {
             if (v2 instanceof Func && v1 instanceof Func) {
               var expArity = length(v2.value0);
               var actArity = length(v1.value0);
-              var $684 = expArity === actArity && (expArity > 0 && expArity <= 11);
-              if ($684) {
+              var $686 = expArity === actArity && (expArity > 0 && expArity <= 11);
+              if ($686) {
                 var retStr = codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(v2.value1);
                 var expArgTypes = map58(codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false))(v2.value0);
                 var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
@@ -35839,8 +35849,8 @@ var boxUnbox = function(valueEnums) {
                 return "purust_core::Func" + (show16(expArity) + ("::Shared(std::rc::Rc::new({ let _f = (" + (code + (").clone(); move |" + (argsDecl + ("| -> " + (retStr + (" { " + (boxUnbox(valueEnums)(globalClassFields)(currentMod)(v2.value1)(v1.value1)("_f(" + (argsCall + ")")) + " } }))")))))))));
               }
               ;
-              var $688 = actArity > expArity && (expArity > 0 && actArity <= 11);
-              if ($688) {
+              var $690 = actArity > expArity && (expArity > 0 && actArity <= 11);
+              if ($690) {
                 var retStr = codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(v2.value1);
                 var remainingActArgs = drop(expArity)(v1.value0);
                 var remRetStr = codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(v1.value1);
@@ -35881,8 +35891,8 @@ var boxUnbox = function(valueEnums) {
                     var $tco_done = false;
                     var $tco_result;
                     function $tco_loop(idx, currentTy, accCode) {
-                      var $689 = idx >= expArity;
-                      if ($689) {
+                      var $691 = idx >= expArity;
+                      if ($691) {
                         $tco_done = true;
                         return new Tuple(currentTy, accCode);
                       }
@@ -35932,8 +35942,8 @@ var boxUnbox = function(valueEnums) {
             ;
             if (v2 instanceof Func) {
               var arity = length(v2.value0);
-              var $700 = (actStr === "crate::UnknownType" || actStr === "crate::Value") && (arity > 0 && arity <= 11);
-              if ($700) {
+              var $702 = (actStr === "crate::UnknownType" || actStr === "crate::Value") && (arity > 0 && arity <= 11);
+              if ($702) {
                 var retStr = codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(v2.value1);
                 var expArgTypes = map58(codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false))(v2.value0);
                 var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
@@ -35954,8 +35964,8 @@ var boxUnbox = function(valueEnums) {
             ;
             if (v1 instanceof Func) {
               var arity = length(v1.value0);
-              var $703 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && (arity > 0 && arity <= 11);
-              if ($703) {
+              var $705 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && (arity > 0 && arity <= 11);
+              if ($705) {
                 var argsDecl = joinWith(", ")(mapWithIndex2(function(i) {
                   return function(v32) {
                     return "mut _a" + (show16(i) + ": crate::UnknownType");
@@ -35988,13 +35998,13 @@ var boxUnbox = function(valueEnums) {
               ;
               return false;
             })();
-            var $714 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && isActADT;
-            if ($714) {
+            var $716 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && isActADT;
+            if ($716) {
               return "crate::Value::Class(std::rc::Rc::new(" + (code + "))");
             }
             ;
-            var $715 = (actStr === "crate::UnknownType" || actStr === "crate::Value") && isExpADT;
-            if ($715) {
+            var $717 = (actStr === "crate::UnknownType" || actStr === "crate::Value") && isExpADT;
+            if ($717) {
               var downcast = function(value) {
                 return "(" + (value + (").unwrap_class::<" + (expStr + ">().clone()")));
               };
@@ -36003,8 +36013,8 @@ var boxUnbox = function(valueEnums) {
                 var name2 = sanitizeIdent(fromMaybe(v3.value0)(last(v3.value1)));
                 var modName = replaceAll(".")("_")(joinWith("_")(dropEnd(1)(v3.value1)));
                 var nativeName = (function() {
-                  var $717 = modName === currentMod;
-                  if ($717) {
+                  var $719 = modName === currentMod;
+                  if ($719) {
                     return "crate::";
                   }
                   ;
@@ -36037,69 +36047,69 @@ var boxUnbox = function(valueEnums) {
                   return "{ let __purust_class_value = " + (code + ("; " + ("if matches!(__purust_class_value.resolve(), crate::Value::Class(_)) { " + (downcast("__purust_class_value") + (" } else { std::rc::Rc::new(" + (nativeName + (" { " + (joinWith(", ")(fieldValues) + " }) } }"))))))));
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 729, column 18 - line 752, column 90): " + [v4.constructor.name]);
+                throw new Error("Failed pattern match at Purust.CodeGen (line 732, column 18 - line 755, column 90): " + [v4.constructor.name]);
               }
               ;
               return downcast(code);
             }
             ;
-            var $729 = expStr === "()" && actStr === "crate::UnknownType";
-            if ($729) {
+            var $731 = expStr === "()" && actStr === "crate::UnknownType";
+            if ($731) {
               return "(" + (code + ").unwrap_unit()");
             }
             ;
-            var $730 = expStr === "crate::UnknownType" && actStr === "()";
-            if ($730) {
+            var $732 = expStr === "crate::UnknownType" && actStr === "()";
+            if ($732) {
               return "crate::mk_unit(" + (code + ")");
             }
             ;
-            var $731 = expStr === "i64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-            if ($731) {
+            var $733 = expStr === "i64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+            if ($733) {
               return "(" + (code + ").unwrap_int()");
             }
             ;
-            var $732 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "i64";
-            if ($732) {
+            var $734 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "i64";
+            if ($734) {
               return "crate::mk_int(" + (code + ")");
             }
             ;
-            var $733 = expStr === "bool" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-            if ($733) {
+            var $735 = expStr === "bool" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+            if ($735) {
               return "(" + (code + ").unwrap_bool()");
             }
             ;
-            var $734 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "bool";
-            if ($734) {
+            var $736 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "bool";
+            if ($736) {
               return "crate::mk_bool(" + (code + ")");
             }
             ;
-            var $735 = expStr === "f64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-            if ($735) {
+            var $737 = expStr === "f64" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+            if ($737) {
               return "(" + (code + ").unwrap_number()");
             }
             ;
-            var $736 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "f64";
-            if ($736) {
+            var $738 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "f64";
+            if ($738) {
               return "crate::mk_number(" + (code + ")");
             }
             ;
-            var $737 = expStr === "char" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-            if ($737) {
+            var $739 = expStr === "char" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+            if ($739) {
               return "(" + (code + ").unwrap_char()");
             }
             ;
-            var $738 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "char";
-            if ($738) {
+            var $740 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "char";
+            if ($740) {
               return "crate::mk_char(" + (code + ")");
             }
             ;
-            var $739 = expStr === "String" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
-            if ($739) {
+            var $741 = expStr === "String" && (actStr === "crate::UnknownType" || actStr === "crate::Value");
+            if ($741) {
               return "(" + (code + ").unwrap_string()");
             }
             ;
-            var $740 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "String";
-            if ($740) {
+            var $742 = (expStr === "crate::UnknownType" || expStr === "crate::Value") && actStr === "String";
+            if ($742) {
               return "crate::mk_string(&(" + (code + "))");
             }
             ;
@@ -36132,8 +36142,8 @@ var applicationResultType = function($copy_v) {
       ;
       var v2 = unwrapType(v1);
       if (v2 instanceof Func) {
-        var $747 = v < length(v2.value0);
-        if ($747) {
+        var $749 = v < length(v2.value0);
+        if ($749) {
           $tco_done = true;
           return new Func(drop(v)(v2.value0), v2.value1);
         }
@@ -36202,14 +36212,14 @@ var inferTypeExpr = function(currentMod) {
                     return Any.value;
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.CodeGen (line 2645, column 36 - line 2647, column 32): " + [v32.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.CodeGen (line 2648, column 36 - line 2650, column 32): " + [v32.constructor.name]);
                 }
                 ;
                 if (v22 instanceof Nothing) {
                   return Any.value;
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 2644, column 14 - line 2648, column 30): " + [v22.constructor.name]);
+                throw new Error("Failed pattern match at Purust.CodeGen (line 2647, column 14 - line 2651, column 30): " + [v22.constructor.name]);
               }
               ;
               return Any.value;
@@ -36228,7 +36238,7 @@ var inferTypeExpr = function(currentMod) {
                 return currentMod;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 2652, column 18 - line 2654, column 32): " + [v.value1.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 2655, column 18 - line 2657, column 32): " + [v.value1.value0.value0.constructor.name]);
             })();
             var ctorFqn = modStr + ("_" + sanitizeIdent(v.value1.value3));
             var v1 = lookup15(ctorFqn)(aritiesMap);
@@ -36245,7 +36255,7 @@ var inferTypeExpr = function(currentMod) {
                 });
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 2659, column 15 - line 2661, column 175): " + [v2.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 2662, column 15 - line 2664, column 175): " + [v2.constructor.name]);
             }
             ;
             if (v1 instanceof Nothing) {
@@ -36254,7 +36264,7 @@ var inferTypeExpr = function(currentMod) {
               });
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 2656, column 8 - line 2662, column 100): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 2659, column 8 - line 2665, column 100): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof App2) {
@@ -36429,7 +36439,7 @@ var inferTypeExpr = function(currentMod) {
                 return currentMod;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 2725, column 18 - line 2727, column 32): " + [v.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 2728, column 18 - line 2730, column 32): " + [v.value0.value0.constructor.name]);
             })();
             return new ADT(modStr, [modStr, v.value2], []);
           }
@@ -36448,7 +36458,7 @@ var inferTypeExpr = function(currentMod) {
                 return replaceAll(".")("_")(currentMod) + "_";
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 2731, column 25 - line 2733, column 93): " + [v.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 2734, column 25 - line 2736, column 93): " + [v.value0.value0.constructor.name]);
             })();
             var fullName = modPrefix + sanitizeIdent(v.value0.value1);
             var v1 = lookup15(fullName)(aritiesMap);
@@ -36460,7 +36470,7 @@ var inferTypeExpr = function(currentMod) {
               return Any.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 2735, column 12 - line 2737, column 25): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 2738, column 12 - line 2740, column 25): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Local) {
@@ -36473,7 +36483,7 @@ var inferTypeExpr = function(currentMod) {
                 return "lvl_" + show16(unwrap9(v.value1));
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 2739, column 16 - line 2741, column 49): " + [v.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 2742, column 16 - line 2744, column 49): " + [v.value0.constructor.name]);
             })();
             var v1 = lookup15(name2)(bound2);
             if (v1 instanceof Just) {
@@ -36484,7 +36494,7 @@ var inferTypeExpr = function(currentMod) {
               return Any.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 2742, column 8 - line 2744, column 21): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 2745, column 8 - line 2747, column 21): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Let && v.value0 instanceof Just) {
@@ -36649,12 +36659,12 @@ var nullaryValue = function(valueEnums) {
                     return Nothing.value;
                   };
                   if (v instanceof CtorDef) {
-                    var $946 = $$null(v.value3);
-                    if ($946) {
-                      var $947 = representation(v);
-                      var $948 = eq114(indexOf2("std::rc::Rc<")($947))(new Just(0));
-                      if ($948) {
-                        return new Just($947 + ("::" + v.value2));
+                    var $948 = $$null(v.value3);
+                    if ($948) {
+                      var $949 = representation(v);
+                      var $950 = eq114(indexOf2("std::rc::Rc<")($949))(new Just(0));
+                      if ($950) {
+                        return new Just($949 + ("::" + v.value2));
                       }
                       ;
                       return v3(true);
@@ -36666,13 +36676,13 @@ var nullaryValue = function(valueEnums) {
                   return v3(true);
                 };
                 if (v instanceof CtorSaturated) {
-                  var $954 = $$null(v.value4);
-                  if ($954) {
-                    var $955 = representation(v);
-                    var $956 = eq114(indexOf2("std::rc::Rc<")($955))(new Just(0));
-                    if ($956) {
+                  var $956 = $$null(v.value4);
+                  if ($956) {
+                    var $957 = representation(v);
+                    var $958 = eq114(indexOf2("std::rc::Rc<")($957))(new Just(0));
+                    if ($958) {
                       $tco_done = true;
-                      return new Just($955 + ("::" + v.value3));
+                      return new Just($957 + ("::" + v.value3));
                     }
                     ;
                     $tco_done = true;
@@ -36715,8 +36725,8 @@ var ownedFieldSources = function(valueEnums) {
               return codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(operand));
             };
             var localName = function(operand) {
-              var $962 = isBorrowableLocal(operandType)(operand);
-              if ($962) {
+              var $964 = isBorrowableLocal(operandType)(operand);
+              if ($964) {
                 return head(fromFoldable26(freeVariables2(operand)));
               }
               ;
@@ -36782,7 +36792,7 @@ var reuseTestedNullaries = function(valueEnums) {
                 return body;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1498, column 3 - line 1502, column 20): " + [v.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1501, column 3 - line 1505, column 20): " + [v.constructor.name]);
             };
           };
         };
@@ -36799,8 +36809,8 @@ var rewriteOwnedFields = function(valueEnums) {
             return codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(operand));
           };
           var localName = function(operand) {
-            var $978 = isBorrowableLocal(operandType)(operand);
-            if ($978) {
+            var $980 = isBorrowableLocal(operandType)(operand);
+            if ($980) {
               return head(fromFoldable26(freeVariables2(operand)));
             }
             ;
@@ -36848,10 +36858,10 @@ var alignDiscardedCallbackArgs = function(expected) {
             return expr;
           };
           if (v1 instanceof Func && v instanceof Func) {
-            var $986 = length(v1.value0) === length(params);
-            if ($986) {
-              var $987 = length(v.value0) === length(params);
-              if ($987) {
+            var $988 = length(v1.value0) === length(params);
+            if ($988) {
+              var $989 = length(v.value0) === length(params);
+              if ($989) {
                 var used2 = freeVariables2(body);
                 var names = map58(function(v3) {
                   if (v3.value0 instanceof Just) {
@@ -36862,20 +36872,20 @@ var alignDiscardedCallbackArgs = function(expected) {
                     return "lvl_" + show16(unwrap9(v3.value1));
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.CodeGen (line 1044, column 51 - line 1046, column 57): " + [v3.value0.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.CodeGen (line 1047, column 51 - line 1049, column 57): " + [v3.value0.constructor.name]);
                 })(params);
                 var args = mapWithIndex2(function(i) {
                   return function(name2) {
-                    var $993 = member10(name2)(used2);
-                    if ($993) {
+                    var $995 = member10(name2)(used2);
+                    if ($995) {
                       return fromMaybe(Any.value)(index(v.value0)(i));
                     }
                     ;
                     return fromMaybe(Any.value)(index(v1.value0)(i));
                   };
                 })(names);
-                var $994 = eq39(args)(v.value0);
-                if ($994) {
+                var $996 = eq39(args)(v.value0);
+                if ($996) {
                   return expr;
                 }
                 ;
@@ -36923,8 +36933,8 @@ var genApp = function(valueEnums) {
                         };
                         var lookupArity = function(fname) {
                           var key = (function() {
-                            var $1004 = fname === "main";
-                            if ($1004) {
+                            var $1006 = fname === "main";
+                            if ($1006) {
                               return "main";
                             }
                             ;
@@ -36939,7 +36949,7 @@ var genApp = function(valueEnums) {
                             return 0;
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1147, column 14 - line 1149, column 25): " + [v.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1150, column 14 - line 1152, column 25): " + [v.constructor.name]);
                         };
                         var getInner = function($copy_v) {
                           var $tco_done = false;
@@ -37035,8 +37045,8 @@ var genApp = function(valueEnums) {
                               var $tco_done2 = false;
                               var $tco_result;
                               function $tco_loop(accTy, accCode, idx) {
-                                var $1025 = idx >= length(argsCodeArray);
-                                if ($1025) {
+                                var $1027 = idx >= length(argsCodeArray);
+                                if ($1027) {
                                   $tco_done2 = true;
                                   return new Tuple(accTy, accCode);
                                 }
@@ -37044,11 +37054,11 @@ var genApp = function(valueEnums) {
                                 var v = unwrapType(accTy);
                                 if (v instanceof Func) {
                                   var arity = length(v.value0);
-                                  var $1027 = arity > 0 && arity <= 11;
-                                  if ($1027) {
+                                  var $1029 = arity > 0 && arity <= 11;
+                                  if ($1029) {
                                     var availableArgsCount = length(argsCodeArray) - idx | 0;
-                                    var $1028 = availableArgsCount >= arity;
-                                    if ($1028) {
+                                    var $1030 = availableArgsCount >= arity;
+                                    if ($1030) {
                                       var passedArgsTys = slice(idx)(idx + arity | 0)(argsArray);
                                       var passedArgs = slice(idx)(idx + arity | 0)(argsCodeArray);
                                       var boxedArgs = mapWithIndex2(function(i) {
@@ -37157,7 +37167,7 @@ var genApp = function(valueEnums) {
                                   return Any.value;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1159, column 23 - line 1161, column 31): " + [v.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1162, column 23 - line 1164, column 31): " + [v.constructor.name]);
                               })();
                               var paramTy = (function() {
                                 var v = index(params)(i);
@@ -37169,7 +37179,7 @@ var genApp = function(valueEnums) {
                                   return argTy;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1162, column 25 - line 1164, column 33): " + [v.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1165, column 25 - line 1167, column 33): " + [v.constructor.name]);
                               })();
                               var converted = boxUnbox(valueEnums)(globalClassFields)(modNameStr)(paramTy)(argTy)(argCode);
                               return "        let _tco_temp_" + (show16(i) + (" = " + (converted + ";\n")));
@@ -37191,7 +37201,7 @@ var genApp = function(valueEnums) {
                                   return modNameStr;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1176, column 34 - line 1178, column 48): " + [v3.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1179, column 34 - line 1181, column 48): " + [v3.value0.value0.constructor.name]);
                               })();
                               return new Just(prefix + ("_" + sanitizeIdent(v3.value0.value1)));
                             }
@@ -37235,47 +37245,47 @@ var genApp = function(valueEnums) {
                                 return replaceAll(".")("_")(modNameStr) + "_";
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1196, column 41 - line 1198, column 109): " + [v.value0.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1199, column 41 - line 1201, column 109): " + [v.value0.value0.constructor.name]);
                             })();
                             var fullName = modPrefix + sName;
-                            var $1058 = fullName === "Data_Eq_eqInt" && m === 2;
-                            if ($1058) {
+                            var $1060 = fullName === "Data_Eq_eqInt" && m === 2;
+                            if ($1060) {
                               return "purust_core::mk_bool((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() == (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                             }
                             ;
-                            var $1059 = fullName === "Data_Semiring_addInt" && m === 2;
-                            if ($1059) {
+                            var $1061 = fullName === "Data_Semiring_addInt" && m === 2;
+                            if ($1061) {
                               return "purust_core::mk_int((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() + (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                             }
                             ;
-                            var $1060 = fullName === "Data_Ring_subInt" && m === 2;
-                            if ($1060) {
+                            var $1062 = fullName === "Data_Ring_subInt" && m === 2;
+                            if ($1062) {
                               return "purust_core::mk_int((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() - (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                             }
                             ;
-                            var $1061 = fullName === "Data_Semiring_mulInt" && m === 2;
-                            if ($1061) {
+                            var $1063 = fullName === "Data_Semiring_mulInt" && m === 2;
+                            if ($1063) {
                               return "purust_core::mk_int((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() * (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                             }
                             ;
-                            var $1062 = fullName === "Data_Ord_lessThanInt" && m === 2;
-                            if ($1062) {
+                            var $1064 = fullName === "Data_Ord_lessThanInt" && m === 2;
+                            if ($1064) {
                               return "purust_core::mk_bool((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() < (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                             }
                             ;
-                            var $1063 = fullName === "Data_Ord_greaterThanInt" && m === 2;
-                            if ($1063) {
+                            var $1065 = fullName === "Data_Ord_greaterThanInt" && m === 2;
+                            if ($1065) {
                               return "purust_core::mk_bool((" + (fromMaybe("")(index(argsCodeArray)(0)) + (").init_int.unwrap() > (" + (fromMaybe("")(index(argsCodeArray)(1)) + ").init_int.unwrap())")));
                             }
                             ;
-                            var $1068 = (function() {
+                            var $1070 = (function() {
                               if (mbLoop instanceof Just) {
                                 return fullName === mbLoop.value0.name && m === length(mbLoop.value0.params);
                               }
                               ;
                               return false;
                             })();
-                            if ($1068) {
+                            if ($1070) {
                               if (mbLoop instanceof Just) {
                                 var tempsCode = tcoTemps(mbLoop.value0.params);
                                 var assignsCode = mapWithIndex2(function(i) {
@@ -37285,8 +37295,8 @@ var genApp = function(valueEnums) {
                                 })(mbLoop.value0.params);
                                 var _dbg = unsafePerformEffect(log2("GENERATED CONTINUE FOR: " + mbLoop.value0.name));
                                 return (function() {
-                                  var $1070 = eq45(_dbg)(unit);
-                                  if ($1070) {
+                                  var $1072 = eq45(_dbg)(unit);
+                                  if ($1072) {
                                     return "";
                                   }
                                   ;
@@ -37297,19 +37307,19 @@ var genApp = function(valueEnums) {
                               return "";
                             }
                             ;
-                            var $1075 = member13((function() {
-                              var $1074 = fullName === "main";
-                              if ($1074) {
+                            var $1077 = member13((function() {
+                              var $1076 = fullName === "main";
+                              if ($1076) {
                                 return "main";
                               }
                               ;
                               return fullName;
                             })())(aritiesMap);
-                            if ($1075) {
+                            if ($1077) {
                               var n = lookupArity(fullName);
                               var fnTy = fromMaybe(Any.value)(lookup15((function() {
-                                var $1076 = fullName === "main";
-                                if ($1076) {
+                                var $1078 = fullName === "main";
+                                if ($1078) {
                                   return "main";
                                 }
                                 ;
@@ -37317,8 +37327,8 @@ var genApp = function(valueEnums) {
                               })())(aritiesMap));
                               var expectedArgTys = extractAllArgTypes(fnTy);
                               var v1 = (function() {
-                                var $1077 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
-                                if ($1077) {
+                                var $1079 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
+                                if ($1079) {
                                   return trace2("genApp valueEnums runSTFn3 fnTy: " + (printType(fnTy) + (" expectedArgTys len: " + show16(length(expectedArgTys)))))(function(v22) {
                                     return unit;
                                   });
@@ -37332,8 +37342,8 @@ var genApp = function(valueEnums) {
                                   var argExpr = fromMaybe(new Var(new Qualified(Nothing.value, "")))(index(argsArray)(i));
                                   var argTy = inferTypeExpr(modNameStr)(aritiesMap)(globalClassFields)(bound2)(argExpr);
                                   var v22 = (function() {
-                                    var $1078 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
-                                    if ($1078) {
+                                    var $1080 = fullName === "Control_Monad_ST_Uncurried_runSTFn3";
+                                    if ($1080) {
                                       return trace2("genApp valueEnums runSTFn3 arg " + (show16(i) + (": expectedTy=" + (printType(expectedTy) + (", argTy=" + printType(argTy))))))(function(v3) {
                                         return unit;
                                       });
@@ -37344,15 +37354,15 @@ var genApp = function(valueEnums) {
                                   return boxUnbox(valueEnums)(globalClassFields)(modNameStr)(expectedTy)(argTy)(argCode);
                                 };
                               })(argsCodeArray);
-                              var $1079 = n > 0;
-                              if ($1079) {
-                                var $1080 = m === n;
-                                if ($1080) {
+                              var $1081 = n > 0;
+                              if ($1081) {
+                                var $1082 = m === n;
+                                if ($1082) {
                                   return fullName + ("(" + (joinWith(", ")(boxedArgs) + ")"));
                                 }
                                 ;
-                                var $1081 = m < n;
-                                if ($1081) {
+                                var $1083 = m < n;
+                                if ($1083) {
                                   var retTy = extractFinalRetType(fnTy);
                                   var retTyStr = codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(true)(retTy);
                                   var missingCount = n - m | 0;
@@ -37445,8 +37455,8 @@ var genAbsWithEffect = function(executeEffect) {
                           var newBound = foldr2(function(v) {
                             return function(b) {
                               var pTy = fromMaybe(Any.value)(index(expectedArgTys)(v.value0));
-                              var $1098 = v.value1 === "_";
-                              if ($1098) {
+                              var $1100 = v.value1 === "_";
+                              if ($1100) {
                                 return b;
                               }
                               ;
@@ -37473,16 +37483,16 @@ var genAbsWithEffect = function(executeEffect) {
                             });
                             var processParam = function(v) {
                               return function(st) {
-                                var $1104 = v.value1 === "_";
-                                if ($1104) {
+                                var $1106 = v.value1 === "_";
+                                if ($1106) {
                                   return {
                                     code: st.code + ("    drop(_a" + (show16(v.value0) + ");\n")),
                                     bound: st.bound
                                   };
                                 }
                                 ;
-                                var $1105 = member10(v.value1)(st.bound);
-                                if ($1105) {
+                                var $1107 = member10(v.value1)(st.bound);
+                                if ($1107) {
                                   return {
                                     code: st.code + ("    drop(_a" + (show16(v.value0) + ");\n")),
                                     bound: st.bound
@@ -37490,8 +37500,8 @@ var genAbsWithEffect = function(executeEffect) {
                                 }
                                 ;
                                 var newBound1 = insert21(v.value1)(st.bound);
-                                var $1106 = member10(v.value1)(freeVariables2(body));
-                                if ($1106) {
+                                var $1108 = member10(v.value1)(freeVariables2(body));
+                                if ($1108) {
                                   return {
                                     code: "    let mut " + (sanitizeIdent(v.value1) + (" = _a" + (show16(v.value0) + (";\n" + st.code)))),
                                     bound: newBound1
@@ -37512,8 +37522,8 @@ var genAbsWithEffect = function(executeEffect) {
                               bound: empty3
                             })(mapWithIndex2(Tuple.create)(paramsArr)).code;
                             var innermostExpectedRetTy = (function() {
-                              var $1109 = length(remainingArgs) > 0;
-                              if ($1109) {
+                              var $1111 = length(remainingArgs) > 0;
+                              if ($1111) {
                                 return new Func(remainingArgs, expectedRetTy);
                               }
                               ;
@@ -37541,8 +37551,8 @@ var genAbsWithEffect = function(executeEffect) {
                             })(paramsArr);
                             var argsCode = joinWith(", ")(argsCodeArr);
                             var closureCode = (function() {
-                              var $1112 = isEmpty2(realCapturedVars);
-                              if ($1112) {
+                              var $1114 = isEmpty2(realCapturedVars);
+                              if ($1114) {
                                 return "purust_core::Func" + (show16(arity) + ("::Static(|" + (argsCode + ("| -> " + (retTyStr + (" {\n" + (letBindingsAndDrops + ("    " + (boxedBody + ("\n} as fn(" + (joinWith(", ")(map58(function(v) {
                                   return codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(fromMaybe(Any.value)(index(expectedArgTys)(v.value0)));
                                 })(mapWithIndex2(Tuple.create)(paramsArr))) + (") -> " + (retTyStr + ")")))))))))))));
@@ -37550,8 +37560,8 @@ var genAbsWithEffect = function(executeEffect) {
                               ;
                               return "purust_core::Func" + (show16(arity) + ("::Shared(std::rc::Rc::new(move |" + (argsCode + ("| -> " + (retTyStr + (" {\n" + (letBindingsAndDrops + ("    " + (boxedBody + "\n}))")))))))));
                             })();
-                            var $1116 = length(toCloneOutside) > 0;
-                            if ($1116) {
+                            var $1118 = length(toCloneOutside) > 0;
+                            if ($1118) {
                               return "{\n" + (outsideClonesCode + ("    " + (closureCode + "\n}")));
                             }
                             ;
@@ -37571,8 +37581,8 @@ var genAbsWithEffect = function(executeEffect) {
                                 return res;
                               });
                               var innermostExpectedRetTy2 = (function() {
-                                var $1117 = length(remainingArgs2) > 0;
-                                if ($1117) {
+                                var $1119 = length(remainingArgs2) > 0;
+                                if ($1119) {
                                   return new Func(remainingArgs2, expectedRetTy);
                                 }
                                 ;
@@ -37598,8 +37608,8 @@ var genAbsWithEffect = function(executeEffect) {
                             return function(st) {
                               var remainingArgTys = drop(v.value0 + 1 | 0)(expectedArgTys);
                               var thisRetTy = (function() {
-                                var $1121 = length(remainingArgTys) > 0;
-                                if ($1121) {
+                                var $1123 = length(remainingArgTys) > 0;
+                                if ($1123) {
                                   return new Func(remainingArgTys, expectedRetTy);
                                 }
                                 ;
@@ -37617,8 +37627,8 @@ var genAbsWithEffect = function(executeEffect) {
                                 return !member13(v1)(aritiesMap) && !member10(v1)(allZeroArity);
                               })(fromFoldable26(thisClosureCaptures));
                               var letBindingAndDrop = (function() {
-                                var $1122 = v.value1 === "_";
-                                if ($1122) {
+                                var $1124 = v.value1 === "_";
+                                if ($1124) {
                                   return "    drop(_a0);\n";
                                 }
                                 ;
@@ -37632,8 +37642,8 @@ var genAbsWithEffect = function(executeEffect) {
                                 return "    let mut " + (sanitizeIdent(v1) + (" = " + (sanitizeIdent(v1) + ".clone();\n")));
                               })(toClone));
                               var newCode = (function() {
-                                var $1124 = isEmpty2(realThisClosureCaptures);
-                                if ($1124) {
+                                var $1126 = isEmpty2(realThisClosureCaptures);
+                                if ($1126) {
                                   return "purust_core::Func1::Static(|" + (pCode + ("| -> " + (retTyStr2 + (" {\n" + (clonesCode + (letBindingAndDrop + ("    " + (st.code + ("\n" + ("} as fn(" + (codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(pTy) + (") -> " + (retTyStr2 + ")")))))))))))));
                                 }
                                 ;
@@ -37653,8 +37663,8 @@ var genAbsWithEffect = function(executeEffect) {
                             return "let mut " + (sanitizeIdent(v) + (" = " + (sanitizeIdent(v) + ".clone();\n    ")));
                           })(toCloneOutside));
                           var wrappedCode = (function() {
-                            var $1127 = length(toCloneOutside) > 0;
-                            if ($1127) {
+                            var $1129 = length(toCloneOutside) > 0;
+                            if ($1129) {
                               return "{\n    " + (outsideClonesCode + (finalState.code + "\n}"));
                             }
                             ;
@@ -37769,7 +37779,7 @@ var codegenExpr_ = function(valueEnums) {
                                     return "lvl_" + show16(unwrap9(v12.value1));
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 1550, column 55 - line 1552, column 47): " + [v12.value0.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 1553, column 55 - line 1555, column 47): " + [v12.value0.constructor.name]);
                                 })());
                               }
                               ;
@@ -37784,10 +37794,10 @@ var codegenExpr_ = function(valueEnums) {
                             return $tco_result;
                           };
                           return bind25(recordProjection(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2))(codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false))(expected)(value))(function(projection) {
-                            var $1168 = any2(function(field) {
+                            var $1170 = any2(function(field) {
                               return elem5(field)(["", "unwrap", "clone", "as_ref", "tag", "vals", "call"]);
                             })(projection.fields);
-                            if ($1168) {
+                            if ($1170) {
                               return Nothing.value;
                             }
                             ;
@@ -37829,8 +37839,8 @@ var codegenExpr_ = function(valueEnums) {
                           };
                         };
                       };
-                      var $1170 = isEffectNode(v) && !inEffectBlock;
-                      if ($1170) {
+                      var $1172 = isEffectNode(v) && !inEffectBlock;
+                      if ($1172) {
                         var freeVars = freeVariables2(v);
                         var toCloneInside = filter(function(v12) {
                           return !member13(v12)(aritiesMap) && !member10(v12)(allZeroArity);
@@ -37845,13 +37855,13 @@ var codegenExpr_ = function(valueEnums) {
                           return "let mut " + (sanitizeIdent(v12) + (" = " + (sanitizeIdent(v12) + ".clone();\n    ")));
                         })(toCloneOutside));
                         var bodyCode = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(freeVars)(true)(v);
-                        var $1171 = length(toCloneInside) === 0;
-                        if ($1171) {
+                        var $1173 = length(toCloneInside) === 0;
+                        if ($1173) {
                           return "{\n    " + (outsideClonesCode + ("crate::Value::Func1(purust_core::Func1::Static(|mut _u: crate::UnknownType| -> crate::UnknownType {\n" + ("        " + (bodyCode + "\n    } as fn(crate::UnknownType) -> crate::UnknownType))\n}"))));
                         }
                         ;
-                        var $1172 = length(toCloneOutside) > 0;
-                        if ($1172) {
+                        var $1174 = length(toCloneOutside) > 0;
+                        if ($1174) {
                           return "{\n    " + (outsideClonesCode + ("crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" + (insideClonesCode + ("        " + (bodyCode + "\n    })))\n}")))));
                         }
                         ;
@@ -37884,8 +37894,8 @@ var codegenExpr_ = function(valueEnums) {
                         };
                         var inner = stripTyped(v.value1);
                         var effectiveTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v);
-                        var $1179 = continuesLoop(currentMod)(mbLoop)(inner);
-                        if ($1179) {
+                        var $1181 = continuesLoop(currentMod)(mbLoop)(inner);
+                        if ($1181) {
                           return codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(inEffectBlock)(inner);
                         }
                         ;
@@ -37920,19 +37930,19 @@ var codegenExpr_ = function(valueEnums) {
                                   return "lvl_" + show16(unwrap9(v3.value1));
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1621, column 50 - line 1623, column 64): " + [v3.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1624, column 50 - line 1626, column 64): " + [v3.value0.constructor.name]);
                               })(toArray3(inner.value0));
                               return new Tuple(p1, inner.value1);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1617, column 39 - line 1624, column 31): " + [v22.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1620, column 39 - line 1627, column 31): " + [v22.constructor.name]);
                           })();
                           var actualTy = (function() {
                             var retTy2 = extractFinalRetType(effectiveTy);
                             var remainingArgTys = drop(length(v1.value0))(argTys);
                             var finalRetTy = (function() {
-                              var $1198 = length(remainingArgTys) > 0;
-                              if ($1198) {
+                              var $1200 = length(remainingArgTys) > 0;
+                              if ($1200) {
                                 return new Func(remainingArgTys, retTy2);
                               }
                               ;
@@ -37958,7 +37968,7 @@ var codegenExpr_ = function(valueEnums) {
                               return "lvl_" + show16(unwrap9(v12.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1635, column 49 - line 1637, column 51): " + [v12.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1638, column 49 - line 1640, column 51): " + [v12.value0.constructor.name]);
                           })(inner.value0);
                           var actualTy = (function() {
                             var retTy2 = extractFinalRetType(effectiveTy);
@@ -37970,8 +37980,8 @@ var codegenExpr_ = function(valueEnums) {
                             })(paramsArr);
                             var remainingArgTys = drop(length(paramsArr))(argTys2);
                             var finalRetTy = (function() {
-                              var $1208 = length(remainingArgTys) > 0;
-                              if ($1208) {
+                              var $1210 = length(remainingArgTys) > 0;
+                              if ($1210) {
                                 return new Func(remainingArgTys, retTy2);
                               }
                               ;
@@ -37992,7 +38002,7 @@ var codegenExpr_ = function(valueEnums) {
                               return "lvl_" + show16(unwrap9(v12.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1648, column 49 - line 1650, column 51): " + [v12.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1651, column 49 - line 1653, column 51): " + [v12.value0.constructor.name]);
                           })(inner.value0);
                           var actualTy = (function() {
                             var retTy2 = extractFinalRetType(effectiveTy);
@@ -38004,8 +38014,8 @@ var codegenExpr_ = function(valueEnums) {
                             })(paramsArr);
                             var remainingArgTys = drop(length(paramsArr))(argTys2);
                             var finalRetTy = (function() {
-                              var $1216 = length(remainingArgTys) > 0;
-                              if ($1216) {
+                              var $1218 = length(remainingArgTys) > 0;
+                              if ($1218) {
                                 return new Func(remainingArgTys, retTy2);
                               }
                               ;
@@ -38047,14 +38057,14 @@ var codegenExpr_ = function(valueEnums) {
                                             return valTy2;
                                           }
                                           ;
-                                          throw new Error("Failed pattern match at Purust.CodeGen (line 1678, column 65 - line 1680, column 63): " + [v5.constructor.name]);
+                                          throw new Error("Failed pattern match at Purust.CodeGen (line 1681, column 65 - line 1683, column 63): " + [v5.constructor.name]);
                                         }
                                         ;
                                         if (mbDecl instanceof Nothing) {
                                           return valTy2;
                                         }
                                         ;
-                                        throw new Error("Failed pattern match at Purust.CodeGen (line 1677, column 43 - line 1681, column 61): " + [mbDecl.constructor.name]);
+                                        throw new Error("Failed pattern match at Purust.CodeGen (line 1680, column 43 - line 1684, column 61): " + [mbDecl.constructor.name]);
                                       }
                                       ;
                                       return valTy2;
@@ -38075,8 +38085,8 @@ var codegenExpr_ = function(valueEnums) {
                             var fields = joinWith(", ")(propsCode);
                             var className = sanitizeIdent(fromMaybe("Unknown")(last(v1.value1)));
                             var structName = (function() {
-                              var $1240 = modName === currentMod;
-                              if ($1240) {
+                              var $1242 = modName === currentMod;
+                              if ($1242) {
                                 return "crate::" + className;
                               }
                               ;
@@ -38099,10 +38109,10 @@ var codegenExpr_ = function(valueEnums) {
                       if (v instanceof App2) {
                         var transfer = function(fields2) {
                           return bind25(rewriteOwnedFields(valueEnums)(currentMod)(aritiesMap)(globalClassFields)(bound2)(fields2)(v))(function(rewritten) {
-                            var $1248 = all2(function(name3) {
+                            var $1250 = all2(function(name3) {
                               return member10(name3)(freeVariables2(rewritten));
                             })(fields2.names);
-                            if ($1248) {
+                            if ($1250) {
                               return new Just({
                                 fields: fields2,
                                 rewritten
@@ -38181,8 +38191,8 @@ var codegenExpr_ = function(valueEnums) {
                           var workerWithArgs = function(movedArgs) {
                             return bind25(directName(v.value0))(function(v22) {
                               return bind25(lookup15(v22.value1)(aritiesMap))(function(fnType) {
-                                var $1265 = !member10(v22.value1)(reuseContext.workers) || (length(extractAllArgTypes(fnType)) !== length(movedArgs) || codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(appTy) !== "std::rc::Rc<" + (v1.value0.fields.nativeType + ">"));
-                                if ($1265) {
+                                var $1267 = !member10(v22.value1)(reuseContext.workers) || (length(extractAllArgTypes(fnType)) !== length(movedArgs) || codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(appTy) !== "std::rc::Rc<" + (v1.value0.fields.nativeType + ">"));
+                                if ($1267) {
                                   return Nothing.value;
                                 }
                                 ;
@@ -38217,14 +38227,14 @@ var codegenExpr_ = function(valueEnums) {
                                   return false;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1736, column 40 - line 1743, column 35): " + [v4.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1739, column 40 - line 1746, column 35): " + [v4.constructor.name]);
                               }
                               ;
                               if (v3 instanceof Nothing) {
                                 return false;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1735, column 50 - line 1744, column 33): " + [v3.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1738, column 50 - line 1747, column 33): " + [v3.constructor.name]);
                             }
                             ;
                             return false;
@@ -38339,8 +38349,8 @@ var codegenExpr_ = function(valueEnums) {
                                 var predicate = postChildPlan.value0.name + ("(" + (joinWith(", ")(map58(reference2)(postChildPlan.value0.argumentFields)) + ")"));
                                 var pattern2 = v1.value0.fields.constructor + ("(" + (joinWith(", ")(references2) + ")"));
                                 var copiedScalars2 = joinWith(" ")(mapMaybe(function(v22) {
-                                  var $1306 = copyScalarType(valueEnums)(currentMod)(v22.value1);
-                                  if ($1306) {
+                                  var $1308 = copyScalarType(valueEnums)(currentMod)(v22.value1);
+                                  if ($1308) {
                                     return map120(function(name3) {
                                       return "let mut " + (name3 + (" = (*" + (reference2(v22.value0) + ").clone();")));
                                     })(index(v1.value0.fields.names)(v22.value0));
@@ -38352,7 +38362,7 @@ var codegenExpr_ = function(valueEnums) {
                                 return "{ /* purust child call: post-call fields */ let mut " + (v1.value0.fields.source + (" = " + (v1.value0.fields.source + ("; " + ("if let std::option::Option::Some(_purust_post_slot) = std::rc::Rc::get_mut(&mut " + (v1.value0.fields.source + (") { " + ("let " + (pattern2 + (" = _purust_post_slot else { unreachable!() }; " + (copiedScalars2 + (" " + ("let mut " + (childName2 + (" = std::mem::replace(" + (reference2(postChildPlan.value0.update.index) + (", (*" + (reference2(postChildPlan.value0.update.sibling) + (").clone()); " + ("let _purust_post_child = " + (replacement2 + ("; *" + (reference2(postChildPlan.value0.update.index) + (" = _purust_post_child; " + ("if " + (predicate + (" { " + (v1.value0.fields.source + (" } else { " + ("let std::option::Option::Some(" + (ownedFieldsPattern(v1.value0.fields) + (") = _purust_post_slot.__purust_take() else { unreachable!() }; " + (postChildPlan.value0.afterCall + (" } } else " + (normal + " }")))))))))))))))))))))))))))))))))));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1805, column 30 - line 1826, column 71): " + [postChildPlan.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1808, column 30 - line 1829, column 71): " + [postChildPlan.constructor.name]);
                             })();
                             if (childPlan instanceof Nothing) {
                               return postNormal;
@@ -38370,8 +38380,8 @@ var codegenExpr_ = function(valueEnums) {
                               })(v1.value0.fields.names);
                               var pattern = v1.value0.fields.constructor + ("(" + (joinWith(", ")(references) + ")"));
                               var copiedScalars = joinWith(" ")(mapMaybe(function(v22) {
-                                var $1312 = copyScalarType(valueEnums)(currentMod)(v22.value1);
-                                if ($1312) {
+                                var $1314 = copyScalarType(valueEnums)(currentMod)(v22.value1);
+                                if ($1314) {
                                   return map120(function(name3) {
                                     return "let mut " + (name3 + (" = (*" + (reference(v22.value0) + ").clone();")));
                                   })(index(v1.value0.fields.names)(v22.value0));
@@ -38381,25 +38391,25 @@ var codegenExpr_ = function(valueEnums) {
                               })(mapWithIndex2(Tuple.create)(v1.value0.fields.types)));
                               var childName = fromMaybe("_purust_owned_child")(index(v1.value0.fields.names)(childPlan.value0.update.index));
                               var fast = "{ /* purust child call: retained fields */ let mut " + (v1.value0.fields.source + (" = " + (v1.value0.fields.source + ("; " + ("if let std::option::Option::Some(_purust_child_slot) = std::rc::Rc::get_mut(&mut " + (v1.value0.fields.source + (") { " + ("let " + (pattern + (" = _purust_child_slot else { unreachable!() }; " + (copiedScalars + (" " + ("let mut " + (childName + (" = std::mem::replace(" + (reference(childPlan.value0.update.index) + (", (*" + (reference(childPlan.value0.update.sibling) + (").clone()); " + ("let _purust_new_child = " + (replacement + ("; *" + (reference(childPlan.value0.update.index) + (" = _purust_new_child; " + (v1.value0.fields.source + (" } else " + (normal + " }")))))))))))))))))))))))))));
-                              var $1315 = $$null(childPlan.value0.guards);
-                              if ($1315) {
+                              var $1317 = $$null(childPlan.value0.guards);
+                              if ($1317) {
                                 return fast;
                               }
                               ;
                               return "if " + (joinWith(" && ")(childPlan.value0.guards) + (" { " + (fast + (" } else { " + (postNormal + " }")))));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1827, column 16 - line 1847, column 112): " + [childPlan.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1830, column 16 - line 1850, column 112): " + [childPlan.constructor.name]);
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1801, column 12 - line 1847, column 112): " + [workerCall.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1804, column 12 - line 1850, column 112): " + [workerCall.constructor.name]);
                         }
                         ;
                         if (v1 instanceof Nothing) {
                           return genApp(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(appTy)(v.value0)(toArray3(v.value1));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 1709, column 8 - line 1848, column 158): " + [v1.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 1712, column 8 - line 1851, column 158): " + [v1.constructor.name]);
                       }
                       ;
                       if (v instanceof UncurriedApp) {
@@ -38418,7 +38428,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "// Unsupported UncurriedEffectApp without args\n";
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1856, column 12 - line 1858, column 75): " + [arg0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1859, column 12 - line 1861, column 75): " + [arg0.constructor.name]);
                         }
                         ;
                         if (v.value0 instanceof Accessor && (v.value0.value1 instanceof GetProp && v.value0.value1.value0 === "logRecord")) {
@@ -38431,7 +38441,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "// Unsupported UncurriedEffectApp without args\n";
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1861, column 12 - line 1863, column 75): " + [arg0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1864, column 12 - line 1866, column 75): " + [arg0.constructor.name]);
                         }
                         ;
                         if (v.value0 instanceof Typed && (v.value0.value1 instanceof Var && v.value0.value1.value0.value1 === "logRecord")) {
@@ -38444,7 +38454,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "// Unsupported UncurriedEffectApp without args\n";
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1866, column 12 - line 1868, column 75): " + [arg0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1869, column 12 - line 1871, column 75): " + [arg0.constructor.name]);
                         }
                         ;
                         if (v.value0 instanceof Var && v.value0.value0.value1 === "logRecord") {
@@ -38457,7 +38467,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "// Unsupported UncurriedEffectApp without args\n";
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1871, column 12 - line 1873, column 75): " + [arg0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1874, column 12 - line 1876, column 75): " + [arg0.constructor.name]);
                         }
                         ;
                         var appTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(new UncurriedEffectApp(v.value0, v.value1));
@@ -38475,8 +38485,8 @@ var codegenExpr_ = function(valueEnums) {
                         };
                         var childName = function(depth) {
                           return "_record_child" + (function() {
-                            var $1357 = depth === 0;
-                            if ($1357) {
+                            var $1359 = depth === 0;
+                            if ($1359) {
                               return "";
                             }
                             ;
@@ -38486,8 +38496,8 @@ var codegenExpr_ = function(valueEnums) {
                         var valueName = function(depth) {
                           return function(i) {
                             return (function() {
-                              var $1358 = depth === 0;
-                              if ($1358) {
+                              var $1360 = depth === 0;
+                              if ($1360) {
                                 return "_record";
                               }
                               ;
@@ -38509,7 +38519,7 @@ var codegenExpr_ = function(valueEnums) {
                                     return "let mut " + (childName(depth) + (" = " + (parent + (".get_" + (sanitizeIdent(v22.value0) + ("();\n    " + (setter + ("(crate::Value::Unit);\n    " + (setters(depth + 1 | 0)(childName(depth))(v22.value1.value0) + ("\n    " + (setter + ("(" + (childName(depth) + ");")))))))))))));
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 1924, column 14 - line 1930, column 67): " + [v22.value1.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 1927, column 14 - line 1933, column 67): " + [v22.value1.constructor.name]);
                                 };
                               })(v12.value0));
                             };
@@ -38527,7 +38537,7 @@ var codegenExpr_ = function(valueEnums) {
                                   return stagedValues(depth + 1 | 0)(v22.value1.value0);
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1901, column 9 - line 1903, column 62): " + [v22.value1.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1904, column 9 - line 1906, column 62): " + [v22.value1.constructor.name]);
                               };
                             })(v12.value0));
                           };
@@ -38602,8 +38612,8 @@ var codegenExpr_ = function(valueEnums) {
                         var branchTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v);
                         var genBranchBody = function(body) {
                           var raw = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(false)(body);
-                          var $1402 = continuesLoop(currentMod)(mbLoop)(body);
-                          if ($1402) {
+                          var $1404 = continuesLoop(currentMod)(mbLoop)(body);
+                          if ($1404) {
                             return raw;
                           }
                           ;
@@ -38655,7 +38665,7 @@ var codegenExpr_ = function(valueEnums) {
                                   return "none";
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1972, column 138 - line 1974, column 28): " + [v12.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1975, column 138 - line 1977, column 28): " + [v12.constructor.name]);
                               })() + (", lvl_3 in arities: " + (function() {
                                 var v12 = lookup15("lvl_3")(aritiesMap);
                                 if (v12 instanceof Just) {
@@ -38666,7 +38676,7 @@ var codegenExpr_ = function(valueEnums) {
                                   return "none";
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 1974, column 60 - line 1976, column 28): " + [v12.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 1977, column 60 - line 1979, column 28): " + [v12.constructor.name]);
                               })())));
                             }
                             ;
@@ -38700,7 +38710,7 @@ var codegenExpr_ = function(valueEnums) {
                               return currentMod;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1983, column 26 - line 1985, column 36): " + [v.value0.value0.value0.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1986, column 26 - line 1988, column 36): " + [v.value0.value0.value0.value0.constructor.name]);
                           })();
                           var tagTy = fromMaybe(aTy)(map120(extractFinalRetType)(lookup15(ctorModule + ("_" + sanitizeIdent(v.value0.value0.value0.value1)))(aritiesMap)));
                           var v1 = unwrapType(tagTy);
@@ -38718,7 +38728,7 @@ var codegenExpr_ = function(valueEnums) {
                                 return "Nothing";
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2002, column 83 - line 2004, column 40): " + [lookupRes.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2005, column 83 - line 2007, column 40): " + [lookupRes.constructor.name]);
                             })() + " */ ")));
                             var hasArgs = (function() {
                               var v22 = map120(unwrapType)(lookupRes);
@@ -38738,16 +38748,16 @@ var codegenExpr_ = function(valueEnums) {
                             var boxedA = boxUnbox(valueEnums)(globalClassFields)(currentMod)(new ADT(v1.value0, v1.value1, []))(aTy)(aStrRaw);
                             var actualClassName = fromMaybe(v1.value0)(last(v1.value1));
                             var enumName = (function() {
-                              var $1435 = modName === currentMod;
-                              if ($1435) {
+                              var $1437 = modName === currentMod;
+                              if ($1437) {
                                 return "crate::" + sanitizeIdent(actualClassName);
                               }
                               ;
                               return "Purs_" + (modName + ("::" + sanitizeIdent(actualClassName)));
                             })();
                             var receiver = "(" + (boxedA + (")" + (function() {
-                              var $1436 = isValueEnum(valueEnums)(modName)(actualClassName);
-                              if ($1436) {
+                              var $1438 = isValueEnum(valueEnums)(modName)(actualClassName);
+                              if ($1438) {
                                 return "";
                               }
                               ;
@@ -39023,18 +39033,18 @@ var codegenExpr_ = function(valueEnums) {
                             return currentMod;
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2104, column 19 - line 2106, column 32): " + [v.value1.value0.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2107, column 19 - line 2109, column 32): " + [v.value1.value0.value0.constructor.name]);
                         })();
                         var matchArgs = joinWith(", ")(map58(function(i) {
-                          var $1507 = i === v.value1.value5;
-                          if ($1507) {
+                          var $1509 = i === v.value1.value5;
+                          if ($1509) {
                             return "ref f";
                           }
                           ;
                           return "_";
                         })(range2(0)(v.value1.value5))) + (function() {
-                          var $1508 = v.value1.value5 >= 0;
-                          if ($1508) {
+                          var $1510 = v.value1.value5 >= 0;
+                          if ($1510) {
                             return ", ..";
                           }
                           ;
@@ -39042,8 +39052,8 @@ var codegenExpr_ = function(valueEnums) {
                         })();
                         var expectedBaseTy = new ADT(v.value1.value2, [modName, v.value1.value2], []);
                         var enumName = (function() {
-                          var $1509 = modName === currentMod;
-                          if ($1509) {
+                          var $1511 = modName === currentMod;
+                          if ($1511) {
                             return "crate::" + sanitizeIdent(v.value1.value2);
                           }
                           ;
@@ -39052,8 +39062,8 @@ var codegenExpr_ = function(valueEnums) {
                         var cName = sanitizeIdent(v.value1.value3);
                         var baseTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(v.value0);
                         var aliveForBase = (function() {
-                          var $1510 = isBorrowableLocal(operandType)(v.value0);
-                          if ($1510) {
+                          var $1512 = isBorrowableLocal(operandType)(v.value0);
+                          if ($1512) {
                             return difference6(alive)(freeVariables2(v.value0));
                           }
                           ;
@@ -39074,13 +39084,13 @@ var codegenExpr_ = function(valueEnums) {
                             return replaceAll(".")("_")(currentMod) + "_";
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2116, column 23 - line 2118, column 91): " + [v.value0.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2119, column 23 - line 2121, column 91): " + [v.value0.value0.constructor.name]);
                         })();
                         var fullName = modPrefix + sanitizeIdent(v.value0.value1);
                         var isAlive = member10(fullName)(alive);
                         var key = (function() {
-                          var $1523 = fullName === "main";
-                          if ($1523) {
+                          var $1525 = fullName === "main";
+                          if ($1525) {
                             return "main";
                           }
                           ;
@@ -39096,12 +39106,12 @@ var codegenExpr_ = function(valueEnums) {
                             return 0;
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2123, column 32 - line 2125, column 25): " + [v12.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2126, column 32 - line 2128, column 25): " + [v12.constructor.name]);
                         })();
                         var varCode = (function() {
                           if (true) {
-                            var $1527 = expectedArgsLength === 0;
-                            if ($1527) {
+                            var $1529 = expectedArgsLength === 0;
+                            if ($1529) {
                               return fullName + "()";
                             }
                             ;
@@ -39129,7 +39139,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "lvl_" + show16(unwrap9(v.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2139, column 14 - line 2141, column 47): " + [v.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2142, column 14 - line 2144, column 47): " + [v.value0.constructor.name]);
                         })();
                         var newBound = insert110(name2)(valTy)(bound2);
                         var newMbLoop = (function() {
@@ -39147,8 +39157,8 @@ var codegenExpr_ = function(valueEnums) {
                         var helperFor = function(v12) {
                           return function(v22) {
                             return bind25(lookup15(getTyPrefix(currentMod)(v12) + v12.value1)(reuseContext.constructors))(function(helper) {
-                              var $1538 = helper.typeName === v22;
-                              if ($1538) {
+                              var $1540 = helper.typeName === v22;
+                              if ($1540) {
                                 return new Just({
                                   name: helper.name,
                                   resultType: helper.resultType
@@ -39172,8 +39182,8 @@ var codegenExpr_ = function(valueEnums) {
                         var candidates = ownedFieldSources(valueEnums)(currentMod)(aritiesMap)(globalClassFields)(bound2)(alive)(projectionChain(v.value2));
                         var bodyVars = freeVariables2(v.value3);
                         var deadCode = (function() {
-                          var $1541 = member10(name2)(bodyVars);
-                          if ($1541) {
+                          var $1543 = member10(name2)(bodyVars);
+                          if ($1543) {
                             return "";
                           }
                           ;
@@ -39191,13 +39201,13 @@ var codegenExpr_ = function(valueEnums) {
                           return "{ let mut " + (v1.value0.fields.source + (" = " + (v1.value0.fields.source + ("; " + ("let _taken = std::rc::Rc::get_mut(&mut " + (v1.value0.fields.source + (").and_then(|node| node.__purust_take()); " + ("match _taken { std::option::Option::Some(" + (ownedFieldsPattern(v1.value0.fields) + (") => " + (codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bindOwnedFields(v1.value0.fields)(bound2))(alive)(inEffectBlock)(v1.value0.reused) + (", std::option::Option::None => " + (codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(insert21(v1.value0.fields.source)(alive))(inEffectBlock)(v) + ", _ => unreachable!() } }")))))))))))));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 2167, column 8 - line 2176, column 36): " + [v1.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 2170, column 8 - line 2179, column 36): " + [v1.constructor.name]);
                       }
                       ;
                       if (v instanceof PrimEffect) {
                         var prefix = (function() {
-                          var $1550 = currentMod === "Control_Monad_ST_Internal";
-                          if ($1550) {
+                          var $1552 = currentMod === "Control_Monad_ST_Internal";
+                          if ($1552) {
                             return "crate::";
                           }
                           ;
@@ -39221,7 +39231,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "Control_Monad_ST_Internal_write(" + (operand(union9(alive)(freeVariables2(v.value0.value0)))(v.value0.value1) + (", " + (operand(alive)(v.value0.value0) + ")")));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2183, column 16 - line 2187, column 150): " + [v.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2186, column 16 - line 2190, column 150): " + [v.value0.constructor.name]);
                         })();
                         return "(" + (prefix + (call2 + ").unwrap_func1()(crate::Value::Unit)"));
                       }
@@ -39265,7 +39275,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "lvl_" + show16(unwrap9(v.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2191, column 16 - line 2193, column 49): " + [v.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2194, column 16 - line 2196, column 49): " + [v.value0.constructor.name]);
                         })();
                         var newMbLoop = (function() {
                           if (mbLoop instanceof Just && mbLoop.value0.name === name2) {
@@ -39335,16 +39345,16 @@ var codegenExpr_ = function(valueEnums) {
                         var rawBodyCode = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(newMbLoop)(aritiesMap)(globalClassFields)(newBound)(alive)(inEffectBlock)(v.value3);
                         var bodyVars = freeVariables2(v.value3);
                         var deadCode = (function() {
-                          var $1601 = member10(name2)(bodyVars);
-                          if ($1601) {
+                          var $1603 = member10(name2)(bodyVars);
+                          if ($1603) {
                             return "";
                           }
                           ;
                           return "    drop(" + (name2 + ");\n");
                         })();
                         var bodyCode = (function() {
-                          var $1602 = isEffectNode(v.value3);
-                          if ($1602) {
+                          var $1604 = isEffectNode(v.value3);
+                          if ($1604) {
                             return rawBodyCode;
                           }
                           ;
@@ -39353,8 +39363,8 @@ var codegenExpr_ = function(valueEnums) {
                         var aliveForVal = union9(alive)(freeVariables2(v.value3));
                         var rawValCode = boxUnbox(valueEnums)(globalClassFields)(currentMod)(Any.value)(inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(realVal))(codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForVal)(true)(realVal));
                         var valCode = (function() {
-                          var $1603 = isUncurriedApp(realVal);
-                          if ($1603) {
+                          var $1605 = isUncurriedApp(realVal);
+                          if ($1605) {
                             return rawValCode;
                           }
                           ;
@@ -39377,7 +39387,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "lvl_" + show16(unwrap9(v.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2275, column 16 - line 2277, column 49): " + [v.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2278, column 16 - line 2280, column 49): " + [v.value0.constructor.name]);
                         })();
                         var t = (function() {
                           var v12 = lookup15(name2)(bound2);
@@ -39389,11 +39399,11 @@ var codegenExpr_ = function(valueEnums) {
                             return Any.value;
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2278, column 13 - line 2280, column 25): " + [v12.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2281, column 13 - line 2283, column 25): " + [v12.constructor.name]);
                         })();
                         var v1 = (function() {
-                          var $1613 = name2 === "sup";
-                          if ($1613) {
+                          var $1615 = name2 === "sup";
+                          if ($1615) {
                             return trace2("LOCAL sup type is: " + printType(t))(function(v22) {
                               return unit;
                             });
@@ -39401,8 +39411,8 @@ var codegenExpr_ = function(valueEnums) {
                           ;
                           return unit;
                         })();
-                        var $1614 = member10(name2)(alive);
-                        if ($1614) {
+                        var $1616 = member10(name2)(alive);
+                        if ($1616) {
                           return name2 + ".clone()";
                         }
                         ;
@@ -39457,23 +39467,23 @@ var codegenExpr_ = function(valueEnums) {
                               })(subsequent)));
                               var vCode = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v12.value1);
                               var vFinal = boxUnbox(valueEnums)(globalClassFields)(currentMod)(Any.value)(vTy)(vCode);
-                              return sanitizeIdent(v12.value0) + (": Some(" + (vFinal + ")"));
+                              return recordFieldIdent(v12.value0) + (": Some(" + (vFinal + ")"));
                             };
                           })(v.value0.value0));
                           var shape = joinWith("_")(map58(sanitizeIdent)(sortBy(compare11)(map58(function(v12) {
                             return v12.value0;
                           })(v.value0.value0))));
                           var structName = (function() {
-                            var $1634 = $$null2(shape);
-                            if ($1634) {
+                            var $1636 = $$null2(shape);
+                            if ($1636) {
                               return "Record_a";
                             }
                             ;
                             return "Record_" + shape;
                           })();
                           return "crate::Value::" + (structName + ("(perceus_ptr::PerceusPtr::new(" + (structName + (" { " + (fields + ((function() {
-                            var $1635 = length(v.value0.value0) > 0;
-                            if ($1635) {
+                            var $1637 = length(v.value0.value0) > 0;
+                            if ($1637) {
                               return ", ";
                             }
                             ;
@@ -39481,7 +39491,7 @@ var codegenExpr_ = function(valueEnums) {
                           })() + "..Default::default() }))"))))));
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 2283, column 14 - line 2310, column 188): " + [v.value0.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 2286, column 14 - line 2313, column 188): " + [v.value0.constructor.name]);
                       }
                       ;
                       if (v instanceof Abs) {
@@ -39494,7 +39504,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "lvl_" + show16(unwrap9(v12.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2313, column 45 - line 2315, column 47): " + [v12.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2316, column 45 - line 2318, column 47): " + [v12.value0.constructor.name]);
                         })(toArray3(v.value0));
                         return genAbs(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map58(function(v12) {
                           return Any.value;
@@ -39511,7 +39521,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "lvl_" + show16(unwrap9(v12.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2319, column 45 - line 2321, column 47): " + [v12.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2322, column 45 - line 2324, column 47): " + [v12.value0.constructor.name]);
                         })(v.value0);
                         return genAbs(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map58(function(v12) {
                           return Any.value;
@@ -39528,7 +39538,7 @@ var codegenExpr_ = function(valueEnums) {
                             return "lvl_" + show16(unwrap9(v12.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2325, column 45 - line 2327, column 47): " + [v12.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2328, column 45 - line 2330, column 47): " + [v12.value0.constructor.name]);
                         })(v.value0);
                         return genEffectAbs(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map58(function(v12) {
                           return Any.value;
@@ -39553,8 +39563,8 @@ var codegenExpr_ = function(valueEnums) {
                             var structName = (function() {
                               if (v.value0.value0 instanceof Just) {
                                 var mnStr = replaceAll(".")("_")(v.value0.value0.value0);
-                                var $1663 = mnStr === currentMod;
-                                if ($1663) {
+                                var $1665 = mnStr === currentMod;
+                                if ($1665) {
                                   return "crate::" + sanitizeIdent(v.value2);
                                 }
                                 ;
@@ -39565,7 +39575,7 @@ var codegenExpr_ = function(valueEnums) {
                                 return "crate::" + sanitizeIdent(v.value2);
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2341, column 28 - line 2345, column 64): " + [v.value0.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2344, column 28 - line 2348, column 64): " + [v.value0.value0.constructor.name]);
                             })();
                             var structFieldsCode = joinWith(", ")(mapWithIndex2(function(i) {
                               return function(v3) {
@@ -39578,8 +39588,8 @@ var codegenExpr_ = function(valueEnums) {
                                 var valCode2 = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForV)(false)(v3.value1);
                                 var resCode = boxUnbox(valueEnums)(globalClassFields)(currentMod)(v4.value1)(valTy2)(valCode2);
                                 var v5 = (function() {
-                                  var $1670 = structName === "Purs_Data_Show::Show";
-                                  if ($1670) {
+                                  var $1672 = structName === "Purs_Data_Show::Show";
+                                  if ($1672) {
                                     return trace2("SHOW CtorSaturated field=" + (v4.value0 + (" expectedTy=" + (codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(v4.value1) + (" valTy=" + (codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(valTy2) + (" valCode=" + (valCode2 + (" resCode=" + resCode)))))))))(function(v6) {
                                       return unit;
                                     });
@@ -39600,8 +39610,8 @@ var codegenExpr_ = function(valueEnums) {
                             var renderFields = function(fieldBound2) {
                               return function(fieldAlive) {
                                 return function(fieldValues) {
-                                  var $1679 = $$null(fieldValues);
-                                  if ($1679) {
+                                  var $1681 = $$null(fieldValues);
+                                  if ($1681) {
                                     return "";
                                   }
                                   ;
@@ -39618,7 +39628,7 @@ var codegenExpr_ = function(valueEnums) {
                                           return replaceAll(".")("_")(currentMod) + "_";
                                         }
                                         ;
-                                        throw new Error("Failed pattern match at Purust.CodeGen (line 2390, column 37 - line 2392, column 106): " + [v.value0.value0.constructor.name]);
+                                        throw new Error("Failed pattern match at Purust.CodeGen (line 2393, column 37 - line 2395, column 106): " + [v.value0.value0.constructor.name]);
                                       })() + v.value3;
                                       var expectedFieldTy = (function() {
                                         var v3 = lookup15(ctorFqn)(aritiesMap);
@@ -39630,7 +39640,7 @@ var codegenExpr_ = function(valueEnums) {
                                           return Any.value;
                                         }
                                         ;
-                                        throw new Error("Failed pattern match at Purust.CodeGen (line 2393, column 44 - line 2395, column 42): " + [v3.constructor.name]);
+                                        throw new Error("Failed pattern match at Purust.CodeGen (line 2396, column 44 - line 2398, column 42): " + [v3.constructor.name]);
                                       })();
                                       var aliveForV = union9(fieldAlive)(foldl2(union9)(empty3)(map58(freeVariables2)(subsequent)));
                                       var valCode2 = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(Nothing.value)(aritiesMap)(globalClassFields)(fieldBound2)(aliveForV)(false)(val);
@@ -39646,8 +39656,8 @@ var codegenExpr_ = function(valueEnums) {
                             var enumPrefix = (function() {
                               if (v.value0.value0 instanceof Just) {
                                 var mnStr = replaceAll(".")("_")(v.value0.value0.value0);
-                                var $1685 = mnStr === currentMod;
-                                if ($1685) {
+                                var $1687 = mnStr === currentMod;
+                                if ($1687) {
                                   return "crate::";
                                 }
                                 ;
@@ -39658,7 +39668,7 @@ var codegenExpr_ = function(valueEnums) {
                                 return "crate::";
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2359, column 29 - line 2363, column 38): " + [v.value0.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2362, column 29 - line 2366, column 38): " + [v.value0.value0.constructor.name]);
                             })();
                             var enumName = sanitizeIdent(v.value2);
                             var source2 = consumedConstructorSource(operandType)("std::rc::Rc<" + (enumPrefix + (enumName + ">")))(v.value3)(alive)(map58(function(v3) {
@@ -39673,7 +39683,7 @@ var codegenExpr_ = function(valueEnums) {
                                 return currentMod;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2398, column 29 - line 2400, column 39): " + [v.value0.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2401, column 29 - line 2403, column 39): " + [v.value0.value0.constructor.name]);
                             })();
                             var ctorClean = sanitizeIdent(v.value3);
                             var candidates = ownedFieldSources(valueEnums)(currentMod)(aritiesMap)(globalClassFields)(bound2)(alive)(values2);
@@ -39698,7 +39708,7 @@ var codegenExpr_ = function(valueEnums) {
                                 return alive;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2380, column 33 - line 2382, column 34): " + [source2.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2383, column 33 - line 2385, column 34): " + [source2.constructor.name]);
                             })();
                             var constructed = enumPrefix + (enumName + ("::" + (ctorClean + renderFields(bound2)(aliveForFields)(values2))));
                             var fallback = (function() {
@@ -39710,10 +39720,10 @@ var codegenExpr_ = function(valueEnums) {
                                 return "{ let _rebuilt = " + (constructed + ("; let mut _reused = " + (source2.value0 + "; if let std::option::Option::Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { *_slot = _rebuilt; _reused } else { std::rc::Rc::new(_rebuilt) } }")));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2402, column 27 - line 2407, column 88): " + [source2.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2405, column 27 - line 2410, column 88): " + [source2.constructor.name]);
                             })();
-                            var $1696 = isValueEnum(valueEnums)(ctorModule)(v.value2);
-                            if ($1696) {
+                            var $1698 = isValueEnum(valueEnums)(ctorModule)(v.value2);
+                            if ($1698) {
                               return constructed;
                             }
                             ;
@@ -39739,8 +39749,8 @@ var codegenExpr_ = function(valueEnums) {
                                 var valueCode = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(Nothing.value)(aritiesMap)(globalClassFields)(bound2)(aliveForFields)(false)(update3.value0.value);
                                 var pattern = transfer.value0.owned.constructor + ("(" + (joinWith(", ")(mapWithIndex2(function(i) {
                                   return function(v3) {
-                                    var $1699 = i === update3.value0.index;
-                                    if ($1699) {
+                                    var $1701 = i === update3.value0.index;
+                                    if ($1701) {
                                       return "_updated_field";
                                     }
                                     ;
@@ -39754,24 +39764,24 @@ var codegenExpr_ = function(valueEnums) {
                                 return "{ let mut " + (transfer.value0.owned.source + (" = " + (transfer.value0.owned.source + ("; " + ("let _taken = std::rc::Rc::get_mut(&mut " + (transfer.value0.owned.source + (").and_then(|node| node.__purust_take()); " + ("match _taken { std::option::Option::Some(" + (ownedFieldsPattern(transfer.value0.owned) + (") => { let _rebuilt = " + (rebuilt + ("; " + ("*std::rc::Rc::get_mut(&mut " + (transfer.value0.owned.source + (").unwrap() = _rebuilt; " + (transfer.value0.owned.source + (" }, " + ("std::option::Option::None => " + (fallback + ", _ => unreachable!() } }")))))))))))))))))));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2421, column 23 - line 2434, column 97): " + [update3.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2424, column 23 - line 2437, column 97): " + [update3.constructor.name]);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 2408, column 85 - line 2434, column 97): " + [transfer.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 2411, column 85 - line 2437, column 97): " + [transfer.constructor.name]);
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2338, column 12 - line 2434, column 97): " + [v2.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 2341, column 12 - line 2437, column 97): " + [v2.constructor.name]);
                         }
                         ;
-                        throw new Error("Failed pattern match at Purust.CodeGen (line 2331, column 5 - line 2434, column 97): " + [v1.constructor.name]);
+                        throw new Error("Failed pattern match at Purust.CodeGen (line 2334, column 5 - line 2437, column 97): " + [v1.constructor.name]);
                       }
                       ;
                       if (v instanceof CtorDef) {
                         var rustCtor = "crate::" + (sanitizeIdent(v.value1) + ("::" + sanitizeIdent(v.value2)));
                         var len = length(v.value3);
                         var enumPrefix = (function() {
-                          var $1713 = currentMod === v.value1;
-                          if ($1713) {
+                          var $1715 = currentMod === v.value1;
+                          if ($1715) {
                             return "crate::";
                           }
                           ;
@@ -39794,18 +39804,18 @@ var codegenExpr_ = function(valueEnums) {
                         var innerCall = "std::rc::Rc::new(" + (rustCtor + ("(" + (joinWith(", ")(map58(function(a) {
                           return a + ".clone()";
                         })(argNames)) + "))")));
-                        var $1714 = len === 0;
-                        if ($1714) {
-                          var $1715 = isValueEnum(valueEnums)(currentMod)(v.value1);
-                          if ($1715) {
+                        var $1716 = len === 0;
+                        if ($1716) {
+                          var $1717 = isValueEnum(valueEnums)(currentMod)(v.value1);
+                          if ($1717) {
                             return rustCtor;
                           }
                           ;
                           return "std::rc::Rc::new(" + (rustCtor + ")");
                         }
                         ;
-                        var $1716 = len <= 11;
-                        if ($1716) {
+                        var $1718 = len <= 11;
+                        if ($1718) {
                           return "purust_core::Func" + (show16(len) + ("::Static(|" + (argsCode + ("| -> " + (retTyStr + (" { " + (innerCall + (" } as fn(" + (joinWith(", ")(map58(function(i) {
                             return codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(fromMaybe(Any.value)(index(argTys)(i)));
                           })(range2(0)(len - 1 | 0))) + (") -> " + (retTyStr + ")")))))))))));
@@ -39849,11 +39859,11 @@ var codegenExpr_ = function(valueEnums) {
                                 return false;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2473, column 43 - line 2475, column 33): " + [extracted.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2476, column 43 - line 2478, column 33): " + [extracted.constructor.name]);
                             })();
                             var aliveForVal2 = union9(alive)(union9(bindsVarsForAlive)(union9(freeVariables2(v.value2))(varsSubsequent)));
-                            var $1736 = isTCO && length(allArgTypes) > 0;
-                            if ($1736) {
+                            var $1738 = isTCO && length(allArgTypes) > 0;
+                            if ($1738) {
                               var paramsArr2 = (function() {
                                 if (extracted instanceof Just) {
                                   return extracted.value0.value0;
@@ -39863,7 +39873,7 @@ var codegenExpr_ = function(valueEnums) {
                                   return [];
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 2478, column 32 - line 2480, column 35): " + [extracted.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 2481, column 32 - line 2483, column 35): " + [extracted.constructor.name]);
                               })();
                               var innerExpr = (function() {
                                 if (extracted instanceof Just) {
@@ -39874,7 +39884,7 @@ var codegenExpr_ = function(valueEnums) {
                                   return v12.value1;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 2482, column 32 - line 2484, column 36): " + [extracted.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 2485, column 32 - line 2487, column 36): " + [extracted.constructor.name]);
                               })();
                               var fnName = sanitizeIdent(v12.value0) + "_impl";
                               var dedupedParams = dedupArgs(paramsArr2);
@@ -39904,8 +39914,8 @@ var codegenExpr_ = function(valueEnums) {
                               var bodyTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(innerBound)(innerExpr);
                               var bodyRaw = codegenExpr_(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop2)(aritiesMap)(globalClassFields)(innerBound)(freeVariables2(innerExpr))(false)(innerExpr);
                               var boxedBody = (function() {
-                                var $1751 = continuesLoop(currentMod)(mbLoop2)(innerExpr);
-                                if ($1751) {
+                                var $1753 = continuesLoop(currentMod)(mbLoop2)(innerExpr);
+                                if ($1753) {
                                   return bodyRaw;
                                 }
                                 ;
@@ -39913,8 +39923,8 @@ var codegenExpr_ = function(valueEnums) {
                               })();
                               var arity = length(paramPairs);
                               var bridgeCode = (function() {
-                                var $1752 = arity > 0 && arity <= 11;
-                                if ($1752) {
+                                var $1754 = arity > 0 && arity <= 11;
+                                if ($1754) {
                                   var innerArgs = joinWith(", ")(append16(map58(sanitizeIdent)(capturedArr))(map58(sanitizeIdent)(dedupedParams)));
                                   var innerCall2 = fnName + ("(" + (innerArgs + ")"));
                                   var clones = joinWith("\n        ")(map58(function(c) {
@@ -39923,8 +39933,8 @@ var codegenExpr_ = function(valueEnums) {
                                   var argsDecl = joinWith(", ")(map58(function(v22) {
                                     return "mut " + (sanitizeIdent(v22.value0) + (": " + codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(v22.value1)));
                                   })(paramPairs));
-                                  var $1756 = length(capturedArr) === 0;
-                                  if ($1756) {
+                                  var $1758 = length(capturedArr) === 0;
+                                  if ($1758) {
                                     return "purust_core::Func" + (show16(arity) + ("::Static(|" + (argsDecl + ("| -> " + (codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(retType) + (" {\n        " + (innerCall2 + ("\n    } as fn(" + (joinWith(", ")(map58(function(v22) {
                                       return codegenExprTypeWithValueEnums(valueEnums)(currentMod)(false)(v22.value1);
                                     })(paramPairs)) + (") -> " + (codegenExprTypeWithValueEnums(valueEnums)(currentMod)(true)(retType) + ")")))))))))));
@@ -39993,8 +40003,8 @@ var codegenBindingGroup = function(options) {
                 return function(group4) {
                   return unsafePerformEffect(function __do() {
                     write(empty3)(globalConsumed)();
-                    var $1775 = $$null(group4.bindings);
-                    if ($1775) {
+                    var $1777 = $$null(group4.bindings);
+                    if ($1777) {
                       return {
                         code: "",
                         arities: aritiesMap
@@ -40022,8 +40032,8 @@ var codegenBindingGroup = function(options) {
                       var inferredType = fromMaybe(Any.value)(lookup15(identName)(mergedArities));
                       var v1 = (function() {
                         var allArgTypes = extractAllArgTypes(inferredType);
-                        var $1785 = length(allArgTypes) > 0;
-                        if ($1785) {
+                        var $1787 = length(allArgTypes) > 0;
+                        if ($1787) {
                           var retType = extractFinalRetType(inferredType);
                           var extracted = extractAbsParams(length(allArgTypes))(innerExpr);
                           var isMatchingAbs = (function() {
@@ -40035,7 +40045,7 @@ var codegenBindingGroup = function(options) {
                               return false;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 848, column 31 - line 850, column 33): " + [extracted.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 851, column 31 - line 853, column 33): " + [extracted.constructor.name]);
                           })();
                           var paramsArr = (function() {
                             if (extracted instanceof Just) {
@@ -40050,7 +40060,7 @@ var codegenBindingGroup = function(options) {
                               })(allArgTypes);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 851, column 27 - line 853, column 79): " + [extracted.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 854, column 27 - line 856, column 79): " + [extracted.constructor.name]);
                           })();
                           var deduped = dedupArgs(paramsArr);
                           var mbLoop = (function() {
@@ -40066,8 +40076,8 @@ var codegenBindingGroup = function(options) {
                           var paramPairs = zip(deduped)(allArgTypes);
                           var bound2 = fromFoldable63(map58(function(v2) {
                             return new Tuple((function() {
-                              var $1794 = v2.value0 === "_";
-                              if ($1794) {
+                              var $1796 = v2.value0 === "_";
+                              if ($1796) {
                                 return "_";
                               }
                               ;
@@ -40078,8 +40088,8 @@ var codegenBindingGroup = function(options) {
                             if (extracted instanceof Just) {
                               var bodyTy = inferTypeExpr(modNameStr)(mergedArities)(globalClassFields)(bound2)(extracted.value0.value1);
                               var bodyRaw = codegenExpr_(valueEnums)(modNameStr)(allZeroArity)(reuseContext)(mbLoop)(mergedArities)(globalClassFields)(bound2)(empty3)(false)(extracted.value0.value1);
-                              var $1798 = continuesLoop(modNameStr)(mbLoop)(extracted.value0.value1);
-                              if ($1798) {
+                              var $1800 = continuesLoop(modNameStr)(mbLoop)(extracted.value0.value1);
+                              if ($1800) {
                                 return bodyRaw;
                               }
                               ;
@@ -40101,8 +40111,8 @@ var codegenBindingGroup = function(options) {
                                       var paramTys = take(arity)(expectedArgs);
                                       var restArgs = drop(arity)(expectedArgs);
                                       var bodyExpectedTy = (function() {
-                                        var $1807 = length(restArgs) > 0;
-                                        if ($1807) {
+                                        var $1809 = length(restArgs) > 0;
+                                        if ($1809) {
                                           return new Func(restArgs, retTy);
                                         }
                                         ;
@@ -40118,8 +40128,8 @@ var codegenBindingGroup = function(options) {
                                       var paramTys = take(arity)(expectedArgs);
                                       var restArgs = drop(arity)(expectedArgs);
                                       var bodyExpectedTy = (function() {
-                                        var $1810 = length(restArgs) > 0;
-                                        if ($1810) {
+                                        var $1812 = length(restArgs) > 0;
+                                        if ($1812) {
                                           return new Func(restArgs, retTy);
                                         }
                                         ;
@@ -40147,8 +40157,8 @@ var codegenBindingGroup = function(options) {
                                       var $tco_done = false;
                                       var $tco_result;
                                       function $tco_loop(accTy, accCode, idx) {
-                                        var $1813 = idx >= length(argsCodeAndType);
-                                        if ($1813) {
+                                        var $1815 = idx >= length(argsCodeAndType);
+                                        if ($1815) {
                                           $tco_done = true;
                                           return new Tuple(accTy, accCode);
                                         }
@@ -40156,11 +40166,11 @@ var codegenBindingGroup = function(options) {
                                         var v42 = unwrapType(accTy);
                                         if (v42 instanceof Func) {
                                           var arity = length(v42.value0);
-                                          var $1815 = arity > 0 && arity <= 11;
-                                          if ($1815) {
+                                          var $1817 = arity > 0 && arity <= 11;
+                                          if ($1817) {
                                             var availableArgsCount = length(argsCodeAndType) - idx | 0;
-                                            var $1816 = availableArgsCount >= arity;
-                                            if ($1816) {
+                                            var $1818 = availableArgsCount >= arity;
+                                            if ($1818) {
                                               var passedArgs2 = slice(idx)(idx + arity | 0)(argsCodeAndType);
                                               var boxedArgs = mapWithIndex2(function(i) {
                                                 return function(v52) {
@@ -40208,35 +40218,35 @@ var codegenBindingGroup = function(options) {
                                 return boxUnbox(valueEnums)(globalClassFields)(modNameStr)(retType)(v4.value0)(v4.value1);
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 813, column 1 - line 813, column 322): " + [extracted.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 816, column 1 - line 816, column 322): " + [extracted.constructor.name]);
                             };
                             if (extracted instanceof Nothing) {
                               if (isSelfRecursive) {
-                                var $1836 = leadingAbsArity(v.value1);
-                                var $1837 = $1836 > 0;
-                                if ($1837) {
-                                  var $1838 = drop($1836)(allArgTypes);
-                                  var $1839 = !$$null($1838);
-                                  if ($1839) {
-                                    var $1840 = length($1838) <= 11;
-                                    if ($1840) {
-                                      var $1841 = extractAbsParams($1836)(v.value1);
-                                      if ($1841 instanceof Just) {
-                                        var workerTypes = take($1836)(allArgTypes);
-                                        var workerReturn = new Func($1838, retType);
+                                var $1838 = leadingAbsArity(v.value1);
+                                var $1839 = $1838 > 0;
+                                if ($1839) {
+                                  var $1840 = drop($1838)(allArgTypes);
+                                  var $1841 = !$$null($1840);
+                                  if ($1841) {
+                                    var $1842 = length($1840) <= 11;
+                                    if ($1842) {
+                                      var $1843 = extractAbsParams($1838)(v.value1);
+                                      if ($1843 instanceof Just) {
+                                        var workerTypes = take($1838)(allArgTypes);
+                                        var workerReturn = new Func($1840, retType);
                                         var workerType = new Func(workerTypes, workerReturn);
-                                        var workerParams = dedupArgs($1841.value0.value0);
+                                        var workerParams = dedupArgs($1843.value0.value0);
                                         var workerLoop = new Just({
                                           name: identName,
                                           params: workerParams
                                         });
                                         var workerBound = fromFoldable63(zip(workerParams)(workerTypes));
                                         var workerArities = insert110(identName)(workerType)(mergedArities);
-                                        var workerBody = codegenExpr_(valueEnums)(modNameStr)(allZeroArity)(reuseContext)(workerLoop)(workerArities)(globalClassFields)(workerBound)(empty3)(false)($1841.value0.value1);
-                                        var workerBodyType = inferTypeExpr(modNameStr)(workerArities)(globalClassFields)(workerBound)($1841.value0.value1);
+                                        var workerBody = codegenExpr_(valueEnums)(modNameStr)(allZeroArity)(reuseContext)(workerLoop)(workerArities)(globalClassFields)(workerBound)(empty3)(false)($1843.value0.value1);
+                                        var workerBodyType = inferTypeExpr(modNameStr)(workerArities)(globalClassFields)(workerBound)($1843.value0.value1);
                                         var workerCode = (function() {
-                                          var $1842 = continuesLoop(modNameStr)(workerLoop)($1841.value0.value1);
-                                          if ($1842) {
+                                          var $1844 = continuesLoop(modNameStr)(workerLoop)($1843.value0.value1);
+                                          if ($1844) {
                                             return workerBody;
                                           }
                                           ;
@@ -40245,8 +40255,8 @@ var codegenBindingGroup = function(options) {
                                         var workerArgs = joinWith(", ")(zipWith(function(name2) {
                                           return function(ty) {
                                             return (function() {
-                                              var $1843 = name2 === "_";
-                                              if ($1843) {
+                                              var $1845 = name2 === "_";
+                                              if ($1845) {
                                                 return "";
                                               }
                                               ;
@@ -40257,8 +40267,8 @@ var codegenBindingGroup = function(options) {
                                         var passedArgs = map58(function(name2) {
                                           return name2 + ".clone()";
                                         })(deduped);
-                                        var call2 = identName + ("(" + (joinWith(", ")(take($1836)(passedArgs)) + ")"));
-                                        var fallback = "{\nfn " + (identName + ("(" + (workerArgs + (") -> " + (codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(true)(workerReturn) + (" {\n" + ("    loop {\n        break " + (workerCode + (";\n    }\n}\n" + ("(" + (call2 + (")(" + (joinWith(", ")(drop($1836)(passedArgs)) + ")\n}")))))))))))));
+                                        var call2 = identName + ("(" + (joinWith(", ")(take($1838)(passedArgs)) + ")"));
+                                        var fallback = "{\nfn " + (identName + ("(" + (workerArgs + (") -> " + (codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(true)(workerReturn) + (" {\n" + ("    loop {\n        break " + (workerCode + (";\n    }\n}\n" + ("(" + (call2 + (")(" + (joinWith(", ")(drop($1838)(passedArgs)) + ")\n}")))))))))))));
                                         if (deduped.length === 3 && (allArgTypes.length === 3 && (allArgTypes[0] instanceof Int && (allArgTypes[1] instanceof Func && (allArgTypes[1].value0.length === 1 && (allArgTypes[1]["value0"][0] instanceof Int && (allArgTypes[1].value1 instanceof Int && (allArgTypes[2] instanceof Int && (retType instanceof Int && member10(identName)(reuseContext.functionIterators)))))))))) {
                                           return "if " + (deduped[0] + (" >= 0 { let mut _function_count = " + (deduped[0] + ("; let mut _function_result = " + (deduped[2] + ("; while _function_count > 0 { " + ("_function_result = (" + (deduped[1] + (")(_function_result); _function_count -= 1; } " + ("_function_result } else " + fallback))))))))));
                                         }
@@ -40286,8 +40296,8 @@ var codegenBindingGroup = function(options) {
                           var pCode = joinWith(", ")(map58(function(v2) {
                             var p = sanitizeIdent(v2.value0);
                             return (function() {
-                              var $1860 = p === "_";
-                              if ($1860) {
+                              var $1862 = p === "_";
+                              if ($1862) {
                                 return "";
                               }
                               ;
@@ -40351,8 +40361,8 @@ var codegenBindingGroup = function(options) {
                               var ptStr = codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false)(pt);
                               var p = sanitizeIdent(pName);
                               return (function() {
-                                var $1879 = p === "_";
-                                if ($1879) {
+                                var $1881 = p === "_";
+                                if ($1881) {
                                   return "";
                                 }
                                 ;
@@ -40378,38 +40388,38 @@ var codegenBindingGroup = function(options) {
                         };
                       })();
                       var bodyCodeWithLoop = (function() {
-                        var $1881 = isSelfRecursive && v1.isFunc;
-                        if ($1881) {
+                        var $1883 = isSelfRecursive && v1.isFunc;
+                        if ($1883) {
                           return "    loop {\n" + ("        break " + (v1.bodyCode + ";\n    }"));
                         }
                         ;
                         return v1.bodyCode;
                       })();
                       var bodyCodeFinal = (function() {
-                        var $1882 = !group4.recursive && (!v1.isFunc && (member23(v.value0)(options.moduleValues) && !member10(identName)(reuseContext.privateWorkers)));
-                        if ($1882) {
+                        var $1884 = !group4.recursive && (!v1.isFunc && (member23(v.value0)(options.moduleValues) && !member10(identName)(reuseContext.privateWorkers)));
+                        if ($1884) {
                           return memoizedBody(options.threaded)(identName)(v1.retCode)(bodyCodeWithLoop);
                         }
                         ;
                         return bodyCodeWithLoop;
                       })();
                       return (function() {
-                        var $1883 = v1.isFunc && member10(identName)(reuseContext.privateWorkers);
-                        if ($1883) {
+                        var $1885 = v1.isFunc && member10(identName)(reuseContext.privateWorkers);
+                        if ($1885) {
                           return "fn ";
                         }
                         ;
                         return "pub fn ";
                       })() + (identName + ("(" + (v1.paramsCode + (")" + ((function() {
-                        var $1884 = v1.retCode === "";
-                        if ($1884) {
+                        var $1886 = v1.retCode === "";
+                        if ($1886) {
                           return "";
                         }
                         ;
                         return " -> " + v1.retCode;
                       })() + (" {\n" + ("    // AST: " + (printAST(v.value1) + ("\n" + (bodyCodeFinal + ("\n" + ("}\n\n" + (function() {
-                        var $1885 = rawIdentName === "main";
-                        if ($1885) {
+                        var $1887 = rawIdentName === "main";
+                        if ($1887) {
                           return "pub use " + (identName + " as main;\n\n");
                         }
                         ;
@@ -40439,10 +40449,10 @@ var codegenModuleWithOptions = function(options) {
             var modNameStr = replaceAll(".")("_")(unwrap9(backendMod.name));
             var representation = codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false);
             var reservedGlobals = fromFoldable111(mapMaybe((function() {
-              var $1955 = map120(sanitizeIdent);
-              var $1956 = stripPrefix(modNameStr + "_");
-              return function($1957) {
-                return $1955($1956($1957));
+              var $1957 = map120(sanitizeIdent);
+              var $1958 = stripPrefix(modNameStr + "_");
+              return function($1959) {
+                return $1957($1958($1959));
               };
             })())(fromFoldable26(keys3(globalAritiesMap))));
             var fused = optimizeThunkProducers(sanitizeIdent)(reservedGlobals)(backendMod.name)(backendMod.bindings);
@@ -40456,10 +40466,10 @@ var codegenModuleWithOptions = function(options) {
             })(fused.bindings);
             var enumsCode = joinWith("\n")(map58(function(decl) {
               var takeBody = (function() {
-                var v1 = find2(function($1958) {
+                var v1 = find2(function($1960) {
                   return $$null((function(v2) {
                     return v2.fields;
-                  })($1958));
+                  })($1960));
                 })(decl.constructors);
                 if (v1 instanceof Just) {
                   return "std::option::Option::Some(std::mem::replace(self, Self::" + (sanitizeIdent(v1.value0.name) + "))");
@@ -40473,8 +40483,8 @@ var codegenModuleWithOptions = function(options) {
               })();
               var enumName = sanitizeIdent(decl.name);
               var takeMethod = (function() {
-                var $1903 = isValueEnum(valueEnums)(modNameStr)(decl.name);
-                if ($1903) {
+                var $1905 = isValueEnum(valueEnums)(modNameStr)(decl.name);
+                if ($1905) {
                   return "";
                 }
                 ;
@@ -40486,8 +40496,8 @@ var codegenModuleWithOptions = function(options) {
                 })(ctor.fields);
                 var ctorNameClean = sanitizeIdent(ctor.name);
                 return "    " + (ctorNameClean + (function() {
-                  var $1904 = length(fields) > 0;
-                  if ($1904) {
+                  var $1906 = length(fields) > 0;
+                  if ($1906) {
                     return "(" + (joinWith(", ")(fields) + ")");
                   }
                   ;
@@ -40495,8 +40505,8 @@ var codegenModuleWithOptions = function(options) {
                 })());
               })(decl.constructors);
               return (function() {
-                var $1905 = isValueEnum(valueEnums)(modNameStr)(decl.name);
-                if ($1905) {
+                var $1907 = isValueEnum(valueEnums)(modNameStr)(decl.name);
+                if ($1907) {
                   return "#[derive(Clone, Copy)]";
                 }
                 ;
@@ -40515,8 +40525,8 @@ var codegenModuleWithOptions = function(options) {
               var resultType = new ADT(decl.name, [unwrap9(backendMod.name), decl.name], []);
               var repr = representation(resultType);
               var $$native = "crate::" + sanitizeIdent(decl.name);
-              var $1910 = repr === "std::rc::Rc<" + ($$native + ">") || repr === $$native && copyTagType(resultType);
-              if ($1910) {
+              var $1912 = repr === "std::rc::Rc<" + ($$native + ">") || repr === $$native && copyTagType(resultType);
+              if ($1912) {
                 return map58(function(ctor) {
                   return new Tuple(ctor.name, {
                     resultType,
@@ -40532,8 +40542,8 @@ var codegenModuleWithOptions = function(options) {
               var args = extractAllArgTypes(ty);
               return bind25(extractAbsParams(length(args))(v1.value1))(function(v2) {
                 var cases = constructorCases(representation)(copyTagType)(v2.value0)(args)(extractFinalRetType(ty))(v2.value1);
-                var $1913 = $$null(cases);
-                if ($1913) {
+                var $1915 = $$null(cases);
+                if ($1915) {
                   return Nothing.value;
                 }
                 ;
@@ -40541,8 +40551,8 @@ var codegenModuleWithOptions = function(options) {
               });
             };
             var constructorInfo = function(v1) {
-              var $1919 = eq86(v1.value0)(Nothing.value) || eq86(v1.value0)(new Just(backendMod.name));
-              if ($1919) {
+              var $1921 = eq86(v1.value0)(Nothing.value) || eq86(v1.value0)(new Just(backendMod.name));
+              if ($1921) {
                 return lookup15(v1.value1)(nativeConstructors);
               }
               ;
@@ -40563,32 +40573,32 @@ var codegenModuleWithOptions = function(options) {
               return "#[derive(Clone)]\npub struct " + (className + (" {\n" + (fieldsCode + "\n}\n")));
             })(v.classDecls));
             var bindingNames = union9(fromFoldable111(concatMap((function() {
-              var $1959 = map58(function(v1) {
+              var $1961 = map58(function(v1) {
                 return sanitizeIdent(v1.value0);
               });
-              return function($1960) {
-                return $1959((function(v1) {
+              return function($1962) {
+                return $1961((function(v1) {
                   return v1.bindings;
-                })($1960));
+                })($1962));
               };
             })())(namedGroups)))(reservedGlobals);
             var reusableDecls = filter(function(decl) {
-              return !isValueEnum(valueEnums)(modNameStr)(decl.name) && (representation(new ADT(decl.name, [unwrap9(backendMod.name), decl.name], [])) === "std::rc::Rc<crate::" + (sanitizeIdent(decl.name) + ">") && (any2(function($1961) {
+              return !isValueEnum(valueEnums)(modNameStr)(decl.name) && (representation(new ADT(decl.name, [unwrap9(backendMod.name), decl.name], [])) === "std::rc::Rc<crate::" + (sanitizeIdent(decl.name) + ">") && (any2(function($1963) {
                 return $$null((function(v1) {
                   return v1.fields;
-                })($1961));
+                })($1963));
               })(decl.constructors) && all2(function(ctor) {
                 return !member10("__purust_rebuild_" + sanitizeIdent(ctor.name))(bindingNames);
               })(decl.constructors)));
             })(v.dataDecls);
             var plainTrees = fromFoldable111(mapMaybe(function(decl) {
               var $$native = "std::rc::Rc<crate::" + (sanitizeIdent(decl.name) + ">");
-              var $1932 = all2(function(ctor) {
+              var $1934 = all2(function(ctor) {
                 return all2(function(ty) {
                   return representation(ty) === $$native || copyScalarType(valueEnums)(modNameStr)(ty);
                 })(ctor.fields);
               })(decl.constructors);
-              if ($1932) {
+              if ($1934) {
                 return new Just($$native);
               }
               ;
@@ -40608,8 +40618,8 @@ var codegenModuleWithOptions = function(options) {
             var constructorHelper = function(v1) {
               return function(v2) {
                 return bind25(lookup15(v1.value1)(rebuilders))(function(helper) {
-                  var $1935 = helper.typeName === v2 && (eq86(v1.value0)(Nothing.value) || eq86(v1.value0)(new Just(backendMod.name)));
-                  if ($1935) {
+                  var $1937 = helper.typeName === v2 && (eq86(v1.value0)(Nothing.value) || eq86(v1.value0)(new Just(backendMod.name)));
+                  if ($1937) {
                     return new Just({
                       name: new Qualified(Nothing.value, helper.name),
                       resultType: helper.resultType
@@ -40626,8 +40636,8 @@ var codegenModuleWithOptions = function(options) {
                 var ty = inferTypeExpr(modNameStr)(globalAritiesMap)(globalClassFields)(empty2)(v1.value1);
                 var ret = extractFinalRetType(ty);
                 var args = extractAllArgTypes(ty);
-                var $1940 = group4.recursive || ($$null(args) || member10(workerName)(bindingNames));
-                if ($1940) {
+                var $1942 = group4.recursive || ($$null(args) || member10(workerName)(bindingNames));
+                if ($1942) {
                   return Nothing.value;
                 }
                 ;
@@ -40677,8 +40687,8 @@ var codegenModuleWithOptions = function(options) {
               })(helper.fields));
               var ret = representation(helper.resultType);
               var payload = "crate::" + (sanitizeIdent(helper.typeName) + ("::" + (sanitizeIdent(helper.ctorName) + (function() {
-                var $1946 = $$null(helper.fields);
-                if ($1946) {
+                var $1948 = $$null(helper.fields);
+                if ($1948) {
                   return "";
                 }
                 ;
@@ -40726,21 +40736,21 @@ var codegenModuleWithOptions = function(options) {
               });
             };
             var postHelpers = concatMap((function() {
-              var $1962 = mapMaybe(preparePostChildCase);
-              return function($1963) {
-                return $1962((function(v1) {
+              var $1964 = mapMaybe(preparePostChildCase);
+              return function($1965) {
+                return $1964((function(v1) {
                   return v1.bindings;
-                })($1963));
+                })($1965));
               };
             })())(namedGroups);
             var reuseContext = {
               workers: workerOriginals,
               childCases: fromFoldable63(concatMap((function() {
-                var $1964 = mapMaybe(prepareChildCases);
-                return function($1965) {
-                  return $1964((function(v1) {
+                var $1966 = mapMaybe(prepareChildCases);
+                return function($1967) {
+                  return $1966((function(v1) {
                     return v1.bindings;
-                  })($1965));
+                  })($1967));
                 };
               })())(namedGroups)),
               postChildCases: fromFoldable63(map58(function(helper) {

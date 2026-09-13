@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { codegenPrelude, sanitizeIdent } from '../../output/Purust.CodeGen/index.js';
+import { fromFoldable } from '../../output/Data.Set/index.js';
+import { ordString } from '../../output/Data.Ord/index.js';
+import { foldableArray } from '../../output/Data.Foldable/index.js';
+
+const shapes = fromFoldable(foldableArray)(ordString)(['final,final_kw', 'type,value']);
+const code = codegenPrelude(shapes);
+assert.equal(sanitizeIdent('final'), 'final', 'composite/public names must not contain a raw identifier');
+assert.equal(sanitizeIdent('final_kw'), 'final_kw');
+assert.equal(sanitizeIdent('type'), 'type_kw', 'preserve existing naming conventions');
+assert.match(code, /pub struct Record_final_final_kw/);
+assert.match(code, /pub r#final: Option<UnknownType>/);
+assert.match(code, /pub final_kw: Option<UnknownType>/);
+assert.match(code, /pub type_kw: Option<UnknownType>/);
+assert.match(code, /pub fn get_final\(/);
+assert.match(code, /pub fn set_final\(/);
+assert.match(code, /pub fn __purust_borrow_final\(/);
+assert.match(code, /"final" => r\.r#final\.clone\(\)/);
+assert.match(code, /r\.r#final\.as_ref\(\)/);
+assert.match(code, /mut_r\.r#final = Some\(val\)/);
+assert.match(code, /make_mut\(r\)\.r#final = Some\(value\)/);
+assert.match(code, /fields\.insert\("final"\.to_owned\(\), value\.clone\(\)\)/);
+assert.doesNotMatch(code, /\.final\b|\bpub final:|(?:Record_|get_|set_|__purust_borrow_)r#final/);
