@@ -15,7 +15,8 @@ import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModuleWithValueEnums, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
+import Purust.CodeGen (codegenModuleWithOptions, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
+import Purust.ModuleValues (eligibleValues)
 import Purust.DataLayout (valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Threading (threadedRust, threadedPrelude)
@@ -160,7 +161,7 @@ main = launchAff_ do
         pure Nothing
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
-        let rsFile = codegenModuleWithValueEnums globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
+        let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
           let foreignArr = coreFnMod.foreign

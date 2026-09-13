@@ -1,4 +1,4 @@
-module Purust.CodeGen (codegenModule, codegenModuleWithValueEnums, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprType, codegenExprTypeWithValueEnums) where
+module Purust.CodeGen (codegenModule, codegenModuleWithValueEnums, codegenModuleWithOptions, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprType, codegenExprTypeWithValueEnums) where
 import Debug as Debug
 
 
@@ -13,6 +13,7 @@ import Effect.Console (log)
 import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import Purust.LocalNames (renameLocals)
+import Purust.ModuleValues as ModuleValues
 import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
@@ -81,7 +82,12 @@ codegenModule :: Map.Map String ExprType -> Map.Map String (Array (Tuple String 
 codegenModule = codegenModuleWithValueEnums Set.empty
 
 codegenModuleWithValueEnums :: ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
-codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Module coreFnMod) backendMod =
+codegenModuleWithValueEnums = codegenModuleWithOptions { threaded: false, moduleValues: Set.empty }
+
+-- Callers with original TAST declarations opt into bounded module sharing.
+-- The ownership mode is explicit, independent of the Rc/Arc text transform.
+codegenModuleWithOptions :: { threaded :: Boolean, moduleValues :: Set Ident } -> ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
+codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (Module coreFnMod) backendMod =
   let
     modNameStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name)
     
@@ -244,7 +250,7 @@ codegenModuleWithValueEnums valueEnums globalAritiesMap globalClassFields (Modul
          "let payload = " <> payload <> ";\n" <>
          "if let std::option::Option::Some(slot) = std::rc::Rc::get_mut(&mut __purust_cell) { *slot = payload; __purust_cell } else { std::rc::Rc::new(payload) }\n}\n") (Map.values rebuilders)
     bindingsRes = Array.foldl (\acc group ->
-      let res = codegenBindingGroup valueEnums coreFnMod.name modNameStr Set.empty reuseContext acc.arities globalClassFields group
+      let res = codegenBindingGroup options valueEnums coreFnMod.name modNameStr Set.empty reuseContext acc.arities globalClassFields group
       in { code: acc.code <> res.code, arities: res.arities }
     ) { code: rebuildersCode <> foldMap _.code postHelpers, arities: Map.union workerArities (Map.union helperArities globalAritiesMap) } (namedGroups <> workerGroups)
 
@@ -493,7 +499,7 @@ codegenPrelude fields =
   setMethods <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
-  runtimeHelpers <>
+  runtimeHelpers <> ModuleValues.runtime <>
   "pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
   "pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" <>
@@ -804,8 +810,8 @@ leadingAbsArity (NeutralExpr (Typed _ inner)) = leadingAbsArity inner
 leadingAbsArity (NeutralExpr (Abs params body)) = NonEmptyArray.length params + leadingAbsArity body
 leadingAbsArity _ = 0
 
-codegenBindingGroup :: ValueEnums -> ModuleName -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
-codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext aritiesMap globalClassFields group = unsafePerformEffect do
+codegenBindingGroup :: { threaded :: Boolean, moduleValues :: Set Ident } -> ValueEnums -> ModuleName -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
+codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseContext aritiesMap globalClassFields group = unsafePerformEffect do
   Ref.write Set.empty globalConsumed
   pure $ if Array.null group.bindings then { code: "", arities: aritiesMap } else
     let
@@ -997,7 +1003,10 @@ codegenBindingGroup valueEnums modName modNameStr allZeroArity reuseContext arit
             "    }"
           else bodyCode
           
-        bodyCodeFinal = bodyCodeWithLoop
+        bodyCodeFinal = if not group.recursive && not isFunc && Set.member ident options.moduleValues
+            && not (Set.member identName reuseContext.privateWorkers) then
+          ModuleValues.memoizedBody options.threaded identName retCode bodyCodeWithLoop
+          else bodyCodeWithLoop
       in
         (if isFunc && Set.member identName reuseContext.privateWorkers then "fn " else "pub fn ") <> identName <> "(" <> paramsCode <> ")" <> (if retCode == "" then "" else " -> " <> retCode) <> " {\n" <>
         "    // AST: " <> printAST expr <> "\n" <>

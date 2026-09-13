@@ -130,7 +130,8 @@ explicites.
 - Inventaire 0.25 : **46 specs feuilles, 286 déclarations de tests actifs**,
   dont 259 sans services et 27 d'intégration. Les 6 tests HTML validés font
   partie des 259 ; les 41 tests Stash, alors non exécutés sous Rust, ont
-  désormais un premier résultat natif en 0.29 : **12 réussis, 29 échoués**.
+  un premier résultat natif en 0.29 (**12 réussis, 29 échoués**), puis
+  **41/41 réussis en 0.31**, après correction du partage des valeurs de module.
   Les totaux 259/286 restent un relevé des sources, pas un bilan
   d'exécution de la suite complète.
 - Portage 0.27 : `Foreign/Object/ST.rs` fournit maintenant `STObject` et ses
@@ -150,6 +151,20 @@ explicites.
   sortie 101, aucun des 31 fallbacks gardés du binaire atteint. Le nouveau
   blocage est la perte de l'état entre opérations ; `_stash` reste généré
   comme un getter réexécutant `new empty`, à isoler avant correction.
+- Qualification 0.30 : le défaut de partage est reproduit sur **36 modules
+  TAST frais**, sans Stash/Spec/Aff/Object. JS initialise la référence une fois ;
+  le Rust normal/threaded la recrée quatre fois et perd la valeur écrite.
+  Un getter mémorisé dans des copies expérimentales rétablit le partage,
+  y compris entre threads. **Pas encore de correctif du compilateur** :
+  l'implémentation bornée est prévue en 0.31, avec l'écart d'initialisation
+  anticipée JS conservé comme point distinct. Stash reste au résultat 12/41
+  de 0.29 ; aucun nouveau run Stash en 0.30.
+- Correctif 0.31 : le générateur mémorise les bindings de module éligibles
+  d'après leur TAST, avec stockage typé et mode normal/threaded explicite.
+  **52 tests codegen, 21 sondes natives de partage et 42 exécutions Object/ST
+  passent**. Sous Linux, les 8 cas UnsafeStash puis les **41 Stash passent**,
+  sortie 0 et aucun fallback gardé atteint. Le défaut CLI reste HTML (2 tests).
+  Les anciens artefacts HTML n'ont pas été reconstruits avec ce nouveau bundle.
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -3089,14 +3104,227 @@ nettoyage DB, nouveau raccordement de suite ou correction du singleton.
 **Le défaut CLI reste HTML (2 tests) ; les 41 cas ont été lancés uniquement
 dans le diagnostic isolé. M2 reste ouvert.**
 
-**Prochaine micro-étape — 0.30, Astra :** isoler le partage de la valeur de
-module `_stash` avec un petit reproducteur et un compteur d'initialisations,
-comparer au JS, puis fixer le correctif minimal de génération/initialisation
-et sa régression normal/threaded. Distinguer une valeur de module partagée
-d'une fonction ou d'une action Effect rejouable. Ne pas contourner le défaut
-par une FFI Stash spéciale, un cache d'`Object.empty` ou le portage des neuf
-foreigns Object non atteints. Revalider ensuite les huit cas puis les 41 avant
-de raccorder l'agrégat par défaut.
+### Micro-étape 0.30 — Partage de valeur de module isolé
+
+**Qualification réalisée ; aucun correctif de production.** Le reproducteur
+`ModuleInitProbe` utilise les vrais `Effect.Ref` et `Effect.Unsafe`, avec une
+FFI de mesure indépendante (`tick` / compteur), sans Object, Stash, Spec ou Aff.
+Le fork produit **36 modules TAST et JS frais** ; le bundle inchangé produit
+deux exports Cargo normal/threaded. Toutes les commandes de génération, build
+et sondes sortent 0 ; les sondes rapportent des valeurs, ce ne sont pas des
+tests de parité déclarés verts malgré le défaut.
+
+| Observation | JS frais | Rust normal | Rust threaded |
+| --- | --- | --- | --- |
+| Initialisations après deux lectures de `shared` | 1 | 2 | 2 |
+| Identité des deux handles | identiques | différents | différents |
+| Lecture après `store 42` | 42 | 0 | 0 |
+| Initialisations après ces lectures + store/load | 1 | 4 | 4 |
+| Deux appels à la factory | 2 créations distinctes | idem | idem |
+| Création d'une action puis deux exécutions | 0 effet à la création, 2 créations distinctes | idem | idem |
+
+`shared :: Ref Int`, `factory :: Int -> Ref Int` et
+`action :: Effect (Ref Int)` sont bien distincts dans les annotations TAST.
+Les appels de store/load restent des références à `shared`, pas une copie
+de son corps dans chacun des callers. Le getter généré exécute directement
+`unsafePerformEffect` et `Ref.new` à chaque accès. Le point de correction est
+donc l'émission des bindings de module dans
+[`codegenBindingGroup`](src/Purust/CodeGen.purs), qui transforme aussi les
+valeurs sans paramètres en `pub fn` sans stockage persistant. Rien dans cette
+preuve n'impose de modifier le fork, PBO ou les FFI Ref/Object.
+`ShareNullaries` ne règle pas ce problème : son partage est local à une
+construction, sans racine persistante de module.
+
+**Expérience ciblée, pas implémentation du générateur :** seules des copies
+du module Rust dans les exemples diagnostiques reçoivent un getter mémorisé
+pour `shared`. L'export original et toutes les FFI restent intacts.
+Une `thread_local!` + `std::cell::OnceCell<Value>` en normal, et une
+`static std::sync::OnceLock<Value>` en threaded, donnent : **une initialisation,
+même handle, lecture 42** ; les contrôles factory/action restent inchangés.
+Deux threads successifs échangent également la même référence et retrouvent
+42 ; huit threads accédant simultanément à la cellule produisent une seule
+initialisation et le même handle. Le mode normal est ici mono-thread ; son
+stockage local au thread n'est pas une preuve de partage inter-thread `Rc`.
+
+**Deux sémantiques à distinguer :** JS initialise `shared` dès l'import du
+module, avant le premier accès du programme. La cellule expérimentale est
+paresseuse : compteur 0 avant ce premier accès, contre 1 en JS. Un appel
+explicite préalable au getter donne le même résultat sur ce petit probe, mais
+**ne valide pas un mécanisme général d'initialisation des modules**.
+Le main Rust actuel n'a pas cette phase : il obtient puis exécute `main`.
+La correction du partage et l'initialisation anticipée sont donc deux pièces
+distinctes ; ne pas annoncer la parité JS complète après la seule mémorisation.
+L'ordre des dépendances, les valeurs récursives/polymorphes, les fonctions
+calculées par une expression stricte, les échecs/réentrances d'initialisation
+et la destruction des cellules restent non qualifiés par cette expérience.
+
+Preuves : [bilan vérifié](../../b8x/run/bak/rust/output/module-init-1LKf6N/summary.json),
+[reproduction originale](../../b8x/run/bak/rust/output/module-init-1LKf6N/report.json),
+[types TAST et getters](../../b8x/run/bak/rust/output/module-init-1LKf6N/abi.json),
+[expérience de mémorisation](../../b8x/run/bak/rust/output/module-init-1LKf6N/memo-experiment.json).
+`diagnose.mjs`, `memo-experiment.mjs` et `qualify.mjs` conservent les commandes,
+résultats et empreintes. Vérification finale des entrées TAST, FFI, générateur,
+fork, bundle, trois états/manifests HTML, profil Rust et liens racine.
+Exécution sur l'hôte seulement : aucun conteneur, DB, `target`, `b -c`, `t -c`
+ou artefact HTML prêt modifié ; b8x reste sur `master`, purust sur `edge`.
+**Stash n'est pas rejoué : son dernier bilan demeure 12/41 ; M2 reste ouvert.**
+
+#### Contrat 0.31 — partage borné, réalisé ci-dessous
+
+1. Ajouter une régression permanente TAST/native `module-values.mjs`, à partir
+   du reproducteur, puis constater le rouge avec le générateur actuel.
+   Garder la comparaison JS indépendante ; ne pas reprendre les getters
+   corrigés manuellement comme preuve d'un correctif de génération.
+2. Traiter les **bindings de module non récursifs, de type fermé, sans
+   paramètre de fonction**, avec les types TAST et la forme du binding.
+   Conserver l'ABI des getters ; stocker une fois leur valeur avec la
+   représentation Rust déjà déterminée, puis la cloner aux accès suivants.
+   Ne pas convertir tous les types natifs en `Value` : celui du probe est
+   déjà représenté ainsi par l'ABI actuelle de Ref. Aucun traitement par nom
+   `_stash`, type Ref spécial, FFI b8x ou cache d'`Object.empty`.
+3. Utiliser un stockage adapté au mode : cellule locale au thread pour le
+   runtime normal `Rc`, cellule partagée entre threads pour `Arc`. Passer
+   explicitement ce choix à la génération ou au runtime ; la substitution
+   textuelle `Rc -> Arc` ne transforme pas une `thread_local!` en singleton
+   partagé. Pas d'`unsafe impl Send/Sync` ni de stockage global dynamique bis.
+4. Ne pas mémoriser le résultat des appels d'une vraie fonction, une
+   allocation locale ou l'exécution d'un Effect. Un binding `Effect a` peut
+   partager **l'action construite**, jamais son résultat : chaque exécution
+   doit encore faire ses effets. Exclure les foreigns, workers et constructeurs
+   synthétiques de cette nouvelle règle ; ne pas assimiler tout `fn()` Rust
+   à une valeur de module. Les bindings récursifs, polymorphes et les valeurs
+   de fonction calculées restent hors de ce premier correctif explicite.
+5. Valider store/load, identité, deux appels à une factory, action obtenue
+   plusieurs fois et rejouée, valeur dépendant d'une autre valeur de module,
+   puis partage entre threads et première lecture concurrente. Fixer et tester
+   une politique explicite de réentrance/échec d'initialisation : aucune attente
+   infinie ni exécution de callbacks sous un verrou global ajouté. Ne pas
+   prétendre que l'expérience 0.30 a couvert ces derniers cas.
+6. Recompiler le bundle, générer des exports **neufs** normal/threaded et
+   exécuter la régression, puis celles d'Object/ST. Reprendre le diagnostic
+   Linux avec les gardes de fallbacks, d'abord les huit cas `UnsafeStash`, puis
+   les 41 Stash ; relever le résultat réel et s'arrêter au prochain défaut.
+   Ne pas modifier le défaut CLI ni réutiliser un état HTML devenu périmé.
+
+**Après 0.31 :** garder un jalon explicite sur l'initialisation anticipée
+(phase d'initialisation des modules atteignables, dépendances avant consommateurs,
+valeurs avant l'exécution de main, sans exécuter les actions Effect stockées).
+Son ordre, sa portée et les bindings exclus ci-dessus demandent leur propre
+qualification ; un préchauffage manuel du probe n'en est pas l'implémentation.
+Revalider Stash avant de raccorder l'agrégat HTML + Stash, sans confondre ces
+succès avec la parité générale de toutes les initialisations JS.
+
+### Micro-étape 0.31 — Partage implémenté, Stash 41/41
+
+**Réalisée avec Astra.**
+[`Purust.ModuleValues`](src/Purust/ModuleValues.purs) sélectionne les bindings
+non récursifs depuis leurs annotations TAST originales, avec type fermé,
+sans fonction PureScript à la racine ni constructeur synthétique.
+Les annotations manquantes, `Any`, variables, quantificateurs, contraintes
+et rangées ouvertes restent exclues. Le générateur revérifie la forme finale
+(valeur sans paramètres, groupe non récursif, pas de worker privé).
+`Main` transmet explicitement la sélection et le mode à
+`codegenModuleWithOptions`. Les anciennes API de génération sans cette
+sélection conservent leur comportement ; aucun heuristique sur le nom `_stash`
+ou sur l'ABI nullaire de l'ensemble des foreigns.
+
+Les getters gardent leur ABI et clonent une valeur conservée dans une
+`module_values::Cell<T>` : cellule `thread_local!` en normal, `static` partagée
+en threaded. `T` conserve la représentation existante (`i64` testé, et non
+conversion universelle vers `Value`). L'initialisation construit une action
+Effect sans l'exécuter ; ses exécutions et les appels des factories restent
+distincts et rejouables. Ni `Effect.Ref`, ni `Effect.Unsafe`, ni Object/ST,
+ni les sources b8x n'ont été modifiés.
+
+Le [support d'initialisation](src/Purust/ModuleValues.js) contient des cellules
+typées et un petit graphe d'attente partagé **d'identifiants de threads/cellules
+seulement**, pas une seconde table globale de valeurs PureScript.
+Les mutex sont relâchés pendant l'initialiseur, les callbacks et le déroulement
+de pile ; le clonage se fait après le retour du getter de cellule.
+Un échec marque définitivement cette cellule en échec : les appels suivants
+ne rejouent pas des effets partiellement exécutés. Une dépendance cyclique
+sur le même thread ou entre threads provoque un diagnostic, puis réveille
+les éventuels autres lecteurs. Les dépendances acycliques concurrentes restent
+autorisées. Aucune déclaration `unsafe impl Send/Sync`.
+
+**Régression rouge puis verte :**
+[`module-values.mjs`](tests/tast/module-values.mjs) compile **36 modules TAST
+et JS frais**, utilise les vrais Ref/Unsafe et une FFI de mesure par compteur.
+Avec l'ancien bundle, Cargo compile mais la première comparaison d'identité
+échoue, sortie 101 (`module value must preserve its handle`). Après correction
+et reconstruction du bundle, les exports neufs normal/threaded passent :
+
+- 5 parcours PureScript générés par mode : partage/store/load, factory,
+  action obtenue plusieurs fois et rejouée, dépendance entre valeurs de module,
+  valeur native `Int` conservée dans `Cell<i64>` ;
+- 5 sondes du support de cellule par mode : échec non rejoué, cycle indirect,
+  cycle inter-thread, échec concurrent, dépendance concurrente acyclique ;
+- 1 sonde threaded supplémentaire : huit premiers accès concurrents partagent
+  le même handle, puis écriture/lecture sur des threads distincts.
+
+Soit **21 sondes natives réussies**. Les sondes de politique d'échec sont
+bornées à 10 s et distinguent leurs paniques attendues d'un blocage.
+La référence JS indépendante reste anticipée au chargement ; ces tests
+**ne valident pas une initialisation anticipée générale en Rust**.
+Le nouveau [test de sélection](tests/codegen/module-values.mjs) couvre aussi
+les exclusions TAST et le stockage natif. La suite codegen complète passe
+**52/52** ; Object et ST repassent respectivement **11 et 10 tests dans
+chaque mode** (42 exécutions), plus les 18 contrôles négatifs Object séparés.
+Le build du compilateur/bundle réussit ; 65 avertissements sont signalés dans
+Main/CodeGen, aucun dans le nouveau module. Pas de nettoyage hors périmètre.
+
+**Validation Linux :** un export frais contient **229 modules TAST** : les
+228 du diagnostic Stash et un main supplémentaire pour les seuls huit cas
+UnsafeStash. Le Cargo check du main complet réussit en **22,1 s**, avec
+**195 crates `Purs_*` réellement compilées**. Les 31 fallbacks de ce chemin
+reçoivent des gardes fatals et sont chacun forcés avec sortie 86 ; les cinq
+foreigns de `Purs_Foreign`, hors de ce graphe natif, ne sont pas ajoutés aux
+appels de la sonde ni déclarés validés.
+
+Le premier build de la nouvelle sonde UnsafeStash échoue sur un point-virgule
+superflu dans **son exemple Rust** (`()` au lieu de `Value`). Ce défaut de
+sonde est corrigé séparément, sans toucher au compilateur ni aux tests originaux ;
+ses logs sont conservés sous `probe-semicolon-*.json`. Le build repris sort 0,
+les 31 gardes passent, puis les vrais tests donnent :
+
+```text
+UnsafeStash : 8/8 tests passed, sortie 0, 13 ms
+Stash      : 41/41 tests passed, sortie 0, 46 ms
+```
+
+Stderr vide pour les deux exécutions, aucun fallback gardé atteint. Les huit
+cas sont inclus dans les 41 : **41 tests b8x distincts validés**, pas 49.
+Le getter `_stash` mémorisé provient du nouveau générateur, sans patch manuel
+du singleton dans cet export. Les seules instrumentations Rust sont les
+gardes de diagnostic et les exemples d'exécution/contrôle.
+
+Preuves : [bilan vérifié](../../b8x/run/bak/rust/output/module-sharing-PNEsaw/summary.json),
+[régression rouge](../../b8x/run/bak/rust/output/purust-module-values-8gDgYC/commands.json),
+[régression finale](../../b8x/run/bak/rust/output/purust-module-values-h9PPOW/commands.json),
+[suite codegen](../../b8x/run/bak/rust/output/module-sharing-PNEsaw/codegen.json),
+[8 cas](../../b8x/run/bak/rust/output/module-sharing-PNEsaw/unsafe-stash-execution.json),
+[41 cas](../../b8x/run/bak/rust/output/module-sharing-PNEsaw/stash-execution.json).
+`verify.mjs` contrôle les résultats et empreintes des entrées ; les FFI,
+profils, trois états/manifests HTML et liens racine sont inchangés.
+Même conteneur, image et `StartedAt` avant/après ; b8x reste sur `master`,
+purust sur `edge`. Aucun `target`, `b -c`, `t -c`, rebuild d'image,
+redémarrage ou nettoyage DB exécuté.
+
+**Limites conservées :** partage paresseux, types/groupes exclus ci-dessus,
+pas de parité générale de l'ordre d'initialisation JS ni de promesse de partage
+inter-thread pour le mode normal `Rc`. Les cellules sont des racines retenues
+(jusqu'à la fin du thread normal ou du processus threaded), pas des valeurs
+libérées après chaque getter. Le jalon d'initialisation anticipée reste ouvert.
+**Le défaut CLI est toujours HTML (2 tests) ; M2 reste ouvert.**
+
+**Prochaine micro-étape — 0.32, Astra :** raccorder le bloc Stash désormais
+validé et préparer l'agrégat HTML + HTML Decode + Stash (**47 tests**) comme
+défaut Rust. Reconstruire les entrées/artefacts avec le bundle actuel, revalider
+les six tests HTML et le total agrégé, les codes d'échec et le chemin CLI.
+Ne pas promouvoir les anciens artefacts HTML devenus périmés. Ce jalon réduit
+le chemin restant vers `t -c` complet ; il ne valide ni les 259 tests sans
+services ni les 286 tests actifs. Garder le chantier d'initialisation anticipée
+distinct, sans en faire une correction préventive de Stash maintenant vert.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -3494,11 +3722,20 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   0.28, avec les seuls accès nécessaires dans ST.rs ; revalider ST puis relever
   le prochain blocage complet sans le corriger (0.29 : 42 exécutions natives
   réussies, Cargo Stash vert ; premier run 12/41, perte d'état, aucun fallback atteint).
-- [ ] Astra : isoler le partage de `_stash`/l'initialisation des valeurs de
+- [x] Astra : isoler le partage de `_stash`/l'initialisation des valeurs de
   module, comparer au JS et fixer le correctif minimal et sa régression
-  normal/threaded, sans FFI spéciale b8x (0.30).
-- [ ] Après portage/validation : raccorder Stash et l'agrégat HTML + Stash au
-  défaut Rust (47 tests), puis poursuivre son élargissement vers les 259 tests
+  normal/threaded, sans FFI spéciale b8x (0.30 : reproduction sur 36 modules,
+  expérience de cellules concluante, distinction partage/initialisation JS).
+- [x] Astra : implémenter le partage des bindings de module au contrat borné
+  0.31, ajouter la régression permanente et revalider Object/ST, puis les
+  huit cas UnsafeStash et les 41 Stash dans le diagnostic isolé (52 tests codegen,
+  21 sondes de partage, 42 exécutions Object/ST ; Linux 8/8 puis 41/41, sortie 0).
+- [ ] Astra : raccorder Stash et l'agrégat HTML + HTML Decode + Stash au défaut
+  Rust, avec des artefacts frais et une validation CLI des **47 tests** (0.32).
+- [ ] Astra : qualifier l'initialisation anticipée des modules et les bindings
+  exclus du premier correctif ; ne pas annoncer une parité JS générale avec
+  le seul partage paresseux (écart établi en 0.30).
+- [ ] Après validation de l'agrégat : poursuivre son élargissement vers les 259 tests
   sans services et les 286 tests actifs derrière `t -c`, sans filtre obligatoire.
 - [ ] Astra : poursuivre, lors de l'élargissement M2, la qualification des bindings et fallbacks conservés,
   dont les autres opérations de records, selon les chemins réellement atteints ;

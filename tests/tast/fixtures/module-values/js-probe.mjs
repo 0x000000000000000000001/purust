@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+const output = process.argv[2];
+const counter = await import(pathToFileURL(join(output, 'ModuleInitProbe.Counter/index.js')));
+assert.equal(counter.readCount(), 0);
+const probe = await import(pathToFileURL(join(output, 'ModuleInitProbe/index.js')));
+// JS eagerly constructs shared, dependent and native; Rust's fix stays lazy.
+assert.equal(counter.readCount(), 3);
+const first = probe.shared, second = probe.shared;
+assert.equal(first, second);
+probe.store(42)(); assert.equal(probe.load(), 42);
+assert.equal(counter.readCount(), 3);
+assert.notEqual(probe.factory(42), probe.factory(42));
+assert.equal(counter.readCount(), 5);
+const action = probe.action;
+assert.equal(counter.readCount(), 5);
+assert.notEqual(action(), action());
+assert.equal(counter.readCount(), 7);
+console.log('JS: eager module values, shared handles, fresh factories and replayable effects');
