@@ -12,8 +12,8 @@ Go et PHP existants.
 `t -c` doit lancer **par défaut toute la suite active b8x**, comme dans le
 workflow JS/Go, avec les assertions originales, les intégrations et le
 nettoyage des bases. Aucune sélection `--suite` ne doit être nécessaire pour
-obtenir la suite complète. Les suites HTML actuelles sont des validations
-intermédiaires ; un code 0 sur ce sous-ensemble ne clôt pas cet objectif.
+obtenir la suite complète. L'agrégat HTML + Stash actuel est une validation
+intermédiaire ; un code 0 sur ce sous-ensemble ne clôt pas cet objectif.
 
 Interface retenue en 0.18, implémentée pour Rust HTML en 0.19–0.21 :
 
@@ -112,8 +112,10 @@ explicites.
 - Les branches historiques de [`b8x/bin/test`](../../b8x/bin/test) délèguent à
   [`b8x/bin/run`](../../b8x/bin/run) ; le chemin Rust utilise le driver dédié.
 - `bin/run` exécute JS, Go et PHP, ainsi que les suites Rust `html` et
-  `html-negative` depuis 0.21–0.22, puis `html-decode` depuis 0.24 ; pas encore
-  les applications ou toute b8x.
+  `html-negative` depuis 0.21–0.22, puis `html-decode` depuis 0.24.
+  Depuis 0.32, le défaut Rust est l'agrégat **47 tests HTML + Stash** ;
+  `--suite stash` reste une sélection explicite de 41 tests. Pas encore
+  les autres applications ou toute b8x.
 - La configuration racine `b8x/spago.yaml` pointe vers le profil Rust depuis
   0.22. `html-decode`, choisi en 0.23, est raccordé et validé en 0.24.
 - b8x possède désormais une FFI `.rs` locale pour l'encodage/décodage HTML,
@@ -163,8 +165,14 @@ explicites.
   d'après leur TAST, avec stockage typé et mode normal/threaded explicite.
   **52 tests codegen, 21 sondes natives de partage et 42 exécutions Object/ST
   passent**. Sous Linux, les 8 cas UnsafeStash puis les **41 Stash passent**,
-  sortie 0 et aucun fallback gardé atteint. Le défaut CLI reste HTML (2 tests).
-  Les anciens artefacts HTML n'ont pas été reconstruits avec ce nouveau bundle.
+  sortie 0 et aucun fallback gardé atteint. À la fin de 0.31, le défaut CLI
+  était encore HTML (2 tests) et ses artefacts n'avaient pas été reconstruits.
+- Raccordement 0.32 : le défaut `Test.Rust.Main` réunit HTML Encode, HTML Decode
+  et Stash ; `t -c` et `bin/run Test` passent **47/47**, sans filtre.
+  Les deux dépendances locales `foreign` / `foreign-object` sont intégrées au
+  profil et à son lockfile. Les artefacts sont reconstruits avec le bundle
+  0.31 ; les preuves HTML historiques ne sont pas promues artificiellement.
+  **M2 reste ouvert : 47 tests exécutés, pas encore les 259 sans services.**
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -3315,9 +3323,9 @@ pas de parité générale de l'ordre d'initialisation JS ni de promesse de parta
 inter-thread pour le mode normal `Rc`. Les cellules sont des racines retenues
 (jusqu'à la fin du thread normal ou du processus threaded), pas des valeurs
 libérées après chaque getter. Le jalon d'initialisation anticipée reste ouvert.
-**Le défaut CLI est toujours HTML (2 tests) ; M2 reste ouvert.**
+**À l'issue de 0.31, le défaut CLI était encore HTML (2 tests) ; M2 reste ouvert.**
 
-**Prochaine micro-étape — 0.32, Astra :** raccorder le bloc Stash désormais
+**Contrat 0.32 — réalisé ci-dessous, Astra :** raccorder le bloc Stash désormais
 validé et préparer l'agrégat HTML + HTML Decode + Stash (**47 tests**) comme
 défaut Rust. Reconstruire les entrées/artefacts avec le bundle actuel, revalider
 les six tests HTML et le total agrégé, les codes d'échec et le chemin CLI.
@@ -3325,6 +3333,81 @@ Ne pas promouvoir les anciens artefacts HTML devenus périmés. Ce jalon réduit
 le chemin restant vers `t -c` complet ; il ne valide ni les 259 tests sans
 services ni les 286 tests actifs. Garder le chantier d'initialisation anticipée
 distinct, sans en faire une correction préventive de Stash maintenant vert.
+
+### Micro-étape 0.32 — Agrégat de 47 tests par défaut, CLI validée
+
+Réalisée sur `b8x/master`, cible Rust persistante ; purust reste sur `edge`.
+Le nouveau main `Test.Rust.Main` collecte **les specs originales** HTML Encode,
+HTML Decode et Stash, attend Spec/Aff et exige exactement **47 réussites,
+zéro échec et zéro attente**. Les options du CLI et du driver partagent le
+même défaut `default`. `--suite stash` sélectionne séparément les 41 Stash ;
+`html`, `html-decode` et `html-negative` gardent leurs contrats 2/4/3.
+Construire une suite explicite ne modifie jamais la sélection par défaut.
+
+Le profil Spago et son lockfile ajoutent seulement les dépendances locales
+`foreign` / `foreign-object`, déjà qualifiées ; aucune mise à jour de version.
+Le graphe reçoit les chemins explicites de Stash, puis sélectionne la fermeture
+de chaque main. Aucun portage FFI, changement du compilateur ou de son bundle.
+
+**Gardes FFI :** toutes les définitions fallback émises restent instrumentées
+par la sortie fatale 86. Les sondes ne forcent que les crates déjà présentes
+dans les dépendances du binaire. Le lecteur strict des manifests générés est
+recoupé avec `cargo metadata` filtré pour la cible Linux avant compilation ;
+un format inattendu ou un désaccord bloque le build. Les cinq stubs `Foreign_*`
+hors du graphe natif Stash restent gardés, mais ne sont ni ajoutés artificiellement
+au binaire ni annoncés éprouvés. Cela évite le faux blocage observé en 0.31.
+
+Les cinq builds utilisent du **TAST et du Cargo neufs**, le fork explicitement
+sélectionné et le bundle de 0.31, sous Linux ARM64 avec l'image existante :
+
+| Suite | TAST | Crates natives `Purs_*` | Gardes forcés | Résultat réel |
+| --- | ---: | ---: | ---: | --- |
+| `default` | 231 | 198 | 31 | **47/47 → 0** |
+| `stash` | 228 | 195 | 31 | **41/41 → 0** |
+| `html` | 211 | 179 | 22 | **2/2 → 0** |
+| `html-decode` | 211 | 179 | 22 | **4/4 → 0** |
+| `html-negative` | 211 | 179 | 22 | **2/3 → 101**, assertion et erreur finale Aff visibles |
+
+Chaque garde forcé sort 86 avec son marqueur exact ; aucun n'est atteint
+par les suites réelles. Les tests des suites explicites sont inclus dans
+l'agrégat : **47 tests b8x distincts**, pas 94. Le négatif est une fixture séparée.
+
+Le [rapport vérifié 0.32](../../b8x/run/bak/rust/output/integrated/default-validation-s7TK9C/report.json)
+conserve les 20 contrôles et les cinq manifests. `bin/t -c`, `bin/run Test`,
+`bin/run -e Test` et le lancement direct dans `api-cli` passent tous à **47/47**.
+Après les builds ciblés et le négatif 101, `bin/t` reprend exactement
+[`build-lsaoHX`](../../b8x/run/bak/rust/output/integrated/default/build-lsaoHX/manifest.json),
+sans rebuild implicite. Le sélecteur DB est vide avant/après le vrai `t -c` :
+**aucune base supprimée**. La suppression de bases présentes reste couverte
+par les fixtures, pas par cette exécution réelle.
+
+**49 régressions rapides passent**, dont le défaut 47, le refus des résumés
+partiels, les sélections isolées, les statuts/signaux/nettoyages et quatre
+contrôles du graphe Cargo/gardes. Le runner Docker général a été adapté au
+nouveau défaut et vérifié syntaxiquement ; ses scénarios de corruption et
+d'interruption volontaire ne sont pas relancés ici. Le rapport 0.32 couvre
+les builds et chemins CLI réels listés ci-dessus.
+
+**Régression annexe corrigée :** le préparateur historique voyait les nouveaux
+mains mais pas leurs imports Stash : [échec prouvé](../../b8x/run/bak/rust/output/prepare-SgzR6N/commands.json).
+Il partage désormais l'inventaire de sources du driver, tout en conservant
+son entrée HTML seule ; [TAST neuf réussi](../../b8x/run/bak/rust/output/prepare-OVtZYX/manifest.json),
+**211 modules**, sans génération ni exécution Rust par ce préparateur.
+
+Les sources/assertions originales, FFI, bundle, scripts partagés, Dockerfile,
+liens racine et cible sont vérifiés inchangés. Même conteneur, image et
+`StartedAt` avant/après ; aucun rebuild d'image ni redémarrage. `b` a généré
+des artefacts frais ; **`b -c` n'a pas été relancé** dans cette étape.
+**M2/M4 restent ouverts : le défaut couvre 47 tests, pas encore 259/286.**
+
+**Prochaine micro-étape — 0.33, Astra :** reprendre les candidats hors Stash
+de 0.25 (`RemoveComments` et `PadLeft`), comparer leur delta avec le profil
+désormais enrichi d'Object/ST, puis retenir une seule tranche. Produire son
+TAST frais et tenter un `cargo check` Linux borné dans un export diagnostique,
+sans modifier le défaut actif de 47 tests. Relever le premier blocage concret
+et fixer le contrat du prochain correctif/portage seulement ; ne pas porter
+Regex/JSON/les services en bloc. Si Cargo passe, qualifier les fallbacks avant
+le premier run. Garder l'initialisation anticipée comme chantier distinct.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -3730,8 +3813,12 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   0.31, ajouter la régression permanente et revalider Object/ST, puis les
   huit cas UnsafeStash et les 41 Stash dans le diagnostic isolé (52 tests codegen,
   21 sondes de partage, 42 exécutions Object/ST ; Linux 8/8 puis 41/41, sortie 0).
-- [ ] Astra : raccorder Stash et l'agrégat HTML + HTML Decode + Stash au défaut
-  Rust, avec des artefacts frais et une validation CLI des **47 tests** (0.32).
+- [x] Astra : raccorder Stash et l'agrégat HTML + HTML Decode + Stash au défaut
+  Rust, avec des artefacts frais et une validation CLI des **47 tests** (0.32 :
+  `t -c` / `bin/run` 47/47, suites explicites vertes, négatif 101, 49 régressions).
+- [ ] Astra : comparer `RemoveComments` / `PadLeft` au profil enrichi,
+  choisir une seule tranche et qualifier son premier blocage TAST/Cargo/FFI
+  dans un diagnostic isolé, sans élargir le défaut ni porter en bloc (0.33).
 - [ ] Astra : qualifier l'initialisation anticipée des modules et les bindings
   exclus du premier correctif ; ne pas annoncer une parité JS générale avec
   le seul partage paresseux (écart établi en 0.30).
