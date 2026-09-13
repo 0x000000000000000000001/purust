@@ -2,6 +2,42 @@
 
 Mis à jour le 13 septembre 2026.
 
+**État courant (bloc 0.47 terminé) :** **`b -c; t -c` validé 175/175**,
+build prêt `build-JvrREU`, nettoyage DB vide, 85 gardes forcés et aucun atteint.
+Les 128 tests HTML Clean sont intégrés au défaut HTML + Stash, avec leurs
+assertions originales : **108 tests supplémentaires**, sans compter deux fois
+RemoveComments. La FFI `_untag` est portée ; les opérations JSDate/BigInt/Variant
+inutilisées restent des dettes distinctes. b8x reste sur **master**.
+**Prochain bloc 0.48 : chaînes de caractères**, 63 tests recensés supplémentaires
+(cible 238 au total, pas encore validée). M2/M4 restent ouverts.
+
+## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
+
+Les micro-étapes restent des cycles internes de diagnostic/correction/test,
+pas des pauses imposant un nouveau « go ». Les anciens contrats bornés et leurs
+résultats sont historiques ; le contrat de bloc ci-dessous remplace notamment
+l'arrêt prévu en 0.46 après la seule qualification JSDate.
+
+1. **RemoveComments complet** : lever JSDate puis les blocages effectivement
+   rencontrés dans cette fermeture, exécuter ses 20 assertions originales et
+   intégrer la suite au défaut HTML + Stash. Sortie : `b -c; t -c` à **67/67**,
+   nettoyage DB contrôlé et aucun fallback utilisé silencieusement.
+2. **Autres suites sans services**, par lots partageant des dépendances :
+   portages communs, corrections nécessaires et intégration de plusieurs specs.
+   Cible du dernier inventaire : 259 tests sans services.
+3. **Intégrations PostgreSQL/RabbitMQ et agrégation complète** : toutes les
+   assertions actives, erreurs et nettoyages, par défaut après `target rust`.
+   Cible du dernier inventaire : 286 tests, à actualiser si les sources changent.
+
+Tests ciblés après chaque correction ; validations lourdes aux jalons utiles.
+Réutiliser les caches cohérents et surveiller le disque, sans multiplier les
+exports de matrices identiques. Donner des points d'avancement pendant le lot.
+Ne demander une nouvelle décision que pour une autorisation manquante ou un
+choix important dépassant le périmètre convenu. Préserver b8x sur **master**,
+les branches des autres dépôts et les changements préexistants. Ne pas élargir
+les succès annoncés au-delà des tests réellement exécutés ; ne pas diminuer les
+assertions, ignorer des échecs ou porter des API inutilisées préventivement.
+
 ## Objectif
 
 Permettre à la suite de tests de b8x d'être compilée et exécutée avec purust,
@@ -113,13 +149,15 @@ explicites.
   [`b8x/bin/run`](../../b8x/bin/run) ; le chemin Rust utilise le driver dédié.
 - `bin/run` exécute JS, Go et PHP, ainsi que les suites Rust `html` et
   `html-negative` depuis 0.21–0.22, puis `html-decode` depuis 0.24.
-  Depuis 0.32, le défaut Rust est l'agrégat **47 tests HTML + Stash** ;
-  `--suite stash` reste une sélection explicite de 41 tests. Pas encore
-  les autres applications ou toute b8x.
+  Depuis le bloc 0.47, le défaut Rust est l'agrégat **175 tests HTML Encode
+  + Decode + Stash + HTML Clean** ; `--suite stash` sélectionne 41 tests,
+  `--suite html-clean` 128 et `--suite remove-comments` 20. Pas encore les
+  autres applications ou toute b8x. Les défauts 0.32/0.46 contenaient 47/67 tests.
 - La configuration racine `b8x/spago.yaml` pointe vers le profil Rust depuis
   0.22. `html-decode`, choisi en 0.23, est raccordé et validé en 0.24.
-- b8x possède désormais une FFI `.rs` locale pour l'encodage/décodage HTML,
-  validée en 0.14 ; les autres modules restent à inventorier et porter.
+- b8x possède une FFI `.rs` locale pour l'encodage/décodage HTML, validée en
+  0.14, et une pour `_untag`, validée en 0.47 ; les autres modules restent
+  à qualifier et porter selon les chemins réellement atteints.
 - [`b8x/test/Main.purs`](../../b8x/test/Main.purs) dépend de `spec-node`,
   `Node.Process` et `keepMainAlive`. Il utilise aussi `Effect.Now`, une API
   PureScript dont l'implémentation doit être disponible sous Rust, même avec
@@ -229,8 +267,81 @@ explicites.
   passent. RemoveComments frais compile BigInt, puis Cargo échoue sur
   **quatre E0425 `VariantCase` dans `Data.Variant.Internal`**, sur les deux OS.
   Ses 20 tests ne sont pas exécutés ; ses **90 fallbacks résiduels** restent
-  à qualifier complètement. Prochaine étape **0.40 : diagnostic VariantCase**,
-  avec Astra. M2/M4 restent ouverts ; le profil par défaut n'est pas élargi.
+  à qualifier complètement. Diagnostic VariantCase réalisé ensuite en 0.40.
+  M2/M4 restent ouverts ; le profil par défaut n'est pas élargi.
+- Qualification 0.40 : les quatre erreurs `VariantCase` sont reproduites sur
+  **89 modules TAST frais**, sans RemoveComments/Spec/Aff. Les annotations et
+  instanciations sont présentes ; c'est la représentation native du conteneur
+  hétérogène qui est incorrecte. Un alias natif compile mais échoue sur **cinq
+  tests par mode**. Une adaptation limitée à ce type dans une copie du bundle
+  passe **dix contrats JS, 20 tests natifs par plateforme macOS/Linux et
+  12 contrôles de frontière de type**. **Aucun correctif permanent**, défaut
+  toujours frais et revalidé **47/47**. Correctif permanent réalisé ensuite en 0.41.
+- Correctif 0.41 : seul `Data.Variant.Internal.VariantCase` utilise désormais
+  le `Value` existant ; aucun alias FFI ni changement de `VariantFCase`/`Variant`.
+  Régression permanente rouge puis verte : **dix contrats JS, 20 tests natifs
+  par plateforme macOS/Linux**, contrôle « alias seul » à cinq échecs par mode,
+  **56 tests codegen et 52 tests driver/CLI** verts. Défaut reconstruit et
+  revalidé **47/47**, `build-fhd0qD`. RemoveComments compile maintenant
+  `Data.Variant.Internal`, puis relève **77 erreurs Foreign et 146 Data.Variant**.
+  Aucun de ses 20 tests exécuté ; 90 fallbacks restent à qualifier.
+  Son contrôle Cargo réutilise le lockfile exact de 0.39, les 250 manifestes
+  étant identiques : la résolution hors ligne sans ce lockfile refuse désormais
+  `spin 0.9.8` (dépendance BigInt retirée de l'index). Point distinct à régler.
+  Bloc Foreign qualifié ensuite en 0.42 ; Variant reste distinct.
+- Qualification 0.42 : **77 erreurs Foreign reproduites sur 110 modules TAST
+  frais**, en normal/threaded sur macOS/Linux. Le mapping de tout le module
+  `Foreign` vers `Value` efface à tort la représentation native de
+  `ForeignError`. Restreindre ce mapping au seul **`Foreign.Foreign`**, dans
+  une copie en mémoire du bundle, passe **24 contrôles de portée, dix groupes
+  JS et 40 tests natifs sous garde**. Supprimer complètement le mapping
+  échoue avec 32 E0425 par mode/plateforme ; les deux types sont à distinguer.
+  **Aucun correctif permanent ni portage des cinq FFI Foreign**. Défaut prêt
+  47 vérifié inchangé, sans nouveau run ; RemoveComments non relancé.
+  Correctif permanent intégré ensuite en 0.43.
+- Correctif 0.43 : seule la représentation **`Foreign.Foreign`** reste `Value` ;
+  `ForeignError` retrouve son ADT récursif natif. Régression permanente sur
+  **110 modules frais**, 24 frontières et dix groupes JS ; dix tests natifs
+  par mode normal/threaded sur macOS/Linux, puis les mêmes sous **16 gardes**
+  individuellement forcés. **57 tests codegen et 54 driver/CLI** passent ;
+  VariantCase reste vert, y compris son négatif « alias seul ».
+  **`bin/b` puis `bin/t` : 47/47**, nouveau `build-vnMqlj`.
+  RemoveComments frais compile Foreign et bloque sur **146 erreurs Variant** ;
+  ses 20 tests restent non exécutés et ses 90 fallbacks à qualifier.
+  Le problème Cargo BigInt sans lockfile historique reste distinct.
+  Type public Variant qualifié ensuite en 0.44.
+- Qualification 0.44 : **146 erreurs Variant reproduites sur 91 modules TAST
+  frais**, en normal/threaded sur macOS/Linux. L'alias seul et le seul mapping
+  vers `Value` laissent chacun **31 erreurs** : constructions et projections
+  utilisent encore une struct native. Sur copie, aligner ces chemins sur la
+  représentation effective permet de compiler et passe **12 des 13 contrats
+  natifs par mode/plateforme**, sous trois gardes ; les 13 groupes JS passent.
+  **`unvariant`/`revariant` reste en échec** (`Expected Unit` sur payload Int),
+  sans fallback atteint : ce n'est pas une parité complète de Variant.
+  Aucun correctif permanent ni nouveau run du défaut ; son build prêt 47,
+  ses inputs, artefacts et exécution enregistrée sont vérifiés inchangés.
+  Correctif borné intégré en 0.45 ci-dessous ; l'éliminateur rank-2 reste à
+  qualifier séparément.
+- Correctif 0.45 : mapping exact de `Data.Variant.Variant` et chemins de
+  construction/projection `Value` intégrés. **58 tests codegen et 54 driver/CLI**
+  passent ; douze contrats Variant par mode normal/threaded sous garde sur
+  macOS/Linux, voisins VariantCase/ForeignError revalidés. L'exemple séparé
+  `unvariant` reste rouge, sans fallback atteint sur les exports gardés Linux.
+  **`b -c; t -c` : 47/47**, `build-ioPRzQ`, DB vide. RemoveComments frais
+  compile Variant puis bloque sur **54 erreurs JSDate**, non corrigées ici.
+  Le bloc 0.46 ci-dessous lève ensuite ce blocage et intègre RemoveComments.
+- Bloc 0.46 : FFI JSDate minimale, correction de l'inventaire des artefacts
+  `Yoga.JSON`, profil/lockfile et runner élargis. **67/67 par `b -c; t -c`**,
+  58 tests driver/CLI, 20/20 explicites, négatif 2/3 → 101, puis défaut toujours
+  67/67. Régression JSDate : 118 modules TAST frais, 12 cas JS et deux tests
+  natifs par mode/plateforme. **67 tests b8x validés, pas encore les 259 sans
+  services ni les 286 recensés** ; ne pas confondre avec les 259 modules TAST
+  du nouveau défaut. Aucun nouveau changement du générateur dans ce bloc.
+- Bloc 0.47 : FFI `_untag`, agrégateur HTML Clean original et défaut élargi.
+  **175/175 par `b -c; t -c`**, 128/128 explicites, négatif 101 et défaut
+  inchangé. **61 tests driver/CLI**, **11 788 cas de parité FFI par plateforme
+  macOS/Linux**, distincts du comptage b8x. Les sources de l'inventaire sont
+  inchangées : restent 63 tests String, 21 Variant Encoding et 27 intégrations.
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -4202,6 +4313,8 @@ et préservations est verte après nettoyage.
 
 **Astra**, pour isoler la cause TAST/typage natif ; diagnostic seulement.
 
+**Réalisé le 2026-09-13**, sans correction permanente ; résultat ci-dessous.
+
 1. Partir des quatre erreurs de `remove-comments-bbcQcB`, résoudre les vraies
    sources et FFI de `Data.Variant.Internal`, puis reproduire le défaut dans
    une fermeture TAST minimale, en normal/threaded, sans RemoveComments/Spec/Aff
@@ -4221,6 +4334,954 @@ et préservations est verte après nettoyage.
    RemoveComments tant que la compilation et la qualification de l'ensemble
    de ses fallbacks résiduels ne sont pas achevées ; aucun élargissement du
    profil par défaut à cette étape.
+
+#### Résultat 0.40 — VariantCase est un conteneur hétérogène, pas une struct absente
+
+**Reproduction.** `VariantProbe.purs` isole `lookupEq`, `lookupOrd` et la
+construction de `VariantRep VariantCase` depuis les vraies sources
+`purust-variant/src/Data/Variant/Internal.purs`. Aucun `.rs` n'est résolu pour
+ce module. La fermeture contient **89 modules TAST frais**, sans
+RemoveComments/Spec/Aff ; `Effect` et `Effect.Ref` sont des dépendances
+transitives conservées. Le bundle permanent 0.38/0.39 reproduit exactement
+**quatre E0425 par mode**, toutes dans `Data.Variant.Internal`.
+
+**Cause démontrée.** La source déclare `foreign import data VariantCase :: Type`.
+`Data.Variant` y convertit les valeurs de cases et leurs comparateurs par
+`unsafeCoerce` : `variantEqs`/`coerceEq` et `variantOrds`/`coerceOrd`, puis
+`lookupEq`/`lookupOrd`. Le rôle de ce type est de transporter une valeur de
+n'importe quelle case avec le comparateur correspondant, pas d'allouer une
+nouvelle struct native.
+
+Le TAST n'a pas perdu les types : dans le module frais, `typeTable[708]` est
+`Adt Data.Variant.Internal.VariantCase []`. Les **quatre projections `value`**
+des deux fonctions portent cette annotation ; les **deux `TypeApp` de `lookup`**
+instancient explicitement des fonctions prenant deux `VariantCase`. Les
+`VariantRep` sont des records typés avec champs `type` et `value` ; le newtype
+est désucré. `dataDecls` est vide dans ce module, `classDecls` conserve ses
+dictionnaires, sans déclaration de layout `VariantCase`. `foreign` est vide :
+ce type étranger ne déclare pas de primitive FFI à implémenter.
+
+`codegenExprTypeWithValueEnums` applique actuellement son cas ADT générique :
+`Rc<crate::VariantCase>` ou `Arc<crate::VariantCase>`. Cela entraîne des
+`unwrap_class` et des emballages `Value::Class` au mauvais endroit. C'est
+**la représentation choisie pour ce type opaque précis** qui doit être adaptée,
+pas les annotations TAST, ni le polymorphisme en général.
+
+**Deux expériences séparées, uniquement dans les sorties diagnostiques.**
+
+- Ajouter `pub type VariantCase = purust_core::Value;` à une copie de l'export
+  fait passer Cargo dans les deux modes, mais les tests donnent **5 réussis /
+  5 échoués par mode**, sortie 101. Les égalités/ordres Int et String échouent
+  au downcast, et le transport générique échoue sur `Expected Class`.
+  La construction peut emballer un `Int` natif comme `Class(Rc<i64>)`, alors
+  que la lecture attend `Rc<Value>` : l'alias seul conserve les conversions
+  incompatibles. Ce contrôle négatif doit accompagner le correctif.
+- Une **copie du bundle**, avec une seule condition ajoutée au choix de type,
+  traduit exactement `Data.Variant.Internal.VariantCase` en `crate::UnknownType`
+  (le `Value` existant). Aucun TAST ni fichier Cargo retouché. La régénération
+  ne change que les corps Rust de `Purs_Data_Variant_Internal` et de la fixture,
+  dans chaque mode ; runtime et autres modules restent identiques. **Les dix
+  tests natifs passent par mode sur macOS, puis les mêmes sous Linux**,
+  soit 20 par plateforme. Ce n'est pas encore le bundle de production.
+
+**Contrats éprouvés.** La vraie référence JS passe **dix contrôles** : égalité
+Int/String, tags distincts, ordres Int/String et ordre des tags, absence d'appel
+du comparateur lorsque les tags diffèrent, erreurs exactes de lookup absent
+pour `eq`/`compare`, et transport opaque conservant l'identité. Les tests Rust
+couvrent ces comportements, les bornes Int32, chaînes Unicode, et les handles
+Rc/Arc de tableaux et objets natifs. Les deux tests de panic exigent le message
+`Data.Variant: impossible ...`, pas n'importe quelle exception.
+
+**Frontière de portée.** Douze assertions sur la copie du générateur, depuis
+le module propriétaire puis un consommateur, vérifient le mapping exact et
+préservent `VariantFCase`, `VariantTags`, `Data.Variant.Variant`, ainsi que les
+types `VariantCase` d'autres modules. L'audit du reproducteur relève **68 foreigns
+de fonctions**, dont trois encore absents : `Data.Symbol.unsafeCoerce`,
+`Record.Unsafe.unsafeDelete`, `Control.Extend.arrayExtend`. Leurs corps sont
+vérifiés `unimplemented!()` dans les deux modes, et non des valeurs de succès
+silencieuses ; ils ne sont pas portés ni individuellement éprouvés par des
+gardes ici. Les contrôles positifs et les erreurs exactes ne les atteignent pas.
+**Pas de qualification générale de Data.Variant, de VariantFCase ou de ses
+autres opérations**, ni des 90 fallbacks de RemoveComments.
+
+**Préservation et défaut.** Les sources/FFI réelles, le bundle permanent, les
+inputs/manifests/états des suites et les liens racine sont vérifiés inchangés.
+`src/Purust/CodeGen.purs` est inchangé. **`bin/t` passe 47/47**, sortie 0, aucun
+garde atteint, sur le même build frais `build-PJVBxF`. Pas de build permanent,
+de `t -c` ou de nettoyage DB à cette étape. Même conteneur/image/démarrage qu'à
+la fin de 0.39 ; **aucun redémarrage ni rebuild d'image**. b8x et purust-variant
+restent `master`, le compilateur `edge` ; aucun commit créé par l'agent à cette
+étape. Les caches Cargo créés
+par ce diagnostic sont supprimés après les contrôles pour limiter la pression
+disque ; sources, exports, lockfiles, rapports et build prêt sont conservés.
+
+**Preuves**, sous `b8x/run/bak/rust/output/variant-Ls5oCk/` :
+`{report,reference,tast-evidence,experiment,policy-check,foreign-audit,linux-report,summary}.json`,
+les commandes Cargo/tests, les scripts de reproduction/vérification et les
+exports originaux/alias/candidats. `experimental-purust.mjs` est la copie
+expérimentale, `policy-module.mjs` sa variante importable pour les assertions
+de frontière. **Aucun nouveau Cargo complet ni test RemoveComments** ; le
+blocage permanent reste celui de 0.39 jusqu'à l'implémentation suivante.
+
+#### Contrat 0.41 — Corriger uniquement la représentation de VariantCase
+
+**Astra**, pour convertir la preuve de représentation en correctif permanent.
+
+**Réalisé le 2026-09-13** ; résultat et limites de validation ci-dessous.
+
+1. Dans `codegenExprTypeWithValueEnums`, ajouter un cas documenté pour le nom
+   pleinement qualifié **`Data.Variant.Internal.VariantCase`** vers le `Value`
+   existant. Ne pas généraliser aux types étrangers sans layout, à tous les
+   modules Variant ou à `VariantFCase` ; ne pas ajouter d'alias FFI, de struct,
+   ni modifier TAST/PBO/`unsafeCoerce` pour cette correction.
+2. Ajouter une régression codegen de portée inspirée des douze contrôles 0.40,
+   et une fixture TAST/native permanente réutilisant les vraies sources
+   `purust-variant`. Conserver les dix contrats JS/Rust, les poignées Rc/Arc,
+   le court-circuit des comparateurs et les messages d'échec précis.
+   La régression doit être rouge avant correction et verte en normal/threaded,
+   sur macOS/Linux ; préserver le contrôle négatif « alias seul » qui compile
+   mais échoue à l'exécution. Ne pas présenter les trois autres FFI absentes
+   du reproducteur comme portées.
+3. Reconstruire le vrai bundle, exécuter les régressions codegen pertinentes
+   et le driver/CLI, puis reconstruire/revalider le défaut **47** avec ses
+   vrais inputs et gardes. Aucun état prêt modifié pour masquer la fraîcheur.
+4. Régénérer RemoveComments depuis ses vraies sources et overrides 0.39,
+   reprendre Cargo Linux et relever le prochain blocage **sans le corriger
+   en chaîne**. Si Cargo passe, inventorier le résiduel pour la prochaine
+   qualification complète : **ne pas encore lancer ses 20 tests** ni élargir
+   le défaut tant que tous ses fallbacks ne sont pas qualifiés.
+
+#### Résultat 0.41 — VariantCase corrigé, Foreign et Variant restent à qualifier
+
+**Correctif permanent borné.** Quatre lignes ajoutées dans
+`src/Purust/CodeGen.purs` : commentaire de représentation et cas exact
+`Data.Variant.Internal.VariantCase` → `crate::UnknownType` (`Value`). Les
+conversions existantes conservent alors le payload au lieu d'imposer un
+`Rc/Arc<VariantCase>`. Aucune FFI ajoutée, aucune modification de TAST/PBO ou
+`unsafeCoerce`, aucun élargissement à `VariantFCase`, aux dictionnaires, à
+`Data.Variant.Variant` ou aux types homonymes d'autres modules.
+
+**Régressions permanentes.** `tests/codegen/variant-case.mjs` conserve les douze
+assertions de portée de 0.40. `tests/tast/variant-case.mjs` et
+`tests/tast/fixtures/variant-case/{VariantProbe.purs,checks.rs,js-checks.mjs}`
+utilisent la vraie source `purust-variant` et les dépendances du lockfile du
+compilateur avec les overrides natifs nécessaires, sans dépendre d'un ancien
+répertoire diagnostique b8x. Commande, après résolution des dépendances :
+`PURS=/chemin/absolu/du/fork node tests/tast/variant-case.mjs` ;
+`PURUST_VARIANT_CASE_KEEP_OUTPUT` permet de conserver les preuves.
+
+Avant correction, le test codegen échoue sur `Rc<crate::VariantCase>` et le
+nouveau runner reproduit **quatre E0425** sur **89 modules TAST frais**. Après
+reconstruction du vrai bundle, les dix contrats JS et **dix tests Rust par
+mode normal/threaded passent sur macOS puis Linux**. Les annotations des quatre
+projections et les deux instanciations `TypeApp` de callbacks sont vérifiées.
+Égalité/ordre Int/String, court-circuit par tag, messages d'échec précis,
+valeurs génériques et identité Rc/Arc des tableaux/objets restent couverts.
+
+Le contrôle négatif permanent recrée la représentation générique sous le nom
+**`VariantCaseAliasProbe`**, uniquement dans des copies des sources Internal
+et de la fixture, avec un alias natif vers `Value`. Ce nom témoin est hors du
+mapping exact ; il évite de conserver un ancien bundle dans la régression.
+Cargo passe, puis **cinq tests réussissent et cinq échouent par mode**, sur
+les deux plateformes, dont `Expected Class` pour le transport générique.
+La vraie API PureScript reste inchangée. Les trois FFI absentes du reproducteur
+relevées en 0.40 ne sont pas portées par ce correctif.
+
+**Incident de cache traité dans le runner.** Une première sonde négative Linux
+renvoie 10/10 avec le cache partagé du positif, sans recompilation. Ce résultat
+est rejeté. La relance dans **quatre caches Cargo distincts** retrouve les
+positifs 10/10 et les négatifs 5/10. Le runner permanent sépare désormais aussi
+les caches de chaque export sur macOS. Une nouvelle exécution complète confirme
+les résultats ; ses exports Rust/Cargo positifs et négatifs sont vérifiés
+**identiques octet pour octet** aux exports éprouvés sous Linux avec caches
+séparés. Aucun résultat du cache partagé n'est retenu comme preuve.
+
+**Build et validation générale.** `npm run build` réussit après autorisation
+d'accès au cache Spago (première tentative refusée sur sa base SQLite).
+Le build remonte 65 avertissements hors du correctif, laissés en place ;
+aucun nettoyage d'imports ou refactoring ajouté. Le bundle devient
+`3e10959bd4113b8d301903d236e3e51d1ed693d16d5d21b1b37561337f3fc23d`.
+Les **56 tests codegen et 52 tests driver/CLI** passent. Une relance parallèle
+pendant les autres travaux dépasse certains délais (Now/console et fixtures
+CLI) ; les deux suites finales sont donc rejouées **séquentiellement**, toutes
+vertes sans augmentation des délais. Rapports complets conservés.
+
+L'ancien `bin/t` refuse effectivement le bundle périmé, sortie 1 ;
+**`bin/b` puis `bin/t` passent 0/0**. Nouveau `build-fhd0qD`, **231 modules frais**,
+31 fallbacks individuellement éprouvés et cinq gardés hors fermeture,
+résumé **47/47**, aucun garde atteint. Pas de `t -c`/nettoyage DB répété :
+dernier contrôle 0.34. Ni le profil par défaut ni son périmètre ne sont élargis.
+
+**RemoveComments : premier contrôle de résolution puis Cargo natif.** Nouveau
+profil diagnostique issu des vrais inputs 0.39, **247 modules TAST frais**,
+217 crates PureScript natives, delta +29/−13 et **90 fallbacks résiduels**.
+La résolution des overrides, dont BigInt et sa déclaration Cargo, est vérifiée.
+Le premier `cargo metadata --offline` échoue avant Rust : `spin 0.9.8` est
+signalé retiré de l'index, dans la dépendance `num-bigint-dig` → `lazy_static`.
+Cette tentative ne constitue pas un résultat de compilation.
+
+Les **250 manifestes Cargo générés** sont alors comparés à ceux de 0.39 : tous
+identiques. Le **Cargo.lock exact de `remove-comments-bbcQcB`** est repris comme
+input explicite, sans édition ni changement de version ; metadata puis check
+s'exécutent avec `--offline --locked`. Son SHA-256 reste
+`baaf6d540bea032ff8be1b10090504206f1d270b2e9c881457b6bb80438bc391`.
+Cela isole le changement du compilateur, **sans résoudre le problème d'un
+nouveau graphe BigInt dépourvu de lockfile historique**. Cette dette de
+résolution est consignée séparément avant tout raccordement BigInt au défaut.
+
+Cargo compile `Purs_Data_Variant_Internal`, BigInt et Nullable, puis sort **101**
+avec **223 erreurs**, réparties ainsi :
+
+- **Foreign : 77** — huit E0308 de types incompatibles et 69 E0599 (`as_ref`
+  absent sur `Value`). Premier diagnostic : `Value` attendu, `Arc<ForeignError>`
+  trouvé, dans `Purs_Foreign/src/lib.rs:142`. Cause à isoler en 0.42.
+- **Data.Variant : 146** — 141 E0425 et cinq E0422 pour le type/constructeur
+  natif `Variant` absent. Bloc distinct, non corrigé ni qualifié ici.
+
+**Aucun des 20 tests RemoveComments exécuté**, aucune correction Foreign ou
+Variant en chaîne. Les 90 fallbacks ne sont pas qualifiés par la régression
+VariantCase ; leur qualification complète reste nécessaire avant tout run.
+
+**Préservation et preuves.** b8x reste `master`, le compilateur `edge` ; aucun
+commit créé par l'agent. Sources/FFI hors correctif, états/manifests des autres
+suites et liens racine sont vérifiés inchangés. Même conteneur, image et
+démarrage que 0.40 ; aucun redémarrage ni rebuild d'image. Les caches Cargo
+diagnostiques et les caches de compilation des builds `build-PJVBxF` /
+`build-fhd0qD` ont été supprimés pour libérer de l'espace, **en conservant et
+vérifiant leurs binaires, sondes, sources, lockfiles, manifests et preuves**.
+Ces caches sont régénérables ; le nouveau défaut reste prêt et frais.
+
+Sous `b8x/run/bak/rust/output/` : rouge `purust-variant-case-sf6sHf/` ;
+premier vert et preuves Linux à caches séparés `purust-variant-case-2392br/` ;
+runner final, régressions séquentielles et vérification d'équivalence
+`purust-variant-case-7IXUZk/{report,regressions,summary}.json` et `verify.mjs` ;
+diagnostic complet `remove-comments-T2Xozu/`, avec l'échec de résolution initial,
+la provenance du lockfile et les erreurs Cargo. **M2/M4 restent ouverts.**
+
+#### Contrat 0.42 — Qualifier Foreign.ForeignError avant correction
+
+**Astra**, diagnostic borné du premier bloc relevé en 0.41.
+
+1. Partir des 77 erreurs de `Purs_Foreign` dans `remove-comments-T2Xozu` et
+   isoler une fermeture TAST fraîche autour de `Foreign.ForeignError`, sans
+   RemoveComments/Spec/Aff si ces modules ne sont pas nécessaires. Reproduire
+   les erreurs en normal/threaded avant de modifier quoi que ce soit.
+2. Examiner les `dataDecls`, les annotations et instanciations conservées,
+   ainsi que le choix de représentation et les vraies FFI de `Foreign`.
+   Distinguer le conteneur étranger générique du type d'erreur et de ses
+   constructeurs ; ne pas présumer qu'il faut tous les représenter par `Value`
+   ou tous par un même type natif.
+3. Comparer les comportements JS pertinents à de petites expériences sur
+   copies isolées ; fixer le correctif minimal, sa portée, les régressions
+   positives et les contrôles négatifs. **Pas de correctif permanent** du
+   compilateur/FFI à cette étape, ni de correction des 146 erreurs Variant.
+4. Préserver le défaut 47 et les inputs réels. Ne pas lancer RemoveComments,
+   ni qualifier implicitement ses 90 fallbacks. Garder visible le problème
+   distinct de résolution Cargo BigInt sans lockfile historique.
+
+#### Résultat 0.42 — ForeignError natif, Foreign générique : frontière démontrée
+
+**Diagnostic uniquement.** Le cas réduit `ForeignProbe` utilise la vraie source
+`purust-foreign/src/Foreign.purs` et une fermeture fraîche de **110 modules**,
+sans RemoveComments, Spec, Aff, Variant ni BigInt. Aucun correctif du
+compilateur, du PBO/TAST, du runtime ou des FFI n'est intégré à cette étape.
+
+**Cause observée.** Dans le TAST `Foreign`, les entrées distinctes
+`Foreign.ForeignError` et `Foreign.Foreign` sont conservées. `dataDecls` donne
+les quatre constructeurs de l'erreur, avec les champs `String`, `String/String`,
+`Int/ForeignError` et `String/ForeignError`. L'annotation du constructeur
+`ErrorAtIndex` conserve son argument et son retour récursifs ; les `TypeApp`
+des dictionnaires et appels conservent aussi les types exacts. `Foreign` est
+un `foreign import data` sans agencement de constructeur natif.
+
+La condition `modName == "Foreign"` dans `codegenExprTypeWithValueEnums` ramène
+pourtant **tous les ADT de ce module** à `crate::UnknownType` (`Value`). L'enum
+`ForeignError` est bien émise, mais ses champs récursifs et les signatures qui
+l'utilisent deviennent `Value`. Les constructeurs produisent alors des
+`Rc/Arc<ForeignError>` là où le code attend `Value`, et les branches tentent
+`as_ref` sur ce dernier. Il ne manque ni information TAST ni alias FFI d'erreur.
+
+Trois représentations ont été exécutées dans des exports et caches séparés,
+en **normal/threaded sur macOS et Linux** :
+
+| Représentation testée | Résultat par mode et plateforme |
+| --- | --- |
+| Bundle réel inchangé : tout `Foreign` → `Value` | Cargo 101, **77 erreurs** : huit E0308 et 69 E0599 |
+| Copie : supprimer entièrement cette exception | Cargo 101, **32 E0425**, type natif `Foreign` absent |
+| Copie : seul `Foreign.Foreign` → `Value` | Cargo 0, **dix tests natifs passent** |
+
+Les copies sont réalisées **en mémoire**, par un hook limité à l'URL du bundle
+observé et à une occurrence exacte de la condition. Son fichier réel conserve
+le SHA-256 `3e10959bd4113b8d301903d236e3e51d1ed693d16d5d21b1b37561337f3fc23d`.
+Le candidat retrouve des champs récursifs `Rc/Arc<ForeignError>` et conserve
+le transport générique `Foreign` existant, sans nouveau type opaque ou alias.
+
+**Couverture.** Dix groupes JS de référence, **40 tests natifs** au total :
+les quatre constructeurs et leur filtrage, rendu récursif, dictionnaires
+Show/Eq/Ord, ordre des tags et des champs, identité polymorphe, constructeur
+passé comme callback, allers-retours Int/String et identité des handles
+tableau/objet transportés dans `Foreign`. Les **24 assertions de mapping**
+couvrent types locaux/importés, argument/retour, type voisin et homonymes dans
+un autre module ou sous-module. Les caches Cargo sont distincts pour chaque
+export, mode et plateforme ; aucun cache partagé positif/négatif.
+
+**FFI absentes, toujours absentes.** Le résolveur retourne `ffi: null` et
+`cargo: null` pour `Foreign`. Les cinq imports `typeOf`, `tagOf`, `isNull`,
+`isUndefined`, `isArray` ne possèdent que leur implémentation JS ; leurs
+fallbacks Rust renvoient encore une chaîne vide ou `false` avant instrumentation.
+Le reproducteur contient **16 fallbacks dans sa fermeture native**, aucun
+exclu. Tous sont gardés et individuellement forcés : **64 appels** donnent la
+sortie 86 et le marqueur exact, puis les tests fonctionnels n'en atteignent
+aucun. Cela qualifie ces chemins testés, **pas les opérations Foreign absentes
+ni les 90 fallbacks du diagnostic RemoveComments**.
+
+La sonde utilise une copie diagnostique du helper de garde existant pour
+accepter le même constructeur `Nothing` en `Rc<Maybe>` qu'en `Arc<Maybe>`.
+Le helper de production n'est pas modifié. Deux ajustements du montage de
+diagnostic (répertoire threaded précréé et chemins de l'audit via symlink)
+n'ont entraîné aucun changement de code de production.
+
+**Contrôle de l'ABI String.** Le premier essai natif obtient 8/10 : la fixture
+injecte directement `é🙂` en chaîne Rust brute, hors ABI UTF-16 interne. La
+trace atteint `Data_Show_showStringImpl` puis `purust_char_to_code_unit`.
+Un contrôle direct de Data.Show **dans les exports du bundle inchangé** prouve
+que la chaîne encodée passe et que l'entrée brute est rejetée : deux tests
+par mode/plateforme, **huit contrôles supplémentaires**. La fixture est corrigée
+avec `purust_string_from_utf8`, pour les entrées et résultats attendus ; le
+cas Unicode reste testé. Aucun bug Show/UTF-16 ni correctif associé n'est
+déduit de cette entrée invalide. Le premier échec et sa fixture sont conservés.
+
+**Préservation.** b8x reste `master`, le compilateur `edge`. Le défaut
+`build-fhd0qD` reste prêt : état, manifeste, exécution historique **47/47**,
+sources, inputs et artefacts vérifiés inchangés. **Pas de nouveau run b8x,
+de build de bundle/image, ni de nettoyage DB.** Même conteneur, même image et
+même démarrage que 0.41. RemoveComments n'est ni régénéré ni exécuté ; ses
+146 erreurs Variant et le problème de résolution BigInt sans lockfile restent
+les observations de 0.41, à traiter séparément. M2/M4 restent ouverts.
+
+Preuves sous `b8x/run/bak/rust/output/foreign-error-9mVnLs/` :
+`{report,summary,tast-evidence,guards,linux-report}.json`, les rapports Cargo
+positifs/négatifs, `ForeignProbe.purs`, `checks.rs`, `js-checks.mjs`,
+`experimental.mjs` et `verify.mjs`. Les seuls changements durables de cette
+étape sont ces preuves ignorées par Git et la mise à jour de ce TODO.
+Les deux caches Cargo créés pour ce diagnostic (environ 3,3 Go) sont supprimés
+après validation ; ils sont régénérables. Sources, lockfiles, rapports et
+artefacts du défaut prêt sont conservés, puis revérifiés.
+
+#### Contrat 0.43 — Intégrer uniquement la frontière Foreign / ForeignError
+
+**Astra**, correctif borné du générateur et régression permanente.
+
+1. Dans `codegenExprTypeWithValueEnums`, retirer `Foreign` de l'exception
+   globale par module et ajouter le cas exact
+   `modName == "Foreign" && actualClassName == "Foreign"` → `crate::UnknownType`.
+   Laisser `ForeignError` et les types voisins suivre leur agencement natif.
+   Aucun alias `ForeignError = Value`, aucune modification des conversions
+   génériques, du TAST/PBO, de Variant ou des autres exceptions de module.
+2. Ajouter une régression autonome utilisant la vraie source `purust-foreign`
+   et les dépendances/overrides résolus du compilateur, sans dépendre d'un
+   ancien répertoire diagnostique b8x. Conserver les 24 frontières de mapping,
+   reproduire le rouge avant correction et vérifier le TAST frais, les dix
+   groupes JS et les dix tests natifs par mode sur macOS/Linux. Respecter
+   l'encodage UTF-16 aux frontières Rust et vérifier le maintien du transport
+   générique et du partage des handles. Ne pas figer un ancien bundle dans
+   les tests permanents pour recréer le témoin négatif.
+3. Garder les FFI manquantes visibles et protégées pendant les tests ciblés.
+   Si leur helper de sonde nécessite l'argument normal `Rc<Maybe>`, limiter
+   l'adaptation à ce constructeur typé déjà éprouvé et ajouter le contrôle
+   correspondant ; ne pas profiter de l'étape pour porter les cinq primitives
+   Foreign ni d'autres opérations de la fermeture.
+4. Reconstruire le bundle réel, lancer les suites codegen et driver/CLI
+   séquentiellement, revalider la régression VariantCase, puis **`bin/b` et
+   `bin/t` sur le défaut 47** avec les nouveaux inputs. Ne pas élargir le
+   défaut ni répéter le nettoyage des bases pour ce correctif de génération.
+5. Refaire un diagnostic RemoveComments frais jusqu'à Cargo, **sans exécuter
+   ses 20 tests**. Si la résolution sans lockfile échoue encore sur BigInt,
+   garder cette preuve distincte ; ne réutiliser le lockfile historique que
+   si les manifestes et sa provenance le justifient, avec `--offline --locked`.
+   Relever le prochain bloc effectivement atteint, sans corriger Variant en
+   chaîne ni déclarer qualifiés les fallbacks restants. Mettre à jour ce TODO
+   et s'arrêter pour validation de la micro-étape suivante.
+
+#### Résultat 0.43 — ForeignError corrigé, prochain bloc : Data.Variant
+
+**Correctif permanent limité.** Dans `src/Purust/CodeGen.purs`, `Foreign`
+sort de l'exception globale par module ; seul le cas exact
+`Foreign.Foreign` conserve `crate::UnknownType` (`Value`). `ForeignError`
+et ses champs récursifs suivent désormais le choix natif `Rc/Arc` existant.
+Aucun alias FFI, aucun changement des conversions génériques, du TAST/PBO,
+du runtime ni des autres exceptions. Les modifications préexistantes, dont
+VariantCase, sont préservées : la réversion en mémoire des seules lignes de
+0.43 retrouve exactement l'empreinte de CodeGen prise avant intervention.
+
+**Régression permanente rouge puis verte.**
+`tests/codegen/foreign-error.mjs` ajoute les **24 frontières** de 0.42.
+`tests/tast/foreign-error.mjs` utilise la vraie source locale `purust-foreign`
+et les dépendances du lockfile du compilateur avec leurs overrides natifs.
+Ses fixtures sont dans `tests/tast/fixtures/foreign-error/` ; le runner ne
+dépend d'aucun ancien répertoire b8x et ne contient pas de copie de bundle.
+
+Avant correction, le test de mapping échoue et le runner reproduit
+**77 erreurs Cargo** sur une fermeture fraîche de **110 modules**. Après
+reconstruction du bundle, il vérifie les agencements `dataDecls`, annotations
+de constructeurs, `TypeApp` et signatures Foreign, puis passe les **dix groupes
+JS et dix tests natifs par mode normal/threaded**, sur macOS puis Linux.
+Constructeurs, récursion, rendu, Show/Eq/Ord, callback de constructeur,
+polymorphisme, transport générique et partage des handles sont couverts.
+Les chaînes Unicode traversent explicitement l'ABI UTF-16 interne via
+`purust_string_from_utf8`, conformément à la preuve 0.42.
+
+Commande du runner après résolution des dépendances :
+`PURS=/chemin/absolu/du/fork node tests/tast/foreign-error.mjs`.
+`PURUST_FOREIGN_ERROR_KEEP_OUTPUT` permet de conserver les exports et le rapport.
+
+**Gardes séparées, sans portage des FFI.** Le compagnon permanent
+`b8x/run/bak/rust/tests/foreign-error-guard.mjs` prend ce `report.json`, audite
+les résolutions réelles, copie les exports et n'en modifie que les fallbacks
+et le raccordement de la sonde. Les signatures/fichiers non concernés sont
+comparés par empreinte. **16 gardes, aucun exclu** : tous sont individuellement
+forcés en normal/threaded sur macOS/Linux, soit **64 sorties 86** avec le
+marqueur exact. Les mêmes dix tests par mode/plateforme passent ensuite sous
+garde, sans en atteindre aucun. Les cinq opérations `Foreign` restent absentes ;
+ce résultat ne qualifie pas leurs fonctionnalités ni les fallbacks RemoveComments.
+
+Le helper de garde accepte maintenant le constructeur sûr `Nothing` pour
+`Rc<Purs_Data_Maybe::Maybe>` comme pour `Arc`, quel que soit le module appelant.
+Le cas redondant limité à BigInt est retiré. Deux tests dans
+`b8x/run/bak/rust/tests/maybe-guard.test.mjs` couvrent le positif Rc/Arc hors
+BigInt et le refus d'un `Maybe` homonyme non qualifié ; rouge puis vert pour
+le nouveau cas, anciens tests BigInt toujours verts. Aucune extension à une
+signature ou à un type dont l'ABI n'est pas établie.
+
+**Contrôles généraux et Linux.** Les **57 tests codegen et 54 tests driver/CLI**
+passent séquentiellement. VariantCase est rejoué avec TAST frais, ses dix
+contrats JS et dix tests natifs par mode sur les deux plateformes ; le témoin
+« alias seul » compile puis retrouve **cinq échecs sur dix** par mode/plateforme.
+Tous les exports ont un cache Cargo distinct.
+
+Un premier build Linux échoue sur un fichier objet intermédiaire manquant
+pendant l'archivage de `Purs_Data_Monoid_Additive`, sans diagnostic de type Rust.
+La crate seule compile avec un cache neuf et un seul job ; l'ensemble des
+exports est ensuite rejoué avec **caches neufs et `-j 1`**, entièrement vert
+(ou négatif attendu). Le premier échec reste enregistré. Aucun correctif de
+source, changement de timeout ou redémarrage de conteneur n'est utilisé pour
+le masquer ; la cause précise de cette disparition de fichier n'est pas établie.
+
+**Bundle et défaut réel.** `npm run build` réussit ; les 65 avertissements
+préexistants de Main/CodeGen restent hors périmètre. Nouveau bundle SHA-256 :
+`a544e087ae84a6f2803f196218e33a4cc1798c3e5ae253fbd9670b1ab0fafbb2`.
+L'ancien `bin/t` refuse les inputs périmés, sortie 1. Puis **`bin/b` et `bin/t`
+sortent 0/0**, avec **47/47** et aucun garde atteint : `build-vnMqlj`,
+231 modules frais, 31 fallbacks éprouvés et cinq gardés hors fermeture native.
+Le défaut n'est pas élargi. Pas de `t -c` ni de nettoyage DB répété ; le dernier
+contrôle de cette option reste celui de 0.34. Aucun rebuild d'image.
+
+**RemoveComments frais, sans exécution.** Nouvelle fermeture `purs graph`
+et nouveau TAST depuis les sources et le profil 0.41 vérifiés inchangés :
+**247 modules**, 217 crates PureScript natives et **90 fallbacks résiduels**.
+Le premier metadata hors ligne, sans lockfile, refuse toujours `spin 0.9.8`
+retiré de l'index. Les **250 manifestes Cargo** sont identiques à ceux de 0.41 ;
+son lockfile exact, provenant initialement de 0.39, est donc repris comme
+input explicite avec `--offline --locked`, sans changement de version.
+SHA-256 : `baaf6d540bea032ff8be1b10090504206f1d270b2e9c881457b6bb80438bc391`.
+Cela n'apporte toujours pas de preuve de résolution d'une installation neuve.
+
+Cargo compile effectivement **`Purs_Foreign`**, puis sort 101 sur
+**146 erreurs dans `Purs_Data_Variant` seulement** : 141 E0425 et cinq E0422.
+Premier point : `Purs_Data_Variant/src/lib.rs:178`, signature d'`unvariant`
+référençant `Arc<crate::Variant>` alors que ce type natif est absent.
+**Les 77 erreurs Foreign ont disparu.** Aucun correctif Variant en chaîne,
+aucun des 20 tests RemoveComments exécuté, aucune nouvelle qualification
+implicite de ses fallbacks. M2/M4 restent ouverts.
+
+**Préservation et preuves.** b8x reste `master`, le compilateur `edge`, sans
+commit créé par l'agent. Même conteneur/image/démarrage ; cible Rust et liens
+racine inchangés. Les sources/FFI et anciens artefacts hors modifications
+annoncées sont vérifiés, ainsi que tous les inputs du nouveau défaut prêt.
+Les caches diagnostiques et caches de compilation du nouveau défaut sont
+nettoyés en gardant sources, lockfiles, rapports et binaires/sondes prêts.
+Ils sont régénérables ; un nouveau `bin/t` après nettoyage confirme **47/47**,
+puis les empreintes des artefacts et inputs sont revérifiées.
+
+Sous `b8x/run/bak/rust/output/` :
+`foreign-error-integration-KKRgsJ/{before,red-report,green,linux,default,summary}.json`
+et `verify.mjs` ; rouge `purust-foreign-error-X9RkP0/` ; positifs et gardes
+`purust-foreign-error-eiQupC/` ; VariantCase `purust-variant-case-rNgqAa/` ;
+diagnostic complet `remove-comments-bf0uWW/`, dont échec de résolution initial,
+provenance du lockfile et erreurs Cargo.
+
+#### Contrat 0.44 — Qualifier le type public Data.Variant.Variant
+
+**Astra**, diagnostic borné, sans correctif permanent à cette étape.
+
+1. Partir des **146 erreurs** de `remove-comments-bf0uWW` et isoler la vraie
+   source `Data.Variant`, dans une fermeture TAST fraîche sans RemoveComments,
+   Spec/Aff/BigInt si inutiles. Reproduire le blocage en normal/threaded.
+2. Examiner le type public `Variant`, ses rangées et instanciations TAST,
+   ses constructions/projections, les représentations internes et les FFI
+   réellement résolues. Distinguer ce type de `VariantCase`, `VariantFCase`
+   et des dictionnaires ; ne pas étendre automatiquement le mapping 0.41.
+3. Comparer des cas JS pertinents et des expériences natives sur copies,
+   avec des contrôles de tags, payloads, callbacks et types voisins selon
+   les opérations réellement isolées. Démontrer la représentation minimale
+   et les contrôles négatifs nécessaires, plutôt qu'ajouter un alias pour
+   simplement faire passer Cargo. Respecter les ABI String et Rc/Arc, garder
+   les fallbacks visibles et séparer les caches de chaque export.
+4. Ne pas corriger d'autres types ou FFI en chaîne, ne pas lancer les tests
+   RemoveComments et ne pas élargir le défaut 47. Préserver ses inputs et
+   artefacts prêts. Garder distinct le problème Cargo BigInt sans lockfile.
+5. Consigner les preuves et le contrat de l'implémentation suivante dans ce
+   TODO, puis s'arrêter pour validation.
+
+#### Résultat 0.44 — Représentation qualifiée, limite Unvariant établie
+
+Diagnostic terminé, **sans correctif permanent**. Les expériences sont dans
+`b8x/run/bak/rust/output/variant-public-jw3nFu/`, sans modifier les sources
+réelles, le bundle du compilateur, le PBO, le runtime ou les FFI résolues.
+
+**Reproduction et données TAST**
+
+- Fermeture fraîche de **91 modules**, issue des sources exactes du diagnostic
+  0.43 et d'une sonde publique `VariantPublicProbe` ; sans RemoveComments,
+  Spec, Aff ni BigInt. Compilation du fork avec `corefn,js`, pas réutilisation
+  d'anciens JSON. Les **146 erreurs** sont reproduites dans les deux modes,
+  sur macOS et Linux : 141 E0425 et cinq E0422 dans `Purs_Data_Variant`.
+- La vraie bibliothèque déclare `foreign import data Variant ∷ Row Type → Type`.
+  Elle construit le newtype `VariantRep { type :: String, value :: a }`, puis
+  le convertit par `unsafeCoerce`. Les deux modules Variant n'ont **aucun FFI
+  résolu** ; `foreign = []` et `dataDecls = []` ne décrivent aucune struct native
+  `Variant` à émettre. Les dictionnaires, eux, sont explicites dans `classDecls`.
+- Le TAST préserve le nominal `Data.Variant.Variant`, les rangées fermées
+  `integer :: Int, text :: String`, les rangées ouvertes avec leur `tail`,
+  les quantificateurs et les arguments d'instanciation des nœuds `TypeApp`.
+  Ce n'est pas une perte du typage TAST : c'est une incohérence de représentation
+  entre le nominal opaque et le record utilisé par cette bibliothèque.
+
+**Expériences comparées, mêmes résultats par mode et plateforme**
+
+| Expérience isolée | Cargo | Exécution native |
+| --- | --- | --- |
+| Compilateur réel inchangé | 146 erreurs | Impossible |
+| Source PureScript copiée inchangée + alias FFI `Variant = Value` | 31 erreurs : cinq E0071, 26 E0609 | Impossible |
+| Seul mapping exact `Data.Variant.Variant` vers `Value`, en mémoire | 31 erreurs : cinq E0422, 26 E0609 | Impossible |
+| Mapping exact + constructions/projections cohérentes avec `Value`, en mémoire | Compilation réussie | **12 passent, un échoue** |
+
+Le candidat ne se limite donc pas à ajouter un alias ou à élargir le mapping
+0.41. Le Rust généré doit aussi construire un record `Value` et utiliser les
+accesseurs `get_*()` pour un type représenté par `Value`. Le chemin natif reste
+nécessaire pour les vrais ADT/dictionnaires. L'expérience distingue ces chemins
+dans le littéral record typé et dans les deux décisions de `GetProp` : accès au
+champ et type du résultat avant adaptation. Elle ne change pas `GetCtorField`.
+
+**Contrats et contrôles**
+
+- **36 frontières de mapping** vérifiées : type local/importé, argument/retour,
+  `Variant` et `VariantCase` exacts, sans absorber `VariantFCase`, `VariantF`,
+  les dictionnaires Variant ni des homonymes d'autres modules.
+- **13 groupes JS passent**. Les 12 groupes natifs verts couvrent injection,
+  projection avec tag contraire, dispatch `match`, callback `on` non sélectionné,
+  `over`, `expand`, `contract`, Eq, Ord, Show Unicode, payloads génériques avec
+  identité des handles Rc/Arc et erreur `case_` sur un tag impossible.
+  Les conversions String respectent l'ABI du runtime.
+- Normal et threaded, sur macOS et Linux : **12/13**, sortie Cargo **101**,
+  et non zéro. Chacune des quatre exécutions porte trois gardes :
+  `Data_Symbol_unsafeCoerce`, `Record_Unsafe_unsafeDelete`,
+  `Control_Extend_arrayExtend`. Aucun binding exclu ; **12 forçages** au total
+  vérifient individuellement la sortie 86 et le marqueur attendu. Aucun de ces
+  fallbacks n'est atteint par les tests, y compris celui qui échoue.
+- Caches distincts pour chaque export, mode et plateforme ; Linux avec `-j 1`,
+  Cargo `--offline --locked`. Même conteneur, image et heure de démarrage avant
+  et après ; aucun redémarrage ni build d'image.
+
+**Limite non corrigée : `unvariant` / `revariant`**
+
+Le treizième test, `eliminator_reconstructs_variant`, échoue dès le payload Int
+sur les quatre exécutions natives, alors que le round-trip Int/String passe en
+JS. La source utilise explicitement `unsafeCoerce v ∷ VariantRep Unit` pour
+alimenter le callback polymorphe de rang 2 ; le TAST annote bien `o.value` en
+`Unit`. Le Rust expérimental appelle alors `get_value().unwrap_unit()` puis
+`mk_unit(...)`. La trace confirme `Expected Unit` dans le chemin
+`Data_Variant_unvariant` : le payload hétérogène n'est pas transporté intact.
+
+Cet échec reste **un vrai test rouge**, pas un `should_panic`, un test ignoré ou
+une réussite attendue de l'API. Aucune correction de `Unit`, du polymorphisme,
+d'`unsafeCoerce` ou de la bibliothèque n'est tentée ici. Remplacer simplement
+`Unit` par `VariantCase` n'a pas été testé et ne prouve pas le contrat complet
+des dictionnaires/callbacks reconstitués. `traverse`, Bounded/Enum et les autres
+opérations publiques non exercées ne sont pas déclarés qualifiés non plus.
+
+**État conservé et preuves**
+
+- b8x reste sur **master**, le compilateur sur **edge**, cible Rust et liens
+  de profil inchangés. Le bundle réel conserve son hash
+  `a544e087ae84a6f2803f196218e33a4cc1798c3e5ae253fbd9670b1ab0fafbb2`.
+- `build-vnMqlj` reste prêt : inputs et artefacts, dont binaires, vérifiés par
+  le driver ; manifeste et exécution enregistrée 47/47 inchangés. **Aucun
+  nouveau `b -c` / `t -c`** dans ce diagnostic. Aucun test RemoveComments lancé,
+  aucun élargissement du défaut ; son dernier diagnostic complet reste 0.43.
+- Le problème Cargo BigInt sans lockfile historique reste séparé. Le petit
+  graphe de cette étape n'inclut pas BigInt et ne démontre pas sa résolution.
+- Preuves : `report.json`, `tast-evidence.json`, `mapping-report.json`,
+  `alias-report.json`, `coherent-report.json`, `linux-report.json`,
+  `unvariant-trace.json` et `verification.json`. Les commandes et erreurs ont
+  leurs JSON détaillés. `value-report.json` conserve l'essai initial interrompu
+  à 31 erreurs ; `mapping-report.json` complète ce contrôle dans les deux modes.
+  Le bundle de cet essai est préservé par `experimental-mapping-only.mjs` ;
+  `experimental.mjs` contient le candidat étendu, toujours chargé en mémoire.
+- Après vérification, seuls les caches Cargo régénérables `host-cache/` et
+  `linux-cache/` de cette étape sont supprimés (environ 3 Gio libérés).
+  Sources, TAST/JS, Rust généré, lockfiles, logs et rapports sont conservés,
+  ainsi que les binaires du défaut prêt. Cibles exactes dans `cleanup.json`.
+
+#### Contrat 0.45 — Intégrer le chemin Value cohérent de Variant
+
+**Astra**, correctif compilateur borné. Il retire le blocage de représentation ;
+il ne signifie pas que toute l'API Variant ou RemoveComments est fonctionnelle.
+
+1. Ajouter le seul nominal exact `Data.Variant.Variant` au chemin `Value`.
+   Faire respecter la représentation effective dans les constructions de
+   records typés et les projections `GetProp`, y compris leur type de résultat.
+   Préserver le chemin natif des vrais ADT/dictionnaires ; ne pas mapper tout
+   le module, ajouter d'alias FFI ou modifier les types TAST du PBO.
+2. Ajouter les régressions permanentes de portée, de construction/projection
+   et les **12 contrats natifs qualifiés**, avec TAST frais et comparaison JS,
+   en normal/threaded sur macOS/Linux. Garder les trois fallbacks visibles et
+   éprouver leurs gardes, avec des caches isolés. Inclure des contrôles natifs
+   négatifs sur les types/dictionnaires voisins afin qu'un changement du chemin
+   `Value` ne généralise pas le boxing aux types structurés.
+3. Conserver séparément la sonde rouge `unvariant`/`revariant` et sa preuve ;
+   ne pas la transformer en contrat de réussite ni annoncer 13/13. Ne pas
+   corriger en chaîne `Unit`, `unsafeCoerce`, l'éliminateur rank-2 ou la
+   bibliothèque. Sa qualification suivante devra vérifier le payload intact,
+   les dictionnaires et les callbacks avant tout correctif supplémentaire.
+4. Recompiler le bundle, passer les tests codegen et driver/CLI, revalider
+   VariantCase et Foreign/ForeignError, ainsi que les chemins records/ADT
+   existants touchés. Reconstruire puis valider le défaut inchangé par
+   **`b -c; t -c`**, 47/47, sur la cible Rust et b8x master.
+5. Seulement après ces contrôles, relever le prochain blocage **Cargo** sur
+   une fermeture RemoveComments fraîche, sans exécuter ses tests ni élargir le
+   défaut. Garder la provenance du lockfile explicite et le problème BigInt
+   distinct. Consigner les résultats et la prochaine micro-étape, puis s'arrêter.
+
+#### Résultat 0.45 — Représentation Variant intégrée et défaut revalidé
+
+**Étape terminée après reprise.** b8x reste sur **master**, purust sur **edge**. Aucun
+portage FFI, changement du PBO, du runtime, des sources de la bibliothèque
+Variant ou de l'ensemble des tests b8x sélectionnés.
+
+**Implémentation et régressions acquises**
+
+- `src/Purust/CodeGen.purs` mappe le seul nominal exact
+  `Data.Variant.Variant` vers `Value`. Les littéraux records typés ne construisent
+  plus une struct pour un ADT représenté par `Value`. `GetProp` utilise la même
+  décision de représentation pour l'accès au champ et son type avant adaptation.
+  Les vrais ADT/dictionnaires conservent leurs champs natifs ; `GetCtorField`
+  est inchangé. Le commentaire et la frontière de la régression VariantCase
+  sont ajustés au nouveau contrat public, sans étendre le mapping au module.
+- Nouvelle régression `tests/codegen/variant-public.mjs` : **36 frontières**,
+  constructions et projections scalaires `Value`/natives, nom homonyme natif,
+  identité Rc/Arc et rejets des receveurs invalides. Son état rouge avant
+  correctif est enregistré. La sonde native passe en Rc et Arc sur macOS/Linux.
+- `tests/tast/variant-public.mjs` et ses fixtures utilisent les vraies sources,
+  sans dépendance à un ancien scratch b8x : **91 modules TAST frais**, rangées
+  fermées/ouvertes et instanciations `TypeApp` vérifiées, **13 groupes JS** verts
+  et **12 contrats natifs qualifiés** par mode. Les champs des dictionnaires
+  Variant restent natifs dans le Rust généré.
+- `b8x/run/bak/rust/tests/variant-public-guard.mjs` instrumente des copies.
+  Les douze contrats passent sous les **trois gardes** de 0.44, sans exclusion,
+  en normal/threaded sur macOS/Linux. Chacun est forcé individuellement avec
+  sortie 86 et marqueur attendu ; aucun n'est atteint par les tests.
+- L'exemple `Purs_VariantPublicProbe/examples/unvariant.rs` conserve le contrat
+  réel de round-trip ; il n'est ni ignoré ni converti en panic attendu.
+  `cargo test -p Purs_VariantPublicProbe --example unvariant` échoue toujours :
+  **0 passé, un échoué, sortie 101**, `Expected Unit` sur Int, dans les deux
+  modes et sur les deux plateformes. La suite qualifiée `--tests` en est
+  explicitement distincte. Instructions dans le README de la fixture.
+- **58 tests codegen et 54 tests driver/CLI** passent, exécution séquentielle.
+  VariantCase : 89 modules frais, dix tests natifs par mode/plateforme, négatif
+  « alias seul » conservé à cinq succès/cinq échecs par mode/plateforme.
+  Foreign/ForeignError : 110 modules frais, dix tests natifs par mode, puis
+  mêmes tests sous 16 gardes sur macOS/Linux. Au total, **76 forçages de gardes**
+  Foreign + Variant sur les deux plateformes. Aucun nouveau portage Foreign.
+- Les huit exports Linux ont été contrôlés avec des caches distincts et `-j 1`.
+  Le conteneur, l'image et l'heure de démarrage restent identiques durant cette
+  matrice réussie. Une copie incomplète du runtime dans la sonde codegen
+  autonome a été corrigée dans le scratch uniquement ; sa source threaded a
+  été restaurée octet pour octet et le runtime placé dans un sous-dossier.
+
+**Incidents de validation, résolus lors de la reprise**
+
+1. Le contrôle préalable du sélecteur de nettoyage DB renvoie **zéro base**.
+   Le défaut ancien est correctement refusé pour inputs périmés.
+2. Un premier **`bin/b -c` réussit**, `build-E1I5xv`. La comparaison stricte
+   du bundle interrompt le runner avant `t -c` : une correction de commentaire
+   avait ajouté une ligne, décalant uniquement les positions des erreurs
+   `Failed pattern match at Purust.CodeGen`. Équivalence hors de ces positions
+   démontrée et enregistrée ; aucune autre différence de code.
+3. Le commentaire est corrigé sans décalage et le bundle reconstruit. Il
+   retrouve **exactement** l'empreinte déjà validée par toutes les régressions :
+   `48906088e7a8386b5dc421ea0396ae4d91b6590184e5ef92a82a5435757aa336`.
+4. Le second **`bin/b -c` échoue sur `ENOSPC`**, `build-fRKs8R`. L'espace
+   disque s'est épuisé ; ce n'est pas une nouvelle erreur de typage Rust.
+   Le driver laisse alors légitimement le défaut en **failed**, sans verrou
+   résiduel. Aucun succès `t -c` n'est revendiqué pour cette tentative.
+5. Les caches régénérables propres à cette étape sont supprimés au fil des
+   contrôles. Le premier build conserve ses deux binaires et tous les artefacts
+   enregistrés ; seul son cache de compilation intermédiaire est retiré.
+   Le cache du build échoué est aussi supprimé après confirmation que le moteur
+   OrbStack est arrêté. Sources, TAST, Rust, lockfiles et rapports sont conservés.
+   Environ **3,9 Gio libres** ensuite ; réserver davantage de marge avant un
+   nouveau build complet (un target du défaut a occupé environ 3,2 Gio).
+6. Le socket Docker a disparu ; **`orbctl status` retourne `Stopped`**.
+   L'application macOS reste ouverte, mais son moteur est indisponible.
+   Le redémarrage n'est effectué qu'après accord explicite de l'utilisateur.
+
+**Reprise réussie et diagnostic Cargo complet**
+
+1. L'utilisateur confirme la saturation, rend de l'espace disponible et
+   autorise explicitement le redémarrage. **16 Gio libres** au contrôle de
+   reprise. Le moteur OrbStack repart ; son appel initial signale un timeout,
+   mais `orbctl status` confirme ensuite `Running` et Docker répond.
+2. `api-cli` était resté arrêté (sortie 255). Après vérification de son identité,
+   de son image et du montage, seul ce conteneur b8x existant est relancé ;
+   pas de reconstruction d'image ni de recréation des services.
+   L'essai `build-lAc5zQ`, interrompu sur ce prérequis, reste historique.
+3. **`bin/b -c` puis `bin/t -c` passent, sorties 0/0**, `build-ioPRzQ` :
+   **231 modules frais, 47/47 tests**, 31 gardes forcés et cinq exclus de la
+   fermeture native comme auparavant. Sélecteur DB vérifié vide, nettoyage
+   final `[]`. Le bundle du clean build a exactement le hash testé ci-dessus.
+   Manifeste prêt : `fc3430ef2995a1cbad6881be5557e6f77b1757ddd07e99b50851c82780eeb08e`.
+4. Diagnostic `remove-comments-Vyut07` exécuté ensuite : **247 modules TAST
+   frais, 217 crates natives, 90 fallbacks**. Cargo compile `Purs_Data_Variant`,
+   `Purs_Data_Variant_Internal` et `Purs_Foreign`, puis échoue sur **54 E0425**
+   dans le seul `Purs_Data_JSDate` : type natif `JSDate` absent. Premier site :
+   `Data_JSDate_toUTCString`, `lib.rs:143`, argument `Arc<crate::JSDate>`.
+   Source réelle `js-date-8.0.0/src/Data/JSDate.purs`, aucun FFI Rust résolu.
+   **Aucun des 20 tests RemoveComments exécuté**, aucun élargissement du défaut.
+5. La résolution Cargo hors ligne sans lockfile échoue toujours sur
+   **`spin 0.9.8` yanked**. Les **250 manifestes Cargo identiques** autorisent
+   la réutilisation explicitement tracée du lockfile historique 0.39, hash
+   `baaf6d540bea032ff8be1b10090504206f1d270b2e9c881457b6bb80438bc391`.
+   Ce verrou isole les erreurs natives ; il ne valide pas une installation
+   neuve. Aucune version de dépendance modifiée.
+6. Vérification finale des sources, FFI, exports des régressions, bundle,
+   manifeste et exécution du défaut. Même image et conteneur avant/après le
+   diagnostic complet ; nouvelle heure de démarrage due au redémarrage autorisé.
+   Les caches Cargo de fin d'étape sont retirés en conservant les binaires du
+   défaut et tous ses artefacts enregistrés, ainsi que les sources et preuves
+   du diagnostic JSDate. L'échec Unvariant reste une dette séparée, pas un
+   correctif caché ou une prétendue parité complète de Variant.
+7. Après ce nettoyage, **`bin/t -c` repasse 47/47**, sortie 0, nettoyage DB
+   `[]` ; tous les inputs et artefacts prêts sont encore vérifiés. Environ
+   **12 Gio libres** au contrôle final. Seuls des caches régénérables de cette
+   étape ont été supprimés ; aucun nettoyage de données utilisateur.
+
+Preuves dans `b8x/run/bak/rust/output/variant-integration-9esKTt/` : `red.json`,
+`regressions.json`, `linux.json`, `host-finish.json`, les rapports des fixtures
+`purust-variant-public-dombz4`, `purust-foreign-error-fH3vI8`,
+`purust-variant-case-AHGIH0`, les quatre logs Unvariant, `clean-line-offset.json`,
+`first-clean-build-default.json`, `failed-build-default-enospc.json`,
+`trim-first-build.json`, `space-recovery.json`, `default.json`,
+`verification.json`, `final-cleanup.json` et `post-clean.json`. Le premier export public
+`purust-variant-public-dl8KlC` est un essai intermédiaire remplacé par `dombz4`.
+Le diagnostic complet et sa provenance Cargo sont dans `remove-comments-Vyut07`.
+
+#### Contrat 0.46 — Entrée du bloc RemoveComments : Data.JSDate
+
+**Contrat élargi par l'accord de travail par blocs.** Le diagnostic JSDate
+ouvre le lot ; ses conclusions sont suivies de l'implémentation nécessaire,
+puis des corrections suivantes jusqu'à la validation RemoveComments et 67/67.
+Les preuves ci-dessous sont des contrôles internes, pas des pauses utilisateur.
+
+1. Partir des **54 E0425** de `remove-comments-Vyut07` et isoler les vraies
+   sources `Data.JSDate` dans une fermeture TAST fraîche minimale, sans
+   RemoveComments, Spec/Aff/BigInt si inutiles. Reproduire en normal/threaded.
+2. Examiner les annotations TAST, le type opaque public, les FFI JS et la
+   résolution Rust réelle. Inventorier les opérations nécessaires ; distinguer
+   JSDate des types natifs `Data.Date.Date`, DateTime et Instant. Ne pas suivre
+   la suggestion lexicale de rustc consistant à remplacer JSDate par Date.
+3. Qualifier empiriquement une représentation minimale et ses limites par
+   petits contrôles JS/natifs sur copies : valeurs valides/invalides, conversions
+   et effets, identité ou mutation si présents, contraintes de fuseau horaire
+   selon les opérations réellement exposées. Ne pas ajouter un alias pour
+   seulement faire passer Cargo, ni porter préventivement toute l'API.
+4. Conserver les fallbacks visibles, isoler les caches par export/mode/plateforme
+   et mesurer la marge disque avant les compilations. Préserver le défaut prêt
+   47 et ses artefacts jusqu'à disposer d'un défaut élargi validé. Exécuter
+   RemoveComments dès que Cargo compile ; traiter les erreurs réellement
+   rencontrées. Unvariant et BigInt ne sont à corriger dans ce lot que si
+   leur problème bloque sa validation ou la reproductibilité du build.
+5. Implémenter les contrats établis avec régressions ciblées ; garder visibles
+   les opérations non portées et vérifier les fallbacks de la fermeture.
+6. Intégrer les 20 tests originaux, vérifier les sélections existantes et les
+   erreurs attendues du runner, puis valider **`b -c; t -c`, 67/67** sous Linux.
+   Consigner les résultats et les limites réelles à la fin du bloc.
+
+#### Résultat 0.46 — Bloc RemoveComments terminé
+
+**Réalisé le 13 septembre 2026.** b8x reste sur **master**, purust sur **edge**.
+Les changements préexistants sont conservés ; aucun changement des assertions
+originales, des scripts JS/Go/PHP, du Dockerfile, du PBO ou du générateur.
+
+- **JSDate** : nouveau package local `purust-js-date` (sources PureScript/JS
+  et licence de `js-date` 8.0.0 conservées). Le type opaque natif possède des
+  millisecondes immuables, distinctes de `Data.Date.Date` ; `fromTime`,
+  `fromInstant`, `isValid` et `toInstantImpl` sont implémentés. Le contrôle JS
+  précède la validation native : troncature, zéro négatif, limites ±8.64e15,
+  NaN/infini, callback Just et identité Nothing, conversion PureScript générée.
+  Régression permanente `tests/tast/js-date.mjs` : **118 modules frais**,
+  **12 cas JS**, **deux tests natifs par mode normal/threaded sur macOS/Linux**.
+  Aucun portage anticipé de parsing, calendrier, formatage ou fuseau local :
+  `jsdate`, `jsdateLocal`, `dateMethod`, `dateMethodEff`, `parse`, `now` restent
+  six fallbacks explicites, tous forcés et non atteints par les tests b8x.
+- **Intégration** : profil Spago enrichi avec random/record/yoga-json et les
+  overrides Variant/Nullable/BigInt/JSDate ; lockfile régénéré, package set
+  inchangé. Le nouveau main explicite réutilise les 20 assertions originales.
+  `Test.Rust.Main` agrège désormais HTML Encode 2 + Decode 4 + Stash 41 +
+  RemoveComments 20. Le contrat de comptage refuse notamment l'ancien 47/47.
+- **Driver** : l'export compilait, mais la publication échouait sur EISDIR :
+  le glob JSON incluait le dossier `tast/Yoga.JSON` sur macOS. Reproduction
+  ciblée rouge puis verte ; l'inventaire retient les fichiers et conserve les
+  contrôles de contenu/fraîcheur. Le test utilise aussi `directory.json` pour
+  reproduire sur un système sensible à la casse. Les sondes acceptent le
+  booléen sûr `false` pour `_untag`, sans inventer de handle opaque.
+  **58 tests driver/CLI passent**, y compris le dispatch RemoveComments et les
+  rejets de faux succès. Ce nombre ne désigne pas des tests b8x supplémentaires.
+- **Ressources** : Cargo Linux utilise un job, sans informations de debug ni
+  compilation incrémentale, avec les assertions de debug toujours actives.
+  Pas de changement d'image. Le target du défaut occupe environ **331 Mio**
+  après le build ; les artefacts prêts et leurs caches ne sont pas supprimés.
+- **Cargo frais** : résolution réelle en ligne sans copie d'ancien lockfile,
+  avec **`spin 0.9.9`** au lieu de la version retirée 0.9.8. `num-bigint-dig`
+  reste fixé à 0.8.6 et ses 27 opérations restent non portées. Ce succès
+  remplace le blocage de résolution précédent, pas la qualification BigInt.
+- **Validation finale** : `bin/b -c` puis `bin/t -c` sortent **0/0**, **67/67**,
+  **259 modules TAST frais**, **86 gardes forcés**, aucun garde atteint,
+  sélecteur de nettoyage DB vide (`[]`). Build **`build-qAQwpr`** ; manifeste
+  `f91e0822f26f3e8a1538e39c43bc9633f6c3b5b115e425ae8b099c1a8bb74bcd`.
+  Le bundle recompilé a exactement l'empreinte validée en 0.45 :
+  `48906088e7a8386b5dc421ea0396ae4d91b6590184e5ef92a82a5435757aa336`.
+  Le clean build signale les 73 avertissements existants du compilateur ;
+  aucune nouvelle revendication de build sans avertissement.
+- **Sélections et négatif** : RemoveComments explicite **20/20**, build
+  `build-BHzZmx` ; HTML volontairement faux **2/3 → 101**, build `build-eu85Lf`,
+  erreur Aff propagée. Après ces builds, `bin/t` reprend **le même défaut
+  `build-qAQwpr`, 67/67**, avec inputs/manifeste vérifiés. Les anciens builds
+  explicites Stash/HTML/Decode ne sont pas promus artificiellement comme frais.
+- **Coupure machine** : `build-70QrG3` a été interrompu avant la fin du TAST.
+  Propriétaire du verrou vérifié absent ; verrou déplacé dans son dossier de
+  build comme preuve, pas supprimé à l'aveugle. OrbStack et les services étaient
+  revenus ; seul `api-cli` existant a été relancé, même image. `build-1h4a5F`
+  a ensuite compilé et passé 20/20 en diagnostic avant de rencontrer EISDIR ;
+  il reste un build échoué, pas un manifeste prêt réécrit manuellement.
+
+Preuves : `b8x/run/bak/rust/output/remove-comments-block-KUiX1u/validation.json`,
+`finish.json`, logs associés et `purust-js-date-rdkj5B/report.json`. Le premier
+essai isolé `purust-js-date-ipuJws` relevait un chemin de dépendance ST erroné
+dans le harness, corrigé avant le run réussi. Le build intermédiaire
+`build-j3kLyz` avait déjà validé RemoveComments via le driver avant le raccordement
+du défaut. Les succès historiques ne remplacent pas les preuves finales ci-dessus.
+
+#### Contrat 0.47 — Nettoyage HTML restant
+
+Objectif : intégrer les **108 assertions restantes** de
+`Util.Html.Clean.Test.Test`, sans retoucher les attentes ; cible **175/175** au
+défaut (67 acquis + 108 à valider), puis `b -c; t -c`. Inventaire de sources,
+pas un résultat d'exécution :
+
+- 59 tests : FindUnescapedQuote 15, RemoveAttribute 12,
+  RemoveDataAttributes 16, CleanAttributesInTag 16.
+- 19 tests : CleanAttributesInTags (chemin Regex à éprouver).
+- 30 tests : Untag 19, UntagExcept 7, UntagOnly 4 (FFI `_untag` à porter).
+
+Ces specs partagent le module et les dépendances de RemoveComments. Enchaîner
+les sous-groupes, les corrections nécessaires et l'intégration sans demander
+un nouveau « go » à chaque erreur. Conserver les gardes et les preuves des
+67 acquis ; ne pas annoncer le lot terminé sur son seul sous-groupe pur.
+Les opérations JSDate/BigInt/Variant inutilisées restent des dettes visibles.
+
+#### Résultat 0.47 — Bloc HTML Clean terminé
+
+**Réalisé le 13 septembre 2026.** b8x reste sur **master**, purust sur **edge**.
+Les assertions originales, les implémentations JS, les chemins JS/Go/PHP et
+l'image Docker sont inchangés ; aucun correctif du compilateur/PBO dans ce bloc.
+
+- **Preuve initiale** : la suite HTML Clean fraîche compile, mais sa première
+  exécution s'arrête avec **86** sur `Util_Html_Clean_Clean__untag`
+  (`build-bA75hk`). Ce garde atteint établit le portage nécessaire ; aucun
+  succès n'est déduit de la seule compilation.
+- **FFI locale** : `b8x/src/Util/Html/Clean/Clean.rs` reproduit le balayage
+  de la regex JS, les listes blanche/noire et le remplacement optionnel par
+  un espace. Ce n'est pas un parseur HTML : entrées mal formées, noms ASCII
+  et arrêt au premier `>` suivent l'original. Le texte conservé préserve les
+  unités UTF-16, y compris les surrogates isolés ; les noms sont décodés pour
+  le passage en minuscules, notamment `K` → `k`. Aucune dépendance Cargo ajoutée.
+- **Parité différentielle permanente** : `html-clean-ffi.mjs` et son driver
+  Rust comparent la vraie FFI JS à la vraie `.rs`, avec les helpers UTF-16
+  actuels : **11 788/11 788 sur macOS et Linux**. Matrice de listes/options,
+  65 536 unités UTF-16 couvertes, 5 000 cas pseudo-aléatoires reproductibles
+  et entrées longues. Le porteur Array/String de ce test est minimal : cette
+  preuve porte sur l'algorithme, la frontière native générée étant éprouvée
+  séparément par les tests b8x. Les empreintes incluent les deux FFI, le
+  runtime UTF-16 et les fichiers du harness.
+- **Intégration** : l'agrégateur `Util.Html.Clean.Test.Test` et ses neuf specs
+  originales sont sélectionnés. Le défaut remplace RemoveComments 20 par
+  HTML Clean 128 : **2 + 4 + 41 + 128 = 175**, sans doublon. Les chemins purs
+  et Regex passent sans autre portage ; aucune opération étrangère inutilisée
+  n'est déclarée qualifiée. `--suite html-clean` expose les 128 tests seuls.
+- **Contrats** : **61 tests driver/CLI passent**. Les comptages refusent les
+  anciens 47/67, un succès limité à 108/128 tests, les échecs et les pending.
+  Le nombre de sondes natives passe de 86 à **85**, toutes forcées avec le
+  code 86/marqueur exact, aucune atteinte durant les suites positives.
+- **Validation réelle** : **`bin/b -c; bin/t -c` → 0/0, 175/175**,
+  **268 modules TAST frais**, nettoyage DB `[]` après sélecteur vérifié vide.
+  Build **`build-JvrREU`**, manifeste
+  `ec0a3251ca3167f6600c0773bcc18216a2207192d615dd892826cd6ec3d93919`.
+  Le bundle recompilé garde l'empreinte `48906088…aa336` de 0.46 ; les
+  73 avertissements existants du compilateur restent signalés.
+- **Sélections finales** : HTML Clean **128/128**, `build-gi8MeO`, 256 modules
+  frais ; HTML volontairement faux **2/3 → 101**, `build-swDiqt`, erreur Aff
+  propagée. Après ces builds, `bin/t` reprend **le même `build-JvrREU`, 175/175**.
+  Inputs, résolutions FFI, manifeste et artefacts sont revérifiés.
+- **Incident transitoire** : `build-t2VbBz` échoue sur un timeout crates.io,
+  reste marqué échoué et n'est pas promu. Après retour réseau vérifié, un
+  nouveau build explicite réussit. Pas de redémarrage Docker, de rebuild
+  d'image ni de suppression de caches ; la preuve du défaut reste intacte.
+
+Preuves dans `b8x/run/bak/rust/output/html-clean-block-1mS2z7/` :
+`validation.json`, `finish.json`, logs associés et rapports de parité
+`html-clean-ffi-mU4HLD/report.json` (macOS),
+`html-clean-ffi-VA2RVt/report.json` (Linux). Les rapports précédents sont
+historiques ; les derniers incluent aussi l'empreinte du helper UTF-16.
+**175 des 286 tests recensés passent désormais dans le défaut Rust (~61 %
+du comptage des tests, pas une estimation du travail restant).** M2/M4 restent ouverts.
+
+#### Bloc 0.48 — Chaînes de caractères (prochain lot)
+
+Objectif : intégrer les **63 tests originaux de `Util.Type.String`** aux 175
+acquis, soit **238/238 par `b -c; t -c`**. L'inventaire des sources a été
+revérifié par empreintes en 0.47 ; ces 63 tests ne sont pas encore validés
+sous Rust. Le lot rassemble les 15 tests CaseTo/CaseToX/IsXCased,
+PadLeft 15, PadRight 14 et Slugify 19.
+
+- **Luna** : sélectionner les 18 specs originales, établir le premier résultat
+  natif, porter les FFI nécessaires, ajouter les régressions de parité et
+  intégrer le lot au défaut. Les trois foreigns du module sont `removeAccents`,
+  `upperCaseFirst`, `lowerCaseFirst` : qualifier la normalisation **NFD** et
+  le traitement de la **première unité UTF-16**, pas du premier caractère Rust.
+  Réutiliser les chemins HTML Clean/Decode déjà éprouvés.
+- **Astra** : intervenir si un écart exige une décision de représentation,
+  de typage TAST ou une correction du générateur/runtime. Isoler et prouver
+  cet écart avant de modifier ; la simple présence d'un fallback inutilisé
+  ne justifie pas son portage.
+- Enchaîner diagnostic, corrections et validation sans pause par micro-étape.
+  Sortie : les 63 tests explicites, **238 par défaut**, gardes forcés et non
+  atteints, négatif 101, défaut inchangé après sélection explicite et nettoyage
+  DB contrôlé. Ne pas modifier les assertions ni les chemins JS/Go/PHP.
+
+Puis : **Variant Encoding 21** (cible **259 tests sans services**) et
+**intégrations 27** (cible **286 tests actifs**). Ce sont des cibles issues de
+l'inventaire, pas des succès acquis ni un pourcentage de travail restant.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -4657,9 +5718,48 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   selon 0.39 (neuf tests natifs par plateforme, 108 gardes forcés, 55 codegen,
   52 driver/CLI, défaut reconstruit 47/47). Aucune des 27 opérations portée ;
   Cargo RemoveComments bloque maintenant sur quatre E0425 `VariantCase`.
-- [ ] Astra : isoler et qualifier `Data.Variant.Internal` / `VariantCase`
-  selon 0.40 ; démontrer la cause et fixer le correctif minimal avec ses
-  régressions, sans correction permanente ni élargissement du défaut.
+- [x] Astra : isoler et qualifier `Data.Variant.Internal` / `VariantCase`
+  selon 0.40 (89 modules, dix contrats JS, alias seul à 5/10 par mode,
+  candidat à 20 tests natifs par plateforme, 12 contrôles de portée,
+  défaut 47/47). Cause et correctif ciblé démontrés ; aucun correctif permanent.
+- [x] Astra : implémenter uniquement le mapping VariantCase et sa régression
+  permanente selon 0.41 (20 tests natifs par plateforme, négatif alias seul,
+  56 codegen et 52 driver/CLI, défaut reconstruit 47/47). Nouveaux blocs Cargo :
+  77 erreurs Foreign et 146 Data.Variant ; aucun test RemoveComments lancé.
+- [x] Astra : qualifier `Foreign.ForeignError` selon 0.42 (110 modules, 77 erreurs
+  reproduites ; mapping limité à `Foreign.Foreign` : 24 frontières, dix groupes
+  JS, 40 tests natifs sous garde macOS/Linux). Aucun correctif permanent,
+  aucun portage Foreign ; défaut prêt 47 inchangé, sans nouveau run.
+- [x] Astra : intégrer uniquement la frontière `Foreign.Foreign` /
+  `Foreign.ForeignError` selon 0.43 : régression permanente macOS/Linux,
+  16 gardes éprouvés, 57 codegen et 54 driver/CLI ; défaut reconstruit 47/47.
+  RemoveComments compile Foreign puis bloque sur 146 erreurs Variant.
+- [x] Astra : qualifier `Data.Variant.Variant` selon 0.44 : 91 modules frais,
+  146 erreurs reproduites, alias seul/mapping seul encore à 31 erreurs ;
+  candidat cohérent à **12/13** par mode/plateforme macOS/Linux sous garde.
+  Limite `unvariant`/`revariant` prouvée ; aucun correctif permanent,
+  défaut prêt 47 inchangé, aucun test RemoveComments lancé.
+- [x] Astra : intégrer le chemin Value cohérent de Variant selon 0.45 :
+  58 codegen, 54 driver/CLI, douze contrats natifs sous garde et voisins
+  revalidés sur macOS/Linux. **`b -c; t -c` 47/47**, `build-ioPRzQ`, DB vide,
+  après résolution des incidents d'espace et redémarrage autorisé.
+  Cargo RemoveComments compile Variant puis relève 54 E0425 JSDate ;
+  aucun test RemoveComments lancé, éliminateur Unvariant toujours séparé.
+- [x] Bloc 0.46 : qualifier et porter JSDate au périmètre nécessaire, lever les
+  blocages suivants, puis intégrer RemoveComments : **`b -c; t -c` 67/67**,
+  20/20 explicites, négatif 101 et défaut inchangé après les builds explicites.
+- [x] Bloc 0.47 : intégrer les 108 tests restants de nettoyage HTML, avec les
+  chemins Regex et `_untag` nécessaires : **175/175 par `b -c; t -c`**,
+  128/128 explicites, négatif 101 et défaut inchangé après les builds explicites.
+- [ ] Bloc 0.48 — Luna, Astra si écart de générateur/runtime : intégrer les
+  63 tests String, qualifier les trois FFI nécessaires et valider **238/238**
+  selon le contrat du bloc, sans pauses par micro-étape.
+- [ ] Astra : qualifier séparément `unvariant`/`revariant`, son transport du
+  payload via `Unit` et son callback rank-2 ; ne pas déclarer toute l'API Variant
+  verte avec les seuls 12 contrats de représentation.
+- [x] Résolution Cargo sans lockfile historique validée en 0.46 : récupération
+  de `spin 0.9.9`, dépendance BigInt 0.8.6 inchangée. Les 27 opérations BigInt
+  restent non portées et gardées ; la résolution Cargo ne vaut pas parité FFI.
 - [ ] Astra : qualifier l'initialisation anticipée des modules et les bindings
   exclus du premier correctif ; ne pas annoncer une parité JS générale avec
   le seul partage paresseux (écart établi en 0.30).

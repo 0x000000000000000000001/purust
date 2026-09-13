@@ -572,13 +572,23 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
     -- dataDecl layout. Use the native empty type, not a missing Rc<X>.
     in if actualClassName == "Void" || (modName == "Pipes_Internal" && actualClassName == "X") then "purust_core::Void"
        else if modName == "Prim" || String.indexOf (Pattern "Prim_") modName == Just 0 || String.indexOf (Pattern "Prim") modName == Just 0 then "crate::UnknownType"
-           else if modName == "Effect" || modName == "Effect_Exception" || modName == "Effect_Console" || modName == "Effect_Ref" || modName == "Effect_Uncurried" || modName == "Control_Monad_ST_Internal" || modName == "Foreign" || modName == "Data_Array_ST" then "crate::UnknownType"
+           else if modName == "Effect" || modName == "Effect_Exception" || modName == "Effect_Console" || modName == "Effect_Ref" || modName == "Effect_Uncurried" || modName == "Control_Monad_ST_Internal" || modName == "Data_Array_ST" then "crate::UnknownType"
+           -- Only the opaque Foreign carrier uses Value. ForeignError has a
+           -- recursive native ADT layout, including its constructor fields.
+           else if modName == "Foreign" && actualClassName == "Foreign" then "crate::UnknownType"
            -- Preserve the Aff runtime ABI without erasing native dictionary
            -- layouts in sibling modules such as Effect.Aff.Class.
            else if modName == "Effect_Aff" || modName == "Effect_Aff_AVar" || modName == "Effect_Aff_Compat" then "crate::UnknownType"
            -- Exists hides its parameter but preserves the contained value; it
            -- has no constructor or native struct to allocate.
            else if modName == "Data_Exists" && actualClassName == "Exists" then "crate::UnknownType"
+           -- VariantCase carries heterogeneous payloads and their comparators
+           -- through unsafeCoerce. Preserve the contained Value, not Rc<opaque>;
+           -- VariantFCase and neighbouring dictionaries stay native.
+           else if modName == "Data_Variant_Internal" && actualClassName == "VariantCase" then "crate::UnknownType"
+           -- The public row variant is the { type, value } record transported
+           -- by VariantRep, not a native ADT or one of Variant's dictionaries.
+           else if modName == "Data_Variant" && actualClassName == "Variant" then "crate::UnknownType"
            -- Free's private, constructorless Val stores heterogeneous bind
            -- payloads via unsafeCoerce. Only this carrier uses Value; Free,
            -- FreeView and the Step constructors keep their native layouts.
@@ -1662,7 +1672,9 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
       NeutralExpr (Lit (LitRecord props)) ->
         case unwrapType ty of
           Unit | Array.null props -> "()"
-          ADT _ fqnParts _ | Array.length fqnParts >= 2 ->
+          ADT _ fqnParts _
+            | Array.length fqnParts >= 2
+            , codegenExprTypeWithValueEnums valueEnums currentMod false ty /= "crate::UnknownType" ->
             let
               className = sanitizeIdent (fromMaybe "Unknown" (Array.last fqnParts))
               modName = String.joinWith "_" (Array.dropEnd 1 fqnParts)
@@ -2088,14 +2100,17 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
   Accessor base (GetProp k) -> 
     let baseStr = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
-        accCode = case unwrapType baseTy of
-          ADT className fqn _ ->
-            "(" <> baseStr <> ")." <> sanitizeIdent k <> ".clone()"
-          _ -> "(" <> baseStr <> ").get_" <> sanitizeIdent k <> "()"
-        actualTy = case unwrapType baseTy of
-          ADT _ _ _ -> inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr syn)
-          _ -> Any
-    in boxUnbox valueEnums globalClassFields currentMod (inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr syn)) actualTy accCode
+        -- Opaque ADTs lowered to Value use dynamic fields even when their
+        -- TAST annotation is nominal. Both access and unboxing must agree.
+        nativeFields = case unwrapType baseTy of
+          ADT _ _ _ -> codegenExprTypeWithValueEnums valueEnums currentMod false baseTy /= "crate::UnknownType"
+          _ -> false
+        resultTy = inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr syn)
+        accCode = if nativeFields
+          then "(" <> baseStr <> ")." <> sanitizeIdent k <> ".clone()"
+          else "(" <> baseStr <> ").get_" <> sanitizeIdent k <> "()"
+        actualTy = if nativeFields then resultTy else Any
+    in boxUnbox valueEnums globalClassFields currentMod resultTy actualTy accCode
   Accessor base (GetCtorField (Qualified mbMod _) _ (ProperName tyNameStr) (Ident ctorName) _ fieldIdx) ->
     let operandType operand = codegenExprTypeWithValueEnums valueEnums currentMod false
           (inferTypeExpr currentMod aritiesMap globalClassFields bound operand)
