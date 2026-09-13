@@ -138,6 +138,11 @@ explicites.
   Stash complet (228 modules) dépasse ce blocage, puis échoue sur le type natif
   `Foreign.Object.Object` absent : 218 occurrences du même diagnostic E0425.
   Aucun des 41 tests Stash n'a encore été exécuté en Rust.
+- Qualification 0.28 : même échec réduit à 100 modules sans Stash/Spec/Aff.
+  Un alias natif `Object = STObject` lève les erreurs dans des exports
+  expérimentaux seulement ; le contrôle négatif confirme que les FFI Object
+  restent non fonctionnelles. Les quatre signatures et les contrats de copie
+  sont fixés pour 0.29, avec des limites JS explicitement documentées.
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -2881,11 +2886,124 @@ Les branches sont conservées, notamment b8x et `purust-foreign-object` sur `mas
 Aucun `target`, `b -c`, `t -c`, rebuild d'image, redémarrage ou nettoyage DB.
 **Zéro test b8x exécuté en 0.27 ; le défaut reste HTML (2 tests), M2 reste ouvert.**
 
-**Prochaine micro-étape — 0.28, Astra :** isoler ce blocage `Foreign.Object`,
+**Micro-étape suivante — 0.28, Astra, réalisée ci-dessous :** isoler ce blocage `Foreign.Object`,
 qualifier l'ABI réelle et les contrats de copie/identité aux frontières
 `empty`, `_copyST`, `runST`, `_lookup`, puis fixer le portage minimal et sa
 régression. Ne pas déduire l'ABI de `_lookup` du seul `Fn4`, ni corriger
 préventivement le singleton `_stash`, les codecs ou les services.
+
+### Micro-étape 0.28 — ABI et représentation de `Foreign.Object` qualifiées
+
+**Réalisée avec Astra ; diagnostic, aucun portage de production.**
+Le reproducteur [`ObjectProbe.purs`](../../b8x/run/bak/rust/output/object-abi-kl6DE9/ObjectProbe.purs)
+conserve les vraies bibliothèques et réduit la fermeture à **100 modules TAST
+frais**, sans Stash, Spec ni Aff. Les exports normal et threaded produisent
+chacun les **218 E0425 sur `Object`**, alors que `STObject` compile.
+Ces contrôles Cargo sont exécutés sur l'hôte ; la référence Linux complète
+reste celle de 0.27, dont les entrées sont toujours vérifiées identiques.
+
+Une seconde paire d'exports reçoit uniquement un alias de diagnostic :
+`pub use Purs_Foreign_Object_ST::STObject as Object;`.
+Le contrôle compare le module au Rust initial, hors cet ajout et les espaces
+finaux. **Cargo devient vert dans les deux modes, sans implémenter de foreign.**
+Trois contrôles natifs par mode passent : mêmes `TypeId` et boxing du handle
+pour l'alias ; incompatibilité d'un wrapper Rust distinct au même downcast ;
+contrôle négatif où `ObjectProbe.roundTrip` doit encore paniquer sur une FFI
+non implémentée. Ce dernier succès est une **panique attendue**, pas un
+aller-retour Object fonctionnel. Les exports initiaux restent rouges et intacts.
+
+#### Signatures mesurées, pas déduites du seul `Fn4`
+
+Le TAST conserve les `ForAll`, le `ST r b`, les deux types étrangers et le
+`Fn4 z (a -> z) String (Object a) z`. Le Rust émis choisit toutefois l'ABI
+suivante : `V = Value`, `H = Rc<Object>` / `Arc<Object>`.
+
+| Symbole exact | ABI Rust actuelle | Contrat du portage |
+| --- | --- | --- |
+| `Foreign_Object_empty` | `() -> H` | Objet natif vide, utilisable immédiatement, sans action ST. |
+| `Foreign_Object__copyST` | `(V) -> V` | Retourne une action ST ; copie superficielle neuve à chaque exécution, lue au moment de cette exécution. |
+| `Foreign_Object_runST` | `(V) -> H` | Exécute l'action une fois et retourne son handle, sans copie supplémentaire. |
+| `Foreign_Object__lookup` | `() -> V` | Fournit quatre fonctions `Func1<V,V>` successives : `nothing`, `just`, clé, objet ; la dernière application effectue la lecture synchrone. |
+
+Le caller généré de `lookup` applique exactement quatre `unwrap_func1()` et
+attend le résultat `Maybe` boxé, pas une action ST. Le callback `just` lui-même
+arrive dans un `Value::Func1`. Conserver ces conventions, même si la FFI JS
+originale reçoit ses quatre arguments en un seul appel.
+Les conversions de `thawST` et `freezeST` emballent leur handle natif dans
+`Value::Class(Rc/Arc::new(handle))` avant le **même** `_copyST(V) -> V`.
+Ne pas inventer un argument de direction absent de cette ABI : l'alias commun
+permet aux consommateurs de lire le résultat comme `Rc/Arc<Object>` ou
+`Rc/Arc<STObject>`, tout en conservant un type natif concret.
+
+#### Contrats JS et domaine effectivement vérifié
+
+Neuf expériences sur les fichiers JS originaux passent : objet vide préservé
+par copie/mutation ; copie différée et rejouable ; copie superficielle des
+propriétés propres énumérables ; isolation freeze/thaw ; identité de `runST` ;
+lecture synchrone distinguant absence et valeurs falsy ; références et callback
+réentrant ; lecture des propriétés héritées ; comportement de `__proto__`.
+
+**Écarts à ne pas masquer :** `_lookup` JS utilise `in` et voit notamment le
+`toString` hérité, alors que `ST.peekImpl` exige une propriété propre.
+L'affectation JS à `__proto__` peut changer le prototype ; le `HashMap` Rust
+de 0.27 stocke une entrée ordinaire. La parité de 0.27 porte donc sur ses
+contrats testés, pas sur tout le modèle d'objets/prototypes JavaScript.
+Le relevé TAST des huit specs Stash trouve **167 applications à clé littérale,
+52 clés distinctes, aucune clé calculée ni nom hérité d'Object.prototype**.
+Ces écarts ne sont pas sollicités par ces sources de test ; cela ne prouve
+pas une compatibilité générale de la bibliothèque.
+
+`empty` est une constante partagée en JS. Le contrat minimal Rust porte sur
+son contenu vide et sa non-mutation par les opérations immuables, pas sur
+l'identité de pointeur entre deux appels à son getter. Une allocation fraîche
+est admise dans ce domaine de validation ; ne pas la présenter comme une
+preuve d'identité JS, ni ajouter un cache global ou toucher `_stash` pour cela.
+La prise en charge complète des prototypes et des observations d'identité
+via des opérations unsafe reste séparée et explicitement non validée.
+
+Preuves : [bilan](../../b8x/run/bak/rust/output/object-abi-kl6DE9/summary.json),
+[ABI TAST et callers Rust](../../b8x/run/bak/rust/output/object-abi-kl6DE9/abi.json),
+[contrats JS exécutables](../../b8x/run/bak/rust/output/object-abi-kl6DE9/js-contract.mjs),
+[expérience d'alias](../../b8x/run/bak/rust/output/object-abi-kl6DE9/representation.json),
+[inventaire des clés](../../b8x/run/bak/rust/output/object-abi-kl6DE9/stash-keys.json).
+`qualify.mjs` revérifie les entrées et rassemble ces résultats.
+Sources, FFI ST, JS originaux, fork, bundle, trois états/manifests HTML, profil
+Rust et liens racine inchangés. Aucun changement de branche, de générateur,
+de fichier FFI de production, de conteneur, de DB ou de commande CLI.
+**Aucun test b8x exécuté ; le défaut reste HTML, M2 reste ouvert.**
+
+#### Contrat du prochain portage — 0.29, Astra
+
+1. Créer uniquement `purust-foreign-object/src/Foreign/Object.rs` pour l'alias
+   natif et les **quatre primitives ci-dessus**. Réutiliser `STObject`, sans
+   wrapper distinct, `unsafe impl`, runtime bis ni changement du générateur.
+2. Ajouter à `ST.rs` seulement les petits accès nécessaires à ce partage :
+   construction vide, snapshot superficiel indépendant et lecture clonée.
+   Garder le stockage/verrou privé ; aucun callback sous verrou. Réexécuter
+   les dix régressions ST de 0.27 dans chaque mode.
+3. `_copyST` doit retourner une action rejouable qui clone les entrées dans un
+   nouvel objet à l'exécution. Une simple copie du `Rc/Arc` serait incorrecte.
+   `runST`, à l'inverse, conserve exactement l'identité du handle obtenu.
+   Pour `_lookup`, ne rien lire avant la quatrième application et invoquer
+   `just` une seule fois, hors verrou, seulement si une entrée est trouvée ;
+   sinon rendre le `nothing` fourni. Couvrir le domaine natif de clés ordinaires
+   ci-dessus, sans filtre spécial b8x ni annonce de parité des prototypes JS.
+4. Ajouter une vraie régression TAST/native `foreign-object.mjs` dans la suite
+   compilateur : `empty -> insert -> lookup -> delete`, freeze/thaw dans les
+   deux directions, copies différées/rejouables, identité de `runST`, absence
+   d'effet de lookup partiellement appliqué, callbacks sélectionnés/réentrants,
+   valeurs falsy, payloads primitifs/tableaux/records et conservation/libération
+   des références. Les appels doivent traverser le PureScript généré.
+5. Exiger, sur des exports neufs normal/threaded, `cargo check --offline
+   -p Purs_ObjectProbe` puis `cargo test --offline -p Purs_ObjectProbe
+   --test foreign_object`. Ni alias injecté après génération, ni contrôle
+   négatif de 0.28 compté comme test fonctionnel. Vérifier la présence des
+   quatre FFI réelles et faire échouer tout fallback Object atteint par les
+   parcours testés, y compris ceux dont le stub actuel retourne `false` ou `0`.
+6. Regénérer le diagnostic Stash complet sous Linux et relever le prochain
+   blocage. S'arrêter avant de le corriger ou de raccorder Stash à `t -c`.
+   Les neuf autres foreigns Object, `fromHomogeneous`, l'ordre d'énumération,
+   le singleton `_stash`, les codecs et les services restent hors de ce portage.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -3275,9 +3393,13 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   différés et handles vérifiés), puis relever le prochain blocage complet sans
   le corriger (0.27 : Cargo ciblé vert, 10 tests natifs par mode ; Cargo Stash
   atteint `Foreign.Object`, 218 occurrences du type `Object` manquant).
-- [ ] Astra : isoler `Foreign.Object` et qualifier le contrat natif minimal
+- [x] Astra : isoler `Foreign.Object` et qualifier le contrat natif minimal
   `Object` / `empty` / `_copyST` / `runST` / `_lookup`, avec preuves JS/TAST/Rust
-  et plan de régression ; ne pas encore porter ni corriger le singleton (0.28).
+  et plan de régression ; ne pas encore porter ni corriger le singleton (0.28 :
+  100 modules, 9 contrôles JS, alias testé dans les deux modes, limites JS notées).
+- [ ] Astra : réaliser le portage minimal Object et ses régressions au contrat
+  0.28, avec les seuls accès nécessaires dans ST.rs ; revalider ST puis relever
+  le prochain blocage complet sans le corriger (0.29).
 - [ ] Après portage/validation : raccorder Stash et l'agrégat HTML + Stash au
   défaut Rust (47 tests), puis poursuivre son élargissement vers les 259 tests
   sans services et les 286 tests actifs derrière `t -c`, sans filtre obligatoire.
