@@ -129,20 +129,27 @@ explicites.
   leur frontière FFI : leur pont Rust est un prérequis des intégrations.
 - Inventaire 0.25 : **46 specs feuilles, 286 déclarations de tests actifs**,
   dont 259 sans services et 27 d'intégration. Les 6 tests HTML validés font
-  partie des 259 ; les 41 tests Stash sont le prochain bloc choisi, pas encore
-  exécuté sous Rust. Ces nombres sont un relevé des sources, pas un bilan
+  partie des 259 ; les 41 tests Stash, alors non exécutés sous Rust, ont
+  désormais un premier résultat natif en 0.29 : **12 réussis, 29 échoués**.
+  Les totaux 259/286 restent un relevé des sources, pas un bilan
   d'exécution de la suite complète.
 - Portage 0.27 : `Foreign/Object/ST.rs` fournit maintenant `STObject` et ses
   quatre primitives différées. Sur 66 modules TAST frais, Cargo et les dix
   tests natifs passent dans chacun des modes normal/threaded. Le diagnostic
   Stash complet (228 modules) dépasse ce blocage, puis échoue sur le type natif
   `Foreign.Object.Object` absent : 218 occurrences du même diagnostic E0425.
-  Aucun des 41 tests Stash n'a encore été exécuté en Rust.
+  À cette étape 0.27, aucun des 41 tests Stash n'avait été exécuté en Rust.
 - Qualification 0.28 : même échec réduit à 100 modules sans Stash/Spec/Aff.
   Un alias natif `Object = STObject` lève les erreurs dans des exports
   expérimentaux seulement ; le contrôle négatif confirme que les FFI Object
   restent non fonctionnelles. Les quatre signatures et les contrats de copie
   sont fixés pour 0.29, avec des limites JS explicitement documentées.
+- Portage 0.29 : les quatre primitives Object sont réelles ; **11 tests Object
+  + 10 tests ST passent dans chacun des modes normal/threaded**. Le chemin
+  Cargo de Stash compile sous Linux et ses 41 tests s'exécutent : **12/41**,
+  sortie 101, aucun des 31 fallbacks gardés du binaire atteint. Le nouveau
+  blocage est la perte de l'état entre opérations ; `_stash` reste généré
+  comme un getter réexécutant `new empty`, à isoler avant correction.
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -2972,7 +2979,7 @@ Rust et liens racine inchangés. Aucun changement de branche, de générateur,
 de fichier FFI de production, de conteneur, de DB ou de commande CLI.
 **Aucun test b8x exécuté ; le défaut reste HTML, M2 reste ouvert.**
 
-#### Contrat du prochain portage — 0.29, Astra
+#### Contrat du portage — 0.29, Astra, réalisé ci-dessous
 
 1. Créer uniquement `purust-foreign-object/src/Foreign/Object.rs` pour l'alias
    natif et les **quatre primitives ci-dessus**. Réutiliser `STObject`, sans
@@ -3004,6 +3011,92 @@ de fichier FFI de production, de conteneur, de DB ou de commande CLI.
    blocage. S'arrêter avant de le corriger ou de raccorder Stash à `t -c`.
    Les neuf autres foreigns Object, `fromHomogeneous`, l'ordre d'énumération,
    le singleton `_stash`, les codecs et les services restent hors de ce portage.
+
+### Micro-étape 0.29 — Object porté, première exécution Stash complète
+
+**Réalisée avec Astra.**
+[`Foreign/Object.rs`](../purust-foreign-object/src/Foreign/Object.rs) fournit
+l'alias natif `Object = STObject` et les quatre FFI `empty`, `_copyST`, `runST`,
+`_lookup`. [`ST.rs`](../purust-foreign-object/src/Foreign/Object/ST.rs) expose
+seulement les accès supplémentaires `empty`, `snapshot`, `get` ; le stockage
+et le verrou restent privés. `_copyST` copie les entrées à chaque exécution
+de son action ; `runST` conserve le handle ; `_lookup` respecte les quatre
+applications de l'ABI et appelle le callback hors verrou.
+Les limites concernant les prototypes JS, l'identité d'`empty` et les autres
+opérations Object restent celles de 0.28. Aucun changement du générateur.
+
+La régression [`foreign-object.mjs`](tests/tast/foreign-object.mjs) et ses
+[fixtures](tests/tast/fixtures/foreign-object/ObjectProbe.purs) utilisent les
+vraies sources et FFI. Premier run rouge sur l'absence de `Object.rs`, après
+TAST réussi ; puis **100 modules TAST frais**, Cargo check 0 et **11 tests
+fonctionnels réussis par mode normal/threaded**. Couverture : parcours générés
+sur primitives/tableaux/records, insert/delete immuables, freeze/thaw, copies
+différées/rejouables et superficielles, identité de `runST`, currying de lookup,
+valeurs falsy, réentrance et conservation/libération des références.
+Les neuf stubs Object résiduels sont remplacés, dans les seuls exports de test,
+par des gardes fatals (sortie 86), chacun vérifié par un appel forcé ; les
+retours silencieux `false` et `0` sont inclus. Aucun garde atteint par les
+parcours fonctionnels. **18 contrôles négatifs séparés**, non comptés comme
+tests fonctionnels. Aucun alias ajouté manuellement au Rust pour faire passer
+ces régressions.
+
+La régression ST de 0.27 est rejouée sur **66 modules TAST frais** : Cargo check
+0 et **10/10 dans chaque mode**. Total de cette validation : 21 cas fonctionnels
+exécutés deux fois, soit **42 exécutions réussies**. `node --test`,
+`rustfmt --check` sur les deux FFI et `git diff --check` sont verts.
+
+**Diagnostic Linux :** l'export Stash est regénéré depuis 228 modules TAST.
+Le `cargo check` du point d'entrée Stash sort **0 en 21,9 s**, avec 195 crates
+`Purs_*` effectivement compilées. Les 228 modules émis ne sont donc pas tous
+des dépendances natives du binaire ; notamment `Purs_Foreign` n'en fait pas partie.
+La première sonde forçant les 36 fallbacks émis a ajouté cette dépendance et
+échoué sur **77 erreurs dans `Purs_Foreign` (8 E0308, 69 E0599)**. C'est un
+blocage de cette sonde élargie, **pas du chemin Stash**, laissé non corrigé.
+Ses journaux sont conservés séparément (`probe-all-*.json`). Les cinq foreigns
+de ce module restent non validés, sans être présentés comme exécutés ou portés.
+
+La sonde est ensuite limitée aux **31 fallbacks des crates déjà atteintes par
+le Cargo check initial**. Le binaire et la sonde se construisent (sortie 0),
+les 31 appels forcés sortent chacun 86 comme attendu, puis le vrai main Stash
+exécute ses **41 tests originaux** sous une borne de 20 s :
+
+```text
+12/41 tests passed
+Error: Stash: expected 41 successful tests; passed=12, failed=29, pending=0
+```
+
+Sortie **101**, exécution en **47 ms**, aucun fallback gardé atteint.
+Premier échec : `stores and retrieves a string value`,
+`Nothing ≠ (Just "hello")`. Les lectures ne retrouvent pas les valeurs stockées.
+Le getter `Util_Debug_Stash_Stash__stash`, ligne 120 de l'export, appelle toujours
+`unsafePerformEffect (new empty)` sans mémorisation visible. Cela concorde avec
+la réinitialisation suspectée en 0.26 ; **le défaut de conservation de l'état
+est maintenant exécuté, mais sa correction générale reste à isoler**.
+Les 12 succès portent surtout sur absence/défauts/nettoyage et ne valident pas
+la persistance. Ni les huit cas `UnsafeStash` ni le bloc de 41 ne sont verts.
+
+Preuves : [bilan vérifié](../../b8x/run/bak/rust/output/object-port-kUhwKt/summary.json),
+[Object natif](../../b8x/run/bak/rust/output/object-port-kUhwKt/purust-foreign-object-ZM4fnd/commands.json),
+[ST natif](../../b8x/run/bak/rust/output/object-port-kUhwKt/purust-foreign-object-st-Naf3hV/commands.json),
+[exécution Stash](../../b8x/run/bak/rust/output/object-port-kUhwKt/full/stash-execution.json),
+[gardes et build](../../b8x/run/bak/rust/output/object-port-kUhwKt/full/runtime.json).
+`verify.mjs` rassemble les résultats et revérifie les empreintes des sources,
+des FFI, du fork et du bundle. Les profils, trois états/manifests HTML et liens
+racine sont inchangés ; même conteneur, image et `StartedAt` avant/après.
+b8x et `purust-foreign-object` restent sur `master`, purust sur sa branche
+existante `edge`. Aucun `target`, `b -c`, `t -c`, rebuild d'image, redémarrage,
+nettoyage DB, nouveau raccordement de suite ou correction du singleton.
+**Le défaut CLI reste HTML (2 tests) ; les 41 cas ont été lancés uniquement
+dans le diagnostic isolé. M2 reste ouvert.**
+
+**Prochaine micro-étape — 0.30, Astra :** isoler le partage de la valeur de
+module `_stash` avec un petit reproducteur et un compteur d'initialisations,
+comparer au JS, puis fixer le correctif minimal de génération/initialisation
+et sa régression normal/threaded. Distinguer une valeur de module partagée
+d'une fonction ou d'une action Effect rejouable. Ne pas contourner le défaut
+par une FFI Stash spéciale, un cache d'`Object.empty` ou le portage des neuf
+foreigns Object non atteints. Revalider ensuite les huit cas puis les 41 avant
+de raccorder l'agrégat par défaut.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -3397,9 +3490,13 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   `Object` / `empty` / `_copyST` / `runST` / `_lookup`, avec preuves JS/TAST/Rust
   et plan de régression ; ne pas encore porter ni corriger le singleton (0.28 :
   100 modules, 9 contrôles JS, alias testé dans les deux modes, limites JS notées).
-- [ ] Astra : réaliser le portage minimal Object et ses régressions au contrat
+- [x] Astra : réaliser le portage minimal Object et ses régressions au contrat
   0.28, avec les seuls accès nécessaires dans ST.rs ; revalider ST puis relever
-  le prochain blocage complet sans le corriger (0.29).
+  le prochain blocage complet sans le corriger (0.29 : 42 exécutions natives
+  réussies, Cargo Stash vert ; premier run 12/41, perte d'état, aucun fallback atteint).
+- [ ] Astra : isoler le partage de `_stash`/l'initialisation des valeurs de
+  module, comparer au JS et fixer le correctif minimal et sa régression
+  normal/threaded, sans FFI spéciale b8x (0.30).
 - [ ] Après portage/validation : raccorder Stash et l'agrégat HTML + Stash au
   défaut Rust (47 tests), puis poursuivre son élargissement vers les 259 tests
   sans services et les 286 tests actifs derrière `t -c`, sans filtre obligatoire.
