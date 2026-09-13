@@ -5473,6 +5473,23 @@ Premières preuves du 14 septembre, dossier diagnostique
   intermodules ; aucune collision de déclarations dans le TAST inspecté.
   **63 tests codegen passent**, compilateur reconstruit (63 avertissements
   de source préexistants, zéro erreur pour le build incrémental).
+- [x] Constructeur privé `Generic$Dict` absent après optimisation : conversion
+  record/dictionnaire natif uniquement sur preuve TAST (classe qualifiée,
+  résultat, déclaration et arité). L'identité vient du FQN, pas du nom
+  d'affichage de l'ADT ; tests positifs/négatifs Rc/Arc.
+- [x] Ralentissement de `Core.Event.Event` isolé par copies de diagnostic :
+  petits corps <0,5 s, conversion `Generic.to` seule >30 s ; le module complet
+  dépassait 180 s pendant le typage. Les extractions de champs imbriquées en
+  `match` remplacent les `if let` équivalents : copie complète vérifiée en
+  3,5 s, puis module réel franchi après régénération. Aucune copie partielle
+  n'est liée/exécutée ni publiée comme build prêt. Régression à 26 niveaux,
+  champs natifs/boxés, temporaires, identité, évaluation unique et chemins
+  invalides ; **64 tests codegen et 72 tests driver/CLI passent**.
+- [x] Deux défauts supplémentaires reproduits puis corrigés : échappement
+  des champs de classes (`IsProcess.async`) dans leurs déclarations, littéraux,
+  constructeurs et conversions ; arité réelle des alias polymorphes
+  partiellement appliqués (`Projection.coerce`), sans changer l'ABI publique.
+  Régressions natives Rc/Arc : **66 tests codegen passent**.
 - [ ] Obtenir puis lever les erreurs de compilation natives, qualifier les
   sondes des nouvelles signatures opaques avant toute exécution de la suite.
 - [ ] Config/Promise/Aff et accès PostgreSQL natifs ; RabbitMQ et cache selon

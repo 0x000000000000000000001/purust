@@ -123,11 +123,11 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
         className = sanitizeIdent classDecl.name
         
         superFields = map (\(Tuple scName scType) ->
-          "    pub " <> sanitizeIdent scName <> ": " <> codegenExprTypeWithValueEnums valueEnums modNameStr false scType
+          "    pub " <> recordFieldIdent scName <> ": " <> codegenExprTypeWithValueEnums valueEnums modNameStr false scType
         ) (superclassFields classDecl)
         
         methFields = map (\(Tuple mName mTy) ->
-          "    pub " <> sanitizeIdent mName <> ": " <> codegenExprTypeWithValueEnums valueEnums modNameStr false mTy
+          "    pub " <> recordFieldIdent mName <> ": " <> codegenExprTypeWithValueEnums valueEnums modNameStr false mTy
         ) classDecl.methods
         
         fieldsCode = String.joinWith ",\n" (Array.concat [superFields, methFields])
@@ -735,7 +735,7 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
       
       Func expArgs expRet, _ ->
         let arity = Array.length expArgs
-        in if (actStr == "crate::UnknownType" || actStr == "crate::Value") && arity > 0 && arity <= maxNativeFunctionArity then
+        in if (actStr == "crate::UnknownType" || actStr == "purust_core::Value") && arity > 0 && arity <= maxNativeFunctionArity then
              let
                expArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) expArgs
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
@@ -746,11 +746,11 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
 
       _, Func actArgs actRet ->
         let arity = Array.length actArgs
-        in if (expStr == "crate::UnknownType" || expStr == "crate::Value") && arity > 0 && arity <= maxNativeFunctionArity then
+        in if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && arity > 0 && arity <= maxNativeFunctionArity then
              let
                argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut _a" <> show i <> ": crate::UnknownType") actArgs)
                argsCall = String.joinWith ", " (Array.mapWithIndex (\i actTy -> boxUnbox valueEnums globalClassFields currentMod actTy Any ("_a" <> show i)) actArgs)
-             in "crate::Value::Func" <> show arity <> "(purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> crate::UnknownType { " <> boxUnbox valueEnums globalClassFields currentMod Any actRet ("_f(" <> argsCall <> ")") <> " } })))"
+             in "purust_core::Value::Func" <> show arity <> "(purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> crate::UnknownType { " <> boxUnbox valueEnums globalClassFields currentMod Any actRet ("_f(" <> argsCall <> ")") <> " } })))"
            else code
 
       _, _ ->
@@ -760,8 +760,8 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
             isExpADT = case unwrapType expected of
               ADT _ _ _ -> true
               _ -> false
-        in if (expStr == "crate::UnknownType" || expStr == "crate::Value") && isActADT then "crate::Value::Class(std::rc::Rc::new(" <> code <> "))"
-        else if (actStr == "crate::UnknownType" || actStr == "crate::Value") && isExpADT then
+        in if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && isActADT then "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
+        else if (actStr == "crate::UnknownType" || actStr == "purust_core::Value") && isExpADT then
           let downcast value = "(" <> value <> ").unwrap_class::<" <> expStr <> ">().clone()"
           in case unwrapType expected of
             ADT className fqn _ ->
@@ -787,25 +787,25 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
                                   "::Static(|" <> String.joinWith ", " parameters <> "| -> " <>
                                   codegenExprTypeWithValueEnums valueEnums currentMod true result <> " { panic!(" <> message <> ") }) }"
                               _ -> boxUnbox valueEnums globalClassFields currentMod fieldType Any (projection <> ".expect(" <> message <> ")")
-                        in sanitizeIdent field <> ": " <> converted
+                        in recordFieldIdent field <> ": " <> converted
                       ) fields
                   in "{ let __purust_class_value = " <> code <> "; " <>
-                     "if matches!(__purust_class_value.resolve(), crate::Value::Class(_)) { " <>
+                     "if matches!(__purust_class_value.resolve(), purust_core::Value::Class(_)) { " <>
                      downcast "__purust_class_value" <> " } else { std::rc::Rc::new(" <>
                      nativeName <> " { " <> String.joinWith ", " fieldValues <> " }) } }"
             _ -> downcast code
         else if expStr == "()" && actStr == "crate::UnknownType" then "(" <> code <> ").unwrap_unit()"
         else if expStr == "crate::UnknownType" && actStr == "()" then "crate::mk_unit(" <> code <> ")"
-        else if expStr == "i64" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_int()"
-        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "i64" then "crate::mk_int(" <> code <> ")"
-        else if expStr == "bool" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_bool()"
-        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
-        else if expStr == "f64" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_number()"
-        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "f64" then "crate::mk_number(" <> code <> ")"
-        else if expStr == "char" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_char()"
-        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "char" then "crate::mk_char(" <> code <> ")"
-        else if expStr == "String" && (actStr == "crate::UnknownType" || actStr == "crate::Value") then "(" <> code <> ").unwrap_string()"
-        else if (expStr == "crate::UnknownType" || expStr == "crate::Value") && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
+        else if expStr == "i64" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_int()"
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "i64" then "crate::mk_int(" <> code <> ")"
+        else if expStr == "bool" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_bool()"
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
+        else if expStr == "f64" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_number()"
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "f64" then "crate::mk_number(" <> code <> ")"
+        else if expStr == "char" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_char()"
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "char" then "crate::mk_char(" <> code <> ")"
+        else if expStr == "String" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_string()"
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
         else code
 
 extractAllArgTypes :: ExprType -> Array ExprType
@@ -950,7 +950,13 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                         _, _, _ -> fallback
                 Nothing -> 
                    let shapeTypeToAST :: ExprType -> NeutralExpr -> ExprType
-                       shapeTypeToAST currentTy (NeutralExpr (Typed ty _)) = ty
+                       -- Typed applications may retain a flattened public
+                       -- signature while emitting a unary partial application.
+                       -- Use the same representation inference as codegenExpr_.
+                       shapeTypeToAST _ typed@(NeutralExpr (Typed _ _)) =
+                         inferTypeExpr modNameStr mergedArities globalClassFields bound typed
+                       shapeTypeToAST _ typed@(NeutralExpr (Syn.TypeApp _ _)) =
+                         inferTypeExpr modNameStr mergedArities globalClassFields bound typed
                        shapeTypeToAST currentTy (NeutralExpr (Abs params body)) = 
                          let expectedArgs = extractAllArgTypes currentTy
                              arity = NonEmptyArray.length params
@@ -1368,7 +1374,7 @@ genAbsWithEffect executeEffect valueEnums currentMod allZeroArity reuseContext m
         innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
         boxedBody = boxUnbox valueEnums globalClassFields currentMod innermostExpectedRetTy
           (if executeEffect then Any else bodyTy)
-          (if executeEffect then "(" <> rawCode <> ").unwrap_func1()(crate::Value::Unit)" else rawCode)
+          (if executeEffect then "(" <> rawCode <> ").unwrap_func1()(purust_core::Value::Unit)" else rawCode)
         
         argsCodeArr = Array.mapWithIndex (\i p -> "mut _a" <> show i <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false (fromMaybe Any (Array.index expectedArgTys i))) paramsArr
         argsCode = String.joinWith ", " argsCodeArr
@@ -1419,7 +1425,7 @@ genAbsWithEffect executeEffect valueEnums currentMod allZeroArity reuseContext m
                 innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
             in boxUnbox valueEnums globalClassFields currentMod innermostExpectedRetTy
                  (if executeEffect then Any else bodyTy)
-                 (if executeEffect then "(" <> rawCode <> ").unwrap_func1()(crate::Value::Unit)" else rawCode)
+                 (if executeEffect then "(" <> rawCode <> ").unwrap_func1()(purust_core::Value::Unit)" else rawCode)
         }
         
         finalState = Array.foldr (\(Tuple i p) st -> 
@@ -1639,15 +1645,15 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         bodyCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound freeVars true expr
       in
         if Array.length toCloneInside == 0 then
-          "{\n    " <> outsideClonesCode <> "crate::Value::Func1(purust_core::Func1::Static(|mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    " <> outsideClonesCode <> "purust_core::Value::Func1(purust_core::Func1::Static(|mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           "        " <> bodyCode <> "\n" <>
           "    } as fn(crate::UnknownType) -> crate::UnknownType))\n}"
         else if Array.length toCloneOutside > 0 then
-          "{\n    " <> outsideClonesCode <> "crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    " <> outsideClonesCode <> "purust_core::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    })))\n}"
         else
-          "{\n    crate::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
+          "{\n    purust_core::Value::Func1(purust_core::Func1::Shared(std::rc::Rc::new(move |mut _u: crate::UnknownType| -> crate::UnknownType {\n" <>
           insideClonesCode <> "        " <> bodyCode <> "\n" <>
           "    })))\n}"
     else case syn of
@@ -1744,7 +1750,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                                             Nothing -> valTy
                                      findFieldTy _ _ = valTy
                                  in findFieldTy p (unwrapType ty)
-                 in sanitizeIdent p <> ": " <> boxUnbox valueEnums globalClassFields currentMod expectedTy valTy valCode
+                 in recordFieldIdent p <> ": " <> boxUnbox valueEnums globalClassFields currentMod expectedTy valTy valCode
               ) propsArr
               fields = String.joinWith ", " propsCode
             in "std::rc::Rc::new(" <> structName <> " { " <> fields <> " })"
@@ -1988,7 +1994,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
             RecordValue _ -> setter <> "(" <> valueName depth i <> ");"
             RecordChild child ->
               "let mut " <> childName depth <> " = " <> parent <> ".get_" <> sanitizeIdent k <> "();\n    " <>
-              setter <> "(crate::Value::Unit);\n    " <>
+              setter <> "(purust_core::Value::Unit);\n    " <>
               setters (depth + 1) (childName depth) child <>
               "\n    " <> setter <> "(" <> childName depth <> ");") replacements)
     in
@@ -2155,7 +2161,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
           _ -> false
         resultTy = inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr syn)
         accCode = if nativeFields
-          then "(" <> baseStr <> ")." <> sanitizeIdent k <> ".clone()"
+          then "(" <> baseStr <> ")." <> recordFieldIdent k <> ".clone()"
           else "(" <> baseStr <> ").get_" <> sanitizeIdent k <> "()"
         actualTy = if nativeFields then resultTy else Any
     in boxUnbox valueEnums globalClassFields currentMod resultTy actualTy accCode
@@ -2175,8 +2181,9 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         matchArgs = String.joinWith ", " (map (\i -> if i == fieldIdx then "ref f" else "_") (Array.range 0 fieldIdx)) <> (if fieldIdx >= 0 then ", .." else "")
         expectedBaseTy = ADT tyNameStr [modName, tyNameStr] []
         baseStr = boxUnbox valueEnums globalClassFields currentMod expectedBaseTy baseTy baseRaw
-    -- The extracted child must remain owned after the parent borrow ends.
-    in "{ if let " <> enumName <> "::" <> cName <> "(" <> matchArgs <> ") = (" <> baseStr <> ").as_ref() { f.clone() } else { unreachable!() } }"
+    -- Keep the temporary parent alive until its child is cloned. A match also
+    -- avoids rustc's pathological type-checking cost for nested if-let reads.
+    in "{ match (" <> baseStr <> ").as_ref() { " <> enumName <> "::" <> cName <> "(" <> matchArgs <> ") => f.clone(), _ => unreachable!() } }"
   Var (Qualified mbMod (Ident name)) ->
         let
           modPrefix = case mbMod of
@@ -2251,7 +2258,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
           EffectRefRead reference -> "Control_Monad_ST_Internal_read(" <> operand alive reference <> ")"
           EffectRefWrite reference value ->
             "Control_Monad_ST_Internal_write(" <> operand (Set.union alive (freeVariables reference)) value <> ", " <> operand alive reference <> ")"
-    in "(" <> prefix <> call <> ").unwrap_func1()(crate::Value::Unit)"
+    in "(" <> prefix <> call <> ").unwrap_func1()(purust_core::Value::Unit)"
 
   EffectBind mbIdent lvl val body ->
     let name = case mbIdent of
@@ -2288,11 +2295,11 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
-          "        if let crate::Value::Func1(f) = &_val_eval {\n" <>
-          "            f(crate::Value::Unit)\n" <>
-          "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
+          "        if let purust_core::Value::Func1(f) = &_val_eval {\n" <>
+          "            f(purust_core::Value::Unit)\n" <>
+          "        } else if let purust_core::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
-          "                r.call.clone().unwrap()(crate::Value::Unit)\n" <>
+          "                r.call.clone().unwrap()(purust_core::Value::Unit)\n" <>
           "            } else {\n" <>
           "                _val_eval\n" <>
           "            }\n" <>
@@ -2315,11 +2322,11 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         bodyCode = if isEffectNode body then rawBodyCode else
           "{\n" <>
           "        let _val_eval = " <> rawBodyCode <> ";\n" <>
-          "        if let crate::Value::Func1(f) = &_val_eval {\n" <>
-          "            f(crate::Value::Unit)\n" <>
-          "        } else if let crate::Value::Record_a(r) = &_val_eval {\n" <>
+          "        if let purust_core::Value::Func1(f) = &_val_eval {\n" <>
+          "            f(purust_core::Value::Unit)\n" <>
+          "        } else if let purust_core::Value::Record_a(r) = &_val_eval {\n" <>
           "            if r.call.is_some() {\n" <>
-          "                r.call.clone().unwrap()(crate::Value::Unit)\n" <>
+          "                r.call.clone().unwrap()(purust_core::Value::Unit)\n" <>
           "            } else {\n" <>
           "                _val_eval\n" <>
           "            }\n" <>
@@ -2372,7 +2379,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                 vFinal = boxUnbox valueEnums globalClassFields currentMod Any vTy vCode
             in recordFieldIdent k <> ": Some(" <> vFinal <> ")"
           ) arrProps)
-      in "crate::Value::" <> structName <> "(perceus_ptr::PerceusPtr::new(" <> structName <> " { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
+      in "purust_core::Value::" <> structName <> "(perceus_ptr::PerceusPtr::new(" <> structName <> " { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
   Abs params body -> 
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of
@@ -2391,7 +2398,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         Just (Ident n) -> sanitizeIdent n
         Nothing -> "lvl_" <> show (unwrap lvl)) params
     in genEffectAbs valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive paramsArr (Func (map (\_ -> Any) paramsArr) Any) body
-  PrimUndefined -> "crate::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
+  PrimUndefined -> "purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a { ..Default::default() }))"
   CtorSaturated (Qualified mbMod _) _ (ProperName tyNameStr) (Ident ctorName) fields ->
     case shareNullaries (nullaryValue valueEnums currentMod aritiesMap globalClassFields bound)
       (Set.union alive (Set.union (freeVariables expr) (Set.fromFoldable (Map.keys bound)))) expr of
@@ -2416,7 +2423,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                     valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
                     resCode = boxUnbox valueEnums globalClassFields currentMod expectedTy valTy valCode
                     _ = if structName == "Purs_Data_Show::Show" then Debug.trace ("SHOW CtorSaturated field=" <> fieldName <> " expectedTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true expectedTy <> " valTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true valTy <> " valCode=" <> valCode <> " resCode=" <> resCode) \_ -> unit else unit
-                in sanitizeIdent fieldName <> ": " <> resCode
+                in recordFieldIdent fieldName <> ": " <> resCode
               ) fields)
             in "std::rc::Rc::new(" <> structName <> " { " <> structFieldsCode <> " })"
           Nothing ->
@@ -2518,7 +2525,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
       bindsArray = NonEmptyArray.toArray binds
       
       declCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "let mut " <> sanitizeIdent n <> " = crate::Value::Thunk(perceus_ptr::PerceusPtr::new(crate::Thunk { ..Default::default() }));"
+          "let mut " <> sanitizeIdent n <> " = purust_core::Value::Thunk(perceus_ptr::PerceusPtr::new(crate::Thunk { ..Default::default() }));"
         ) bindsArray)
       
       evalCode = String.joinWith "\n    " (Array.mapWithIndex (\i (Tuple (Ident n) val) -> 
@@ -2591,7 +2598,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         ) bindsArray)
         
       mutCode = String.joinWith "\n    " (map (\(Tuple (Ident n) _) -> 
-          "if let crate::Value::Thunk(ref thunk) = " <> sanitizeIdent n <> " {\n" <>
+          "if let purust_core::Value::Thunk(ref thunk) = " <> sanitizeIdent n <> " {\n" <>
           "    assert!(thunk.value.set(val_" <> sanitizeIdent n <> ").is_ok(), \"recursive value initialized twice\");\n" <>
           "} else { unreachable!() }"
         ) bindsArray)

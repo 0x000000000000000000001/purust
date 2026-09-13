@@ -64,7 +64,7 @@ for (const name of ['plain', 'wrapped', 'twoChildren']) {
   assert.match(body, /let _record_child_update_0 = /, name);
   assert.ok(body.indexOf('let _record_child_update_0') < body.lastIndexOf('let mut _base = '), name);
   assert.equal((body.match(/let mut _record_child = /g) ?? []).length, 1, name);
-  assert.match(body, /_base\.set_b\(crate::Value::Unit\);/, name);
+  assert.match(body, /_base\.set_b\(purust_core::Value::Unit\);/, name);
   assert.match(body, /_record_child\.set_c\(_record_child_update_0\);/, name);
 }
 for (const name of ['otherRoot', 'otherField', 'calledChild', 'liveRoot', 'openChild', 'convertedChild', 'duplicateRootField', 'duplicateChildField', 'capturedRoot']) {
@@ -74,7 +74,7 @@ for (const name of ['otherRoot', 'otherField', 'calledChild', 'liveRoot', 'openC
 for (const name of ['deep', 'deepWrapped', 'twoLeaves', 'threeChildren']) {
   const body = bodies.get(name);
   assert.equal((body.match(/let mut _record_child(?:_\d+)? = /g) ?? []).length, name === 'threeChildren' ? 3 : 2, name);
-  assert.match(body, /_record_child\.set_d\(crate::Value::Unit\);/, name);
+  assert.match(body, /_record_child\.set_d\(purust_core::Value::Unit\);/, name);
   assert.ok(body.indexOf('let _record_child_1_update_') < body.lastIndexOf('let mut _base = '), name);
   assert.ok(body.indexOf('_record_child.set_d(_record_child_1);') < body.indexOf('_base.set_b(_record_child);'), name);
 }

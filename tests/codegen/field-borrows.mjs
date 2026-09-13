@@ -128,7 +128,7 @@ try {
   for (const body of functions) {
     const name = body.match(/^FieldBorrows_(\w+)\(/)?.[1];
     if (!['direct', 'wrapped', 'scalar'].includes(name)) continue;
-    for (const [, operand] of body.matchAll(/if let crate::Tree::Node\([^]*?\) = \(([^]*?)\)\.as_ref\(\) \{ f\.clone\(\) \}/g)) {
+    for (const [, operand] of body.matchAll(/match \(([^]*?)\)\.as_ref\(\) \{ crate::Tree::Node\([^]*?\) => f\.clone\(\),/g)) {
       reads++;
       assert.doesNotMatch(operand, /\b(?:purs_local_\d+|tree)\.clone\(\)/,
         `${name}: extracting a field must borrow its local parent`);
