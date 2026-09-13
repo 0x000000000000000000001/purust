@@ -168,3 +168,43 @@ in a shared callback. Ownership rendering preserves Rust literals and comments.
 The sibling `purust-aff/bin/test -c` rebuilds the compiler and validates the Aff
 suite, concurrent Ref/AVar integration, and children that outlive their parents.
 `purust-aff/bin/test --smoke` runs the small initial Aff scenario.
+
+## Cargo dependencies of Rust FFI
+
+A resolved `Module.rs` may have an adjacent `Module.rs.cargo.json`:
+
+```json
+{
+  "schema": 1,
+  "dependencies": {
+    "num-bigint-dig": {
+      "version": "=0.8.6",
+      "default-features": false,
+      "features": ["i128"]
+    }
+  }
+}
+```
+
+This is an export-format example, not an implementation of `JS.BigInt`.
+The dependencies are emitted only in the Cargo crate of that resolved FFI,
+including a module with foreign types but no foreign values. The sidecar follows
+the resolved `.rs` path; it is not searched independently. Without it, generation
+is unchanged. Removing it also removes its dependencies on the next generation.
+
+Version 1 accepts stable, exact `=major.minor.patch` registry versions, lowercase
+ASCII crate names, and optional boolean `default-features` and distinct ASCII
+feature names. Omitted options retain Cargo's defaults. Unsupported fields,
+paths/git sources, aliases, optional dependencies, version ranges/prereleases,
+and malformed declarations are rejected. Compiler-owned dependencies
+(`purust_core`, `perceus_ptr`, `fancy-regex`, `mimalloc`, `tokio`, `Purs_*`)
+cannot be overridden; hyphen/underscore crate-name collisions are rejected.
+
+The export uses ordinary registry dependencies, with no host paths added.
+Cargo must resolve them in the build environment; pinning a direct dependency
+does not replace Cargo.lock for its transitive dependencies. The b8x Rust driver
+tracks sidecar contents, addition/removal and redirection as build inputs.
+
+Regression: `PURS=/absolute/path/to/the/tast-fork node tests/tast/ffi-cargo.mjs`.
+It compiles fresh TAST, relocates exports and runs Cargo offline in both ownership
+modes, so the fixture dependencies must already be available in the local cache.

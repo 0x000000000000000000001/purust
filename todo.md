@@ -188,6 +188,49 @@ explicites.
   `RemoveComments` dépasse `purust_core`, puis Cargo relève deux types natifs
   absents : **35 erreurs Nullable et 82 BigInt**. Ses 20 tests restent non
   exécutés ; prochaine qualification bornée : `Data.Nullable` (0.35).
+- Qualification 0.35 : `Data.Nullable` est isolé sur **54 modules TAST frais** ;
+  les mêmes 35 erreurs sont reproduites dans chaque mode. La référence JS
+  passe **huit contrôles**. Une FFI expérimentale limitée aux exports passe
+  **sept tests natifs par mode et un test de partage entre threads**, sans
+  changement du compilateur. Le contrat de portage 0.36 est fixé, notamment
+  pour `notNull null` et les `Nullable` imbriqués non nuls.
+  **Aucun portage permanent ni nouveau run b8x ; défaut 47 inchangé et frais.**
+- Portage 0.36 : `purust-nullable/src/Data/Nullable.rs` fournit le type et ses
+  trois primitives. La régression permanente passe **huit contrôles JS,
+  15 tests natifs sur macOS puis les mêmes 15 sous Linux**, et quatre contrôles
+  négatifs FFI/symbole absent. Les **53 tests codegen** et `bin/t` **47/47**
+  passent. Le compilateur et le profil b8x ne changent pas. Le diagnostic
+  RemoveComments compile Nullable ; ses erreurs restantes sont désormais
+  **82 E0425 pour BigInt absent**, à qualifier en 0.37. Ses 20 tests restent
+  non exécutés ; le défaut n'est pas élargi.
+- Qualification 0.37 : blocage BigInt reproduit sur **58 modules TAST frais**,
+  avec **82 E0425 par mode**. Dix contrôles JS et cinq contrôles de représentation
+  native par mode passent en diagnostic isolé. Le parcours des références TAST
+  depuis `RemoveComments.main` ne trouve aucun binding BigInt atteint ; cela
+  ne constitue pas une preuve d'exécution. **Aucune des 27 primitives portée.**
+  Deux prérequis sont identifiés : export des dépendances Cargo propres aux
+  FFI, puis sondes de fallback acceptant BigInt. Prérequis Cargo traité en 0.38.
+  Aucun nouveau run b8x ; défaut prêt 47 inchangé, M2/M4 toujours ouverts.
+- Intégration 0.38 : les FFI peuvent fournir un fichier voisin
+  **`.rs.cargo.json`** (dépendances de registre à version exacte, options de
+  features conservées). Validation stricte et suivi de fraîcheur ajoutés,
+  y compris pour une FFI ne déclarant que des types. **55 tests codegen et
+  50 tests driver** passent ; fixture de 34 modules TAST exécutée après déplacement
+  sur macOS puis Linux, en normal/threaded. Ancienne régression portable verte.
+  `bin/b` puis `bin/t` reconstruisent et exécutent **47/47**, sortie 0,
+  build `build-TGJCsu`. Pas de rebuild d'image ni de portage BigInt.
+  Représentation BigInt et sondes typées traitées ensuite en 0.39.
+- Intégration 0.39 : override local **`purust-js-bigints`**, limité au type
+  natif et à sa dépendance Cargo ; **aucune des 27 opérations BigInt portée**.
+  Régression permanente sur **58 modules TAST frais**, neuf tests natifs par
+  plateforme (macOS/Linux, normal/threaded), puis mêmes tests sous garde ;
+  **108 appels forcés** éprouvent les 27 gardes dans chaque mode/plateforme.
+  **55 tests codegen, 52 tests driver/CLI** et le défaut reconstruit **47/47**
+  passent. RemoveComments frais compile BigInt, puis Cargo échoue sur
+  **quatre E0425 `VariantCase` dans `Data.Variant.Internal`**, sur les deux OS.
+  Ses 20 tests ne sont pas exécutés ; ses **90 fallbacks résiduels** restent
+  à qualifier complètement. Prochaine étape **0.40 : diagnostic VariantCase**,
+  avec Astra. M2/M4 restent ouverts ; le profil par défaut n'est pas élargi.
 - En 0.25, le contrôle de fraîcheur relève un changement du binaire `purs`
   depuis les artefacts HTML 0.24. Leurs succès restent historiques ; un build
   neuf sera nécessaire avant de les relancer. Aucun artefact prêt n'est
@@ -3598,7 +3641,7 @@ restent à qualifier. Sources/FFI et profil b8x inchangés ; empreintes vérifi�
 Même conteneur, image et `StartedAt` qu'en 0.33, sans rebuild ni redémarrage.
 **Défaut conservé et frais : 47 tests. M2 et M4 restent ouverts.**
 
-#### Contrat 0.35 — Qualifier `Data.Nullable` sans portage en bloc
+#### Contrat 0.35 — Qualifier `Data.Nullable` sans portage en bloc (réalisé)
 
 **Astra** : le type étranger polymorphe et son ABI exigent une qualification.
 
@@ -3614,6 +3657,570 @@ Même conteneur, image et `StartedAt` qu'en 0.33, sans rebuild ni redémarrage.
    isolés et conserver une preuve exacte du delta.
 4. S'arrêter au diagnostic et au contrat : pas encore de portage permanent
    Nullable, pas de correction BigInt ni d'élargissement du défaut 47.
+
+#### Résultat 0.35 — Représentation et ABI Nullable qualifiées
+
+Réalisé le 13 septembre 2026. Révisions relevées à la fin : b8x `master`
+`98c43f7`, purust `edge` `38166be`, purust-nullable `main` `e9c2c80`.
+Le HEAD purust a avancé pendant le diagnostic ; l'empreinte du bundle 0.34
+est restée identique. Aucun commit ni changement de branche par l'agent.
+
+Diagnostic conservé dans `b8x/run/bak/rust/output/nullable-1aBdz3/` :
+`summary.json`, `report.json`, `tast-evidence.json`, `experimental-proof.json`,
+`js-fresh.json` et `shared-check.json`. Les commandes exactes et leurs sorties
+sont enregistrées dans les fichiers JSON nommés par étape.
+
+**Reproduction.** `NullableProbe.purs` et ses dépendances forment une fermeture
+de **54 modules**, sans Yoga, BigInt, Spec, Effect ou source applicative b8x.
+`prepare.mjs` vérifie les inputs précédents, calcule la fermeture par `purs graph`,
+puis exécute le fork local avec `compile ... --codegen corefn,js` dans un nouvel
+output. Les exports normal/threaded sont générés avec le bundle inchangé.
+`cargo check --offline ... -p Purs_NullableProbe --lib --message-format=json`
+échoue **101 dans les deux modes**, avec exactement **35 E0425 `Nullable`
+absent**. Les trois primitives restent des fallbacks ; `Data/Nullable.rs`
+n'existe pas encore dans le paquet permanent.
+
+**TAST et ABI observés.** `foreignAnnotations` et `typeTable` conservent
+`forall a. Nullable a`, `forall a. a -> Nullable a` et
+`forall a r. Fn3 (Nullable a) r (a -> r) r`. Les instanciations du probe gardent
+les types `Int`, fonctions, records et `Nullable (Nullable Int)` ; le problème
+n'est pas une perte de ces types dans le TAST. Le backend choisit actuellement :
+
+- `Data_Nullable_null() -> Rc<Nullable>` ;
+- `Data_Nullable_notNull(Value) -> Rc<Nullable>` ;
+- `Data_Nullable_nullable() -> Value`, contenant un **`Func3::Static` natif** ;
+- `Arc` à la place de `Rc` en threaded, via la transformation existante.
+
+Les appels générés à `nullable` peuvent passer par trois applications
+`unwrap_func1` : le runtime adapte déjà `Value::Func3`, et la FFI existante
+`Data.Function.Uncurried.runFn3` l'appelle aussi directement. Aucune chaîne
+de closures FFI spécifique ni correction générale de Fn3 n'est nécessaire.
+
+**Contrat sémantique établi.** La vraie FFI JS traite `null` et `undefined`
+comme absents ; les valeurs falsy `0`, `false`, `""`, les tableaux, objets et
+fonctions restent présents. Le callback est appelé une fois seulement pour
+une valeur présente ; son résultat, ses exceptions et les références sont
+conservés. `notNull null` est nul, et `toMaybe (toNullable (Just null))` produit
+`Nothing` pour le type imbriqué : ce n'est pas une loi générale de round-trip
+`Maybe a` lorsque `a` admet lui-même null.
+
+L'expérience utilise un `pub struct Nullable` à champ **privé** `Option<Value>`,
+avec handle immuable `Rc`/`Arc`. `notNull` reconnaît un payload de type exact
+`Rc<Nullable>`/`Arc<Nullable>` seulement pour **faire s'effondrer un null imbriqué**.
+Pour un imbriqué présent, elle conserve le wrapper typé dans le payload :
+l'enlever casserait le contrat des callbacks générés qui attendent un Nullable.
+Les autres valeurs opaques, `Maybe::Nothing`, `Option::None` d'un autre type et
+`Value::Unit` ne sont pas assimilés à null. Cloner les handles conserve le
+partage des payloads ; les mises à jour de records conservent le copy-on-write.
+
+**Preuves expérimentales, pas portage.** `candidate.rs` remplace seulement
+les trois fallbacks dans `experimental-normal/` et `experimental-threaded/`.
+`experiment.mjs` vérifie le delta exact, ainsi que l'identité des autres fichiers
+Rust et manifests générés, puis lance Cargo et les tests. Aucune retouche du
+code appelant, de `purust_core`, du bundle ou des FFI du paquet permanent.
+
+- **Huit contrôles JS frais** : primitives réelles et probe compilé ;
+- **sept tests Rust par mode** : conversions et Eq/Ord/Show, imbrication,
+  Fn3 direct/applications partielles réutilisables, payloads falsy/opaques,
+  callbacks capturés, records COW, panic exact propagé et libération du payload ;
+- **un test threaded supplémentaire** : quatre threads partagent les handles
+  et le callback, 100 appels comptabilisés et lectures imbriquées correctes.
+
+**Limites conservées.** Le runtime natif n'a pas de valeur JS `undefined` ;
+ne pas lui substituer `Unit`. La représentation qualifie les opérations typées
+ci-dessus, pas une identité d'objet JavaScript transparente ni tous les
+`unsafeCoerce` possibles. Les futures frontières Foreign/JSON doivent construire
+et consommer explicitement ce Nullable ; leur compatibilité reste à qualifier.
+Pas de validation de tous les labels, types de payload ou FFI de Yoga/BigInt.
+
+`verify.mjs` confirme les empreintes des sources/FFI, du fork et du bundle,
+les cinq états/manifests intégrés, les liens et le défaut prêt `build-uBnwKL`
+de **47 tests**. Même conteneur/image/`StartedAt`. Aucun `b`, `t -c`, nouveau
+run b8x, nettoyage DB, rebuild d'image ou redémarrage. Le grand export
+RemoveComments n'est pas repris ici ; ses **82 erreurs BigInt** restent le
+dernier relevé 0.34, pas un nouveau résultat. **M2/M4 restent ouverts.**
+
+#### Contrat 0.36 — Porter uniquement Nullable et sa régression permanente (réalisé)
+
+**Astra**, pour préserver l'ABI polymorphe et la sémantique d'imbrication.
+
+1. Ajouter seulement `purust-nullable/src/Data/Nullable.rs` : type étranger à
+   payload privé et les trois primitives selon 0.35. Réutiliser le handle,
+   `Func3::Static` et la transformation threaded existants ; ne pas modifier
+   le compilateur ni introduire un portage Yoga/BigInt ou une sentinelle Unit.
+2. Ajouter le runner et les fixtures permanentes issus du diagnostic : TAST/JS
+   frais, vraie FFI `.rs` résolue, export non retouché, sept tests par mode et
+   partage threaded. Conserver les cas de null imbriqué et d'imbriqué présent,
+   les payloads opaques distincts, le callback différé et les tests de durée de vie.
+3. Vérifier que retirer la FFI ou un symbole dans une copie isolée produit un
+   échec explicite ; un fallback ne doit pas faire passer cette régression.
+4. Regénérer le diagnostic RemoveComments avec les sources/FFI courantes,
+   puis relever le prochain blocage Cargo réel, sans le corriger. Ne pas
+   présumer que Nullable résout les erreurs BigInt ou rend les 20 tests exécutables.
+5. Vérifier la fraîcheur du défaut 47 ; le reconstruire si un input suivi a
+   changé, puis revalider ses tests. Ne pas élargir le défaut, reconstruire
+   l'image ou redémarrer les conteneurs pour ce portage.
+
+#### Résultat 0.36 — Nullable porté, prochain blocage BigInt confirmé
+
+Réalisé le 13 septembre 2026 sur b8x `master` (`98c43f7`), purust `edge`
+(`38166be`) et purust-nullable `main` (`e9c2c80` + nouveau fichier).
+Aucun commit ni changement de branche par l'agent ; modifications antérieures
+du todo conservées.
+
+**Fichier porté :** `purust-nullable/src/Data/Nullable.rs`, SHA-256
+`ae02da9f63b05d8c0c7ae4faaaf82fdfe69f5a5cd8cf01e0a771a9eaf50b2b0c`.
+Le code reprend l'expérience 0.35, avec seulement son commentaire d'en-tête
+adapté : payload privé `Option<Value>`, handles `Rc`/`Arc`, reconnaissance du
+null imbriqué sans perdre le wrapper typé des présents, `Func3::Static`.
+Aucun ajout de dépendance Cargo, aucune modification du compilateur/runtime.
+Les limites de représentation JS/Foreign/`undefined` notées en 0.35 restent
+applicables ; ce portage ne fournit pas une ABI JSON générale.
+
+**Régression permanente :** `tests/tast/nullable.mjs` et les quatre fixtures
+`tests/tast/fixtures/nullable/{NullableProbe.purs,js-checks.mjs,checks.rs,shared.rs}`.
+Le runner utilise les sources locales et les versions du lockfile du compilateur,
+compile **54 modules TAST/JS frais**, vérifie la FFI réellement incluse et les
+trois symboles, puis teste l'export Rust non retouché. Il est inclus dans le
+glob de `npm run test:tast`. Les temporaires sont isolés, gardés en cas d'échec
+ou avec `PURUST_NULLABLE_KEEP_OUTPUT`, et les inputs sont empreintés.
+
+Commandes principales :
+
+- Depuis purust : `env PURS=<fork local> PURUST_NULLABLE_KEEP_OUTPUT=<diagnostic>
+  node tests/tast/nullable.mjs` ; **huit contrôles JS**, sept tests Rust normal,
+  sept threaded et un partage entre threads, tous réussis.
+- La fixture couvre également l'appel via la vraie FFI
+  `Data_Function_Uncurried_runFn3`, en plus des applications partielles du runtime.
+- Sous Linux, dans le conteneur existant : `cargo test --offline --locked
+  --target aarch64-unknown-linux-gnu ... -p Purs_NullableProbe --tests --
+  --test-threads=1` sur chacun des deux exports ; **les mêmes 15 tests passent**.
+  Ce sont 15 cas distincts validés sur deux plateformes, pas 30 nouveaux cas.
+- `node --test tests/codegen/*.mjs` : **53/53**. La suite TAST complète et les
+  autres backends ne sont pas réexécutés ici.
+
+**Contrôles négatifs permanents.** Le runner copie seulement les sources
+Nullable dans un dossier isolé, sans FFI ou avec `notNull` renommé, puis produit
+un nouveau TAST avec ce `modulePath` et de nouveaux exports normal/threaded.
+Les quatre variantes sont rejetées explicitement par le garde de la régression.
+La FFI absente entraîne aussi Cargo **101**, type Nullable absent ; le symbole
+absent entraîne un test natif **101**, `0 passed; 1 failed`, panic `not implemented`.
+Le test ne peut donc pas accepter silencieusement un fallback. Le comportement
+général du compilateur, qui peut encore émettre ces fallbacks, reste inchangé.
+Aucun fichier FFI réel n'est supprimé ou renommé pour ces contrôles.
+
+**Preuves :** `b8x/run/bak/rust/output/nullable-port-F2Z6Fc/summary.json`,
+contrôlé par `verify.mjs` ; commandes et inputs du runner dans
+`purust-nullable-uqBQEM/{commands.json,provenance.json,negative-checks.json}`.
+Les sorties Linux et codegen sont conservées au même niveau dans
+`linux-normal.json`, `linux-threaded.json`, `linux-summary.json` et `codegen.json`.
+
+**Défaut CLI.** Aucun input suivi du défaut n'a changé : Nullable ne fait pas
+partie de ses sources, et le bundle reste
+`772bce8b38d9d8259ceaeadd875cd91a5e07e993cdd821297cb9e6bfcc7685d9`.
+Le build `build-uBnwKL` est donc toujours frais, sans reconstruction ni état
+prêt forgé. `bin/t` exécute réellement **47/47**, sortie 0, aucun fallback gardé
+atteint. `t -c` et le nettoyage DB ne sont pas répétés ; leur dernier contrôle
+réussi reste 0.34. Les cinq états/manifests, leurs inputs et les liens sont
+inchangés. Même conteneur/image/`StartedAt`, sans rebuild ni redémarrage.
+
+**RemoveComments régénéré :** `output/remove-comments-pTJK0Y/`, avec
+`report.json`, `cargo-check.json` et `cargo-errors.json`. **247 modules TAST**,
+**217 crates PureScript dans la fermeture native** ; la résolution pointe bien
+vers la nouvelle FFI locale. Les déclarations fallback passent de 93 à **90**.
+Cargo Linux compile `Purs_Data_Nullable`, puis termine **101** en environ cinq
+secondes : **82 erreurs E0425 `BigInt` absent**, toutes dans `Purs_JS_BigInt`.
+Le premier diagnostic observé est ligne 78 de cet export. Source résolue :
+`js-bigints-2.2.1/src/JS/BigInt.purs` du registre ; aucune `.rs` résolue pour lui.
+Ce sont les occurrences d'un même blocage de type, pas 82 causes indépendantes.
+
+Arrêt au contrat : pas de correction BigInt, pas de qualification des 90
+fallbacks restants, **aucun des 20 tests RemoveComments exécuté**.
+**Défaut toujours limité à 47 tests ; M2/M4 restent ouverts.**
+
+#### Contrat 0.37 — Qualifier le type BigInt et la surface réellement nécessaire (réalisé)
+
+**Astra**, pour distinguer représentation native, ABI FFI et chemins requis.
+
+1. Isoler `JS.BigInt` à la version source réellement résolue, avec TAST frais,
+   sans Yoga/Spec/b8x ; reproduire le défaut normal/threaded avant toute retouche.
+2. Inventorier les déclarations FFI et distinguer les types/fonctions nécessaires
+   à Cargo de celles référencées depuis le point d'entrée RemoveComments.
+   Ne pas supposer que tout le module BigInt doit être porté pour cette tranche.
+3. Confronter le TAST, les signatures Rust et la vraie FFI JS. Qualifier le
+   contrat minimal de représentation et des primitives retenues, y compris
+   leurs conversions/erreurs ; ne pas substituer un entier borné sans preuve
+   de conformité à la sémantique attendue.
+4. Si une expérience native est nécessaire, la limiter aux copies isolées et
+   vérifier le delta exact. Documenter les besoins Cargo et la régression à
+   partir des preuves, sans dépendance ajoutée préventivement au projet.
+5. S'arrêter au diagnostic et au contrat : pas de portage permanent BigInt,
+   pas de modification Nullable/codegen, pas d'élargissement du défaut 47.
+
+#### Résultat 0.37 — Type BigInt qualifié ; prérequis Cargo avant le portage
+
+Diagnostic ignoré : `b8x/run/bak/rust/output/bigint-HYE3bP/`, notamment
+`summary.json`, `report.json`, `reachability.json`, `tast-evidence.json`,
+`experimental-proof.json` et `verify.mjs`.
+
+**Reproduction fraîche.** `JS.BigInt` provient toujours de `js-bigints-2.2.1`
+du registre, sans `.rs` résolue. Le probe exclut Yoga/Spec/b8x/Effect :
+**58 modules TAST + JS frais**, puis génération normale/threaded avec le
+bundle inchangé. Chaque `cargo check --offline -p Purs_BigIntProbe --lib`
+sort **101**, avec exactement **82 E0425 `BigInt` absent**. Ce sont les
+occurrences du même type manquant, pas 82 défauts indépendants.
+
+**Fermeture et références.** Le TAST complet de 0.36 est réutilisé après
+vérification de ses sources/FFI/outils et empreintes ; ce n'est pas un nouvel
+export complet. La route d'import est
+`RemoveComments.Main → RemoveComments → Clean → Yoga.JSON → JS.BigInt`.
+Les usages JSON de `Clean` sont réels, mais concernent aussi d'autres API :
+ne pas supprimer ces imports pour contourner Cargo.
+
+- `Purs_JS_BigInt` appartient aux 217 crates PureScript de la fermeture native.
+- **27 déclarations FFI** ; 18 ont une référence textuelle hors de leur
+  définition dans le Rust généré, surtout à l'intérieur de BigInt. Yoga.JSON
+  référence directement les foreigns `fromInt` et `toString`, ainsi que des
+  wrappers PureScript de conversion.
+- Le parcours conservateur des `Var` qualifiés, branches et closures incluses,
+  visite **724 bindings**, sans binding `JS.BigInt` atteint. Seul non-résolu :
+  `Prim.undefined`. **Ce relevé n'est ni une trace d'exécution, ni une preuve
+  d'élimination native** ; il ne justifie pas de déclarer les fallbacks sûrs.
+- Aucune opération BigInt n'est actuellement prouvée nécessaire aux assertions
+  RemoveComments. Ne pas porter préventivement les 27 primitives.
+
+**Contrat de représentation mesuré.** Le TAST préserve le foreign type
+`JS.BigInt.BigInt`, sans constructeur dans `dataDecls`, et les annotations
+complètes des foreigns. Le backend attend un type natif `crate::BigInt` derrière
+`Rc`, ou `Arc` en threaded : par exemple `fromInt : i64 → Rc<BigInt>` et
+`toString : Rc<BigInt> → String`. Les callbacks Maybe et le boxing existant
+restent ceux du générateur ; aucun changement d'ABI/Nullable n'est requis par
+cette expérience. Un entier signé de précision arbitraire est nécessaire :
+le JS conserve exactement `2^128`, son successeur et leur signe.
+
+**Sémantique JS observée : dix contrôles frais réussis.** Les commentaires du
+paquet ne suffisent pas à fixer un futur portage : `fromString` refuse la
+notation exponentielle ; `fromNumber` refuse les fractions au lieu de les
+tronquer ; `toNumber` arrondit au-delà des entiers sûrs, sans devenir aussitôt
+infini (`2^128` reste fini, `2^2048` déborde). Autres points qualifiés : div/mod
+euclidiens et diviseur nul, exposants/décalages négatifs, conversions de largeur
+et erreurs de radix. Le parseur radix accepte un préfixe comme `"12x"` en base
+10. **`biDegree` renvoie un JS `bigint` malgré son type PureScript `Int`.**
+Ces écarts sont consignés, sans corriger le paquet JS ni décider de porter
+ces opérations tant qu'elles ne sont pas nécessaires.
+
+**Expérience native strictement isolée, macOS uniquement.** La crate déjà en
+cache `num-bigint-dig =0.8.6`, `default-features=false`, sert de candidat à la
+qualification, pas de dépendance permanente choisie. Le delta vérifié est :
+
+1. Exporter son type `BigInt` dans la seule crate générée `Purs_JS_BigInt`.
+2. Remplacer les **27 corps fallback** par une sortie explicite **86** avec
+   marqueur, sans modifier signatures, bindings ou appels générés.
+3. Ajouter cette unique dépendance au Cargo.toml de cette crate, et un exemple
+   natif de contrôle. Tous les autres fichiers Rust/TOML d'origine sont vérifiés
+   identiques.
+
+Avant l'ajout Cargo, l'alias seul produit **E0432, import `num_bigint_dig`
+non résolu**. Après ajout, les deux modes compilent hors ligne et passent
+**cinq contrôles de représentation chacun** : valeur au-delà de 128 bits,
+addition, signe, aller-retour via `Value::Class` avec identité du handle,
+callback typé conservant cette identité. Ces contrôles utilisent la représentation,
+**pas des primitives FFI implémentées**. Deux appels PureScript forcés par mode
+(`fromInt`, `toString`) déclenchent exactement le marqueur et la sortie 86.
+Les 25 autres gardes ne sont pas individuellement éprouvés à cette étape.
+
+**Deux prérequis distincts.**
+
+- `src/Main.purs` écrit des dépendances Cargo fixes et celles des modules
+  générés ; il ne propage pas de dépendances propres à une FFI. Une `.rs`
+  seule ne suffit donc pas à intégrer ce type. Retoucher le Cargo.toml généré
+  manuellement n'est pas une solution de portage reproductible.
+- Le diagnostic `fallback-guard.mjs` sait fabriquer certains arguments mais
+  pas BigInt. Sur l'export complet conservé, il refuse effectivement
+  `std::sync::Arc<crate::BigInt>` **avant toute écriture** ; les fichiers sont
+  vérifiés inchangés. Il faudra une construction typée, sans `unsafe`, puis
+  éprouver individuellement tous les gardes résiduels avant un run de tranche.
+
+**Préservation et limites.** Les sources/FFI/outils, les cinq états/manifests
+intégrés, leurs inputs et les liens sont vérifiés inchangés. Défaut toujours
+prêt `build-uBnwKL`, 47 tests ; bundle inchangé. Aucun portage permanent,
+aucune modification du compilateur ou de Nullable, aucun nouveau test b8x,
+aucun build/run Linux de cette expérience. Le dernier succès `bin/t` 47/47
+reste 0.36, celui de `t -c` reste 0.34. L'export complet n'a pas été relancé
+après l'expérience : **les 20 tests RemoveComments restent non exécutés**.
+b8x reste sur `master`, purust sur `edge` ; aucun commit.
+
+#### Contrat 0.38 — Exporter les dépendances Cargo propres aux FFI (réalisé)
+
+**Astra**, car le changement touche le contrat d'export et sa reproductibilité.
+
+1. Fixer puis implémenter le mécanisme minimal de déclaration d'une dépendance
+   de registre au voisinage de la `.rs` réellement résolue. Vérifier les
+   conventions existantes avant de choisir le format ; conserver version,
+   features et `default-features`. Sans déclaration, comportement inchangé.
+2. Injecter la dépendance uniquement dans la crate du module concerné. Rejeter
+   explicitement les déclarations invalides et collisions avec les dépendances
+   réservées/générées ; ne pas ajouter BigInt à tous les modules ou au runtime.
+   Ne pas introduire de chemins absolus hôte ni de mécanisme général de copie
+   de dépendances locales/git pour ce besoin de registre.
+3. Ajouter une fixture minimale avec type FFI externe, TAST frais et génération
+   normal/threaded ; vérifier compilation, exécution et déplacement de l'export,
+   ainsi que dépendance absente/invalide et absence de fuite dans les autres
+   crates. Utiliser le candidat déjà qualifié pour la fixture, sans en déduire
+   un choix définitif pour le portage BigInt. Vérifier aussi la résolution Cargo
+   sous Linux ; ne pas confondre cache macOS et disponibilité dans l'image.
+4. Enregistrer ces déclarations dans les inputs de fraîcheur du driver b8x si
+   nécessaire : leur modification doit invalider un build prêt. Revalider les
+   régressions concernées et reconstruire/exécuter réellement le défaut **47/47**
+   si le bundle change, sans forger la fraîcheur. Aucun rebuild d'image implicite.
+5. S'arrêter à ce prérequis : aucune FFI BigInt permanente, aucune primitive
+   ajoutée, aucune adaptation des sondes BigInt ni extension du défaut.
+   Ensuite seulement : intégrer la représentation minimale, qualifier tous les
+   gardes résiduels et reprendre le premier blocage de RemoveComments.
+
+#### Résultat 0.38 — Dépendances Cargo FFI portables et défaut 47 reconstruit
+
+**Implémentation.** `src/Purust/FfiCargo.{purs,js}` charge un unique fichier
+`<chemin de la FFI résolue>.cargo.json`. `src/Main.purs` conserve sa déclaration
+avec le module puis l'émet uniquement dans le Cargo.toml de sa crate. Le
+résolveur FFI existant reste inchangé ; aucune recherche indépendante du JSON,
+aucun ajout global à `purust_core` ou aux autres modules. Les modules avec
+foreign types mais sans foreign values sont également pris en charge.
+
+Format V1 documenté dans le README :
+
+```json
+{
+  "schema": 1,
+  "dependencies": {
+    "num-bigint-dig": {
+      "version": "=0.8.6",
+      "default-features": false,
+      "features": ["i128"]
+    }
+  }
+}
+```
+
+Choix borné de reproductibilité : versions stables **exactes**
+`=major.minor.patch`, noms de crates ASCII minuscules, noms de features ASCII
+distincts, champs inconnus refusés. Les options omises gardent les valeurs
+par défaut Cargo. Pas de plage/prérelease, alias, dépendance optionnelle,
+registre personnalisé, chemin local ou source git dans ce premier format.
+Les noms réservés du générateur et les collisions tiret/underscore sont rejetés.
+Le rendu est déterministe ; sans fichier voisin, pas de dépendance ajoutée.
+Les versions transitives restent du ressort du **Cargo.lock**, pas du seul JSON.
+
+**Fraîcheur b8x.** `driver/profile.mjs` suit désormais la résolution de chaque
+module, y compris ceux dont `foreign` est vide. Le manifeste enregistre pour
+chaque résolution le fichier Cargo voisin ou son absence explicite. Les fichiers
+présents entrent dans les inputs avec contenu/chemin réel ; ajout, suppression,
+modification et redirection doivent imposer un rebuild. Contrôle avant génération,
+audit après génération et vérification avant publication/exécution conservés.
+Le défaut courant contient **231 résolutions, 298 inputs, zéro fichier Cargo FFI** :
+le mécanisme est intégré, mais BigInt n'a pas été ajouté au profil.
+
+**Régressions permanentes.**
+
+- `tests/codegen/ffi-cargo.mjs` : options préservées, comportement sans déclaration,
+  JSON/structure/version/features invalides, champs/sources non pris en charge,
+  noms réservés et collisions. **55 tests codegen** verts au total.
+- `tests/tast/ffi-cargo.mjs` et `fixtures/ffi-cargo/` : **34 modules TAST frais**.
+  `CargoValue` contient uniquement un foreign type natif, importé par
+  `CargoDependency`. La dépendance n'est émise que dans `Purs_CargoValue` ; ses
+  options sont vérifiées avec `cargo metadata`, sans feature par défaut activée.
+  Les exports sont déplacés et exécutent réellement le calcul exact `2^128 + 1`,
+  sortie **`FFI_CARGO_OK`**, en normal/threaded. La crate externe reste un candidat
+  de qualification, pas encore un choix de bibliothèque pour `JS.BigInt`.
+- Contrôles négatifs sur copies : absence de déclaration → **E0432** natif ;
+  retrait de la déclaration → dépendance retirée même en réutilisant l'export ;
+  JSON malformé et nom réservé → génération non nulle avant publication Cargo.
+  Sources/FFI de fixture et bundle vérifiés inchangés pendant les contrôles.
+- `b8x/run/bak/rust/tests/ffi-cargo.test.mjs` : ajout/modification/suppression/
+  redirection du JSON, avec le même mécanisme de collecte que le driver, sur
+  une FFI de type seulement. **50 tests driver/CLI** verts au total.
+- `tests/tast/portable-cargo.mjs` : l'ancienne fixture sans JSON reste verte,
+  **33 modules frais**, déplacement, binaire et tests runtime dans les deux modes.
+
+**Preuves conservées.** Sous `b8x/run/bak/rust/output/` :
+`purust-ffi-cargo-mIlbEE/{report,linux-report,summary}.json`, les commandes,
+`linux-check.mjs`, `verify.mjs` et les exports déplacés ; ancienne régression
+`purust-portable-feUJ8c/`. La première tentative `purust-ffi-cargo-Vu3tBC/`
+conserve un défaut du callback de la fixture, corrigé avant la revalidation
+fraîche ; ce n'était pas une erreur du mécanisme Cargo.
+
+**Linux réellement éprouvé.** Le premier `cargo metadata --offline --locked`
+refuse `num-bigint-dig`, absent du cache Linux. Un **`cargo fetch --locked`**
+réussit, puis les vérifications et exécutions passent hors ligne dans les deux
+modes. Les lockfiles restent identiques. Le graphe natif calculé par le driver
+et celui de Cargo concordent (`Purs_CargoDependency`, `Purs_CargoValue`) ; aucune
+modification de `cargo-graph.mjs` nécessaire. Même conteneur
+`5fd67e873187…`, image `sha256:1efccad9260b…`, démarrage
+`2026-09-13T09:06:55.068444676Z`. **Pas de rebuild d'image ni de redémarrage.**
+Ce téléchargement remplit le cache du conteneur courant, sans garantir qu'un
+nouvel environnement disposera de ces dépendances hors ligne.
+
+**Défaut CLI revalidé.** Le bundle devient
+`e9f3f984b3fba25157ecd5bb03c3bba414d7e21c767bd690e9e288e27fd8a529`.
+Avant reconstruction, `bin/t` refuse effectivement l'ancien build périmé,
+sortie 1. **`bin/b` puis `bin/t` passent**, sorties **0/0** : nouveau build
+`build-TGJCsu`, **231 modules TAST frais**, **31 fallbacks individuellement
+éprouvés + 5 gardés hors fermeture**, résumé **47/47**, aucun garde atteint.
+Les inputs et artefacts prêts sont vérifiés ; aucun état prêt n'est forgé.
+`t -c` et le nettoyage DB ne sont pas répétés : dernier contrôle 0.34.
+
+Les autres états/manifests de suites et les liens sont inchangés ; leurs anciens
+builds ne sont pas pour autant frais avec le nouveau bundle/driver. Les sources
+et FFI de l'ancien diagnostic RemoveComments, notamment Nullable, sont préservées.
+**Aucune FFI BigInt permanente, aucune sonde BigInt ajoutée, aucun des 20 tests
+RemoveComments exécuté, défaut toujours 47 ; M2/M4 restent ouverts.**
+b8x reste `master`, purust `edge`, Nullable `main` ; aucun commit.
+
+#### Contrat 0.39 — Représentation BigInt minimale et sondes typées
+
+**Astra**, pour l'ABI native, le choix de représentation et la preuve des gardes.
+
+**Réalisé le 2026-09-13**, au périmètre ci-dessous ; bilan et prochaine étape après
+le contrat. La représentation seule ne rend pas les opérations BigInt utilisables.
+
+1. Partir des preuves 0.37/0.38, confirmer le choix de bibliothèque de précision
+   arbitraire et l'emplacement de l'override local selon les conventions des
+   packages purust. Ne pas modifier le cache du registre ni changer l'API
+   PureScript de `js-bigints-2.2.1` pour faciliter le portage.
+2. Fournir uniquement le type `JS.BigInt.BigInt` dans une FFI locale résolue,
+   avec sa déclaration Cargo V1. Préserver les handles Rc/Arc et les conversions
+   de boxing déjà qualifiés. **Ne pas présenter ce type comme le portage des
+   27 primitives**, qui restent absentes et devront être explicitement gardées.
+3. Ajouter une régression permanente sur TAST frais et export sans retouche
+   Cargo manuelle, en normal/threaded et sous Linux : précision non bornée,
+   identité des handles/boxing et résolution effective du fichier Cargo.
+4. Adapter uniquement la construction typée des arguments BigInt dans les
+   sondes diagnostiques, sans `unsafe` ni valeur factice de succès ; éprouver
+   individuellement les 27 gardes sur la fermeture minimale. Si une autre
+   forme d'argument apparaît, l'isoler avant de l'ajouter.
+5. Régénérer RemoveComments avec le nouveau bundle et les vrais inputs,
+   reprendre Cargo puis relever le premier blocage sans le corriger en chaîne.
+   Ne lancer la tranche que lorsque tous ses fallbacks résiduels ont été
+   qualifiés ; leur qualification complète reste un jalon explicite, pas une
+   conséquence automatique des seules sondes BigInt. Préserver/revalider le
+   défaut 47 selon sa fraîcheur, sans l'élargir à cette étape.
+
+#### Résultat 0.39 — Représentation intégrée, prochain blocage VariantCase
+
+**Package local partiel.** Création de `../purust-js-bigints`, sans initialiser
+de dépôt Git ni publier de package. `src/JS/BigInt.purs`, `src/JS/BigInt.js` et
+`LICENSE` sont des copies identiques du registre `js-bigints` **2.2.1** ;
+provenance et SHA-256 consignés dans `upstream.json`. API PureScript et référence
+JS inchangées, aucun cache du registre édité. Le package possède son profil,
+son lockfile et un README indiquant explicitement sa limite.
+
+`src/JS/BigInt.rs` fournit seulement `pub use num_bigint_dig::BigInt;` ; le
+fichier voisin `.rs.cargo.json` fixe **`num-bigint-dig =0.8.6`**, sans features
+par défaut ni supplémentaires. Le choix reprend les expériences 0.37/0.38 et
+la représentation signée de précision arbitraire inspectée dans la bibliothèque,
+avec validation native effective ci-dessous. Il ne délègue aucune sémantique
+de conversion/division/modulo/bitwise JS à cette bibliothèque et n'implique
+aucune garantie cryptographique ou de performance. **Zéro opération FFI portée.**
+
+**Régression permanente de représentation.** `tests/tast/bigint.mjs` utilise
+les vraies sources du package et les fixtures `tests/tast/fixtures/bigint/`.
+Sur **58 modules TAST frais**, la résolution de la FFI et du fichier Cargo est
+contrôlée, sans retouche des manifestes générés. `cargo metadata` confirme la
+version et les features. Les 27 corps de fallback originaux restent présents.
+
+- macOS : **quatre tests en normal, cinq en threaded** ; mêmes résultats Linux.
+- Valeurs exactes `2^128 + 1`, valeur de 4096 bits, signe/zéro ; identité des
+  handles Rc/Arc à travers les fonctions PureScript compilées, `Maybe`, boxing
+  `Value::Class` et callback typé. Le cinquième test passe effectivement l'Arc
+  entre threads et vérifie la compatibilité `Send + Sync`.
+- Contrôles négatifs macOS sur copies : retirer la FFI fait manquer `BigInt` ;
+  retirer le fichier Cargo produit un import `num_bigint_dig` non résolu.
+  **Sorties 101 attendues**, sources originales préservées.
+
+**Sondes typées permanentes.** L'ancien garde est d'abord essayé sur les exports
+0.37 : il refuse `Rc<Maybe>` en normal et `Arc<crate::BigInt>` en threaded,
+avant toute écriture. `b8x/run/bak/rust/tests/fallback-guard.mjs` accepte désormais
+les arguments BigInt Rc/Arc et le `Nothing` Rc nécessaires, uniquement dans le
+module `JS.BigInt`. Le zéro sert d'argument natif bien typé : le garde quitte
+avec **86 avant toute opération**, ce n'est pas un résultat BigInt simulé.
+Un type homonyme dans un autre module reste refusé ; aucun `unsafe` ajouté.
+
+`bigint-guard.test.mjs` couvre ces frontières. `bigint-guard.mjs`, séparé de la
+régression du compilateur, instrumente des copies et appelle individuellement
+les **27 fallbacks**, y compris ceux qui renvoyaient silencieusement une valeur
+par défaut. **108 appels forcés réussis** : 27 × deux modes × macOS/Linux,
+tous avec sortie 86 et marqueur exact. Les neuf tests de représentation par
+plateforme passent aussi sous instrumentation, sans garde atteint. Le delta
+des copies est limité aux corps gardés, aux dépendances de la sonde dans le
+Cargo racine et au nouvel exemple de sonde ; exports originaux et lockfiles
+vérifiés inchangés.
+
+**RemoveComments repris, pas exécuté.** Un nouveau profil diagnostique et son
+vrai lockfile sélectionnent l'override local ; **247 modules TAST frais**,
+**217 crates PureScript natives**, delta **+29/−13** face au défaut. Les trois
+chemins `.purs` / `.rs` / `.rs.cargo.json` résolus pointent vers le nouveau
+package. Cargo macOS puis Linux compile `Purs_JS_BigInt`, puis sort **101** :
+**quatre E0425**, toutes pour `VariantCase` introuvable dans
+`Purs_Data_Variant_Internal/src/lib.rs` (lignes 420 et 428). Cause pas encore
+qualifiée ; ne pas conclure automatiquement à une FFI de type manquante.
+**Aucun des 20 tests RemoveComments exécuté**, aucune correction VariantCase.
+Les **90 fallbacks résiduels**, dont les 27 BigInt, ne sont pas collectivement
+qualifiés par les seules sondes de la fermeture minimale. Ce contrôle complet
+reste obligatoire avant tout lancement de cette tranche.
+
+**Défaut CLI et préservation.** Le changement du garde rend réellement l'ancien
+build périmé : `bin/t` le refuse, sortie 1. **`bin/b` puis `bin/t` passent 0/0**,
+nouveau `build-PJVBxF`, **231 modules frais**, **31 fallbacks individuellement
+éprouvés + cinq gardés hors fermeture**, résumé **47/47**, aucun garde atteint.
+**55 tests codegen et 52 tests driver/CLI verts.** Le profil par défaut ne
+sélectionne pas BigInt ; ses inputs et artefacts prêts sont vérifiés. Le bundle
+reste celui de 0.38 (`e9f3f984…8a529`) ; pas de changement du générateur.
+`t -c`/nettoyage DB non répétés : dernier contrôle 0.34. Les autres états et
+manifests de suites, les liens racine et Nullable restent inchangés ; cela
+ne renouvelle pas la fraîcheur des anciennes suites. b8x reste **master**,
+purust **edge**, Nullable **main** ; aucun commit.
+
+**Incident d'environnement et reprise autorisée.** Une tentative de validation
+rencontre `ENOSPC`, puis OrbStack est constaté arrêté ; le lien causal n'est
+pas établi. Après autorisation explicite de l'utilisateur, OrbStack puis le
+conteneur `api-cli` identifié sont redémarrés. Même ID `5fd67e873187…`, même
+image `sha256:1efccad9260b…`, nouveau démarrage
+`2026-09-13T16:30:15.151772443Z`. **Aucun rebuild d'image.** Les contrôles Linux
+et le défaut 47 sont effectivement terminés après la reprise. Seuls les caches
+Cargo temporaires créés par 0.39 sont supprimés pour rendre de l'espace ; ils
+sont régénérables. Sources, TAST, lockfiles, rapports et build prêt 47 conservés.
+
+**Preuves conservées**, sous `b8x/run/bak/rust/output/` :
+`purust-bigint-ETLPVM/{report,guard-report,linux-report,summary}.json`, commandes,
+exports, `linux-check.mjs` et `verify.mjs` ;
+`remove-comments-bbcQcB/{report,cargo-errors,host-cargo-errors}.json` et ses
+scripts de préparation/contrôle ; `integrated/default/build-PJVBxF/`.
+La vérification finale des empreintes, gardes, erreurs Cargo, artefacts prêts
+et préservations est verte après nettoyage.
+
+#### Contrat 0.40 — Qualifier VariantCase avant correction
+
+**Astra**, pour isoler la cause TAST/typage natif ; diagnostic seulement.
+
+1. Partir des quatre erreurs de `remove-comments-bbcQcB`, résoudre les vraies
+   sources et FFI de `Data.Variant.Internal`, puis reproduire le défaut dans
+   une fermeture TAST minimale, en normal/threaded, sans RemoveComments/Spec/Aff
+   si ces modules ne sont pas nécessaires au défaut.
+2. Examiner `dataDecls`, `classDecls`, `ann.type` et les instanciations `TypeApp`
+   aux sites en erreur. Distinguer un type natif réellement absent d'une
+   traduction incorrecte d'un type polymorphe/étranger ; ne pas ajouter un
+   alias ou `Value` global sur le seul texte du diagnostic Rust.
+3. Fixer les comportements JS de référence pertinents et vérifier une seule
+   hypothèse à la fois par de petites expériences dans des copies isolées.
+   Contrôler la représentation et les appels concernés dans les deux modes ;
+   ne pas annoncer un portage général de `Data.Variant` sur un Cargo vert.
+4. Consigner la cause démontrée, le correctif permanent minimal proposé, sa
+   régression et ses contrôles négatifs. **Ne pas encore modifier le compilateur
+   ou les FFI permanentes**, ni corriger les blocages suivants en chaîne.
+5. Conserver les sources/FFI et le défaut 47 frais. Aucun lancement de
+   RemoveComments tant que la compilation et la qualification de l'ensemble
+   de ses fallbacks résiduels ne sont pas achevées ; aucun élargissement du
+   profil par défaut à cette étape.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -4031,9 +4638,28 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   ajouter les régressions permanentes et reconstruire/revalider le défaut 47
   (53 codegen, 6 tests natifs, quatre suites TAST ciblées ; `t -c` 47/47).
   Prochains types natifs absents : Nullable et BigInt, sans portage à cette étape.
-- [ ] Astra : isoler `Data.Nullable`, qualifier sa représentation/ABI et les
-  trois primitives FFI, puis fixer le contrat de correction et de régression
-  selon 0.35 ; pas de portage permanent ni d'élargissement du défaut à ce stade.
+- [x] Astra : isoler `Data.Nullable`, qualifier sa représentation/ABI et les
+  trois primitives FFI selon 0.35 (54 modules, 35 erreurs par mode, huit
+  contrôles JS, 14 tests natifs expérimentaux et un partage threaded verts).
+  Pas de portage permanent ni d'élargissement du défaut à cette étape.
+- [x] Astra : porter uniquement `Data/Nullable.rs` et sa régression au contrat
+  0.36 (huit contrôles JS, 15 tests natifs sur macOS puis Linux, quatre contrôles
+  négatifs ; 53 codegen et défaut 47/47). Prochain blocage : 82 E0425 BigInt absent.
+- [x] Astra : isoler `JS.BigInt` et qualifier son type natif ainsi que la
+  surface FFI réellement nécessaire selon 0.37 (58 modules, 82 erreurs par mode,
+  dix contrôles JS, cinq contrôles de représentation et deux gardes forcés par
+  mode ; aucune des 27 primitives portée). Prérequis Cargo et sondes identifiés.
+- [x] Astra : ajouter l'export minimal des dépendances Cargo propres aux FFI
+  selon 0.38 (55 codegen, 50 driver/CLI, fixture déplacée normal/threaded sur
+  macOS et Linux, ancienne portabilité verte, `bin/b` puis `bin/t` 47/47).
+  Pas de portage BigInt ni de reprise des 20 tests RemoveComments à cette étape.
+- [x] Astra : intégrer la représentation BigInt minimale et ses sondes typées
+  selon 0.39 (neuf tests natifs par plateforme, 108 gardes forcés, 55 codegen,
+  52 driver/CLI, défaut reconstruit 47/47). Aucune des 27 opérations portée ;
+  Cargo RemoveComments bloque maintenant sur quatre E0425 `VariantCase`.
+- [ ] Astra : isoler et qualifier `Data.Variant.Internal` / `VariantCase`
+  selon 0.40 ; démontrer la cause et fixer le correctif minimal avec ses
+  régressions, sans correction permanente ni élargissement du défaut.
 - [ ] Astra : qualifier l'initialisation anticipée des modules et les bindings
   exclus du premier correctif ; ne pas annoncer une parité JS générale avec
   le seul partage paresseux (écart établi en 0.30).

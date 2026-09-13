@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "dependencies": {
+    "num-bigint-dig": {
+      "version": "=0.8.6",
+      "default-features": false,
+      "features": ["i128"]
+    }
+  }
+}

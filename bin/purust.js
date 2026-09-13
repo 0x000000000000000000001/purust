@@ -40799,6 +40799,58 @@ var codegenModuleWithOptions = function(options) {
   };
 };
 
+// output/Purust.FfiCargo/foreign.js
+import { readFileSync as readFileSync2 } from "node:fs";
+var loadFfiCargo = (ffiPath) => () => {
+  const path3 = `${ffiPath}.cargo.json`;
+  let source2;
+  try {
+    source2 = readFileSync2(path3, "utf8");
+  } catch (error3) {
+    if (error3.code === "ENOENT") return "";
+    throw error3;
+  }
+  const fail3 = (message2) => {
+    throw new Error(`Invalid FFI Cargo declaration ${path3}: ${message2}`);
+  };
+  const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  const keys4 = (value, allowed) => {
+    if (!object(value) || Object.keys(value).some((key) => !allowed.includes(key))) fail3(`expected only ${allowed.join(", ")}`);
+  };
+  let declaration;
+  try {
+    declaration = JSON.parse(source2);
+  } catch {
+    fail3("invalid JSON");
+  }
+  keys4(declaration, ["schema", "dependencies"]);
+  if (declaration.schema !== 1 || !object(declaration.dependencies)) fail3("expected schema 1 and a dependencies object");
+  const reserved = /* @__PURE__ */ new Set(["purust-core", "perceus-ptr", "fancy-regex", "mimalloc", "tokio"]);
+  const names = /* @__PURE__ */ new Set();
+  return Object.entries(declaration.dependencies).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([name2, dependency]) => {
+    if (!/^[a-z][a-z0-9_-]*$/.test(name2)) fail3(`unsupported crate name: ${name2}`);
+    const normalized = name2.replaceAll("_", "-");
+    if (reserved.has(normalized) || normalized.startsWith("purs-")) fail3(`reserved dependency: ${name2}`);
+    if (names.has(normalized)) fail3(`colliding dependency: ${name2}`);
+    names.add(normalized);
+    keys4(dependency, ["version", "features", "default-features"]);
+    if (typeof dependency.version !== "string" || !/^=(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(dependency.version))
+      fail3(`${name2}: version must be an exact stable =major.minor.patch`);
+    const fields = [`version = ${JSON.stringify(dependency.version)}`];
+    if (Object.hasOwn(dependency, "default-features")) {
+      if (typeof dependency["default-features"] !== "boolean") fail3(`${name2}: default-features must be boolean`);
+      fields.push(`default-features = ${dependency["default-features"]}`);
+    }
+    if (Object.hasOwn(dependency, "features")) {
+      const features = dependency.features;
+      if (!Array.isArray(features) || features.some((f) => typeof f !== "string" || !/^[a-zA-Z0-9_][a-zA-Z0-9_+.-]*$/.test(f)) || new Set(features).size !== features.length) fail3(`${name2}: expected distinct feature names`);
+      fields.push(`features = [${features.map((f) => JSON.stringify(f)).join(", ")}]`);
+    }
+    return `${name2} = { ${fields.join(", ")} }
+`;
+  }).join("");
+};
+
 // output/Purust.Runtime/foreign.js
 import { Buffer as Buffer2 } from "node:buffer";
 
@@ -40931,10 +40983,10 @@ var toUnfoldable8 = /* @__PURE__ */ toUnfoldable2(unfoldableArray);
 var valueEnumsForModules2 = /* @__PURE__ */ valueEnumsForModules(foldableList);
 var buildModules2 = /* @__PURE__ */ buildModules(monadAff);
 var pure21 = /* @__PURE__ */ pure(applicativeAff);
+var pure110 = /* @__PURE__ */ pure(applicativeEffect);
 var member11 = /* @__PURE__ */ member2(ordString);
 var show18 = /* @__PURE__ */ show(showInt);
 var foldMap28 = /* @__PURE__ */ foldMap2(monoidString);
-var pure110 = /* @__PURE__ */ pure(applicativeEffect);
 var toUnfoldable14 = /* @__PURE__ */ toUnfoldable4(unfoldableArray);
 var nub5 = /* @__PURE__ */ nub(ordString);
 var eq211 = /* @__PURE__ */ eq(/* @__PURE__ */ eqMaybe(eqInt));
@@ -40954,7 +41006,7 @@ var configureThreading = function(v) {
     return replaceAll("[dependencies]\n")('[dependencies]\ntokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync", "macros"] }\n');
   }
   ;
-  throw new Error("Failed pattern match at Main (line 316, column 1 - line 316, column 50): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 322, column 1 - line 322, column 50): " + [v.constructor.name]);
 };
 var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ liftEffect3(argv))(function(args) {
   var threaded = elem6("--threaded")(args);
@@ -40972,14 +41024,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
         return "Main";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 49, column 34 - line 51, column 53): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 52, column 34 - line 54, column 53): " + [v1.constructor.name]);
     }
     ;
     if (v instanceof Nothing) {
       return "Main";
     }
     ;
-    throw new Error("Failed pattern match at Main (line 48, column 20 - line 52, column 39): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 51, column 20 - line 55, column 39): " + [v.constructor.name]);
   })();
   return discard1(liftEffect3(log2("Generating Rust code for " + mainModule)))(function() {
     var sourceDir = (function() {
@@ -40996,14 +41048,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
           return "output";
         }
         ;
-        throw new Error("Failed pattern match at Main (line 56, column 34 - line 58, column 55): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 59, column 34 - line 61, column 55): " + [v1.constructor.name]);
       }
       ;
       if (v instanceof Nothing) {
         return "output";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 55, column 19 - line 59, column 41): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 58, column 19 - line 62, column 41): " + [v.constructor.name]);
     })();
     return bind26(coreFnModulesFromOutput(sourceDir))(function(finalModules) {
       var buildGlobalTypes = function(modules) {
@@ -41091,7 +41143,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                 return v1.value0;
               }
               ;
-              throw new Error("Failed pattern match at Main (line 72, column 24 - line 82, column 38): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at Main (line 75, column 24 - line 85, column 38): " + [v1.constructor.name]);
             };
             var processBind = function(a) {
               return function(v1) {
@@ -41106,7 +41158,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                       return getTy2(extractAnn(v1.value0.value2));
                     }
                     ;
-                    throw new Error("Failed pattern match at Main (line 86, column 26 - line 88, column 61): " + [v2.constructor.name]);
+                    throw new Error("Failed pattern match at Main (line 89, column 26 - line 91, column 61): " + [v2.constructor.name]);
                   })();
                   if (tyMb instanceof Just) {
                     return insert111(modPrefix + sanitizeIdent(v1.value0.value1))(tyMb.value0)(a);
@@ -41116,7 +41168,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     return a;
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 89, column 18 - line 91, column 29): " + [tyMb.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 92, column 18 - line 94, column 29): " + [tyMb.constructor.name]);
                 }
                 ;
                 if (v1 instanceof Rec) {
@@ -41132,7 +41184,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                           return getTy2(extractAnn(v2.value2));
                         }
                         ;
-                        throw new Error("Failed pattern match at Main (line 94, column 28 - line 96, column 63): " + [v3.constructor.name]);
+                        throw new Error("Failed pattern match at Main (line 97, column 28 - line 99, column 63): " + [v3.constructor.name]);
                       })();
                       if (tyMb2 instanceof Just) {
                         return insert111(modPrefix + sanitizeIdent(v2.value1))(tyMb2.value0)(a$prime);
@@ -41142,12 +41194,12 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         return a$prime;
                       }
                       ;
-                      throw new Error("Failed pattern match at Main (line 97, column 20 - line 99, column 32): " + [tyMb2.constructor.name]);
+                      throw new Error("Failed pattern match at Main (line 100, column 20 - line 102, column 32): " + [tyMb2.constructor.name]);
                     };
                   })(a)(v1.value0);
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 84, column 27 - line 100, column 24): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 87, column 27 - line 103, column 24): " + [v1.constructor.name]);
               };
             };
             var acc11 = foldl16(processBind)(acc)(v.decls);
@@ -41161,7 +41213,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                   return a;
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 105, column 15 - line 107, column 29): " + [v1.value1.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 108, column 15 - line 110, column 29): " + [v1.value1.constructor.name]);
               };
             })(acc11)(toUnfoldable8(v.foreign));
             var acc3 = foldl16(function(a) {
@@ -41229,6 +41281,17 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                       var modPrefix = modName + "_";
                       return function __do() {
                         var ffiPathMb = findFfiFile(".rs")([])(new Just("../"))(modNameStr)(new Just(v1.path))();
+                        var cargo = (function() {
+                          if (ffiPathMb instanceof Just) {
+                            return loadFfiCargo(ffiPathMb.value0)();
+                          }
+                          ;
+                          if (ffiPathMb instanceof Nothing) {
+                            return "";
+                          }
+                          ;
+                          throw new Error("Failed pattern match at Main (line 176, column 20 - line 178, column 31): " + [ffiPathMb.constructor.name]);
+                        })();
                         var getArity2 = function(v3) {
                           if (v3 instanceof ForAll) {
                             return getArity2(v3.value1);
@@ -41246,8 +41309,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         };
                         var genFallback = function(name2) {
                           return function(ty) {
-                            var $165 = !member11(modPrefix + sanitizeIdent(unwrap10(name2)))(empty3);
-                            if ($165) {
+                            var $167 = !member11(modPrefix + sanitizeIdent(unwrap10(name2)))(empty3);
+                            if ($167) {
                               var retTyStr = codegenExprTypeWithValueEnums(globalValueEnums)(modName)(true)(extractFinalRetType(ty));
                               var defaultRet = (function() {
                                 if (retTyStr === "i64") {
@@ -41289,8 +41352,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                             var content = readTextFile(UTF8.value)(ffiPathMb.value0)();
                             var missingStubs = foldMap28(function(tup) {
                               if (tup.value1 instanceof Just) {
-                                var $169 = contains("fn " + (modPrefix + sanitizeIdent(unwrap10(tup.value0))))(content);
-                                if ($169) {
+                                var $171 = contains("fn " + (modPrefix + sanitizeIdent(unwrap10(tup.value0))))(content);
+                                if ($171) {
                                   return "";
                                 }
                                 ;
@@ -41301,7 +41364,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return "";
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 197, column 57 - line 203, column 42): " + [tup.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 203, column 57 - line 209, column 42): " + [tup.constructor.name]);
                             })(toUnfoldable8(v1.foreign));
                             return content + ("\n\n" + missingStubs);
                           }
@@ -41316,11 +41379,11 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return "";
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 206, column 54 - line 208, column 38): " + [tup.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 212, column 54 - line 214, column 38): " + [tup.constructor.name]);
                             })(toUnfoldable8(v1.foreign));
                           }
                           ;
-                          throw new Error("Failed pattern match at Main (line 194, column 25 - line 209, column 46): " + [ffiPathMb.constructor.name]);
+                          throw new Error("Failed pattern match at Main (line 200, column 25 - line 215, column 46): " + [ffiPathMb.constructor.name]);
                         })();
                         var rawModules = toUnfoldable14(collectModulesModule(v1));
                         var extractModules = function(s) {
@@ -41331,8 +41394,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                               var isValid2 = function(c) {
                                 return c >= "A" && c <= "Z" || (c >= "a" && c <= "z" || (c >= "0" && c <= "9" || c === "_"));
                               };
-                              var $183 = length4(mod5) > 0 && (length4(mod5) < 100 && all2(isValid2)(toCharArray(mod5)));
-                              if ($183) {
+                              var $185 = length4(mod5) > 0 && (length4(mod5) < 100 && all2(isValid2)(toCharArray(mod5)));
+                              if ($185) {
                                 return new Just(mod5);
                               }
                               ;
@@ -41343,7 +41406,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                               return Nothing.value;
                             }
                             ;
-                            throw new Error("Failed pattern match at Main (line 213, column 17 - line 218, column 37): " + [v3.constructor.name]);
+                            throw new Error("Failed pattern match at Main (line 219, column 17 - line 224, column 37): " + [v3.constructor.name]);
                           })(drop(1)(split("Purs_")(s)));
                         };
                         var extractedModules = extractModules(rsFile + ("\n" + ffiContent));
@@ -41351,8 +41414,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         var coreImports = nub5(mapMaybe(function(n) {
                           var nStr = replaceAll(".")("_")(n);
                           var isSelf = nStr === modName;
-                          var $185 = n === "Prim" || (eq211(indexOf2("Prim.")(n))(new Just(0)) || isSelf);
-                          if ($185) {
+                          var $187 = n === "Prim" || (eq211(indexOf2("Prim.")(n))(new Just(0)) || isSelf);
+                          if ($187) {
                             return Nothing.value;
                           }
                           ;
@@ -41365,7 +41428,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         return modify_(function(acc) {
                           return insert111(modName)({
                             code: rustCode,
-                            imports: coreImports
+                            imports: coreImports,
+                            cargo
                           })(acc);
                         })(modulesRef)();
                       };
@@ -41390,14 +41454,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     return "output/purust_output";
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 236, column 34 - line 238, column 69): " + [v1.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 242, column 34 - line 244, column 69): " + [v1.constructor.name]);
                 }
                 ;
                 if (v instanceof Nothing) {
                   return "output/purust_output";
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 235, column 18 - line 239, column 55): " + [v.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 241, column 18 - line 245, column 55): " + [v.constructor.name]);
               })();
               return function __do() {
                 var srcExists = exists(outDir + "/src")();
@@ -41433,11 +41497,11 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return acc;
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 260, column 19 - line 262, column 35): " + [v1.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 266, column 19 - line 268, column 35): " + [v1.constructor.name]);
                             };
                           })(v.value1)(toUnfoldable14(v.value1));
-                          var $196 = size2(newImps) > size2(v.value1);
-                          if ($196) {
+                          var $198 = size2(newImps) > size2(v.value1);
+                          if ($198) {
                             return function __do3() {
                               write(true)(changed)();
                               return modify_(insert111(v.value0)(newImps))(tcRef)();
@@ -41450,13 +41514,13 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     })(pure110(unit))(arr)();
                     var isChanged = read(changed)();
                     if (isChanged) {
-                      return $lazy_loop(270)();
+                      return $lazy_loop(276)();
                     }
                     ;
                     return unit;
                   };
                 });
-                var loop = $lazy_loop(254);
+                var loop = $lazy_loop(260);
                 loop();
                 var finalTcMap = read(tcRef)();
                 var allShapes = foldl17(function(acc) {
@@ -41518,7 +41582,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                           return toUnfoldable14(s);
                         })(lookup16(v.value0)(finalTcMap)))))));
                         var modCargoToml = '[package]\nname = "Purs_' + (v.value0 + ('"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' + modDeps));
-                        writeTextFile(UTF8.value)(modDir + "/Cargo.toml")(configureThreading(threaded)(modCargoToml))();
+                        writeTextFile(UTF8.value)(modDir + "/Cargo.toml")(configureThreading(threaded)(modCargoToml + (function() {
+                          var $209 = v.value1.cargo === "";
+                          if ($209) {
+                            return "";
+                          }
+                          ;
+                          return "\n" + v.value1.cargo;
+                        })()))();
                         var transImps = fromMaybe([])(map121(function(s) {
                           return toUnfoldable14(s);
                         })(lookup16(v.value0)(finalTcMap)));
