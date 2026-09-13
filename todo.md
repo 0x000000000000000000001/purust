@@ -134,9 +134,9 @@ explicites.
   `--main` choisit le point d'entrée ; le code actuel charge et transmet au
   générateur tous les modules trouvés dans `--source`. Il ne constitue donc
   pas un filtre suffisant pour une première compilation isolée de b8x.
-- Certains chemins Cargo de `perceus_ptr` sont absolus. Ils peuvent permettre
-  un essai sur cette machine, mais devront être configurables ou dérivés de
-  l'installation du compilateur pour le runner final et Docker.
+- Les anciens chemins Cargo absolus de `perceus_ptr` ont été remplacés en
+  0.19 par un runtime embarqué et des chemins relatifs ; l'export est aussi
+  compilé/exécuté dans `api-cli` en 0.20, sans montage du compilateur hôte.
 
 ### Acquis à réutiliser
 
@@ -2068,7 +2068,7 @@ pas pris en charge par V1 et doit être refusé plutôt que prétendre nettoyer.
    l'export déplacé, l'absence de dépendance absolue hôte et la conservation des
    modes normal/threaded ; lancer les régressions compilateur pertinentes.
    Ne pas toucher encore à `target`, `b`, `t` ou au déploiement Docker.
-2. **0.20 — Astra : driver Rust isolé.** Réutiliser préparation/FFI de M1,
+2. **0.20 — Astra : driver Rust isolé, réalisé ci-dessous.** Réutiliser préparation/FFI de M1,
    produire un build HTML portable, le compiler dans `api-cli`, éprouver le
    garde et le lancer par son manifeste. Valider les entrées positive/négative
    et le rejet des artefacts périmés, sans modifier les scripts partagés.
@@ -2143,11 +2143,88 @@ séparément après ajout de ses contrôles natifs. Syntaxe Node, `rustfmt --che
 des nouvelles fixtures et `git diff --check` passent. Les avertissements
 préexistants de `Main.purs` et des tests locaux du runtime ne sont pas nettoyés.
 
-**Prochain baby step — 0.20, Astra :** raccorder cet export portable à un
+**Baby step suivant, réalisé en 0.20 — Astra :** raccorder cet export portable à un
 driver isolé b8x : génération sur l'hôte, Cargo/exécution dans `api-cli`,
 garde anti-fallback et manifeste de fraîcheur, contrôles HTML positif/négatif.
 La compilation Linux/Docker n'est pas encore validée par 0.19 ; aucun
 `target rust`, `b -c` ou `t -c` n'a été lancé.
+
+### Micro-étape 0.20 — Driver isolé hôte → Cargo Linux → tests
+
+Réalisée le 13 septembre 2026. Le nouveau
+[`driver.mjs`](../../b8x/run/bak/rust/driver.mjs) réutilise le périmètre et les
+contrôles FFI de M1, le garde de 0.17 et l'export portable de 0.19. Ses helpers
+séparent préparation du profil, manifestes, sous-processus, transport Docker
+et worker Linux. Aucun raccordement aux scripts partagés `target`, `b`, `t` ;
+b8x reste sur `master`, sans bascule de cible ni nettoyage de bases.
+
+**Commandes vérifiées depuis b8x :**
+
+```sh
+node run/bak/rust/driver.mjs build
+node run/bak/rust/driver.mjs run
+node run/bak/rust/driver.mjs build --suite html-negative
+node run/bak/rust/driver.mjs run --suite html-negative
+```
+
+Le négatif sort volontairement avec **101** : le driver ne transforme pas
+cet échec attendu en succès. Le défaut reste `html`, même après un build
+négatif ; les autres suites et options sont refusées avec sortie 2.
+
+**Pipeline et garanties acquises :**
+
+- Sur l'hôte : Spago 1.0.3 hors ligne, fork TAST explicitement sélectionné et
+  identifié, **211 modules frais par suite**, génération Rust `--threaded`.
+  Les FFI sont photographiées avant génération et leur résolution est recontrôlée.
+- Dans le conteneur `api-cli` correspondant au montage de ce checkout :
+  Linux ARM64, Rust/Cargo 1.96.0, cible explicite `aarch64-unknown-linux-gnu`.
+  Cargo ne dépend d'aucun chemin hôte et conserve son `Cargo.lock`. Aucun cache
+  natif macOS, aucune création/reconstruction d'image, aucun redémarrage.
+  Image vérifiée : `sha256:1efccad9260b57ee2a2614bbeeda11806b9ea968e4566a4c26da10dd29989676`.
+  La branche x64 du préflight n'a pas été exécutée ici.
+- Les **22 gardes**, dont 13 symboles référencés avant instrumentation, sont
+  éprouvés chacun par une sortie 86 et leur marqueur exact avant publication.
+  Ils restent actifs dans les binaires ; aucun n'est atteint par les tests HTML.
+- Publication atomique du manifeste après les vérifications, avec **274 inputs**
+  identifiés et **647 artefacts** par suite, plateforme/image, options et preuves
+  des gardes. `run` vérifie la fraîcheur côté hôte puis les artefacts côté Linux,
+  et lance directement le binaire, sans build ni résolution Cargo implicite.
+- Tout nouveau build invalide d'abord sa suite, y compris si un prérequis
+  échoue. Un verrou empêche les builds concurrents et la réutilisation d'un
+  ancien état prêt après interruption brutale ; un verrou abandonné demande
+  une inspection explicite, jamais une suppression automatique.
+- Les interruptions sont transmises par une demande au worker propriétaire,
+  qui arrête son groupe de processus. Les sous-processus sont bornés et leurs
+  commandes, sorties, erreurs et signaux sont conservés dans le diagnostic.
+
+**Validation : 18 régressions rapides et 18 contrôles Docker verts.**
+[`driver.test.mjs`](../../b8x/run/bak/rust/tests/driver.test.mjs) et les sept
+tests existants du garde couvrent arguments, manifestes, chemins/symlinks,
+inputs/FFI absents ou modifiés, plateforme, reporting et signaux.
+[`driver-integration.mjs`](../../b8x/run/bak/rust/tests/driver-integration.mjs)
+prouve les succès/échecs attendus, le défaut HTML, le refus d'un autre fork,
+d'un binaire altéré/manquant et d'un manifeste modifié. Il provoque un vrai
+échec de prérequis, vérifie le refus de l'ancien négatif et l'indépendance du
+positif, puis interrompt une opération `cargo metadata` dans Linux : le worker
+confirme **SIGINT**, le driver sort **130**, et l'état reste inexécutable.
+Le négatif est ensuite reconstruit ; les deux suites sont revalidées.
+
+Preuve complète :
+[`rapport des 18 contrôles`](../../b8x/run/bak/rust/output/integrated/integration-check-6RD75h/report.json).
+Derniers artefacts prêts :
+[`HTML positif — 2/2, sortie 0`](../../b8x/run/bak/rust/output/integrated/html/build-BlrZMI/manifest.json),
+[`HTML négatif — 2/3, sortie 101 et erreur Aff visible`](../../b8x/run/bak/rust/output/integrated/html-negative/build-shhkmH/manifest.json).
+Le bundle purust reste celui de 0.19, SHA-256 `d50718c7…83c7b1` ; aucun
+changement du compilateur/runtime. La référence JS et les 74 régressions
+compilateur de 0.19 ne sont pas relancées dans cette étape. Les empreintes des
+scripts partagés, du Dockerfile et des liens racine sont vérifiées inchangées.
+Usage et prérequis décrits dans le [`README Rust`](../../b8x/run/bak/rust/README.md).
+
+**Prochain baby step — 0.21, Astra :** raccorder ce driver éprouvé à la sélection
+et aux commandes `target` / `bin/build` / `bin/test` / `bin/run`, selon le contrat
+0.18, avec tests de dispatch/options/liens/codes/signaux sur fixtures.
+Ne pas élargir le graphe HTML. La vraie séquence **`b -c; t -c`** reste en 0.22,
+après ce raccordement et vérification explicite du périmètre des bases à nettoyer.
 
 ## Phase 1 — Profil et sélection explicite du runtime Rust
 
@@ -2158,8 +2235,8 @@ La compilation Linux/Docker n'est pas encore validée par 0.19 ; aucun
   et intégrations hors périmètre.
 - [x] Configurer les overrides `purust-*` dans le workspace isolé ; les
   arguments du futur backend sont enregistrés dans le manifeste.
-- [ ] Activer la génération Rust une fois les prérequis et les fallbacks
-  qualifiés. Le succès de la préparation TAST ne valide pas cette génération.
+- [x] Activer la génération Rust dans le driver isolé avec prérequis et
+  fallbacks qualifiés (0.20 : builds et exécutions Linux positif/négatif).
 - [ ] Fixer les versions et le lockfile du profil. La baseline b8x utilise
   `spec` 8.1.1 et `spec-node` 0.0.3 ; `purust-spec` annonce 8.1.2 et un autre
   package set. Vérifier la compatibilité des API et des tests sans mettre à
@@ -2169,8 +2246,9 @@ La compilation Linux/Docker n'est pas encore validée par 0.19 ; aucun
   `purust-*` validés, en vérifiant les chemins depuis le répertoire de travail.
 - [x] Rendre l'export Cargo portable avec runtime embarqué et dépendances de
   chemin internes/relatives (0.19, génération et déplacement en deux modes).
-- [ ] Dans le runner final, distinguer la racine b8x de l'installation de
-  purust et utiliser cet export pour Cargo Linux (0.20).
+- [x] Dans le driver isolé, distinguer la racine b8x de l'installation de
+  purust et utiliser cet export pour Cargo Linux (0.20). Le raccordement aux
+  scripts partagés reste en 0.21.
 - [x] Fixer le contrat de sélection et d'exécution Rust V1 (0.18).
 - [ ] Implémenter `target rust` et l'override `--runtime rust` selon ce contrat.
 - [ ] Propager le runtime de `bin/test` vers `bin/build` et `bin/run`.
@@ -2353,8 +2431,8 @@ assertions originales et leurs nombres de tests vérifiés.
 - [ ] Choisir les clients Rust adaptés et encapsuler leurs différences derrière
   les mêmes contrats PureScript.
 - [ ] Porter l'initialisation, les connexions, les transactions et le nettoyage.
-- [ ] Définir le lieu d'exécution du runner final, local ou dans `api-cli`,
-  et la disponibilité du binaire Rust et de ses dépendances. Reprendre les
+- [ ] Réutiliser l'exécution dans `api-cli` fixée en 0.18 et éprouvée sur HTML
+  en 0.20 ; vérifier les dépendances supplémentaires de ces suites. Reprendre les
   paramètres depuis la configuration b8x existante et les fixtures de bases
   de test, sans inscrire de secrets dans les sources ou le todo.
 - [ ] Vérifier les erreurs réseau, timeouts, retries et annulations.
@@ -2502,8 +2580,10 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   (0.18 : conception seulement, aucune intégration exécutée).
 - [x] Astra : réaliser 0.19, l'export Cargo portable avec `perceus_ptr` embarqué
   (deux modes déplacés et exécutés, 51 codegen + 23 TAST verts).
-- [ ] Astra : réaliser le driver isolé 0.20, puis le raccordement CLI 0.21,
-  au contrat 0.18, avant d'élargir la suite.
+- [x] Astra : réaliser le driver isolé 0.20 (18 régressions rapides et
+  18 contrôles Docker verts, HTML positif/négatif, fraîcheur et interruption).
+- [ ] Astra : réaliser le raccordement CLI 0.21 au contrat 0.18, en réutilisant
+  le driver éprouvé, avant d'élargir la suite.
 - [ ] Luna : une fois ce raccordement implémenté et l'image API Rust disponible,
   valider `target rust` puis **`b -c; t -c`**, selon la section de validation
   intégrée après la phase 2 ; ne pas lancer cette étape avant ses prérequis.
