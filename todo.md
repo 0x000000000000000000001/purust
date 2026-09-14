@@ -26,10 +26,13 @@ callback en erreur non acquitté/redélivrable, onze gardes forcés/non atteints
 JSON parse/pretty/undefined passe 3 585 cas en Rc/Arc sous macOS/Linux.
 La fermeture des intégrations passe `cargo check` (806 crates natives),
 la compilation native et les 417 sondes de garde initiales. Les exécutions
-réelles passent maintenant **16/27 intégrations originales** (commandes et
-EventStore). Les 11 tests Finder/projection atteignent le cache disque : son
-portage est en cours. Les FFI Router, UUID, clé de verrou et le décodage JSON
-ont levé les premiers arrêts. Les **27 intégrations ne sont pas encore
+réelles atteignent maintenant **17/27 intégrations originales** (commandes,
+EventStore et première projection). Le cache disque est porté ; le dernier
+arrêt est `Data.DateTime.Instant.toDateTimeImpl`, dont la conversion et la
+normalisation des dates sont en qualification. Une assertion de concurrence
+a aussi échoué de façon intermittente (`execution-AaIiTB`) : son diagnostic
+Rust/JS reste ouvert, même si le passage suivant réussit. Les FFI Router,
+UUID, clé de verrou et JSON ont levé les premiers arrêts. Les **27 intégrations ne sont pas encore
 validées**, ni le nouveau défaut à 286.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
@@ -5668,6 +5671,28 @@ Avancée du lot en cours (14 septembre, sans clôture anticipée) :
   portées ; aucune sélection artificielle des assertions b8x.
 - [ ] Exécuter les 27 intégrations puis `b -c; t -c` complet ; corriger tout
   échec réel sans réduire les assertions. Aucune pause demandant un nouveau go.
+
+Complément du lot cache/projections :
+
+- `_xxhash64` : 3 044 vecteurs JS par mode Rc/Arc Linux et 10 appels PureScript
+  sur TAST frais via Promise/Aff ; preuves `output/purust-crypto-hash-xK5D1l`
+  et `output/purust-crypto-hash-tast-U9ljDw`, sans portage MD5/SHA-256/HMAC.
+- Racine de fichiers et Node.FS.Async : mkdir, lecture/écriture UTF-8,
+  renommage et suppression. Le callback porte le `Nullable Error` natif,
+  après reproduction de l'erreur de représentation dans `execution-YLraiR`.
+  Le pipeline de cache original passe absence, aller-retour, corruption et
+  expiration (`output/cache-fs-daK5iw`, snapshot antérieur à `_foldM`).
+- `Data.Int.fromStringAsImpl` : 2 835 cas contre le JS original, bases 2–36,
+  limites Int32, chaînes invalides et identité de Nothing en Rc/Arc Linux ;
+  preuve `output/int-parse-native-jWLw5q/report.json`.
+- `Foreign.Object._foldM` : 267 vecteurs JS par mode, 14 tests Rc et 11 Arc
+  avec 512 rejeux concurrents ; lecture des valeurs au moment du callback,
+  mutations, identité et exceptions (`output/purust-object-foldm-wmrLhB`).
+- `execution-nXCcxb` : première projection réussie, 17 tests franchis avant
+  la garde date/heure ; trace de concurrence à 4 succès, 6 tentatives et
+  1 échec attendu. Les bases temporaires ont été supprimées nominativement.
+- Régressions : 76 tests driver/CLI verts et 74 tests codegen verts avant
+  l'ajout `_foldM`. Ces preuves ne remplacent pas le `t -c` complet.
 
 #### Résultat 0.50 — Contrat PostgreSQL natif (14 septembre 2026)
 
