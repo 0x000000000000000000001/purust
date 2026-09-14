@@ -470,6 +470,7 @@ codegenPrelude fields =
   "#[derive(Clone)]\n" <>
   "pub enum Value {\n" <>
   "    Unit,\n" <>
+  "    Null,\n" <>
   "    Int(i64),\n" <>
   "    Number(f64),\n" <>
   "    Bool(bool),\n" <>

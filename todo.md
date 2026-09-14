@@ -3,8 +3,8 @@
 Mis à jour le 14 septembre 2026.
 
 **État courant (bloc 0.49 terminé, bloc 0.50 en cours) :**
-**`b -c; t -c` revalidé 259/259** après restauration des conteneurs,
-build prêt `build-0znoax`, nettoyage DB vide, 78 gardes forcés et aucun atteint.
+**`b -c; t -c` revalidé 259/259** après le bloc Promise/Rejection/Aff,
+build prêt `build-PI0mOF`, nettoyage DB vide, 78 gardes forcés et aucun atteint.
 Les 21 tests Variant Encoding rejoignent HTML + Stash + HTML Clean + String,
 avec leurs assertions originales. Les 259 tests sans services recensés sont
 intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
@@ -13,9 +13,12 @@ intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
 pour atteindre 286/286. Environ **91 % du comptage des tests**, pas du travail.
 M2/M4 restent ouverts jusqu'à la qualification de la suite complète.
 Le profil Spago étendu et le compilateur courant sont couverts par cette
-régression (`regression-RuE77P/report.json`) : **67 tests codegen et 72 tests
-driver/CLI passent**. La compilation des intégrations reste bloquée sur des
-types FFI absents dans 18 crates ; leurs 27 tests n'ont pas encore été exécutés.
+régression (`regression-TQtk32/report.json`) : **68 tests codegen et 72 tests
+driver/CLI passent**. Les FFI Promise et Rejection et leur pont Aff passent
+sur TAST frais sous macOS et Linux ; ordre des callbacks comparé aux FFI JS.
+La compilation des intégrations atteint maintenant les clients PostgreSQL et
+RabbitMQ : types FFI absents dans 19 crates, aucun autre diagnostic.
+Les **27 intégrations n'ont pas encore été exécutées**.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
 
@@ -5517,16 +5520,61 @@ Premières preuves du 14 septembre, dossier diagnostique
   les a ensuite restaurés. Aucun service recréé/redémarré par l'agent.
 - [x] `diagnose.mjs --reuse-generated` repris après restauration :
   empreintes strictement vérifiées, sans refaire les 92 s de génération.
-  Le bundle courant et `generated-inputs.json` concordent :
+  À cette étape, le bundle et `generated-inputs.json` concordaient :
   `f536ae75f3bcd077a8536a9254f7410a82643898c8b3a38b928bf3488612ab39`.
-- [x] Régression finale `regression-RuE77P/report.json`, `complete: true` :
-  `b -c; t -c` → **259/259**, build courant `build-0znoax`, 300 modules TAST
+- [x] Régression avant le bloc Promise `regression-RuE77P/report.json`, `complete: true` :
+  `b -c; t -c` → **259/259**, build `build-0znoax`, 300 modules TAST
   frais, 78 gardes forcés/non atteints ; négatif **2/3 → 101**, puis retour
   au même défaut 259/259. Bases vides avant/après, inventaire original
   286/259/27 et empreintes des deux manifestes vérifiés après exécution.
+- [x] Bloc **Promise/Rejection/Aff natif** : `Rejection` conserve la valeur
+  rejetée, sans emballage opaque supplémentaire ; détection d'Error par son
+  identité native et lecture des chaînes/records par Foreign conservées.
+  Mapping TAST limité au FQN exact, régression Rc/Arc et noms voisins.
+- [x] Les neuf FFI `Promise.Internal` sont implémentées : constructeur,
+  resolve/reject, then/thenOrCatch/catch/finally, all/race. File de microtâches
+  embarquée dans `purust_core`, installée au point d'entrée et raccordée aux
+  tours synchrones Aff. Résolution unique, adoption native, ordre FIFO,
+  rejets non avalés, auto-résolution TypeError et chaîne de 10 000 callbacks.
+  **12 contrats Promise en Rc, 13 en Arc** (dont résolution depuis un worker)
+  passent. La comparaison avec les FFI JS originales a détecté puis validé
+  la correction de l'ordre de `finally` ; aucune assertion JS/PureScript
+  existante n'est modifiée.
+- [x] Pont réel `Promise.Aff` : **142 modules TAST frais**, tests originaux
+  inchangés et contrôles supplémentaires délai, ordre des effets, annulation
+  de l'attente sans annuler la Promise, finalisation exactement une fois.
+  Exécution native **macOS et Linux réussie**, sources Rust et lockfile
+  identiques par SHA-256. Preuves dans `integrations-block-sQXXt8/` :
+  `promise-aff-macos-report.json`, `promise-linux-report.json`.
+- [x] Non-régression du runtime : **45 contrôles Aff**, concurrence Ref/AVar,
+  durée de vie des fibres et trois sorties négatives, **9 scénarios de
+  remontée d'erreur** ; runner isolé `purust-aff/test/native-regression.mjs`
+  ajouté sans nettoyer les sorties existantes. Export Cargo déplacé et
+  point d'entrée sans Aff qualifiés en Rc/Arc (33 modules frais).
+- [x] Nouvelle frontière Linux `attempt-tDcxH5/frontier.json` :
+  **373 diagnostics E0425 dans 19 crates**, exclusivement des types FFI
+  absents. Promise/Rejection passent ; les clients PostgreSQL (`Handle`) et
+  RabbitMQ (`Channel`/`Connection`) apparaissent maintenant derrière eux.
+  Le compteur augmente parce que de nouvelles dépendances sont atteintes,
+  pas parce que les défauts du générateur reviennent. Aucune intégration
+  exécutée, aucune sonde opaque encore qualifiée pour cette fermeture.
+- [x] Régression finale de ce bloc `regression-TQtk32/report.json`,
+  `complete: true` : **`b -c; t -c` → 259/259**, build `build-PI0mOF`,
+  300 modules frais, 78 gardes forcés/non atteints ; négatif `build-fRlp8F`
+  **2/3 → 101**, retour au même défaut 259/259, bases vides avant/après,
+  inventaire 286/259/27 et empreintes revérifiés. Bundle courant :
+  `d50190b9967bcc8a6cd1401bcb56e7b36dbb81ca05806fb6690de7516c4eff2e`.
 - [ ] Obtenir puis lever les erreurs de compilation natives, qualifier les
   sondes des nouvelles signatures opaques avant toute exécution de la suite.
-- [ ] Config/Promise/Aff et accès PostgreSQL natifs ; RabbitMQ et cache selon
+- [ ] **Prochain ensemble cohérent — Astra : Config et client PostgreSQL**,
+  en réutilisant le pont Promise/Aff validé. Précontrôle DB, représentation du
+  Handle, requêtes/paramètres/décodage, transaction dédiée et libérations,
+  contrats d'erreur et de fin de travail asynchrone, puis specs originales.
+  Une Promise pendante seule ne retient pas le processus : le futur client
+  natif doit déclarer sa durée de vie au runtime, pas seulement lancer un
+  `tokio::spawn` détaché. Adoption des Promises natives uniquement, pas de
+  simulation de thenables JavaScript arbitraires.
+- [ ] Accès PostgreSQL natifs ; RabbitMQ et cache selon
   les chemins atteints, en conservant transactions, erreurs et libérations.
 - [ ] Raccordement CLI explicite puis défaut 286 uniquement après exécution
   native complète ; régression des 259 tests et nettoyage final.
