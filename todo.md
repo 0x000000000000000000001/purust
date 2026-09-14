@@ -3,8 +3,8 @@
 Mis à jour le 14 septembre 2026.
 
 **État courant (bloc 0.49 terminé, bloc 0.50 en cours) :**
-**`b -c; t -c` revalidé 259/259** après le bloc Promise/Rejection/Aff,
-build prêt `build-PI0mOF`, nettoyage DB vide, 78 gardes forcés et aucun atteint.
+**`b -c; t -c` revalidé 259/259** après les ajouts du bloc PostgreSQL,
+build prêt `build-0GsAzz`, nettoyage DB vide, 75 gardes forcés et aucun atteint.
 Les 21 tests Variant Encoding rejoignent HTML + Stash + HTML Clean + String,
 avec leurs assertions originales. Les 259 tests sans services recensés sont
 intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
@@ -13,11 +13,13 @@ intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
 pour atteindre 286/286. Environ **91 % du comptage des tests**, pas du travail.
 M2/M4 restent ouverts jusqu'à la qualification de la suite complète.
 Le profil Spago étendu et le compilateur courant sont couverts par cette
-régression (`regression-TQtk32/report.json`) : **68 tests codegen et 72 tests
+régression (`regression-ELdkj6/report.json`) : **68 tests codegen et 72 tests
 driver/CLI passent**. Les FFI Promise et Rejection et leur pont Aff passent
 sur TAST frais sous macOS et Linux ; ordre des callbacks comparé aux FFI JS.
-La compilation des intégrations atteint maintenant les clients PostgreSQL et
-RabbitMQ : types FFI absents dans 19 crates, aucun autre diagnostic.
+Le premier contrat PostgreSQL natif fonctionne : configuration interne,
+requêtes paramétrées, JSON, transactions dédiées, libération et fermeture.
+Il est testé séparément des specs d'intégration ; RabbitMQ et les autres
+frontières de leur fermeture restent à qualifier.
 Les **27 intégrations n'ont pas encore été exécutées**.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
@@ -5566,18 +5568,91 @@ Premières preuves du 14 septembre, dossier diagnostique
   `d50190b9967bcc8a6cd1401bcb56e7b36dbb81ca05806fb6690de7516c4eff2e`.
 - [ ] Obtenir puis lever les erreurs de compilation natives, qualifier les
   sondes des nouvelles signatures opaques avant toute exécution de la suite.
-- [ ] **Prochain ensemble cohérent — Astra : Config et client PostgreSQL**,
+- [x] **Premier contrat natif — Astra : InternalConfig et client PostgreSQL**,
   en réutilisant le pont Promise/Aff validé. Précontrôle DB, représentation du
   Handle, requêtes/paramètres/décodage, transaction dédiée et libérations,
-  contrats d'erreur et de fin de travail asynchrone, puis specs originales.
+  contrats d'erreur et de fin de travail asynchrone. Les specs originales
+  restent un objectif séparé, pas un résultat de ce contrat ciblé.
   Une Promise pendante seule ne retient pas le processus : le futur client
   natif doit déclarer sa durée de vie au runtime, pas seulement lancer un
   `tokio::spawn` détaché. Adoption des Promises natives uniquement, pas de
   simulation de thenables JavaScript arbitraires.
+- [ ] **Prochain ensemble cohérent — Astra : fermeture des intégrations et
+  RabbitMQ**, puis première exécution des specs originales sous gardes.
+  `Config.PublicConfig` n'est pas encore portée. Compléter les conversions
+  JSON/Foreign/Nullable et les types opaques seulement selon les chemins
+  effectivement atteints, avec reproduction courte de chaque nouvelle
+  frontière. Les tests ciblés du client ne suffisent pas à passer à 286.
 - [ ] Accès PostgreSQL natifs ; RabbitMQ et cache selon
   les chemins atteints, en conservant transactions, erreurs et libérations.
 - [ ] Raccordement CLI explicite puis défaut 286 uniquement après exécution
   native complète ; régression des 259 tests et nettoyage final.
+
+#### Résultat 0.50 — Contrat PostgreSQL natif (14 septembre 2026)
+
+Le périmètre validé est **le client seul**, pas les 27 specs originales.
+Preuve finale : `b8x/run/bak/rust/output/postgres-native-LWbOMh/report.json`,
+`complete: true`, **177 modules TAST frais**, Linux threaded.
+
+- `InternalConfig.rs` lit l'environnement centralisé, conserve les valeurs
+  store/storeLock/edge et leurs délais par défaut (30000/2000/30000 ms).
+  `APP_NAME` suit la FFI Go existante. Les valeurs secrètes ne sont pas
+  imprimées. Ce résultat ne couvre pas encore `PublicConfig` ni tous les
+  environnements mal configurés.
+- `Postgres.rs` et son sidecar utilisent `tokio-postgres =0.7.18`, sans TLS
+  comme la configuration JS actuelle. Pool paresseux de 100 connexions,
+  expiration des connexions inactives, connexions dédiées FIFO, fermeture
+  attendue et refus d'utilisation après fermeture/libération.
+- Les paramètres utilisent le protocole SQL lié, sans interpolation. Records
+  et `Foreign.Object` suivent leur représentation native existante. Tableaux,
+  JSON/JSONB, SQL NULL, entiers, numeric et résultats usuels sont qualifiés.
+  **24 cas comparés au pilote JS installé**, chacun en rows et rowCount :
+  précision int8/numeric conservée en chaînes, tableaux multidimensionnels,
+  échappement, Unicode, commandes multiples et `void`. Le format des nombres
+  passés en texte avait un écart prouvé (`1e+21`/`1e-7`) ; `ryu-js =1.0.3`
+  le corrige, puis la comparaison complète repasse.
+- **14 contrôles PureScript** : configuration, paramètres/résultats, Object,
+  NULL distinct d'undefined, accès invalide, rowCount, erreur SQL puis reprise,
+  ROLLBACK/COMMIT sur table temporaire, doubles libérations, fermeture avec
+  requête active, refus après fermeture et connexion refusée.
+- **5 tests Rust** : parité du protocole, valeurs Foreign, données malformées,
+  pool paresseux/expiration/attente de libération, ordre dédié et récupération
+  après abandon d'une attente. Les **21 gardes** restants sont tous forcés
+  avec sortie 86/marqueur exact ; aucun n'est atteint dans le test positif.
+- Correction de contrat PureScript : `_closeHandle` retourne
+  `Effect (Promise Unit)`, conformément aux FFI JS **et Go** existantes.
+  `closeHandle` attend directement `toAffE`. Aucun changement de leurs FFI,
+  aucune assertion originale b8x modifiée.
+- Le runtime distingue désormais `Value::Null` et `Unit`/undefined.
+  Prédicats Foreign, lecture de propriété et sérialisation JSON sont testés :
+  **1287 comparaisons JSON par mode Rc/Arc**, avec les nouveaux cas null.
+- `purust_aff_spawn_native` enregistre les opérations avant le spawn et
+  exécute leurs callbacks dans le contexte Aff d'origine. Les **45 contrôles
+  Aff**, concurrence Ref/AVar, durées de vie et **3 scénarios natifs IO**
+  (succès, panique du futur, panique du callback) passent ; les paniques
+  sortent à 101, les tâches imbriquées finissent après leur parent.
+  Preuve : `/private/var/folders/w9/l8bnb22d6c75c401f71djbt00000gn/T/purust-aff-regression-JJxrdi/report.json`.
+- Régression réelle : `regression-ELdkj6/report.json`, **`b -c; t -c`
+  259/259**, `build-0GsAzz`, 300 modules frais, 75 gardes forcés/non atteints.
+  Négatif `build-iE9jgW` **2/3 → 101**, retour au même défaut, inventaire
+  286/259/27 revérifié. **68 codegen et 72 driver/CLI** passent.
+- Bases `store_test_*`/`edge_test_*` vides avant/après. Seules des tables
+  temporaires propres aux connexions de contrôle ont été créées ; aucune
+  base utilisateur supprimée, aucun service redémarré. Le `target/` de la
+  sonde initiale (148 Mio) est conservé dans l'output ignoré
+  `postgres-probe-artifacts-AsQZQS/`, avec `.gitignore` local ajouté.
+- Compilation complète **intermédiaire**, après le Handle PostgreSQL et
+  avant le seul ajustement de format numérique : `attempt-oj3ebS/check.json`,
+  1315 sources contrôlées, **319 E0425 dans 18 crates**, aucun autre code
+  d'erreur. PostgreSQL et InternalConfig sont franchis ; RabbitMQ, Buffer,
+  Symbol, constantes FS, Router et types Web/Halogen restent des frontières.
+  Ce relevé diagnostique ne constitue ni un build réussi ni un pourcentage.
+
+Limites explicites : pas de parité générale node-pg, pas de mode Rc pour ce
+client asynchrone, pas de promesse de prise en charge de tous les OID SQL ou
+objets JS natifs (dates/buffers/Nullable opaques notamment). Les types non
+qualifiés échouent explicitement. **Les 27 intégrations restent non exécutées**,
+et le défaut Rust reste volontairement à **259**, jamais annoncé comme 286.
 
 - **Astra** : établir la fermeture réelle et les premiers arrêts natifs ;
   qualifier les clients PostgreSQL/RabbitMQ, leurs représentations et les
