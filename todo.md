@@ -24,9 +24,12 @@ requêtes paramétrées, JSON, transactions dédiées, libération et fermeture.
 RabbitMQ est également qualifié séparément : huit contrôles PureScript Linux,
 callback en erreur non acquitté/redélivrable, onze gardes forcés/non atteints.
 JSON parse/pretty/undefined passe 3 585 cas en Rc/Arc sous macOS/Linux.
-La fermeture des intégrations passe `cargo check` (806 crates natives) ;
-la compilation de l'exécutable sous 417 gardes est en cours.
-Les **27 intégrations n'ont pas encore été exécutées**.
+La fermeture des intégrations passe `cargo check` (806 crates natives),
+la compilation native et les 417 sondes de garde initiales. Les exécutions
+réelles progressent dans l'initialisation et les événements PostgreSQL ;
+les FFI Router, UUID et clé de verrou ont levé les premiers arrêts.
+Le décodage JSON natif est en cours. Les **27 intégrations ne sont pas encore
+validées**, ni le nouveau défaut à 286.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
 
@@ -5606,7 +5609,21 @@ Avancée du lot en cours (14 septembre, sans clôture anticipée) :
 - [x] Boxing String possédé : correction du `str` non dimensionné dans une
   branche divergente, régression du générateur et UTF-16 conservé.
 - [x] `attempt-ODUr3G/check.json` : zéro erreur de compilation, 806 crates.
-  417 gardes installées ; exécutable et sondes restent à exécuter.
+  `execution-nT4EYH` : exécutable construit et 417 sondes fatales vérifiées.
+  Les essais réels suivants atteignent Router, UUID, la clé de verrou puis
+  `Util.Foreign.Native.parseJSONImpl`. Chaque arrêt conserve une preuve ;
+  les deux bases temporaires créées par chaque essai sont supprimées par
+  leurs noms exacts, après inventaire initial vide.
+- [x] Limite de pile native : 8 Mio débordent pendant l'initialisation ;
+  l'essai à 64 Mio franchit ce point. Le pilote borne à 64 Mio le seul
+  processus de test via `prlimit`. Construction Cargo à quatre jobs, après
+  contrôle des 14 CPU et 24 Gio de mémoire du conteneur.
+- [x] Clés de verrou : contrat JS de format/compteur (1 001 valeurs),
+  effet différé et compteur partagé, Rc/Arc Linux ; preuve
+  `output/lock-key-native-NpRkvE/report.json`.
+- [x] Adaptateurs JSON : distinction null/undefined et insertion non mutante
+  du payload absent, records dynamiques et Foreign.Object natif, Rc/Arc Linux ;
+  preuve `output/json-adapters-native-B6ofOb/report.json`.
 - [x] CLI : sélection transitive validée par le compilateur officiel, agrégats
   Core/Infra/Util originaux et délai par test identique à `Test.Main`.
   75 tests du pilote passent ; cela ne remplace pas les 286 tests b8x.
@@ -6163,7 +6180,7 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
 - [x] Bloc 0.48 : trois FFI String et 63 tests originaux intégrés ;
   **238/238 par `b -c; t -c`**, 63/63 explicites, négatif 101, défaut stable,
   64 régressions driver/CLI et 216 026 comparaisons FFI par plateforme.
-- [ ] Bloc 0.49 — Astra, Luna après qualification des frontières : intégrer
+- [x] Bloc 0.49 — Astra, Luna après qualification des frontières : intégrer
   les 21 tests Variant Encoding selon le contrat, cible **259/259** sans
   services, avec négatif, gardes et nettoyage contrôlés.
 - [ ] Astra : qualifier séparément `unvariant`/`revariant`, son transport du
