@@ -3,8 +3,11 @@
 Mis à jour le 14 septembre 2026.
 
 **État courant (bloc 0.49 terminé, bloc 0.50 en cours) :**
-**`b -c; t -c` revalidé 259/259** après les ajouts du bloc PostgreSQL,
+**Dernier `b -c; t -c` validé : 259/259** après les ajouts du bloc PostgreSQL,
 build prêt `build-0GsAzz`, nettoyage DB vide, 75 gardes forcés et aucun atteint.
+Le code du défaut est maintenant raccordé à Core/Infra/Util (286 tests), mais
+ce nouveau défaut n'est **pas encore qualifié** : l'ancien manifeste 259 ne
+peut pas le valider. La clôture demande son exécution réelle sans fallback.
 Les 21 tests Variant Encoding rejoignent HTML + Stash + HTML Clean + String,
 avec leurs assertions originales. Les 259 tests sans services recensés sont
 intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
@@ -18,8 +21,11 @@ driver/CLI passent**. Les FFI Promise et Rejection et leur pont Aff passent
 sur TAST frais sous macOS et Linux ; ordre des callbacks comparé aux FFI JS.
 Le premier contrat PostgreSQL natif fonctionne : configuration interne,
 requêtes paramétrées, JSON, transactions dédiées, libération et fermeture.
-Il est testé séparément des specs d'intégration ; RabbitMQ et les autres
-frontières de leur fermeture restent à qualifier.
+RabbitMQ est également qualifié séparément : huit contrôles PureScript Linux,
+callback en erreur non acquitté/redélivrable, onze gardes forcés/non atteints.
+JSON parse/pretty/undefined passe 3 585 cas en Rc/Arc sous macOS/Linux.
+La fermeture des intégrations passe `cargo check` (806 crates natives) ;
+la compilation de l'exécutable sous 417 gardes est en cours.
 Les **27 intégrations n'ont pas encore été exécutées**.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
@@ -5577,9 +5583,10 @@ Premières preuves du 14 septembre, dossier diagnostique
   natif doit déclarer sa durée de vie au runtime, pas seulement lancer un
   `tokio::spawn` détaché. Adoption des Promises natives uniquement, pas de
   simulation de thenables JavaScript arbitraires.
-- [ ] **Prochain ensemble cohérent — Astra : fermeture des intégrations et
+- [ ] **Ensemble courant — Astra : fermeture des intégrations et
   RabbitMQ**, puis première exécution des specs originales sous gardes.
-  `Config.PublicConfig` n'est pas encore portée. Compléter les conversions
+  `Config.PublicConfig` et ULID sont portées, leur qualification ciblée est
+  en cours en parallèle. Compléter les conversions
   JSON/Foreign/Nullable et les types opaques seulement selon les chemins
   effectivement atteints, avec reproduction courte de chaque nouvelle
   frontière. Les tests ciblés du client ne suffisent pas à passer à 286.
@@ -5587,6 +5594,24 @@ Premières preuves du 14 septembre, dossier diagnostique
   les chemins atteints, en conservant transactions, erreurs et libérations.
 - [ ] Raccordement CLI explicite puis défaut 286 uniquement après exécution
   native complète ; régression des 259 tests et nettoyage final.
+
+Avancée du lot en cours (14 septembre, sans clôture anticipée) :
+
+- [x] Déclarations FFI opaques : enums vides non constructibles, respect des
+  types natifs existants et métadonnées permettant de sonder une garde sans
+  fabriquer une connexion. Les API non portées restent toutes fatales.
+- [x] Représentations identiques déclarées par FFI pour Buffer/ImmutableBuffer,
+  Step/Step' et Graft/GraftX ; upcast HTMLDocument/ParentNode opaque seulement,
+  aucun portage ou simulation du DOM. Répertoire FFI explicite du profil.
+- [x] Boxing String possédé : correction du `str` non dimensionné dans une
+  branche divergente, régression du générateur et UTF-16 conservé.
+- [x] `attempt-ODUr3G/check.json` : zéro erreur de compilation, 806 crates.
+  417 gardes installées ; exécutable et sondes restent à exécuter.
+- [x] CLI : sélection transitive validée par le compilateur officiel, agrégats
+  Core/Infra/Util originaux et délai par test identique à `Test.Main`.
+  75 tests du pilote passent ; cela ne remplace pas les 286 tests b8x.
+- [ ] Exécuter les 27 intégrations puis `b -c; t -c` complet ; corriger tout
+  échec réel sans réduire les assertions. Aucune pause demandant un nouveau go.
 
 #### Résultat 0.50 — Contrat PostgreSQL natif (14 septembre 2026)
 
