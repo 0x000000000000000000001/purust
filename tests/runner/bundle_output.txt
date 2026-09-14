@@ -1,1 +1,0 @@
-Bundled 221 modules into output-test/app/src/main.rs with 222 dynamic fields.
