@@ -21,6 +21,8 @@ import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFi
 import Purust.ReuseFields (scalarFieldUpdate)
 import Purust.ChildCalls as ChildCalls
 import Purust.ChildBranches as ChildBranches
+import Purust.FieldPermutations (fieldPermutation)
+import Purust.FieldPermutationPrinter (permutationFunction)
 import Purust.RecordBorrows (recordProjection)
 import Purust.ChildBranchPrinter (predicateFunction)
 import Purust.ChildUpdates (childUpdate)
@@ -74,7 +76,7 @@ type ReuseContext =
   , privateWorkers :: Set String
   , functionIterators :: Set String
   , childCases :: Map String (Array ChildCalls.ConstructorCase)
-  , postChildCases :: Map String { branch :: ChildCalls.ConstructorCase, name :: String }
+  , postChildCases :: Map String { branch :: ChildCalls.ConstructorCase, name :: String, permutation :: Maybe String }
   , closedCalls :: Set String
   , plainTrees :: Set String
   , constructors :: Map String
@@ -226,12 +228,25 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
       let generatedName = modNameStr <> "_" <> predicateName
           branch = { guards: [], constructor: result.constructor, typeName: result.typeName, fieldParams: result.fieldParams }
       code <- predicateFunction representation sanitizeIdent constructorInfo args generatedName result.predicate
-      pure { fullName, branch, name: generatedName, code }
+      let permutation = do
+            let helperName = sanitizeIdent name <> "__purust_permute_fields"
+                fullHelperName = modNameStr <> "_" <> helperName
+            guard (not (Set.member helperName reservedPredicateNames)
+              && not (Set.member (helperName <> "__matches") reservedPredicateNames))
+            plan <- fieldPermutation representation (copyScalarType valueEnums modNameStr)
+              copyTagType constructorInfo params args (extractFinalRetType ty) body
+            guard (plan.constructor == result.constructor && plan.typeName == result.typeName
+              && plan.fieldParams == result.fieldParams)
+            helperCode <- permutationFunction representation sanitizeIdent constructorInfo args fullHelperName plan
+            pure { name: fullHelperName, code: helperCode }
+      pure { fullName, branch, name: generatedName, permutation: map _.name permutation
+           , code: code <> foldMap _.code permutation }
     postHelpers = Array.concatMap (Array.mapMaybe preparePostChildCase <<< _.bindings) namedGroups
     reuseContext =
       { workers: workerOriginals
       , childCases: Map.fromFoldable (Array.concatMap (Array.mapMaybe prepareChildCases <<< _.bindings) namedGroups)
-      , postChildCases: Map.fromFoldable (map (\helper -> Tuple helper.fullName { branch: helper.branch, name: helper.name }) postHelpers)
+      , postChildCases: Map.fromFoldable (map (\helper -> Tuple helper.fullName
+          { branch: helper.branch, name: helper.name, permutation: helper.permutation }) postHelpers)
       , closedCalls
       , plainTrees
       , functionIterators: Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name)
@@ -1870,7 +1885,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                 ty <- Array.index fields.types i
                 pure (NeutralExpr (Typed ty (NeutralExpr (Local (Just (Ident name)) (Level (-1))))))) argumentFields
               afterCall <- workerWithArgs computedArgs
-              pure { update, name: post.name, argumentFields, afterCall }
+              pure { update, name: post.name, permutation: post.permutation, argumentFields, afterCall }
             reuseCall call = "{ let mut " <> fields.source <> " = " <> fields.source <> "; " <>
               "let _taken = std::rc::Rc::get_mut(&mut " <> fields.source <> ").and_then(|node| node.__purust_take()); " <>
               "match _taken { std::option::Option::Some(" <> ownedFieldsPattern fields <> ") => " <> call <> ", " <>
@@ -1893,12 +1908,15 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                           else Nothing) (Array.mapWithIndex Tuple fields.types))
                         childName = fromMaybe "_purust_post_child" (Array.index fields.names post.update.index)
                         predicate = post.name <> "(" <> String.joinWith ", " (map reference post.argumentFields) <> ")"
+                        permutation = case post.permutation of
+                          Just name -> " else if " <> name <> "(_purust_post_slot) { " <> fields.source <> " }"
+                          Nothing -> ""
                     in "{ /* purust child call: post-call fields */ let mut " <> fields.source <> " = " <> fields.source <> "; " <>
                       "if let std::option::Option::Some(_purust_post_slot) = std::rc::Rc::get_mut(&mut " <> fields.source <> ") { " <>
                       "let " <> pattern <> " = _purust_post_slot else { unreachable!() }; " <> copiedScalars <> " " <>
                       "let mut " <> childName <> " = std::mem::replace(" <> reference post.update.index <> ", (*" <> reference post.update.sibling <> ").clone()); " <>
                       "let _purust_post_child = " <> replacement <> "; *" <> reference post.update.index <> " = _purust_post_child; " <>
-                      "if " <> predicate <> " { " <> fields.source <> " } else { " <>
+                      "if " <> predicate <> " { " <> fields.source <> " }" <> permutation <> " else { " <>
                       "let std::option::Option::Some(" <> ownedFieldsPattern fields <> ") = _purust_post_slot.__purust_take() else { unreachable!() }; " <>
                       post.afterCall <> " } } else " <> normal <> " }"
             in case childPlan of
