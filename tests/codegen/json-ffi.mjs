@@ -31,6 +31,7 @@ report.inputs = ['bin/purust.js', 'output/Purust.CodeGen/index.js', 'src/Purust/
 const cases = [];
 const number = n => Number.isNaN(n) ? 'f64::NAN' : n === Infinity ? 'f64::INFINITY' : n === -Infinity ? 'f64::NEG_INFINITY' : `${Object.is(n, -0) ? '-0.0' : n.toExponential()}`;
 function expression(value) {
+  if (value === null) return 'Value::Null';
   if (typeof value === 'string') return `mk_string(&${rustStringLiteral(value)})`;
   if (typeof value === 'number') return `mk_number(${number(value)})`;
   if (typeof value === 'boolean') return `mk_bool(${value})`;
@@ -45,7 +46,7 @@ const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 
 const bits = new DataView(new ArrayBuffer(8));
 for (let i = 0; i < 1000; i++) { bits.setUint32(0, random()); bits.setUint32(4, random()); add(bits.getFloat64(0)); }
 for (let i = 0; i < 65536; i += 256) add(String.fromCharCode(...Array.from({ length: 256 }, (_, n) => i + n)));
-[true, false, [], [1, 'x', false], { value: { custom: 100 }, type: 'baz' },
+[null, { value: null, list: [null, 1] }, true, false, [], [1, 'x', false], { value: { custom: 100 }, type: 'baz' },
   { z: 1, '10': 10, '2': 2, a: 3, '01': 1, '4294967295': 5 }, { a: { b: [42, 'x'] } }].forEach(add);
 report.assertions = cases.length;
 const checks = `fn main() {
@@ -76,6 +77,7 @@ let identity = Value::Func1(Func1::Static(|v| v));
 assert_eq!(read(mk_int(-1), identity.clone(), mk_string("a"), Value::Class(std::rc::Rc::new(object.clone()))).unwrap_int(), 2);
 assert!(matches!(read(mk_int(-1), identity.clone(), mk_string("absent"), Value::Class(std::rc::Rc::new(object.clone()))), Value::Unit));
 assert_eq!(read(mk_int(-1), identity.clone(), mk_string("a"), Value::Unit).unwrap_int(), -1);
+assert_eq!(read(mk_int(-1), identity.clone(), mk_string("a"), Value::Null).unwrap_int(), -1);
 assert_eq!(read(mk_int(-1), identity.clone(), mk_int(1), mk_array(vec![mk_int(2), mk_int(3)])).unwrap_int(), 3);
 assert_eq!(read(mk_int(-1), identity.clone(), mk_string("length"), mk_string(&purust_string_from_utf8("😀"))).unwrap_int(), 2);
 assert_eq!(foreign::Foreign_tagOf(mk_int(42)), "Number");
@@ -86,6 +88,14 @@ assert!(std::panic::catch_unwind(|| mk_bool(true).unwrap_number()).is_err());
 assert_eq!(foreign::Foreign_tagOf(mk_number(42.5)), "Number");
 assert_eq!(foreign::Foreign_tagOf(Value::Unit), "Undefined");
 assert_eq!(foreign::Foreign_typeOf(Value::Unit), "undefined");
+assert_eq!(foreign::Foreign_typeOf(Value::Null), "object");
+assert_eq!(foreign::Foreign_tagOf(Value::Null), "Null");
+assert!(foreign::Foreign_isNull(Value::Null));
+assert!(!foreign::Foreign_isUndefined(Value::Null));
+assert!(!foreign::Foreign_isNull(Value::Unit));
+assert!(foreign::Foreign_isUndefined(Value::Unit));
+assert!(foreign::Foreign_isArray(mk_array(vec![])));
+assert!(!foreign::Foreign_isArray(Value::Null));
 let copied = object.snapshot();
 object.insert("new".into(), mk_int(9));
 assert!(copied.get("new").is_none());
