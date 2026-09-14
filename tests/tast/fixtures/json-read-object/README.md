@@ -10,7 +10,8 @@ under `b8x/run/bak/rust/output/purust-json-read-object-*`.
 The integration failure was `Expected Class` when a PS `{ type, value }` record
 crossed into `Foreign.Object.Object`. The targeted compiler/runtime bridge
 removed this panic. Fresh run `purust-json-read-object-d5NTXF` then reached the
-previously missing `Foreign_Object_toArrayWithKey` (seven failures per mode).
+previously missing `Foreign_Object_toArrayWithKey` (eight failures per mode,
+4/12 passed: seven missing-FFI failures and one record-order divergence).
 Tests now also compare this FFI's own-key order, payload identity, callback
 mutation and exception behavior with the original `Foreign/Object.js`.
 

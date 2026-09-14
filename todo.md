@@ -26,9 +26,10 @@ callback en erreur non acquitté/redélivrable, onze gardes forcés/non atteints
 JSON parse/pretty/undefined passe 3 585 cas en Rc/Arc sous macOS/Linux.
 La fermeture des intégrations passe `cargo check` (806 crates natives),
 la compilation native et les 417 sondes de garde initiales. Les exécutions
-réelles progressent dans l'initialisation et les événements PostgreSQL ;
-les FFI Router, UUID et clé de verrou ont levé les premiers arrêts.
-Le décodage JSON natif est raccordé et qualifié séparément. Les **27 intégrations ne sont pas encore
+réelles passent maintenant **16/27 intégrations originales** (commandes et
+EventStore). Les 11 tests Finder/projection atteignent le cache disque : son
+portage est en cours. Les FFI Router, UUID, clé de verrou et le décodage JSON
+ont levé les premiers arrêts. Les **27 intégrations ne sont pas encore
 validées**, ni le nouveau défaut à 286.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
@@ -5654,6 +5655,17 @@ Avancée du lot en cours (14 septembre, sans clôture anticipée) :
 - [x] CLI : sélection transitive validée par le compilateur officiel, agrégats
   Core/Infra/Util originaux et délai par test identique à `Test.Main`.
   75 tests du pilote passent ; cela ne remplace pas les 286 tests b8x.
+- [x] `execution-4b8cfz` : **16/27 intégrations originales passent**, après
+  reproduction du débordement de pile d'un worker Tokio puis validation du
+  même binaire avec `RUST_MIN_STACK=67108864`. Le pilote applique désormais
+  cette limite au seul exécutable de test ; 76 tests driver/CLI passent avant
+  cet ajout. Prochain arrêt réel : racine du cache de fichiers. Les bases
+  temporaires de cet essai ont été supprimées par leurs noms exacts.
+- [x] `Node.Path.concat` : 2 618 cas comparés au module JS original en Rc/Arc
+  Linux, normalisation POSIX, chemins absolus/relatifs, segments vides, `..`,
+  slash final et UTF-16 ; preuve `output/node-path-native-QScvFn/report.json`.
+  Les autres opérations Node.Path restent gardées tant qu'elles ne sont pas
+  portées ; aucune sélection artificielle des assertions b8x.
 - [ ] Exécuter les 27 intégrations puis `b -c; t -c` complet ; corriger tout
   échec réel sans réduire les assertions. Aucune pause demandant un nouveau go.
 
