@@ -2,8 +2,9 @@
 
 Mis à jour le 14 septembre 2026.
 
-**État courant (bloc 0.49 terminé) :** **`b -c; t -c` validé 259/259**,
-build prêt `build-904tIn`, nettoyage DB vide, 78 gardes forcés et aucun atteint.
+**État courant (bloc 0.49 terminé, bloc 0.50 en cours) :**
+**`b -c; t -c` revalidé 259/259** après restauration des conteneurs,
+build prêt `build-0znoax`, nettoyage DB vide, 78 gardes forcés et aucun atteint.
 Les 21 tests Variant Encoding rejoignent HTML + Stash + HTML Clean + String,
 avec leurs assertions originales. Les 259 tests sans services recensés sont
 intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
@@ -11,9 +12,10 @@ intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
 **Bloc 0.50 en cours — Astra : 27 tests d'intégration PostgreSQL/RabbitMQ**,
 pour atteindre 286/286. Environ **91 % du comptage des tests**, pas du travail.
 M2/M4 restent ouverts jusqu'à la qualification de la suite complète.
-Le profil Spago est en cours d'extension pour les intégrations : le manifeste
-259/259 ci-dessus est une preuve du bloc 0.49, pas un build courant après ces
-changements. Un nouveau `b -c` sera nécessaire avant le prochain `t -c`.
+Le profil Spago étendu et le compilateur courant sont couverts par cette
+régression (`regression-RuE77P/report.json`) : **67 tests codegen et 72 tests
+driver/CLI passent**. La compilation des intégrations reste bloquée sur des
+types FFI absents dans 18 crates ; leurs 27 tests n'ont pas encore été exécutés.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
 
@@ -5490,6 +5492,38 @@ Premières preuves du 14 septembre, dossier diagnostique
   constructeurs et conversions ; arité réelle des alias polymorphes
   partiellement appliqués (`Projection.coerce`), sans changer l'ABI publique.
   Régressions natives Rc/Arc : **66 tests codegen passent**.
+- [x] Collision `Infra.Projection.CopyOnWrite.Value` / runtime `Value` : les
+  opérations internes ciblent `purust_core::Value`, tandis que l'ADT métier
+  garde son nom et son layout. Régression avec deux crates réellement
+  séparées, boxing/déboxing, callbacks, records et effets en Rc/Arc.
+  La fixture `nested-typed` expose aussi le `Value` du runtime dans son
+  module simulé ; **67 tests codegen passent**, zéro échec.
+- [x] Régressions CLI avant cette dernière qualification de `Value` :
+  `regression-qsOxPI/report.json` puis `regression-MaqRQx/report.json`,
+  **`bin/b -c; bin/t -c` → 259/259**, 78 gardes forcés/non atteints,
+  négatif 2/3 → 101, défaut inchangé après le négatif et aucune base à
+  nettoyer. Dernier défaut `build-fzSPZg`, négatif `build-iDXI2v`.
+  **Ces manifestes sont désormais périmés** : le bundle courant a changé.
+- [x] Contrôle Linux après restauration des conteneurs par l'utilisateur,
+  `attempt-wAZlxQ/frontier.json` : les défauts `IsProcess.async`,
+  `Projection.coerce` et la collision `Value` ont disparu. Le contrôle
+  termine en 73 s avec uniquement **272 diagnostics de types FFI absents
+  dans 18 crates**, aucun autre diagnostic. Ce relevé est une frontière de compilation,
+  pas le nombre de fonctions à porter ni une preuve d'exécution.
+- **Reprise après interruption réseau** : `attempt-uklK7b` a généré le Rust
+  courant et obtenu les métadonnées, mais ne contient aucun résultat
+  `check.json`. Aucun contrôle Linux final ni test d'intégration à en déduire.
+  Docker/OrbStack était momentanément vide de conteneurs ; l'utilisateur
+  les a ensuite restaurés. Aucun service recréé/redémarré par l'agent.
+- [x] `diagnose.mjs --reuse-generated` repris après restauration :
+  empreintes strictement vérifiées, sans refaire les 92 s de génération.
+  Le bundle courant et `generated-inputs.json` concordent :
+  `f536ae75f3bcd077a8536a9254f7410a82643898c8b3a38b928bf3488612ab39`.
+- [x] Régression finale `regression-RuE77P/report.json`, `complete: true` :
+  `b -c; t -c` → **259/259**, build courant `build-0znoax`, 300 modules TAST
+  frais, 78 gardes forcés/non atteints ; négatif **2/3 → 101**, puis retour
+  au même défaut 259/259. Bases vides avant/après, inventaire original
+  286/259/27 et empreintes des deux manifestes vérifiés après exécution.
 - [ ] Obtenir puis lever les erreurs de compilation natives, qualifier les
   sondes des nouvelles signatures opaques avant toute exécution de la suite.
 - [ ] Config/Promise/Aff et accès PostgreSQL natifs ; RabbitMQ et cache selon

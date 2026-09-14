@@ -20,7 +20,7 @@ import Purust.ModuleValues (eligibleValues)
 import Purust.DataLayout (valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Threading (threadedRust, threadedPrelude)
-import Purust.Runtime (writeRuntime, runtimeDependency)
+import Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource)
 import Purust.FfiCargo (loadFfiCargo)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
@@ -289,7 +289,8 @@ main = launchAff_ do
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") (configureThreading threaded (rootCargoToml <> affDependency))
     
     let runMain = "let _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)"
-    let mainBody = if runsAff then "Purs_Effect_Aff::purust_aff_run_main(|| { " <> runMain <> " });" else runMain <> ";"
+    let mainBody = if runsAff then "Purs_Effect_Aff::purust_aff_run_main(|| { " <> runMain <> " });"
+          else "purust_core::microtasks::run_main(|| { " <> runMain <> " });"
     FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    " <> mainBody <> "\n}\n")
     
     let coreDir = outDir <> "/purust_core"
@@ -298,7 +299,8 @@ main = launchAff_ do
       FS.mkdir coreDir
       FS.mkdir (coreDir <> "/src")
     FS.writeTextFile UTF8 (coreDir <> "/Cargo.toml") $ configureThreading threaded ("[package]\nname = \"purust_core\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> runtimeDependency threaded "../perceus_ptr" <> "fancy-regex = \"0.13\"\n")
-    FS.writeTextFile UTF8 (coreDir <> "/src/lib.rs") preludeRsContent
+    FS.writeTextFile UTF8 (coreDir <> "/src/lib.rs") (preludeRsContent <> "\npub mod microtasks {\n"
+      <> (if threaded then threadedRust microtasksSource else microtasksSource) <> "\n}\n")
     
     _ <- foldl (\eff (Tuple k { code: v, imports: imp, cargo }) -> eff *> do
       let modDir = outDir <> "/Purs_" <> k

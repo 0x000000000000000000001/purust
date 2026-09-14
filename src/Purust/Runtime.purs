@@ -1,4 +1,4 @@
-module Purust.Runtime (writeRuntime, runtimeDependency) where
+module Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource) where
 
 import Prelude
 
@@ -8,6 +8,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Sync as FS
 
 foreign import runtimeFiles :: Array { path :: String, content :: String }
+foreign import microtasksSource :: String
 
 writeRuntime :: String -> Effect Unit
 writeRuntime outDir = do

@@ -43,6 +43,7 @@ const generated = codegenModule(empty)(empty)(
 
 const rust = `#![allow(non_snake_case, unused_mut)]
 mod purust_core {
+    pub use crate::Value;
     use std::ops::Deref;
     use std::rc::Rc;
     pub enum Func2<A, B, R> {

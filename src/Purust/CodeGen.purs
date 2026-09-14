@@ -604,6 +604,9 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
            -- Only the opaque Foreign carrier uses Value. ForeignError has a
            -- recursive native ADT layout, including its constructor fields.
            else if modName == "Foreign" && actualClassName == "Foreign" then "crate::UnknownType"
+           -- A rejection is the original arbitrary value, not an Error wrapper.
+           -- Promise.Aff also reads string rejections through unsafeToForeign.
+           else if modName == "Promise_Rejection" && actualClassName == "Rejection" then "crate::UnknownType"
            -- Preserve the Aff runtime ABI without erasing native dictionary
            -- layouts in sibling modules such as Effect.Aff.Class.
            else if modName == "Effect_Aff" || modName == "Effect_Aff_AVar" || modName == "Effect_Aff_Compat" then "crate::UnknownType"
