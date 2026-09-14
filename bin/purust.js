@@ -41033,6 +41033,64 @@ var loadFfiCargo = (ffiPath) => () => {
   }).join("");
 };
 
+// output/Purust.ForeignTypes/foreign.js
+function declarations(source2) {
+  let clean = "", i = 0;
+  while (i < source2.length) {
+    if (source2.startsWith("--", i)) {
+      while (i < source2.length && source2[i] !== "\n") i++;
+    } else if (source2.startsWith("{-", i)) {
+      i += 2;
+      let depth = 1;
+      while (i < source2.length && depth) {
+        if (source2.startsWith("{-", i)) {
+          depth++;
+          i += 2;
+        } else if (source2.startsWith("-}", i)) {
+          depth--;
+          i += 2;
+        } else {
+          if (source2[i] === "\n") clean += "\n";
+          i++;
+        }
+      }
+    } else if (source2[i] === '"') {
+      const triple = source2.startsWith('"""', i);
+      i += triple ? 3 : 1;
+      while (i < source2.length) {
+        if (triple && source2.startsWith('"""', i)) {
+          i += 3;
+          break;
+        }
+        if (!triple && source2[i] === '"') {
+          i++;
+          break;
+        }
+        if (!triple && source2[i] === "\\") i++;
+        if (source2[i] === "\n") clean += "\n";
+        i++;
+      }
+      clean += " ";
+    } else {
+      clean += source2[i++];
+    }
+  }
+  return [...clean.matchAll(/^foreign\s+import\s+data\s+([A-Z][\w']*)\b/gm)].map((m) => m[1]);
+}
+function nativeDefinition(rust, name2) {
+  const escaped = name2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (new RegExp("\\b(?:struct|enum|type|trait)\\s+" + escaped + "\\b").test(rust)) return true;
+  for (const match2 of rust.matchAll(/\bpub\s+use\s+([^;]+);/g)) {
+    const names = match2[1].replace(/[{}]/g, "").split(",").map((part) => part.trim().split(/\s+as\s+|::/).at(-1));
+    if (names.includes(name2)) return true;
+  }
+  return false;
+}
+var foreignTypeForwards = (source2) => (rust) => declarations(source2).filter((name2) => !nativeDefinition(rust, name2)).map((name2) => {
+  if (!/^[A-Z][A-Za-z0-9_]*$/.test(name2)) throw new Error("Unqualified foreign type identifier: " + name2);
+  return "// Opaque FFI declaration only: no native values can be constructed.\n#[derive(Clone, Debug)]\npub enum " + name2 + " {}\n";
+}).join("\n");
+
 // output/Purust.Runtime/foreign.js
 import { Buffer as Buffer2 } from "node:buffer";
 
@@ -41192,7 +41250,7 @@ var configureThreading = function(v) {
     return replaceAll("[dependencies]\n")('[dependencies]\ntokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync", "macros"] }\n');
   }
   ;
-  throw new Error("Failed pattern match at Main (line 324, column 1 - line 324, column 50): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 330, column 1 - line 330, column 50): " + [v.constructor.name]);
 };
 var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ liftEffect3(argv))(function(args) {
   var threaded = elem6("--threaded")(args);
@@ -41210,14 +41268,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
         return "Main";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 52, column 34 - line 54, column 53): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 53, column 34 - line 55, column 53): " + [v1.constructor.name]);
     }
     ;
     if (v instanceof Nothing) {
       return "Main";
     }
     ;
-    throw new Error("Failed pattern match at Main (line 51, column 20 - line 55, column 39): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 52, column 20 - line 56, column 39): " + [v.constructor.name]);
   })();
   return discard1(liftEffect3(log2("Generating Rust code for " + mainModule)))(function() {
     var sourceDir = (function() {
@@ -41234,14 +41292,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
           return "output";
         }
         ;
-        throw new Error("Failed pattern match at Main (line 59, column 34 - line 61, column 55): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 60, column 34 - line 62, column 55): " + [v1.constructor.name]);
       }
       ;
       if (v instanceof Nothing) {
         return "output";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 58, column 19 - line 62, column 41): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 59, column 19 - line 63, column 41): " + [v.constructor.name]);
     })();
     return bind26(coreFnModulesFromOutput(sourceDir))(function(finalModules) {
       var buildGlobalTypes = function(modules) {
@@ -41329,7 +41387,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                 return v1.value0;
               }
               ;
-              throw new Error("Failed pattern match at Main (line 75, column 24 - line 85, column 38): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at Main (line 76, column 24 - line 86, column 38): " + [v1.constructor.name]);
             };
             var processBind = function(a) {
               return function(v1) {
@@ -41344,7 +41402,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                       return getTy2(extractAnn(v1.value0.value2));
                     }
                     ;
-                    throw new Error("Failed pattern match at Main (line 89, column 26 - line 91, column 61): " + [v2.constructor.name]);
+                    throw new Error("Failed pattern match at Main (line 90, column 26 - line 92, column 61): " + [v2.constructor.name]);
                   })();
                   if (tyMb instanceof Just) {
                     return insert111(modPrefix + sanitizeIdent(v1.value0.value1))(tyMb.value0)(a);
@@ -41354,7 +41412,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     return a;
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 92, column 18 - line 94, column 29): " + [tyMb.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 93, column 18 - line 95, column 29): " + [tyMb.constructor.name]);
                 }
                 ;
                 if (v1 instanceof Rec) {
@@ -41370,7 +41428,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                           return getTy2(extractAnn(v2.value2));
                         }
                         ;
-                        throw new Error("Failed pattern match at Main (line 97, column 28 - line 99, column 63): " + [v3.constructor.name]);
+                        throw new Error("Failed pattern match at Main (line 98, column 28 - line 100, column 63): " + [v3.constructor.name]);
                       })();
                       if (tyMb2 instanceof Just) {
                         return insert111(modPrefix + sanitizeIdent(v2.value1))(tyMb2.value0)(a$prime);
@@ -41380,12 +41438,12 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         return a$prime;
                       }
                       ;
-                      throw new Error("Failed pattern match at Main (line 100, column 20 - line 102, column 32): " + [tyMb2.constructor.name]);
+                      throw new Error("Failed pattern match at Main (line 101, column 20 - line 103, column 32): " + [tyMb2.constructor.name]);
                     };
                   })(a)(v1.value0);
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 87, column 27 - line 103, column 24): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 88, column 27 - line 104, column 24): " + [v1.constructor.name]);
               };
             };
             var acc11 = foldl16(processBind)(acc)(v.decls);
@@ -41399,7 +41457,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                   return a;
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 108, column 15 - line 110, column 29): " + [v1.value1.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 109, column 15 - line 111, column 29): " + [v1.value1.constructor.name]);
               };
             })(acc11)(toUnfoldable8(v.foreign));
             var acc3 = foldl16(function(a) {
@@ -41476,7 +41534,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                             return "";
                           }
                           ;
-                          throw new Error("Failed pattern match at Main (line 176, column 20 - line 178, column 31): " + [ffiPathMb.constructor.name]);
+                          throw new Error("Failed pattern match at Main (line 177, column 20 - line 179, column 31): " + [ffiPathMb.constructor.name]);
                         })();
                         var getArity2 = function(v3) {
                           if (v3 instanceof ForAll) {
@@ -41550,7 +41608,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return "";
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 203, column 57 - line 209, column 42): " + [tup.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 204, column 57 - line 210, column 42): " + [tup.constructor.name]);
                             })(toUnfoldable8(v1.foreign));
                             return content + ("\n\n" + missingStubs);
                           }
@@ -41565,11 +41623,20 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return "";
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 212, column 54 - line 214, column 38): " + [tup.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 213, column 54 - line 215, column 38): " + [tup.constructor.name]);
                             })(toUnfoldable8(v1.foreign));
                           }
                           ;
-                          throw new Error("Failed pattern match at Main (line 200, column 25 - line 215, column 46): " + [ffiPathMb.constructor.name]);
+                          throw new Error("Failed pattern match at Main (line 201, column 25 - line 216, column 46): " + [ffiPathMb.constructor.name]);
+                        })();
+                        var sourceExists = exists(v1.path)();
+                        var opaqueTypes = (function() {
+                          if (sourceExists) {
+                            var source2 = readTextFile(UTF8.value)(v1.path)();
+                            return foreignTypeForwards(source2)(rsFile + ("\n" + ffiContent));
+                          }
+                          ;
+                          return "";
                         })();
                         var rawModules = toUnfoldable14(collectModulesModule(v1));
                         var extractModules = function(s) {
@@ -41580,8 +41647,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                               var isValid2 = function(c) {
                                 return c >= "A" && c <= "Z" || (c >= "a" && c <= "z" || (c >= "0" && c <= "9" || c === "_"));
                               };
-                              var $185 = length4(mod5) > 0 && (length4(mod5) < 100 && all2(isValid2)(toCharArray(mod5)));
-                              if ($185) {
+                              var $186 = length4(mod5) > 0 && (length4(mod5) < 100 && all2(isValid2)(toCharArray(mod5)));
+                              if ($186) {
                                 return new Just(mod5);
                               }
                               ;
@@ -41592,7 +41659,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                               return Nothing.value;
                             }
                             ;
-                            throw new Error("Failed pattern match at Main (line 219, column 17 - line 224, column 37): " + [v3.constructor.name]);
+                            throw new Error("Failed pattern match at Main (line 225, column 17 - line 230, column 37): " + [v3.constructor.name]);
                           })(drop(1)(split("Purs_")(s)));
                         };
                         var extractedModules = extractModules(rsFile + ("\n" + ffiContent));
@@ -41600,8 +41667,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         var coreImports = nub5(mapMaybe(function(n) {
                           var nStr = replaceAll(".")("_")(n);
                           var isSelf = nStr === modName;
-                          var $187 = n === "Prim" || (eq211(indexOf2("Prim.")(n))(new Just(0)) || isSelf);
-                          if ($187) {
+                          var $188 = n === "Prim" || (eq211(indexOf2("Prim.")(n))(new Just(0)) || isSelf);
+                          if ($188) {
                             return Nothing.value;
                           }
                           ;
@@ -41610,7 +41677,7 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         var importsRust = joinWith("\n")(map59(function(i) {
                           return "use Purs_" + (i + "::*;");
                         })(coreImports));
-                        var rustCode = '#![allow(warnings)]\n#![recursion_limit = "512"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n' + (importsRust + ("\n\n" + (rsFile + ("\n\n" + (ffiContent + "\n\n")))));
+                        var rustCode = '#![allow(warnings)]\n#![recursion_limit = "512"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n' + (importsRust + ("\n\n" + (rsFile + ("\n\n" + (ffiContent + ("\n\n" + opaqueTypes))))));
                         return modify_(function(acc) {
                           return insert111(modName)({
                             code: rustCode,
@@ -41640,14 +41707,14 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     return "output/purust_output";
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 242, column 34 - line 244, column 69): " + [v1.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 248, column 34 - line 250, column 69): " + [v1.constructor.name]);
                 }
                 ;
                 if (v instanceof Nothing) {
                   return "output/purust_output";
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 241, column 18 - line 245, column 55): " + [v.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 247, column 18 - line 251, column 55): " + [v.constructor.name]);
               })();
               return function __do() {
                 var srcExists = exists(outDir + "/src")();
@@ -41683,11 +41750,11 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                                 return acc;
                               }
                               ;
-                              throw new Error("Failed pattern match at Main (line 266, column 19 - line 268, column 35): " + [v1.constructor.name]);
+                              throw new Error("Failed pattern match at Main (line 272, column 19 - line 274, column 35): " + [v1.constructor.name]);
                             };
                           })(v.value1)(toUnfoldable14(v.value1));
-                          var $198 = size2(newImps) > size2(v.value1);
-                          if ($198) {
+                          var $199 = size2(newImps) > size2(v.value1);
+                          if ($199) {
                             return function __do3() {
                               write(true)(changed)();
                               return modify_(insert111(v.value0)(newImps))(tcRef)();
@@ -41700,13 +41767,13 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                     })(pure110(unit))(arr)();
                     var isChanged = read(changed)();
                     if (isChanged) {
-                      return $lazy_loop(276)();
+                      return $lazy_loop(282)();
                     }
                     ;
                     return unit;
                   };
                 });
-                var loop = $lazy_loop(260);
+                var loop = $lazy_loop(266);
                 loop();
                 var finalTcMap = read(tcRef)();
                 var allShapes = foldl17(function(acc) {
@@ -41775,8 +41842,8 @@ var main = /* @__PURE__ */ launchAff_(/* @__PURE__ */ bind26(/* @__PURE__ */ lif
                         })(lookup16(v.value0)(finalTcMap)))))));
                         var modCargoToml = '[package]\nname = "Purs_' + (v.value0 + ('"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' + modDeps));
                         writeTextFile(UTF8.value)(modDir + "/Cargo.toml")(configureThreading(threaded)(modCargoToml + (function() {
-                          var $210 = v.value1.cargo === "";
-                          if ($210) {
+                          var $211 = v.value1.cargo === "";
+                          if ($211) {
                             return "";
                           }
                           ;

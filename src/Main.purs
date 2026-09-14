@@ -22,6 +22,7 @@ import Purust.ClassFields (superclassFields)
 import Purust.Threading (threadedRust, threadedPrelude)
 import Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource)
 import Purust.FfiCargo (loadFfiCargo)
+import Purust.ForeignTypes (foreignTypeForwards)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
@@ -214,6 +215,11 @@ main = launchAff_ do
                 Tuple _ Nothing -> ""
               ) (Map.toUnfoldable foreignArr)
           
+          sourceExists <- FS.exists coreFnMod.path
+          opaqueTypes <- if sourceExists then do
+            source <- FS.readTextFile UTF8 coreFnMod.path
+            pure $ foreignTypeForwards source (rsFile <> "\n" <> ffiContent)
+            else pure ""
           let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
           let extractModules s = Array.mapMaybe (\part -> 
                 case String.indexOf (Pattern "::") part of
@@ -232,7 +238,7 @@ main = launchAff_ do
                 in if n == "Prim" || String.indexOf (Pattern "Prim.") n == Just 0 || isSelf then Nothing else Just nStr
               ) allModules)
           let importsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") coreImports)
-          let rustCode = "#![allow(warnings)]\n#![recursion_limit = \"512\"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" <> importsRust <> "\n\n" <> rsFile <> "\n\n" <> ffiContent <> "\n\n"
+          let rustCode = "#![allow(warnings)]\n#![recursion_limit = \"512\"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" <> importsRust <> "\n\n" <> rsFile <> "\n\n" <> ffiContent <> "\n\n" <> opaqueTypes
           Ref.modify_ (\acc -> Map.insert modName { code: rustCode, imports: coreImports, cargo } acc) modulesRef
     }
     finalModules
