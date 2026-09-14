@@ -1,175 +1,159 @@
 # purust
 
-<img height="160" alt="Screenshot 2026-08-21 at 23 20 53" src="https://github.com/user-attachments/assets/2766a736-74ca-43db-aa50-6fa7d994c8d6" />
-<br />
-<br />
+<img height="160" alt="purust" src="https://github.com/user-attachments/assets/2766a736-74ca-43db-aa50-6fa7d994c8d6" />
 
-_Experimental WIP. You can [find a complete devlog here](https://discourse.purescript.org/t/leveraging-modern-low-level-a-rust-backend-for-purescript/5932/7)._ 
+**An experimental PureScript-to-Rust backend.** `purust` compiles PureScript through a typed intermediate representation and emits a Cargo workspace containing a native executable, generated modules, and its runtime.
 
-A super-optimized **PureScript-to-Rust compiler**, entirely written in PureScript, leveraging Rust's **blazing-fast execution**, **memory safety**, **zero-cost abstractions** and **huge ecosystem**. 
+The backend is written in PureScript, with JavaScript support code, and runs on Node.js during compilation. The generated application runs as a Rust binary. Follow development in the [project devlog](https://discourse.purescript.org/t/leveraging-modern-low-level-a-rust-backend-for-purescript/5932/7).
 
-`purust` leverages an enriched `tcorefn` (Typed CoreFn) representation to compile your pure business logic into robust, modern Rust code. It seamlessly integrates into your existing PureScript workflow as a custom backend.
+## Features
 
-## Why Rust?
-
-While the broader JS ecosystem has heavily leaned towards TypeScript, many backend services, systems programming tasks, and infrastructure tools rely heavily on Rust for its **raw performance**, **memory safety** (without a Garbage Collector), and **deployment simplicity** (single static binaries).
-
-`purust` aims to provide a bridge for developers who want the elegance and strict typing of a purely functional language like PureScript, while benefiting from Rust's massive ecosystem. It opens a door for those who want to compile their pure business logic into a highly optimized, safe, zero-dependency static binary that can run anywhere.
+- **Typed native code generation:** ADTs become Rust enums; typeclass declarations and typed expressions guide representation and specialization.
+- **Optimization before Rust compilation:** a TAST-aware fork of `purescript-backend-optimizer` supplies inlining, dead code elimination, uncurrying, and tail-call transformations.
+- **Rust FFI:** `.rs` implementations can call Rust libraries, with optional Cargo dependency declarations beside the FFI file.
+- **Two ownership modes:** local reference counting by default, or atomic shared ownership with `--threaded`. The Rust `Aff` implementation uses Tokio in threaded mode.
+- **Generated Cargo projects:** the backend writes manifests, module crates, runtime sources, and an executable entrypoint ready for Cargo.
 
 ## Benchmarks
 
-The performance results of code compiled with `purust` are available in the [altbak benchmark repository](https://github.com/0x000000000000000000001/altbak.pub#rust). These benchmarks are evaluated on various algorithms specifically designed to stress the CPU and RAM.
+The [Rust results in altbak.pub](https://github.com/0x000000000000000000001/altbak.pub#rust) are the reference benchmark baseline. They compare compiled PureScript with native functional and hand-written Rust implementations on deliberately stressful algorithms.
 
-## Why a new Rust backend?
+Consult that repository's commands, inputs, and recorded baseline when evaluating a compiler change. Results vary by workload, hardware, compiler version, and Cargo profile; the published core table measures sequential workloads and does not establish multi-core scaling or application-wide speedups.
 
-The `purust` project is largely inspired by previous efforts to compile PureScript to native targets. Reading through the discussions and challenges raised by users over the years, it became clear that the ecosystem has evolved drastically. This evolution unlocked new architectural paradigms that make building a completely new Rust backend highly relevant today:
+## Getting started
 
-### 1. The optimizer & bootstrapping
-While previous native compilers were often written in Haskell and parsed raw `CoreFn`, `purust` is written 100% in PureScript. It integrates directly with the [`purescript-backend-optimizer`](https://github.com/aristanetworks/purescript-backend-optimizer) (just like `purs-backend-es` or `phpurs`). This allows the compiler to instantly benefit from classical optimizations such as aggressive uncurrying, magic-do, and Tail Call Optimization (TCO) at the AST level. The `purust` compiler can then strictly focus on translating this highly-optimized AST into idiomatic, performant Rust code. Being built in PureScript also ensures it remains fully accessible to anyone in the ecosystem (installable via `spago` and `npm`).
+### Prerequisites
 
-### 2. Heap vs stack: a native memory layout for Rust
-For `purust`, the runtime relies on native Rust concepts. It uses `enum` (tagged unions) for ADTs, and leverages zero-cost abstractions, avoiding unnecessary heap allocations (boxing) whenever possible. This ensures that dynamic operations stay mostly on the stack, providing predictable and unparalleled performance while bypassing GC overhead entirely.
+You need:
 
-### 3. TAST: Breaking the performance ceiling
-To reach raw Rust speeds, `purust` consumes an enriched `tcorefn.json` (Typed CoreFn). This custom format preserves the deep structural typing information and the exact memory layout of ADTs that standard `corefn` strips away. Combined with partial monomorphization, this allows the compiler to generate idiomatic, statically typed Rust code end-to-end, unlocking massive performance gains over naive compilation.
+- Node.js and npm. The pinned Spago 1.0.3 requires Node.js 22.5 or newer.
+- A Rust toolchain with Cargo and a native linker. The hello-world example below was checked with Node.js 24.8.0 and Cargo/Rust 1.96.0; the repository does not declare a minimum Rust version.
+- The [TAST-enabled PureScript compiler fork](https://github.com/0x000000000000000000001/purescript), available as `purs` when compiling application sources. An upstream `purs` binary with the same version number is not sufficient.
+- The [optimizer fork](https://github.com/0x000000000000000000001/purescript-backend-optimizer) with the changes used by `purust` (the development checkout uses `edge-purust`), plus the local packages named below.
 
-### 4. Zero boilerplate FFI
-One of the pain points with FFI in alternative backends is the boilerplate (manual boxing/unboxing, currying). `purust` features a WebAssembly AST parser (`ffi_gen.wasm`) that analyzes your `.rs` FFI files on the fly. You can write perfectly flat and strongly typed Rust functions. The generated bridge takes care of all the uncurrying, type conversions, and Effect flattening under the hood, making FFI development feel 100% native.
+### Build the backend
 
-### 5. Up-to-date with modern PureScript & Rust
-`purust` aims to be fully aligned with the current v0.15+ ecosystem (and v0.16+ soon). It takes full advantage of modern Rust, including its powerful type system, zero-cost abstractions, and advanced concurrency primitives.
+The current build uses local checkout dependencies. A standalone `npm install` from GitHub does not establish those checkouts: the package's `prepare` script invokes a build against the paths in [spago.yaml](spago.yaml).
 
-### 6. Native Parallelism behind Aff
-Historical hurdles involved mapping PureScript’s asynchronous monad (`Aff`) without introducing massive overhead. `purust` features a threaded mode that generates atomic shared ownership (`Arc`) and requires shared callbacks to implement `Send + Sync`. The Rust Aff interpreter uses Tokio for asynchronous work, bringing true, shared-memory parallelism to PureScript. A heavy CPU-bound parallel workload naturally distributes across your CPU cores, scaling linearly.
+The compiler's checked-in configuration expects this layout:
 
-## How to use
-
-If you wish to configure an existing project, `purust` acts as a drop-in backend for the Spago build system.
-
-1. **Install the `purust` backend compiler:**
-   You can install the compiler directly from GitHub. NPM will automatically compile it in the background during installation.
-   ```bash
-   npm install --save-dev github:0x000000000000000000001/purust
-   ```
-
-2. **Manage Core Library Overrides (`spago.yaml`):**
-   Because standard PureScript libraries use JavaScript FFI, you must override them with their `purust-*` counterparts. Keep using the official PureScript registry as your base, and manually define all Rust overrides using the `extraPackages` directive.
-
-   ```yaml
-   workspace:
-     packageSet:
-       registry: 77.10.1
-     extraPackages:
-       prelude:
-         git: "https://github.com/0x000000000000000000001/purust-prelude.git"
-         ref: "master"
-         dependencies: []
-       # ... all other purust-* packages
-     backend:
-       cmd: purust
-   ```
-
-3. **Build and execute:**
-   The compiler will parse all `tcorefn.json` files generated by `purs` (via a TAST-enabled fork) and output native Rust files in the `output/` directory.
-   
-   An executable `main.rs` entrypoint will be automatically generated. You can run it directly by initializing a Cargo project in the output folder:
-   
-   ```bash
-   spago build
-   cd output
-   cargo init --bin --name purust_app
-   cargo run
-   ```
-
-### Compiler configuration options
-
-The `purust` compiler is entirely **zero-config by default**. It will automatically scan your `tcorefn` ASTs and generate a ready-to-execute `main.rs` entrypoint.
-
-If you need advanced behavior, you can pass arguments to the `purust` compiler by appending them to the `spago build --backend-args` command:
-
-```bash
-spago build --backend purust --backend-args "--main App.Main"
-```
-
-| Option | Description |
-|---|---|
-| `--main <Module>` | *Optional*. Explicitly sets the entrypoint module. Without this flag, `purust` automatically targets the `Main` module. |
-
-## Local development & testing
-
-If you plan to contribute to the compiler or run the official test suite locally, you will have to follow a specific "sibling-checkout" directory layout. 
-
-Because `purust` replaces the JS ecosystem with Rust, it requires custom Rust-compatible forks of the core PureScript libraries (e.g. `purescript-prelude` becomes `purust-prelude`). The internal test runner (`bin/test`) expects these core `purust-*` repositories to be cloned side-by-side in the same parent directory as the main `purust` repository.
-
-```
+```text
 workspace/
-├── purust/
-├── purust-prelude/
-├── purust-effect/
-├── purust-console/
-├── purust-assert/
-└── ... (all other core purust-* forks)
+├── purescript/                          # TAST compiler; also supplies bin/test fixtures
+├── purescript-backend-optimizer-purust/  # TAST-aware optimizer checkout
+├── gopurs/
+│   ├── gopurs-st/
+│   ├── gopurs-unsafe-coerce/
+│   └── gopurs-assert/
+└── purust/
+    ├── purust/                          # this repository
+    ├── purust-prelude/
+    ├── purust-effect/
+    ├── purust-console/
+    ├── ...                             # other Rust library ports as needed
+    └── hello-rust/                      # example application below
 ```
 
-To easily clone all these required dependencies, you can simply run the provided setup script:
+The three `gopurs-*` paths are dependencies of the compiler build. Application sources use the appropriate `purust-*` ports. The compiler's dependencies are defined in [spago.yaml](spago.yaml); the larger test runner's Rust library checkouts are listed in [tests/runner/spago.yaml](tests/runner/spago.yaml). Adjust the local paths if you use a different layout.
+
+Once those checkouts exist, build the compiler from this repository:
+
 ```bash
-cd purust
-./bin/setup
+npm install        # prepare builds the backend and bundles bin/purust.js
 ```
 
-To run the test suite:
-```bash
-./bin/test
+After compiler changes, rebuild with `npm run build`. The [bin/purust](bin/purust) launcher runs the bundle with the Node.js stack and heap settings used by the project.
+
+### Compile and run an application
+
+Create `hello-rust` alongside this repository and the three library ports in the layout above. Add `src/Main.purs`:
+
+```purescript
+module Main where
+
+import Prelude
+import Effect (Effect)
+import Effect.Console (log)
+
+main :: Effect Unit
+main = log "Hello from PureScript and Rust!"
 ```
 
-## Current status & milestones
-
-Since its inception, `purust` has reached several major milestones:
-
-- [x] **100% of the official tests are green.**
-- [x] **Typed AST (TAST):** By consuming an enriched `tcorefn.json` (Typed CoreFn) instead of standard `corefn`, `purust` preserves deep structural typing. Combined with partial monomorphization, this unlocks massive performance gains.
-- [x] **Zero boilerplate FFI:** A complete overhaul of the FFI developer experience via a WebAssembly parser (`ffi_gen.wasm`). It analyzes your Rust signatures on the fly, allowing you to write idiomatic Rust without manual boxing or closures.
-- [x] **Native `Aff` via Tokio:** Full support for `Aff` mapped directly to Rust's asynchronous Tokio runtime, providing **true multi-core parallelism**.
-- [x] **Module validation:** Validate tests module by module (`purust-*`).
-- [ ] General code **cleanup**.
-
-_(maybe more to come)_
-
-## Architecture
-
-`purust` is built on top of [Arista's purescript-backend-optimizer](https://github.com/aristanetworks/purescript-backend-optimizer) to avoid reinventing the optimization wheel. The compilation pipeline is functionally decoupled:
-
-1. **Optimization**: The optimizer reads the `tcorefn.json` generated by `purs`, performs aggressive Dead Code Elimination (DCE), typeclass dictionary resolution, inlining, and constant folding at the AST level, and outputs an optimized `BackendModule`.
-2. **Code Generation**: `Purust.CodeGen` maps this heavily optimized PureScript AST to our native `RustAst`.
-3. **Printing**: `Purust.Printer` formats the Rust AST into valid, modern Rust syntax.
-4. **Caching & CLI**: `Main` orchestrates the CLI, writing the generated `.rs` files to their respective module directories. 
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
-## Concurrent Aff programs
-
-Add `--threaded` to the backend arguments for programs using the Rust Aff FFI:
+Add `spago.yaml`:
 
 ```yaml
+package:
+  name: hello-rust
+  dependencies:
+    - console
+    - effect
+    - prelude
 workspace:
+  packageSet:
+    registry: 77.10.1
+  extraPackages:
+    prelude:
+      path: ../purust-prelude
+    effect:
+      path: ../purust-effect
+    console:
+      path: ../purust-console
   backend:
     cmd: ../purust/bin/purust
-    args: [--main, Main, --source, output, --out, output/purust_output, --threaded]
+    args: [--main, Main, --source, output, --out, output/purust_output]
 ```
 
-The generated executable installs the Aff runtime and keeps it alive until active
-fibers finish. The default mode retains non-atomic ownership for programs that do
-not share values between threads. Rust FFI remains subject to the compiler's
-thread-safety checks; threaded code cannot capture a non-`Send` or non-`Sync` value
-in a shared callback. Ownership rendering preserves Rust literals and comments.
+From `hello-rust`, put the TAST compiler's executable directory on `PATH` and build:
 
-The sibling `purust-aff/bin/test -c` rebuilds the compiler and validates the Aff
-suite, concurrent Ref/AVar integration, and children that outlive their parents.
-`purust-aff/bin/test --smoke` runs the small initial Aff scenario.
+```bash
+export PATH="/absolute/path/to/tast-purs-directory:$PATH"
+../purust/node_modules/.bin/spago build
+cargo run --manifest-path output/purust_output/Cargo.toml
+```
 
-## Cargo dependencies of Rust FFI
+Expected output from the application:
+
+```text
+Hello from PureScript and Rust!
+```
+
+`purust` creates `output/purust_output/Cargo.toml` and `src/main.rs`, a crate for each generated module, and the `purust_core` and `perceus_ptr` runtime crates. Cargo resolves registry dependencies such as `mimalloc` and `fancy-regex`; threaded output also uses Tokio. No `cargo init` step is needed. Generated files are overwritten on regeneration.
+
+The compiler reads **`output/<Module>/corefn.json` containing TAST metadata**. Although the representation is called `tcorefn`, this checkout's reader uses the filename `corefn.json`. The current fork exports `dataDecls`, `classDecls`, and a `typeTable`; check these fields when diagnosing a wrong compiler or stale build output. Recompile application sources after changing the PureScript compiler.
+
+For a release build, use `cargo build --release --manifest-path output/purust_output/Cargo.toml`. The generated release profile currently sets `opt-level = 1` and retains debug information. Static linking and cross-compilation depend on the Rust target, linker, and FFI dependencies.
+
+### Compiler options
+
+Paths are relative to the application's working directory. Arguments can be placed in `workspace.backend.args`, or passed directly to the launcher:
+
+```bash
+../purust/bin/purust --source output --out output/purust_output --main Main
+```
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `--main <Module>` | `Main` | Module exposing the executable's `main :: Effect Unit`. |
+| `--source <directory>` | `output` | Read module directories containing typed `corefn.json` files. |
+| `--out <directory>` | `output/purust_output` | Write the Cargo workspace. Its parent directory must exist. |
+| `--ffi-dir <directory>` | `../` | Additional location for Rust FFI lookup; source-adjacent `.rs` files take precedence. |
+| `--threaded` | Disabled | Use atomic ownership and thread-safe shared callbacks. Required for the Rust Aff runtime. |
+
+The CLI currently has no help/version command or strict argument validation. Configure the options above in `workspace.backend.args`. To enable threaded output, add `--threaded` to that YAML list while retaining your existing arguments.
+
+## Foreign function interface
+
+Provide a `.rs` file beside the corresponding `.purs` source, or in a configured FFI search location. Functions use the module prefix with dots replaced by underscores, followed by the exported name. For example, `Native.add :: Int -> Int -> Int` is implemented as:
+
+```rust
+pub fn Native_add(a: i64, b: i64) -> i64 {
+    a + b
+}
+```
+
+The Rust file is included in the generated module crate. It must match the backend's ABI: concrete arguments can use native types, while polymorphic values, callbacks, and effects may use generated runtime types and wrappers. See the executable [Cargo FFI fixture](tests/tast/fixtures/ffi-cargo/CargoDependency.rs) for foreign types and a deferred effect. There is no automatic Rust-signature parser in the current compilation path.
+
+### Cargo dependencies
 
 A resolved `Module.rs` may have an adjacent `Module.rs.cargo.json`:
 
@@ -186,7 +170,6 @@ A resolved `Module.rs` may have an adjacent `Module.rs.cargo.json`:
 }
 ```
 
-This is an export-format example, not an implementation of `JS.BigInt`.
 The dependencies are emitted only in the Cargo crate of that resolved FFI,
 including a module with foreign types but no foreign values. The sidecar follows
 the resolved `.rs` path; it is not searched independently. Without it, generation
@@ -202,9 +185,67 @@ cannot be overridden; hyphen/underscore crate-name collisions are rejected.
 
 The export uses ordinary registry dependencies, with no host paths added.
 Cargo must resolve them in the build environment; pinning a direct dependency
-does not replace Cargo.lock for its transitive dependencies. The b8x Rust driver
-tracks sidecar contents, addition/removal and redirection as build inputs.
+does not replace Cargo.lock for its transitive dependencies.
 
 Regression: `PURS=/absolute/path/to/the/tast-fork node tests/tast/ffi-cargo.mjs`.
 It compiles fresh TAST, relocates exports and runs Cargo offline in both ownership
 modes, so the fixture dependencies must already be available in the local cache.
+
+### Concurrent Aff programs
+
+Use the `purust-aff` library port and add `--threaded` to the backend arguments:
+
+```yaml
+workspace:
+  backend:
+    cmd: ../purust/bin/purust
+    args: [--main, Main, --source, output, --out, output/purust_output, --threaded]
+```
+
+Keep the package set and required library overrides from your application configuration. When `Effect.Aff` is present in threaded output, the generated executable installs its runtime and waits for active fibers to finish. Default output uses the local microtask runtime.
+
+Threaded code uses atomic ownership and requires shared callbacks to satisfy Rust's `Send + Sync` constraints. FFI captured by those callbacks must meet the same requirements. Tokio can execute work across multiple threads; throughput and scaling depend on the workload and are not guaranteed to be linear.
+
+## Development and testing
+
+Build the compiler first. From this repository:
+
+```bash
+npm run test:codegen
+PURS=/absolute/path/to/tast-purs npm run test:tast
+```
+
+These are code-generation and fresh-TAST regression suites. They require Rust tools; individual fixtures may also require sibling library ports and locally cached Cargo dependencies. See [tests/codegen](tests/codegen) and [tests/tast](tests/tast) for their scope.
+
+The compiler fixture runner uses `purescript/tests/purs/passing` from the checkout layout above and the library ports in [tests/runner/spago.yaml](tests/runner/spago.yaml):
+
+```bash
+export PATH="$PWD/node_modules/.bin:$PATH"
+export PATH="/absolute/path/to/tast-purs-directory:$PATH"
+./bin/test SomeFixture.purs       # an existing fixture name or path
+./bin/test                      # run the configured passing-test directory
+./bin/test -c                   # reinstall/rebuild and clear runner caches first
+```
+
+Run these commands in a disposable test checkout: the runner replaces its `tests/runner/src` contents and clears generated output. Use the committed runner configuration; its fallback configuration generator contains legacy `gopurs-*` paths.
+
+The sibling `purust-aff/bin/test --smoke` runs a small Aff scenario. Its `bin/test -c` rebuilds the compiler and runs Aff, Ref/AVar integration, fiber lifetime, and error-reporting checks.
+
+## Architecture
+
+1. [Main](src/Main.purs) loads the typed modules and their data/typeclass declarations through the optimizer fork.
+2. The optimizer produces `BackendModule` values. [Purust.CodeGen](src/Purust/CodeGen.purs) and its helper modules generate Rust source using the preserved types.
+3. The backend resolves Rust FFI, validates adjacent Cargo declarations, and emits module crates, runtime files, and the executable workspace.
+4. Cargo compiles that workspace into the target binary.
+
+## Current status and limitations
+
+The backend and library ports are experimental. Targeted regressions and individual package suites do not establish support for every upstream PureScript test or library. Library compatibility depends on the available Rust FFI implementations; JavaScript FFI cannot run in the generated application.
+
+Missing foreign implementations can currently produce fallback values or `unimplemented!()` bodies instead of an early error. Verify that every foreign import has a real Rust implementation before relying on application results.
+
+Typed generation reduces boxing where supported, but the runtime still includes dynamic `Value` representations, reference-counted allocations, and closures. The runtime and some FFI use `unsafe` Rust; successful compilation alone is not proof of memory safety or full PureScript compatibility. The project does not promise stack-only execution, allocation-free code, or support for every library.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
