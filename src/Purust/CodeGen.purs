@@ -773,7 +773,9 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
                     (String.joinWith "_" (Array.dropEnd 1 fqn))
                   name = sanitizeIdent (fromMaybe className (Array.last fqn))
                   nativeName = (if modName == currentMod then "crate::" else "Purs_" <> modName <> "::") <> name
-              in case Map.lookup (modName <> "_" <> name) globalClassFields of
+              in if modName == "Foreign_Object" && name == "Object" then
+                "(" <> code <> ").__purust_foreign_object()"
+              else case Map.lookup (modName <> "_" <> name) globalClassFields of
                 Nothing -> downcast code
                 Just fields ->
                   let fieldValues = map (\(Tuple field fieldType) ->

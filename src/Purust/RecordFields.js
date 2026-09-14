@@ -48,4 +48,18 @@ impl SharedRecord {
         self.0.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
+
+impl Value {
+    // Immutable PureScript records can enter Foreign.Object through Foreign
+    // readers. Keep existing object handles shared; materialize own fields
+    // only when crossing from a native immutable record representation.
+    pub fn __purust_foreign_object(&self) -> std::rc::Rc<SharedRecord> {
+        if let Value::Class(native) = self.resolve() {
+            return native.downcast_ref::<std::rc::Rc<SharedRecord>>()
+                .expect("Expected a Foreign.Object handle").clone();
+        }
+        let fields = self.__purust_record_fields().expect("Expected an object or record");
+        std::rc::Rc::new(SharedRecord::from_entries(fields.entries()))
+    }
+}
 `;

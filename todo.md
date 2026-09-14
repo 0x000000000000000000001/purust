@@ -28,7 +28,7 @@ La fermeture des intégrations passe `cargo check` (806 crates natives),
 la compilation native et les 417 sondes de garde initiales. Les exécutions
 réelles progressent dans l'initialisation et les événements PostgreSQL ;
 les FFI Router, UUID et clé de verrou ont levé les premiers arrêts.
-Le décodage JSON natif est en cours. Les **27 intégrations ne sont pas encore
+Le décodage JSON natif est raccordé et qualifié séparément. Les **27 intégrations ne sont pas encore
 validées**, ni le nouveau défaut à 286.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
@@ -5624,6 +5624,19 @@ Avancée du lot en cours (14 septembre, sans clôture anticipée) :
 - [x] Adaptateurs JSON : distinction null/undefined et insertion non mutante
   du payload absent, records dynamiques et Foreign.Object natif, Rc/Arc Linux ;
   preuve `output/json-adapters-native-B6ofOb/report.json`.
+- [x] UUID : 9 979 cas par mode Rc/Arc Linux, v3/v4/v5, validation, UTF-16
+  et erreurs ; UUID v4 natifs également validés par JS uuid 13.0.0.
+  Preuve `output/purust-uuid-rdy9LT/report.json`.
+- [x] Router : contrats sur Free, ADT et records générés frais, Rc/Arc Linux,
+  identité de `empty`, enregistrement persistant et fallback intact ; preuve
+  `output/router-native-Kzofsv/report.json`. La table native ne reproduit pas
+  l'héritage Object.prototype ni le setter JS spécial `__proto__` ; cet écart
+  reste explicite, hors des étiquettes du chemin b8x qualifié.
+- [x] JSON natif sans reviver : 1 214 cas JS, six tests par mode Rc/Arc,
+  exceptions des callbacks et 66 gardes éprouvées par mode ; preuve
+  `output/json-native-5a060x/report.json`. La formulation des messages de
+  syntaxe n'est pas une émulation des messages V8.
+- [x] Régressions courantes : 72 tests codegen et 75 tests driver/CLI verts.
 - [x] CLI : sélection transitive validée par le compilateur officiel, agrégats
   Core/Infra/Util originaux et délai par test identique à `Test.Main`.
   75 tests du pilote passent ; cela ne remplace pas les 286 tests b8x.
