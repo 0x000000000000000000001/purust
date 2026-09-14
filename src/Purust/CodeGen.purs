@@ -809,7 +809,9 @@ boxUnbox valueEnums globalClassFields currentMod expected actual code =
         else if expStr == "char" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_char()"
         else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "char" then "crate::mk_char(" <> code <> ")"
         else if expStr == "String" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_string()"
-        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "String" then "crate::mk_string(&(" <> code <> "))"
+        -- An owned String gives a diverging expression a sized expected type.
+        -- Borrowing it as &str first makes Rust infer an unsized `str` for !.
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "String" then "purust_core::Value::String(" <> code <> ")"
         else code
 
 extractAllArgTypes :: ExprType -> Array ExprType

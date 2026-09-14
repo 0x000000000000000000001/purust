@@ -19,6 +19,9 @@ const directory = mkdtempSync(join(process.env.PURUST_JSON_OUTPUT ?? tmpdir(), '
 const prelude = codegenPrelude(fromFoldable(foldableArray)(ordString)(['', 'a', 'type,value']));
 const read = path => readFileSync(resolve(root, path), 'utf8');
 const manifest = JSON.parse(read('../purust-yoga-json/src/Yoga/JSON.rs.cargo.json'));
+const bigintManifest = JSON.parse(read('../purust-js-bigints/src/JS/BigInt.rs.cargo.json'));
+const foreignManifest = JSON.parse(read('../purust-foreign/src/Foreign.rs.cargo.json'));
+assert.deepEqual(foreignManifest.dependencies['num-bigint-dig'], bigintManifest.dependencies['num-bigint-dig']);
 const report = { complete: false, commands: [], assertions: 0 };
 const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex');
 report.inputs = ['bin/purust.js', 'output/Purust.CodeGen/index.js', 'src/Purust/RecordFields.js', 'src/Purust/Utf16.js',
@@ -26,6 +29,8 @@ report.inputs = ['bin/purust.js', 'output/Purust.CodeGen/index.js', 'src/Purust/
   'tests/runtime/perceus_ptr/src/local.rs', 'tests/runtime/perceus_ptr/src/threaded.rs',
   '../purust-foreign-object/src/Foreign/Object.rs', '../purust-foreign-object/src/Foreign/Object/ST.rs',
   '../purust-record/src/Record/Builder.rs', '../purust-foreign/src/Foreign.rs', '../purust-foreign/src/Foreign/Index.rs',
+  '../purust-foreign/src/Foreign.rs.cargo.json', '../purust-exceptions/src/Effect/Exception.rs',
+  '../purust-js-bigints/src/JS/BigInt.rs', '../purust-js-bigints/src/JS/BigInt.rs.cargo.json',
   '../purust-yoga-json/src/Yoga/JSON.rs', '../purust-yoga-json/src/Yoga/JSON.rs.cargo.json', '../purust-yoga-json/src/Yoga/JSON.js']
   .map(p => { const path = resolve(root, p); return { path, sha256: hash(path) }; });
 const cases = [];
@@ -96,13 +101,20 @@ assert!(!foreign::Foreign_isNull(Value::Unit));
 assert!(foreign::Foreign_isUndefined(Value::Unit));
 assert!(foreign::Foreign_isArray(mk_array(vec![])));
 assert!(!foreign::Foreign_isArray(Value::Null));
+let big = Value::Class(std::rc::Rc::new(std::rc::Rc::new("123456789012345678901234567890".parse::<BigInt>().unwrap())));
+assert_eq!(foreign::Foreign_tagOf(big.clone()), "BigInt");
+assert_eq!(foreign::Foreign_typeOf(big.clone()), "bigint");
+assert_eq!(json::Yoga_JSON__unsafeStringify(big), "\\\"123456789012345678901234567890\\\"");
+assert_eq!(foreign::Foreign_tagOf(Value::Class(std::rc::Rc::new(object.clone()))), "Object");
+assert_eq!(foreign::Foreign_typeOf(Value::Class(std::rc::Rc::new(object.clone()))), "object");
 let copied = object.snapshot();
 object.insert("new".into(), mk_int(9));
 assert!(copied.get("new").is_none());
 // The callback re-enters the source object; mapWithKey must release its lock.
 let source = Value::Class(std::rc::Rc::new(object.clone()));
-let callback = Value::Func2(Func2::Shared(std::rc::Rc::new(move |key, value| {
-    assert!(object.get(&key.unwrap_string()).is_some()); value
+let callback = Value::Func1(Func1::Shared(std::rc::Rc::new(move |key| {
+    assert!(object.get(&key.unwrap_string()).is_some());
+    Value::Func1(Func1::Static(|value| value))
 })));
 let mapped = object::Foreign_Object__mapWithKey().unwrap_func2()(source, callback);
 assert_eq!(mapped.unwrap_class::<std::rc::Rc<Object>>().get("new").unwrap().unwrap_int(), 9);
@@ -118,18 +130,24 @@ try {
 extern crate self as purust_core;
 extern crate self as Purs_Foreign_Object_ST;
 extern crate self as Purs_Foreign_Object;
+extern crate self as Purs_JS_BigInt;
+extern crate self as Purs_Effect_Exception;
 mod perceus_ptr { ${read('tests/runtime/perceus_ptr/src/lib.rs').replace('mod local;', `mod local { ${read('tests/runtime/perceus_ptr/src/local.rs')} }`).replace('mod threaded;', `mod threaded { ${read('tests/runtime/perceus_ptr/src/threaded.rs')} }`)} }
 mod object_st { ${adapt(read('../purust-foreign-object/src/Foreign/Object/ST.rs'))} }
 pub use object_st::STObject;
 mod object { ${adapt(read('../purust-foreign-object/src/Foreign/Object.rs'))} }
 pub use object::Object;
+mod bigint { ${adapt(read('../purust-js-bigints/src/JS/BigInt.rs'))} }
+pub use bigint::BigInt;
+mod exception { ${adapt(read('../purust-exceptions/src/Effect/Exception.rs'))} }
+pub use exception::{purust_exception_raise, Effect_Exception_errorWithName};
 mod builder { use crate::perceus_ptr; ${adapt(read('../purust-record/src/Record/Builder.rs'))} }
 mod json { ${adapt(read('../purust-yoga-json/src/Yoga/JSON.rs'))} }
 mod foreign { ${adapt(read('../purust-foreign/src/Foreign.rs'))} }
 mod index { ${adapt(read('../purust-foreign/src/Foreign/Index.rs'))} }
 ${adapt(checks)}`;
     writeFileSync(join(dir, 'main.rs'), code);
-    writeFileSync(join(dir, 'Cargo.toml'), `[package]\nname="json_ffi"\nversion="0.0.0"\nedition="2021"\n[[bin]]\nname="json_ffi"\npath="main.rs"\n[features]\nthreaded=[]\n[dependencies]\nryu-js="${manifest.dependencies['ryu-js'].version}"\n`);
+    writeFileSync(join(dir, 'Cargo.toml'), `[package]\nname="json_ffi"\nversion="0.0.0"\nedition="2021"\n[[bin]]\nname="json_ffi"\npath="main.rs"\n[features]\nthreaded=[]\n[dependencies]\nryu-js="${manifest.dependencies['ryu-js'].version}"\nnum-bigint-dig={version="${bigintManifest.dependencies['num-bigint-dig'].version}",default-features=false}\n`);
     const remote = '/var/www/b8x/run/bak/' + relative(mount, dir);
     const prefix = docker ? ['exec', '-w', remote, '-e', 'CARGO_BUILD_JOBS=1', '-e', 'CARGO_PROFILE_DEV_DEBUG=0', '-e', 'CARGO_INCREMENTAL=0', 'core-api-cli-1', 'cargo'] : [];
     const result = spawnSync(docker ? 'docker' : 'cargo', [...prefix, 'run', '--offline', '--quiet', ...(threaded ? ['--features', 'threaded'] : [])], {

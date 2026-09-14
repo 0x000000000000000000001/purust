@@ -38,9 +38,9 @@ function nativeDefinition(rust, name) {
 }
 
 export const foreignTypeForwards = source => rust => declarations(source)
-  .filter(name => !nativeDefinition(rust, name))
   .map(name => {
     if (!/^[A-Z][A-Za-z0-9_]*$/.test(name)) throw new Error('Unqualified foreign type identifier: ' + name);
+    if (nativeDefinition(rust, name)) return '// Native FFI type declaration: ' + name + '\n';
     return '// Opaque FFI declaration only: no native values can be constructed.\n' +
       '#[derive(Clone, Debug)]\npub enum ' + name + ' {}\n';
   }).join('\n');

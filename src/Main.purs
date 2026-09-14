@@ -49,6 +49,9 @@ main :: Effect Unit
 main = launchAff_ do
   args <- liftEffect Process.argv
   let threaded = Array.elem "--threaded" args
+  let ffiDir = case Array.findIndex (_ == "--ffi-dir") args of
+        Just idx -> Array.index args (idx + 1)
+        Nothing -> Just "../"
   let mainModule = case Array.findIndex (_ == "--main") args of
                      Just idx -> case Array.index args (idx + 1) of
                                    Just m -> m
@@ -173,7 +176,7 @@ main = launchAff_ do
           let modPrefix = modName <> "_"
           let allMacroBindings = Set.empty -- Placeholder
           
-          ffiPathMb <- findFfiFile ".rs" [] (Just "../") modNameStr (Just coreFnMod.path)
+          ffiPathMb <- findFfiFile ".rs" [] ffiDir modNameStr (Just coreFnMod.path)
           cargo <- case ffiPathMb of
             Just ffiPath -> loadFfiCargo ffiPath
             Nothing -> pure ""
