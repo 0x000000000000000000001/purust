@@ -5637,6 +5637,20 @@ Avancée du lot en cours (14 septembre, sans clôture anticipée) :
   `output/json-native-5a060x/report.json`. La formulation des messages de
   syntaxe n'est pas une émulation des messages V8.
 - [x] Régressions courantes : 72 tests codegen et 75 tests driver/CLI verts.
+- [x] `execution-4uUUhn` : panique `Expected Class` dans le lecteur JSON
+  d'objets, puis attente Aff jusqu'à la borne de diagnostic. Pont ciblé
+  record immuable → Foreign.Object dans le générateur/runtime, avec champs
+  conservés et identité des handles existants préservée ; 73 tests codegen
+  verts après correction. Aucun changement aux assertions b8x.
+- [x] Panique fatale Aff : six blocages reproduits sur la baseline, puis
+  12 scénarios conformes ; panics en 38–82 ms, sortie 101, tâches pendantes
+  libérées, erreurs Aff ordinaires et nettoyages maintenus. Preuves
+  `output/aff-fatal-fKEuFk/baseline-verified.json` et
+  `output/aff-fatal-l83sJN/report.json`.
+- [x] `execution-OeQzMo` franchit la conversion d'objets et s'arrête en 477 ms
+  sur la garde `Foreign_Object_toArrayWithKey`, également reproduite par
+  le test TAST isolé. Son portage est intégré au prochain diagnostic ; les
+  deux bases temporaires de chaque essai ont été supprimées nominativement.
 - [x] CLI : sélection transitive validée par le compilateur officiel, agrégats
   Core/Infra/Util originaux et délai par test identique à `Test.Main`.
   75 tests du pilote passent ; cela ne remplace pas les 286 tests b8x.
