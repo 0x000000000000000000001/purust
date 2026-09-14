@@ -2,38 +2,33 @@
 
 Mis à jour le 14 septembre 2026.
 
-**État courant (bloc 0.49 terminé, bloc 0.50 en cours) :**
-**Dernier `b -c; t -c` validé : 259/259** après les ajouts du bloc PostgreSQL,
-build prêt `build-0GsAzz`, nettoyage DB vide, 75 gardes forcés et aucun atteint.
-Le code du défaut est maintenant raccordé à Core/Infra/Util (286 tests), mais
-ce nouveau défaut n'est **pas encore qualifié** : l'ancien manifeste 259 ne
-peut pas le valider. La clôture demande son exécution réelle sans fallback.
-Les 21 tests Variant Encoding rejoignent HTML + Stash + HTML Clean + String,
-avec leurs assertions originales. Les 259 tests sans services recensés sont
-intégrés ; ce n'est pas encore toute b8x. b8x reste sur **master**, purust sur
-**edge**. Les API FFI inutilisées restent des dettes distinctes.
-**Bloc 0.50 en cours — Astra : 27 tests d'intégration PostgreSQL/RabbitMQ**,
-pour atteindre 286/286. Environ **91 % du comptage des tests**, pas du travail.
-M2/M4 restent ouverts jusqu'à la qualification de la suite complète.
-Le profil Spago étendu et le compilateur courant sont couverts par cette
-régression (`regression-ELdkj6/report.json`) : **68 tests codegen et 72 tests
-driver/CLI passent**. Les FFI Promise et Rejection et leur pont Aff passent
-sur TAST frais sous macOS et Linux ; ordre des callbacks comparé aux FFI JS.
-Le premier contrat PostgreSQL natif fonctionne : configuration interne,
-requêtes paramétrées, JSON, transactions dédiées, libération et fermeture.
-RabbitMQ est également qualifié séparément : huit contrôles PureScript Linux,
-callback en erreur non acquitté/redélivrable, onze gardes forcés/non atteints.
-JSON parse/pretty/undefined passe 3 585 cas en Rc/Arc sous macOS/Linux.
-La fermeture des intégrations passe `cargo check` (806 crates natives),
-la compilation native et les 417 sondes de garde initiales. Les exécutions
-réelles atteignent maintenant **17/27 intégrations originales** (commandes,
-EventStore et première projection). Le cache disque est porté ; le dernier
-arrêt est `Data.DateTime.Instant.toDateTimeImpl`, dont la conversion et la
-normalisation des dates sont en qualification. Une assertion de concurrence
-a aussi échoué de façon intermittente (`execution-AaIiTB`) : son diagnostic
-Rust/JS reste ouvert, même si le passage suivant réussit. Les FFI Router,
-UUID, clé de verrou et JSON ont levé les premiers arrêts. Les **27 intégrations ne sont pas encore
-validées**, ni le nouveau défaut à 286.
+**Objectif atteint — bloc 0.50 terminé, M2/M3/M4 validés pour la suite active.**
+Après `target rust` et `b -c`, `t -c` lance par défaut **286/286 tests** :
+259 sans services et 27 intégrations PostgreSQL/RabbitMQ, assertions originales.
+Le build frais **`build-DRm4pH`**, issu de **1 379 modules TAST**, a passé la
+suite complète **cinq fois** (quatre `t -c`, un `t` après le contrôle négatif),
+en 38,5–40,5 s par passage. Sorties 0, zéro test en attente, bases vides après
+chaque exécution ; **391 sondes de fallback forcées, aucun fallback atteint
+pendant les tests**. Le négatif conserve son assertion fautive : **2/3 → 101**,
+sans changer le build par défaut.
+
+Preuve finale :
+`b8x/run/bak/rust/output/integrations-block-sQXXt8/commitfix-qualification-9mrHEl/report.json`
+(`complete: true`). b8x reste sur **master**, purust sur **edge**, cible Rust.
+Les régressions **codegen 76/76** et **driver/CLI 76/76** passent également.
+
+Le dernier blocage était une vraie fenêtre de concurrence de l'EventStore :
+son intention était supprimée avant le COMMIT. Elle est maintenant conservée
+jusqu'à la fin de la transaction. Le test ciblé reproduit le double succès
+avant correction et le refus du concurrent après correction. Les trois tests
+Core passent aussi cinq fois sous JS. Leur fixture de synchronisation des
+lectures réelles ne modifie ni assertions, ni limites de retry, ni comptage.
+
+Le premier passage vert `build-ZcDMso`, puis sa répétition bloquée, restent
+des preuves historiques incomplètes, pas la validation finale. Les API FFI
+inutilisées, l'ordre général d'énumération des records et les qualifications
+complémentaires non exécutées restent des dettes distinctes : cette clôture
+ne prétend pas porter toute l'API Node/JS ni tous les programmes PureScript.
 
 ## Rythme de travail — blocs fonctionnels (accord du 13 septembre 2026)
 
@@ -72,7 +67,7 @@ Go et PHP existants.
 `t -c` doit lancer **par défaut toute la suite active b8x**, comme dans le
 workflow JS/Go, avec les assertions originales, les intégrations et le
 nettoyage des bases. Aucune sélection `--suite` ne doit être nécessaire pour
-obtenir la suite complète. L'agrégat HTML + Stash actuel est une validation
+obtenir la suite complète. L'ancien agrégat HTML + Stash était une validation
 intermédiaire ; un code 0 sur ce sous-ensemble ne clôt pas cet objectif.
 
 Interface retenue en 0.18, implémentée pour Rust HTML en 0.19–0.21 :
@@ -5459,7 +5454,7 @@ Validation finale, `variant-encoding-block-V4M2Gh/validation.json`,
   `67e7aefc000f8a07d5bbe680455227cbedb34aa5ab1209d7699f7f69b3e90fec`.
   Les premiers diagnostics d'échec restent conservés, pas publiés comme prêts.
 
-#### Bloc 0.50 — Intégrations (en cours, Astra)
+#### Bloc 0.50 — Intégrations (terminé, Astra)
 
 Objectif : les **27 tests originaux restants** (Core 3, EventStore 13,
 Projection 11), puis **286/286 par `target rust; b -c; t -c`** sans filtre.
@@ -5669,7 +5664,7 @@ Avancée du lot en cours (14 septembre, sans clôture anticipée) :
   slash final et UTF-16 ; preuve `output/node-path-native-QScvFn/report.json`.
   Les autres opérations Node.Path restent gardées tant qu'elles ne sont pas
   portées ; aucune sélection artificielle des assertions b8x.
-- [ ] Exécuter les 27 intégrations puis `b -c; t -c` complet ; corriger tout
+- [x] Exécuter les 27 intégrations puis `b -c; t -c` complet ; corriger tout
   échec réel sans réduire les assertions. Aucune pause demandant un nouveau go.
 
 Complément du lot cache/projections :
@@ -5694,9 +5689,61 @@ Complément du lot cache/projections :
 - Régressions : 76 tests driver/CLI verts et 74 tests codegen verts avant
   l'ajout `_foldM`. Ces preuves ne remplacent pas le `t -c` complet.
 
+Complément final — dates et concurrence :
+
+- `Data.Date.canonicalDateImpl` et `Data.DateTime.Instant.toDateTimeImpl` :
+  101 590 dates et 42 273 instants comparés au JS par mode Rc/Arc Linux,
+  y compris TimeClip, BCE et la particularité JS des années 0–99 ; preuve
+  `output/purust-datetime-instant-oxWa8e/report.json`. Les autres API de date
+  non nécessaires aux 286 tests ne sont pas annoncées comme portées.
+- Régression du générateur après ces ajouts : **76/76**, 70 scripts,
+  `/private/tmp/purust-codegen-suite-7eReBh/report.json`.
+- L'intermittence du test de retry a été reproduite sans changer les assertions.
+  La fixture `LoadBarrier` synchronise les lectures réelles : `[5]` pour le
+  retry positif, `[5, 4]` pour l'épuisement. Le second tour attend le premier
+  COMMIT. L'inventaire reste 286 et les assertions originales sont vérifiées
+  par reconstruction exacte du fichier sans les ajouts de synchronisation
+  (`integrations-block-sQXXt8/concurrency-fixture-proof.json`).
+- Le blocage instrumenté montre **deux `Just` initiaux, puis trois retries**,
+  donc un participant manquant au second tour. La copie diagnostique et sa
+  trace sont conservées ; cet essai interrompu n'est pas une validation.
+- Correction de l'EventStore commun : conserver l'intention CCO et son verrou
+  jusqu'au retour de `withStoreTxConnectionHandle` (COMMIT/ROLLBACK), puis les
+  libérer. Le test à COMMIT différé utilise l'API réelle : avant correction,
+  double `Just`, aucune intention visible pendant le COMMIT ; après correction,
+  `Just`/`Nothing`, intention conservée et un seul événement ajouté. Un seul
+  artefact JS diffère entre snapshots : l'EventStore. Preuve avant rouge/après
+  vert : `b8x/var/eventstore-commit-window-kHnDmx/report.json`.
+- Les trois tests Core corrigés passent **5/5 exécutions JS, 15/15 tests** :
+  `b8x/var/js-concurrency-pBVuKm/execution-Uui26q/report.json`. Bases vides
+  après chaque exécution ; aucune assertion modifiée.
+- Driver/CLI relancé après les derniers ajouts : **76/76**, sans services,
+  `output/driver-cli-unit-YAL8sv/report.json`.
+- AVar isolé : 20 exécutions Arc/Linux, 1 140 000 lectures et 200 000 barrières
+  à deux étapes, aucun callback perdu/dupliqué ; production AVar inchangée.
+  Preuve `output/purust-avar-race-uXpUeO/report.json`. Ce stress ne prouve pas
+  à lui seul toute l'intégration Aff.
+
+Clôture du bloc 0.50 :
+
+- [x] Vrai `bin/b -c` réussi, build `build-DRm4pH`, TAST frais et 391 gardes
+  forcés. Log conservé : `/private/tmp/purust-final-commitfix-build.log`.
+- [x] Cinq exécutions du défaut complet : **286/286, zéro échec/attente,
+  sorties 0**, même manifeste et entrées revalidées entre chaque passage.
+- [x] Négatif intercalé `build-FlahPt` : **2/3 et sortie 101**, puis retour au
+  même défaut 286. Les assertions et le graphe des 46 specs sont conservés.
+- [x] Précontrôles et contrôles finaux des bases vides. Les quatre `t -c`
+  affichent `Rust database cleanup: []` ; le `t` sans nettoyage laisse
+  lui aussi les bases vides par les fixtures originales.
+- [x] Preuve finale complète :
+  `integrations-block-sQXXt8/commitfix-qualification-9mrHEl/report.json`.
+  **M2/M3/M4 clos pour l'objectif `target rust; b -c; t -c`.** Les résultats
+  intermédiaires datés ci-dessous restent historiques.
+
 #### Résultat 0.50 — Contrat PostgreSQL natif (14 septembre 2026)
 
-Le périmètre validé est **le client seul**, pas les 27 specs originales.
+À ce jalon intermédiaire, le périmètre validé était **le client seul**, pas les
+27 specs originales (désormais validées dans la clôture du bloc ci-dessus).
 Preuve finale : `b8x/run/bak/rust/output/postgres-native-LWbOMh/report.json`,
 `complete: true`, **177 modules TAST frais**, Linux threaded.
 
@@ -5757,8 +5804,8 @@ Preuve finale : `b8x/run/bak/rust/output/postgres-native-LWbOMh/report.json`,
 Limites explicites : pas de parité générale node-pg, pas de mode Rc pour ce
 client asynchrone, pas de promesse de prise en charge de tous les OID SQL ou
 objets JS natifs (dates/buffers/Nullable opaques notamment). Les types non
-qualifiés échouent explicitement. **Les 27 intégrations restent non exécutées**,
-et le défaut Rust reste volontairement à **259**, jamais annoncé comme 286.
+qualifiés échouent explicitement. **À ce jalon, les 27 intégrations n'étaient
+pas encore exécutées**, et le défaut Rust était volontairement à **259**.
 
 - **Astra** : établir la fermeture réelle et les premiers arrêts natifs ;
   qualifier les clients PostgreSQL/RabbitMQ, leurs représentations et les
@@ -5843,13 +5890,13 @@ son portage FFI et ses dépendances restent à valider avant M1.
   effets déclenchés pendant la construction de la suite.
 - [ ] Utiliser le runner générique `Test.Spec.Runner` lorsque ses dépendances
   sont suffisantes.
-- [ ] Ajouter un point d'entrée Rust dédié si le `Test.Main` actuel ne peut pas
+- [x] Ajouter un point d'entrée Rust dédié si le `Test.Main` actuel ne peut pas
   être partagé sans imports Node.
-- [ ] Porter ou remplacer la sortie console et les reporters nécessaires.
-- [ ] Faire remonter un résultat de suite au point d'entrée Rust et sortir avec
+- [x] Porter ou remplacer la sortie console et les reporters nécessaires.
+- [x] Faire remonter un résultat de suite au point d'entrée Rust et sortir avec
   un code non nul en cas d'échec. Propager aussi les erreurs du compilateur,
   de Cargo, les panics et les signaux à travers les wrappers.
-- [ ] Réutiliser l'attente fournie par `purust_aff_run_main` avec `--threaded`.
+- [x] Réutiliser l'attente fournie par `purust_aff_run_main` avec `--threaded`.
   Une sortie immédiate du processus ne doit pas court-circuiter les nettoyages
   et l'attente des fibres. Ne pas recréer un moteur Aff ou un keep-alive natif.
 - [x] Fournir `Effect.Now.now`, requise pour le chronométrage de chaque test,
@@ -5858,12 +5905,12 @@ son portage FFI et ses dépendances restent à valider avant M1.
 
 ### Dépendances du runner à porter ou isoler
 
-- [ ] `Test.Spec`, `Test.Util.Assert` et les assertions nécessaires. La validation
+- [x] `Test.Spec`, `Test.Util.Assert` et les assertions nécessaires. La validation
   de `purust-assert` ne couvre pas le package distinct `purust-spec`.
-- [ ] Console/reporter utilisé par les tests.
-- [ ] Assertions de chaînes et erreurs attendues.
-- [ ] Sortie du processus et code de sortie.
-- [ ] Horloge réelle pour `Effect.Now`, notamment les appels internes du runner.
+- [x] Console/reporter utilisé par les tests.
+- [x] Assertions de chaînes et erreurs attendues.
+- [x] Sortie du processus et code de sortie.
+- [x] Horloge réelle pour `Effect.Now`, notamment les appels internes du runner.
 - [ ] Aff/AVar et dépendances transitives réellement générées : notamment Pipes,
   datetime, refs et exceptions ; réutiliser les implémentations disponibles et
   inventorier les FFI encore absentes avant de les porter.
@@ -5964,7 +6011,8 @@ d'un processus terminé prématurément.
 
 - [ ] Lancer toutes les suites sans services externes sous JS pour établir le
   nombre de tests et les résultats de référence.
-- [ ] Lancer les mêmes suites sous Rust avec TAST frais.
+- [x] Lancer les mêmes suites sous Rust avec TAST frais (259 sans services,
+  intégrées au défaut complet de 286).
 - [ ] Comparer les tests exécutés, les résultats et les erreurs, sans comparer
   seulement le code de sortie global.
 - [ ] Corriger les écarts de sémantique. Consigner les blocages et exclusions
@@ -5989,13 +6037,13 @@ assertions originales et leurs nombres de tests vérifiés.
 - [ ] Choisir les clients Rust adaptés et encapsuler leurs différences derrière
   les mêmes contrats PureScript.
 - [ ] Porter l'initialisation, les connexions, les transactions et le nettoyage.
-- [ ] Réutiliser l'exécution dans `api-cli` fixée en 0.18 et éprouvée sur HTML
+- [x] Réutiliser l'exécution dans `api-cli` fixée en 0.18 et éprouvée sur HTML
   en 0.20 ; vérifier les dépendances supplémentaires de ces suites. Reprendre les
   paramètres depuis la configuration b8x existante et les fixtures de bases
   de test, sans inscrire de secrets dans les sources ou le todo.
 - [ ] Vérifier les erreurs réseau, timeouts, retries et annulations.
 - [ ] Vérifier que les ressources sont fermées même après un échec de test.
-- [ ] Éviter qu'une intégration externe soit considérée verte si le service est
+- [x] Éviter qu'une intégration externe soit considérée verte si le service est
   simplement absent ou si une FFI fallback a absorbé l'erreur.
 
 Critère M3 : clients et pont Promise/Aff validés.
@@ -6036,24 +6084,24 @@ ne repousse pas le contrôle de l'ABI et des FFI absentes à la fin du projet.
 
 ## Matrice de validation finale
 
-À renseigner avec les commandes et preuves. Les cases sont actuellement non
-vérifiées. Rust doit couvrir tous les tests actifs ciblés ; JS fournit la
-référence. Go/PHP ne constituent une obligation de non-régression que pour les
-chemins existants affectés par les changements communs. Indiquer « non couvert
-historiquement » ou « non exécuté » si nécessaire, jamais une réussite supposée.
+État à la clôture 0.50. « Ciblé » ne signifie pas une qualification générale
+du backend. Les cases du plan initial non cochées restent des contrôles
+complémentaires non attestés ; elles ne changent pas le résultat réel 286/286.
+Go/PHP n'ont pas été rejoués dans ce bloc ; les tests CLI couvrent la conservation
+de leur dispatch, pas l'exécution native de leurs suites.
 
 | Cas | JS | Go | PHP | Rust |
 | --- | --- | --- | --- | --- |
-| Test pur minimal | [ ] | [ ] | [ ] | [ ] |
-| FFI locale | [ ] | [ ] | [ ] | [ ] |
-| Échec attendu | [ ] | [ ] | [ ] | [ ] |
-| Effets Aff | [ ] | [ ] | [ ] | [ ] |
-| Annulation | [ ] | [ ] | [ ] | [ ] |
-| PostgreSQL | [ ] | [ ] | [ ] | [ ] |
-| RabbitMQ | [ ] | [ ] | [ ] | [ ] |
-| EventStore | [ ] | [ ] | [ ] | [ ] |
-| Projections PostgreSQL | [ ] | [ ] | [ ] | [ ] |
-| Suite complète | [ ] | [ ] | [ ] | [ ] |
+| Test pur minimal | Historique 0.1 | Non rejoué | Non rejoué | Validé |
+| FFI locale | Comparaisons ciblées | Non rejoué | Non rejoué | Contrats atteints validés |
+| Échec attendu | COMMIT avant correction : rouge | Non rejoué | Non rejoué | 2/3 → 101 |
+| Effets Aff | Core : 15/15 | Non rejoué | Non rejoué | 286/286 + contrats Aff |
+| Annulation | Non rejouée | Non rejoué | Non rejoué | Contrats Aff ciblés ; pas une parité générale des FFI |
+| PostgreSQL | Client et COMMIT ciblés | Non rejoué | Non rejoué | Client + intégrations validés |
+| RabbitMQ | Pas de nouvelle qualification dédiée | Non rejoué | Non rejoué | Contrat client + intégrations validés |
+| EventStore | Core 15/15 + COMMIT différé | Non rejoué | Non rejoué | 13/13 dans chaque défaut |
+| Projections PostgreSQL | Non rejouées séparément | Non rejoué | Non rejoué | 11/11 dans chaque défaut |
+| Suite complète | Non rejouée intégralement dans ce bloc | Non rejoué | Non rejoué | **286/286 × 5** |
 
 ## Règles de validation
 
@@ -6074,6 +6122,10 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
   que leur existence prouve la compatibilité Rust.
 
 ## Prochaine action
+
+**Aucune action bloquante restante pour `t -c` sur la suite active.** Les listes
+ci-dessous conservent l'historique et les extensions FFI possibles ; les dettes
+hors fermeture effectivement exécutée ne sont pas annoncées comme résolues.
 
 - [x] Astra : choisir le premier test, sa FFI et son contrat (micro-étape 0.1).
 - [x] Luna : exécuter uniquement la commande JS de référence de la
@@ -6256,7 +6308,7 @@ historiquement » ou « non exécuté » si nécessaire, jamais une réussite su
 - [ ] Astra : qualifier l'initialisation anticipée des modules et les bindings
   exclus du premier correctif ; ne pas annoncer une parité JS générale avec
   le seul partage paresseux (écart établi en 0.30).
-- [ ] Après validation de l'agrégat : poursuivre son élargissement vers les 259 tests
+- [x] Après validation de l'agrégat : poursuivre son élargissement vers les 259 tests
   sans services et les 286 tests actifs derrière `t -c`, sans filtre obligatoire.
 - [ ] Astra : poursuivre, lors de l'élargissement M2, la qualification des bindings et fallbacks conservés,
   dont les autres opérations de records, selon les chemins réellement atteints ;

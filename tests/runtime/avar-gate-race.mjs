@@ -35,7 +35,19 @@ const args=['exec','-w','/var/www/b8x/run/bak/'+relative(mount,directory),'-e','
  '-e','CARGO_INCREMENTAL=0','core-api-cli-1','timeout','-k','2s','90s','cargo','run','--offline','--quiet','--features','threaded'];
 const start=Date.now();const result=spawnSync('docker',args,{encoding:'utf8',timeout:95000,maxBuffer:8*1024*1024});
 writeFileSync(join(directory,'execute.json'),JSON.stringify({args,status:result.status,stdout:result.stdout,stderr:result.stderr,error:result.error?.message},null,2));
-report.status=result.status;report.elapsedMs=Date.now()-start;report.stdout=result.stdout;report.stderr=result.stderr;
+report.status=result.status;report.stdout=result.stdout;report.stderr=result.stderr;
+report.executions=[{status:result.status,stdout:result.stdout,stderr:result.stderr}];
+if(result.status===0 && result.stdout.includes('AVAR_GATE_RACE_PASS')) {
+  const binary='/var/www/b8x/run/bak/'+relative(mount,join(directory,'target/debug/avar_gate_race'));
+  for(let repeat=1;repeat<20;repeat++) {
+    const checked=spawnSync('docker',['exec','core-api-cli-1','timeout','-k','1s','5s',binary],{encoding:'utf8',timeout:8000,maxBuffer:1024*1024});
+    report.executions.push({repeat,status:checked.status,stdout:checked.stdout,stderr:checked.stderr,error:checked.error?.message});save();
+    if(checked.status!==0 || !checked.stdout.includes('AVAR_GATE_RACE_PASS')) break;
+  }
+}
+report.elapsedMs=Date.now()-start;
 report.changedInputs=inputs.filter(p=>hash(p.path)!==p.sha256).map(p=>p.path);
-report.complete=result.status===0 && result.stdout.includes('AVAR_GATE_RACE_PASS') && !report.changedInputs.length;save();
-console.log(result.stdout);assert.ok(report.complete,`AVar stress failed: ${result.stderr}; report=${join(directory,'report.json')}`);
+report.complete=report.executions.length===20 && report.executions.every(r=>r.status===0 && r.stdout.includes('AVAR_GATE_RACE_PASS')) && !report.changedInputs.length;
+report.totals={executions:report.executions.length,contestedRounds:7000*report.executions.length,contestedReads:57000*report.executions.length,
+ activeDrainerReads:4097*report.executions.length,twoStageRounds:10000*report.executions.length};save();
+console.log(result.stdout);console.log(JSON.stringify(report.totals));assert.ok(report.complete,`AVar stress failed: report=${join(directory,'report.json')}`);
