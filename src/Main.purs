@@ -49,6 +49,7 @@ main :: Effect Unit
 main = launchAff_ do
   args <- liftEffect Process.argv
   let threaded = Array.elem "--threaded" args
+  let tracePhases = Array.elem "--trace-phases" args
   let ffiDir = case Array.findIndex (_ == "--ffi-dir") args of
         Just idx -> Array.index args (idx + 1)
         Nothing -> Just "../"
@@ -163,14 +164,18 @@ main = launchAff_ do
     , analyzeCustom: \_ _ -> Nothing
     , foreignSemantics: coreForeignSemantics
     , traceIdents: Set.empty
-    , onPrepareModule: \_ (Module m) -> pure (Module m)
+    , onPrepareModule: \_ (Module m) -> do
+        when tracePhases $ liftEffect $ log ("[purust] optimize " <> unwrap m.name)
+        pure (Module m)
     , onSkipModule: \_ (Module coreFnMod) -> do
         pure Nothing
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
+        when tracePhases $ liftEffect $ log ("[purust] codegen " <> modNameStr)
         let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
+          when tracePhases $ log ("[purust] generated " <> modNameStr)
           let foreignArr = coreFnMod.foreign
           let modName = String.replaceAll (Pattern ".") (Replacement "_") (unwrap coreFnMod.name)
           let modPrefix = modName <> "_"

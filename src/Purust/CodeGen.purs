@@ -30,6 +30,7 @@ import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpda
 import Purust.ClassFields (superclassFields)
 import Purust.DataLayout (ValueEnums, isValueEnum)
 import Purust.ThunkFusion (optimizeThunkProducers)
+import Purust.RecordScalarization (optimizeRecordLoops)
 import Purust.FunctionFusion (countedFunctionProducers)
 import Purust.Utf16 (runtimeHelpers, rustStringLiteral, rustCharLiteral)
 import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(..), Ident(..), Literal(..), Module(..), ModuleName(..), ProperName(..), Prop(..), Qualified(..))
@@ -91,6 +92,8 @@ codegenModule = codegenModuleWithValueEnums Set.empty
 codegenModuleWithValueEnums :: ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
 codegenModuleWithValueEnums = codegenModuleWithOptions { threaded: false, moduleValues: Set.empty }
 
+-- Source usage facts stop at the CoreFn boundary. Rust clone/move decisions
+-- use liveness from the transformed backend tree and runtime Rc uniqueness.
 -- Callers with original TAST declarations opt into bounded module sharing.
 -- The ownership mode is explicit, independent of the Rc/Arc text transform.
 codegenModuleWithOptions :: { threaded :: Boolean, moduleValues :: Set Ident } -> ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
@@ -140,7 +143,8 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
     -- Internal workers receive a consumed cell as their final argument. Their
     -- public counterparts retain the original ABI and allocation behaviour.
     reservedGlobals = Set.fromFoldable (Array.mapMaybe (map sanitizeIdent <<< String.stripPrefix (Pattern (modNameStr <> "_"))) (Array.fromFoldable (Map.keys globalAritiesMap)))
-    fused = optimizeThunkProducers sanitizeIdent reservedGlobals backendMod.name backendMod.bindings
+    scalarized = optimizeRecordLoops sanitizeIdent reservedGlobals backendMod.name backendMod.bindings
+    fused = optimizeThunkProducers sanitizeIdent reservedGlobals backendMod.name scalarized.bindings
     namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) fused.bindings
     -- The global signature map also contains local foreign declarations,
     -- which have no binding body here but still reserve their Rust names.
@@ -253,7 +257,7 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
           (countedFunctionProducers backendMod.name namedGroups)
       , privateWorkers: Set.union
           (Set.fromFoldable (map (\worker -> modNameStr <> "_" <> worker.name) workers))
-          (Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name) fused.workers)
+          (Set.map (\(Ident name) -> modNameStr <> "_" <> sanitizeIdent name) (Set.union fused.workers scalarized.workers))
       , constructors: Map.fromFoldable (map (\helper -> Tuple (modNameStr <> "_" <> helper.ctorName)
           { name: Qualified Nothing (Ident helper.name), resultType: helper.resultType, typeName: helper.typeName }) (Map.values rebuilders))
       }
@@ -1502,9 +1506,10 @@ isBorrowableLocal operandType operand =
 isUnconvertedLocal :: (NeutralExpr -> String) -> NeutralExpr -> Boolean
 isUnconvertedLocal operandType = go
   where
+  representation = operandType
   go (NeutralExpr (Local _ _)) = true
   go wrapped@(NeutralExpr (Typed _ inner)) =
-    operandType wrapped == operandType inner && go inner
+    if representation wrapped == representation inner then go inner else false
   go (NeutralExpr (Syn.TypeApp inner _)) = go inner
   go _ = false
 
