@@ -17,6 +17,7 @@ import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
 import Purust.CodeGen (codegenModuleWithOptions, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
 import Purust.ModuleValues (eligibleValues)
+import Purust.Metrics as Metrics
 import Purust.DataLayout (valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Threading (threadedRust, threadedPrelude)
@@ -46,7 +47,7 @@ cacheVersion = "1.0.0"
 type GeneratedModule = { code :: String, imports :: Array String, cargo :: String }
 
 main :: Effect Unit
-main = launchAff_ do
+main = launchAff_ $ Metrics.measure "backend total" \_ -> do
   args <- liftEffect Process.argv
   let threaded = Array.elem "--threaded" args
   let tracePhases = Array.elem "--trace-phases" args
@@ -65,7 +66,7 @@ main = launchAff_ do
                                    Just s -> s
                                    Nothing -> "output"
                      Nothing -> "output"
-  finalModules <- coreFnModulesFromOutput sourceDir
+  finalModules <- Metrics.measure "load TAST + sort" \_ -> coreFnModulesFromOutput sourceDir
   
   let
     buildGlobalArities :: List.List (Module Ann) -> Map.Map String ExprType
@@ -149,16 +150,20 @@ main = launchAff_ do
              in Map.insert (modPrefix <> sanitizeIdent classDecl.name) allFields a
            ) acc mod.classDecls
 
-  let globalArities = buildGlobalArities finalModules
-  let globalTypes = buildGlobalTypes finalModules
-  let globalClassFields = buildGlobalClassFields finalModules
-  let globalValueEnums = valueEnumsForModules finalModules
-  
-  directives <- loadDirectives
-  
-  modulesRef <- liftEffect $ Ref.new (Map.empty :: Map.Map String GeneratedModule)
-  
-  buildModules
+  prepared <- Metrics.measure "prepare" \_ -> do
+    let globalArities = buildGlobalArities finalModules
+    let globalTypes = buildGlobalTypes finalModules
+    let globalClassFields = buildGlobalClassFields finalModules
+    let globalValueEnums = valueEnumsForModules finalModules
+
+    directives <- loadDirectives
+
+    modulesRef <- liftEffect $ Ref.new (Map.empty :: Map.Map String GeneratedModule)
+    pure { globalArities, globalClassFields, globalValueEnums, directives, modulesRef }
+
+  let { globalArities, globalClassFields, globalValueEnums, directives, modulesRef } = prepared
+
+  Metrics.measure "optimize + generate" \_ -> buildModules
     { directives
     , rewriteLimit: 10000
     , analyzeCustom: \_ _ -> Nothing
@@ -251,7 +256,7 @@ main = launchAff_ do
     }
     finalModules
     
-  liftEffect do
+  Metrics.measure "finalize + emit" \_ -> liftEffect do
     let outDir = case Array.findIndex (_ == "--out") args of
                      Just idx -> case Array.index args (idx + 1) of
                                    Just o -> o

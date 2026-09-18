@@ -121,6 +121,8 @@ Hello from PureScript and Rust!
 
 The compiler reads **`output/<Module>/corefn.json` containing TAST metadata**. Although the representation is called `tcorefn`, this checkout's reader uses the filename `corefn.json`. The current fork exports `dataDecls`, `classDecls`, and a `typeTable`; check these fields when diagnosing a wrong compiler or stale build output. Recompile application sources after changing the PureScript compiler.
 
+Each invocation reports monotonic elapsed times in milliseconds to stderr: TAST loading and sorting, preparation, optimization and generation, finalization and file emission, and the backend total. The total includes these phases; it excludes the preceding `purs` compilation and subsequent Cargo compilation. A failed phase and its enclosing total are marked `(failed)` before the error is propagated.
+
 For a release build, use `cargo build --release --manifest-path output/purust_output/Cargo.toml`. The generated release profile currently sets `opt-level = 1` and retains debug information. Static linking and cross-compilation depend on the Rust target, linker, and FFI dependencies.
 
 ### Compiler options
