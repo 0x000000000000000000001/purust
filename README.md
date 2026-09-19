@@ -1,4 +1,4 @@
-# purust
+# ⚙️ purust
 
 <img height="160" alt="purust" src="https://github.com/user-attachments/assets/2766a736-74ca-43db-aa50-6fa7d994c8d6" />
 
