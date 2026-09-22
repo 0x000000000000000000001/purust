@@ -902,6 +902,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
         rawIdentName = case ident of
           Ident i -> sanitizeIdent i
           _ -> "unknown"
+        _debugAst = if rawIdentName == "modifyRec" then Debug.trace ("[TYPED-AST] " <> printASTTypedWith (codegenExprTypeWithValueEnums valueEnums modNameStr true) expr) \_ -> unit else unit
         identName = modNameStr <> "_" <> rawIdentName
         inferredType = fromMaybe Any (Map.lookup identName mergedArities)
         innerExpr = case expr of
@@ -2393,13 +2394,14 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
     in if Set.member name alive then name <> ".clone()" else name
   Lit lit -> case lit of
     LitInt i -> show i
-    LitNumber n -> case show n of
-      -- Rust has no `Infinity`/`NaN` literals; PureScript's Show instance
-      -- names them like JavaScript.
-      "Infinity" -> "f64::INFINITY"
-      "-Infinity" -> "f64::NEG_INFINITY"
-      "NaN" -> "f64::NAN"
-      literal -> literal
+    LitNumber n
+      -- Rust has no `Infinity`/`NaN` literals, and PureScript's Show instance
+      -- loses the sign of negative zero.
+      | n /= n -> "f64::NAN"
+      | n == 1.0 / 0.0 -> "f64::INFINITY"
+      | n == -(1.0 / 0.0) -> "f64::NEG_INFINITY"
+      | n == 0.0 && 1.0 / n < 0.0 -> "-0.0"
+      | otherwise -> show n
     LitString s -> rustStringLiteral s
     LitChar c -> rustCharLiteral c
     LitBoolean b -> if b then "true" else "false"
@@ -2662,9 +2664,12 @@ printAST (NeutralExpr expr) = case expr of
   Syn.TypeApp a _ -> "TypeApp(" <> printAST a <> ")"
   App fn _ -> "App(" <> printAST fn <> ")"
   Lit _ -> "Lit"
-  Var _ -> "Var(...)"
+  Var (Qualified mbMn (Ident name)) -> "Var(" <> (case mbMn of
+    Just mn -> unwrap mn <> "."
+    Nothing -> "") <> name <> ")"
   Let _ _ _ _ -> "Let(...)"
-  Local _ _ -> "Local(...)"
+  Local (Just (Ident name)) _ -> "Local(" <> name <> ")"
+  Local Nothing _ -> "Local(_)"
   Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
   Typed _ inner -> "Typed(" <> printAST inner <> ")"
   EffectBind _ _ _ _ -> "EffectBind"
@@ -2684,6 +2689,34 @@ printAST (NeutralExpr expr) = case expr of
   PrimEffect _ -> "PrimEffect(...)"
   PrimUndefined -> "PrimUndefined"
   Fail msg -> "Fail(" <> msg <> ")"
+
+-- DEBUG (temporaire): arbre typé lisible.
+printASTTypedWith :: (ExprType -> String) -> NeutralExpr -> String
+printASTTypedWith showTy (NeutralExpr expr) = case expr of
+  Typed ty inner -> "T[" <> showTy ty <> "]" <> printASTTypedWith showTy inner
+  Syn.TypeApp inner ty -> "TA[" <> showTy ty <> "](" <> printASTTypedWith showTy inner <> ")"
+  App fn args -> "(" <> printASTTypedWith showTy fn <> " " <> String.joinWith " " (map (printASTTypedWith showTy) (NonEmptyArray.toArray args)) <> ")"
+  Lit (LitInt i) -> show i
+  Lit (LitNumber n) -> printType (Number)
+  Lit (LitString s) -> "\"" <> s <> "\""
+  Lit (LitBoolean b) -> show b
+  Lit _ -> "Lit"
+  Var (Qualified mbMn (Ident name)) -> (case mbMn of
+    Just mn -> unwrap mn <> "."
+    Nothing -> "") <> name
+  Local (Just (Ident name)) _ -> name
+  Local Nothing _ -> "_"
+  Abs args inner -> "\\" <> String.joinWith "," (map (\(Tuple argId _) -> case argId of
+    Just (Ident n) -> n
+    Nothing -> "_") (NonEmptyArray.toArray args)) <> " -> " <> printASTTypedWith showTy inner
+  UncurriedApp fn args -> "(" <> printASTTypedWith showTy fn <> " " <> String.joinWith " " (map (printASTTypedWith showTy) args) <> ")"
+  Accessor inner prop -> printASTTypedWith showTy inner <> ".accessor"
+  Let (Just (Ident n)) _ val body -> "let " <> n <> " = " <> printASTTypedWith showTy val <> " in " <> printASTTypedWith showTy body
+  LetRec _ binds body -> "letrec(" <> show (Array.length (NonEmptyArray.toArray binds)) <> ") in " <> printASTTypedWith showTy body
+  Branch _ _ -> "branch(...)"
+  PrimOp _ -> "primop"
+  PrimUndefined -> "undefined"
+  _ -> printAST (NeutralExpr expr)
 
 freeVariables :: NeutralExpr -> Set String
 freeVariables (NeutralExpr expr) = case expr of
@@ -2836,6 +2869,10 @@ inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr expr) =
           Func _ _, String -> innerTy
           Func _ _, Char -> innerTy
           Func _ _, ADT _ _ _ -> innerTy
+          -- `unsafeCoerce` can carry a `Unit` annotation over a real payload
+          -- (`VariantRep Unit` in Data.Variant.unvariant). The Rust shape must
+          -- follow the value, not the obsolete annotation.
+          Unit, _ | innerTy /= Unit -> innerTy
           _, _ -> ty
   CtorSaturated (Qualified mbMod _) _ (ProperName tyNameStr) _ _ -> 
     let modStr = case mbMod of
