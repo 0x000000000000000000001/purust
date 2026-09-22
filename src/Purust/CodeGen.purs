@@ -2111,7 +2111,14 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
         aTy = inferTypeExpr currentMod aritiesMap globalClassFields bound a
         bTy = inferTypeExpr currentMod aritiesMap globalClassFields bound b
         aStrRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForA false a
-        bStrRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false b
+        -- The right operand of `&&`/`||` is the value of the whole expression
+        -- when it is evaluated, so a tail-recursive call there is still a loop
+        -- continuation. Everywhere else, an operand is not a tail position.
+        bLoop = case op of
+          OpBooleanAnd -> mbLoop
+          OpBooleanOr -> mbLoop
+          _ -> Nothing
+        bStrRaw = codegenExpr_ valueEnums currentMod allZeroArity reuseContext bLoop aritiesMap globalClassFields bound alive false b
         aStrInt = scalarOperand Int a aTy aStrRaw
         bStrInt = scalarOperand Int b bTy bStrRaw
         aStrBool = scalarOperand Boolean a aTy aStrRaw
