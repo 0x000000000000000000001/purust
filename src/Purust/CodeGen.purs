@@ -2393,7 +2393,13 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
     in if Set.member name alive then name <> ".clone()" else name
   Lit lit -> case lit of
     LitInt i -> show i
-    LitNumber n -> show n
+    LitNumber n -> case show n of
+      -- Rust has no `Infinity`/`NaN` literals; PureScript's Show instance
+      -- names them like JavaScript.
+      "Infinity" -> "f64::INFINITY"
+      "-Infinity" -> "f64::NEG_INFINITY"
+      "NaN" -> "f64::NAN"
+      literal -> literal
     LitString s -> rustStringLiteral s
     LitChar c -> rustCharLiteral c
     LitBoolean b -> if b then "true" else "false"

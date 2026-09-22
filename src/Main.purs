@@ -307,7 +307,15 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n" <> runtimeDependency threaded "perceus_ptr"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") (configureThreading threaded (rootCargoToml <> affDependency))
     
-    let runMain = "let _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)"
+    -- `main :: Unit -> Unit` (an `Effect Unit` is opaque, but the tests of
+    -- `prelude` use `Unit -> Unit` aliases) is generated as a native Rust
+    -- function, while `Effect Unit` is a curried value. Pick the matching call.
+    let nativeMain = case Map.lookup (mainModuleSanitized <> "_main") globalArities of
+          Just (Func [ Unit ] _) -> true
+          _ -> false
+    let runMain = if nativeMain
+          then "Purs_" <> mainModuleSanitized <> "::main(())"
+          else "let _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)"
     let mainBody = if runsAff then "Purs_Effect_Aff::purust_aff_run_main(|| { " <> runMain <> " });"
           else "purust_core::microtasks::run_main(|| { " <> runMain <> " });"
     FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    " <> mainBody <> "\n}\n")
