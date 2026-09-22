@@ -902,7 +902,6 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
         rawIdentName = case ident of
           Ident i -> sanitizeIdent i
           _ -> "unknown"
-        _debugAst = if rawIdentName == "modifyRec" then Debug.trace ("[TYPED-AST] " <> printASTTypedWith (codegenExprTypeWithValueEnums valueEnums modNameStr true) expr) \_ -> unit else unit
         identName = modNameStr <> "_" <> rawIdentName
         inferredType = fromMaybe Any (Map.lookup identName mergedArities)
         innerExpr = case expr of
@@ -2664,12 +2663,9 @@ printAST (NeutralExpr expr) = case expr of
   Syn.TypeApp a _ -> "TypeApp(" <> printAST a <> ")"
   App fn _ -> "App(" <> printAST fn <> ")"
   Lit _ -> "Lit"
-  Var (Qualified mbMn (Ident name)) -> "Var(" <> (case mbMn of
-    Just mn -> unwrap mn <> "."
-    Nothing -> "") <> name <> ")"
+  Var _ -> "Var(...)"
   Let _ _ _ _ -> "Let(...)"
-  Local (Just (Ident name)) _ -> "Local(" <> name <> ")"
-  Local Nothing _ -> "Local(_)"
+  Local _ _ -> "Local(...)"
   Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
   Typed _ inner -> "Typed(" <> printAST inner <> ")"
   EffectBind _ _ _ _ -> "EffectBind"
@@ -2689,34 +2685,6 @@ printAST (NeutralExpr expr) = case expr of
   PrimEffect _ -> "PrimEffect(...)"
   PrimUndefined -> "PrimUndefined"
   Fail msg -> "Fail(" <> msg <> ")"
-
--- DEBUG (temporaire): arbre typé lisible.
-printASTTypedWith :: (ExprType -> String) -> NeutralExpr -> String
-printASTTypedWith showTy (NeutralExpr expr) = case expr of
-  Typed ty inner -> "T[" <> showTy ty <> "]" <> printASTTypedWith showTy inner
-  Syn.TypeApp inner ty -> "TA[" <> showTy ty <> "](" <> printASTTypedWith showTy inner <> ")"
-  App fn args -> "(" <> printASTTypedWith showTy fn <> " " <> String.joinWith " " (map (printASTTypedWith showTy) (NonEmptyArray.toArray args)) <> ")"
-  Lit (LitInt i) -> show i
-  Lit (LitNumber n) -> printType (Number)
-  Lit (LitString s) -> "\"" <> s <> "\""
-  Lit (LitBoolean b) -> show b
-  Lit _ -> "Lit"
-  Var (Qualified mbMn (Ident name)) -> (case mbMn of
-    Just mn -> unwrap mn <> "."
-    Nothing -> "") <> name
-  Local (Just (Ident name)) _ -> name
-  Local Nothing _ -> "_"
-  Abs args inner -> "\\" <> String.joinWith "," (map (\(Tuple argId _) -> case argId of
-    Just (Ident n) -> n
-    Nothing -> "_") (NonEmptyArray.toArray args)) <> " -> " <> printASTTypedWith showTy inner
-  UncurriedApp fn args -> "(" <> printASTTypedWith showTy fn <> " " <> String.joinWith " " (map (printASTTypedWith showTy) args) <> ")"
-  Accessor inner prop -> printASTTypedWith showTy inner <> ".accessor"
-  Let (Just (Ident n)) _ val body -> "let " <> n <> " = " <> printASTTypedWith showTy val <> " in " <> printASTTypedWith showTy body
-  LetRec _ binds body -> "letrec(" <> show (Array.length (NonEmptyArray.toArray binds)) <> ") in " <> printASTTypedWith showTy body
-  Branch _ _ -> "branch(...)"
-  PrimOp _ -> "primop"
-  PrimUndefined -> "undefined"
-  _ -> printAST (NeutralExpr expr)
 
 freeVariables :: NeutralExpr -> Set String
 freeVariables (NeutralExpr expr) = case expr of
