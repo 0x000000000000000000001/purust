@@ -11,7 +11,9 @@ import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), E
 collectRecordShapesType :: ExprType -> Set.Set String
 collectRecordShapesType = case _ of
   Record (Row fields _) ->
-    let shape = Array.sortBy compare (map (\(Tuple k _) -> k) fields)
+    -- A TAST row can repeat a label (record updates and row unions); the Rust
+    -- struct must keep one field per label.
+    let shape = Array.nub (Array.sortBy compare (map (\(Tuple k _) -> k) fields))
     in Set.insert (String.joinWith "," shape) (Array.foldl (\acc (Tuple _ v) -> Set.union acc (collectRecordShapesType v)) Set.empty fields)
   ADT _ _ args -> Array.foldl (\acc v -> Set.union acc (collectRecordShapesType v)) Set.empty args
   TypeApp fn args -> Set.union (collectRecordShapesType fn) (Array.foldl (\acc v -> Set.union acc (collectRecordShapesType v)) Set.empty args)

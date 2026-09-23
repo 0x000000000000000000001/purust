@@ -318,7 +318,28 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
           else "let _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)"
     let mainBody = if runsAff then "Purs_Effect_Aff::purust_aff_run_main(|| { " <> runMain <> " });"
           else "purust_core::microtasks::run_main(|| { " <> runMain <> " });"
-    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") ("#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\nfn main() {\n    " <> mainBody <> "\n}\n")
+    let mainEntry =
+          "#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\n"
+          <> "fn main() {\n"
+          <> "    // Deeply recursive PureScript programs (and their drops) need more than\n"
+          <> "    // the platform default; run on a thread with a large, configurable stack.\n"
+          <> "    let stack_size = std::env::var(\"PURUST_STACK_SIZE\")\n"
+          <> "        .ok()\n"
+          <> "        .and_then(|value| value.parse::<usize>().ok())\n"
+          <> "        .filter(|size| *size > 0)\n"
+          <> "        .unwrap_or(1024 * 1024 * 1024);\n"
+          <> "    let failed = std::thread::Builder::new()\n"
+          <> "        .name(\"purust-main\".to_owned())\n"
+          <> "        .stack_size(stack_size)\n"
+          <> "        .spawn(move || {\n            " <> mainBody <> "\n        })\n"
+          <> "        .expect(\"failed to start the program thread\")\n"
+          <> "        .join()\n"
+          <> "        .is_err();\n"
+          <> "    if failed {\n"
+          <> "        std::process::exit(101);\n"
+          <> "    }\n"
+          <> "}\n"
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") mainEntry
     
     let coreDir = outDir <> "/purust_core"
     coreExists <- FS.exists coreDir

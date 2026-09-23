@@ -289,7 +289,7 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
 -- The generic carrier owns Record_a; keep a closed { a :: ... } disjoint.
 -- Ordinary closed records always use Record_, so ClosedRecord_a cannot clash.
 recordStructName :: Array String -> String
-recordStructName fields = case String.joinWith "_" (map sanitizeIdent (Array.sortBy compare fields)) of
+recordStructName fields = case String.joinWith "_" (map sanitizeIdent (Array.nub (Array.sortBy compare fields))) of
   "" -> "Record_a"
   "a" -> "ClosedRecord_a"
   shape -> "Record_" <> shape
@@ -1781,7 +1781,20 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                  in recordFieldIdent p <> ": " <> boxUnbox valueEnums globalClassFields currentMod expectedTy valTy valCode
               ) propsArr
               fields = String.joinWith ", " propsCode
-            in "std::rc::Rc::new(" <> structName <> " { " <> fields <> " })"
+              -- `Foreign.Object` is a native map rather than a record shape, so
+              -- a record literal coerced into it (`fromHomogeneous`) is built
+              -- field by field.
+              entriesCode = Array.mapWithIndex (\i (Prop p val) ->
+                let subsequentProps = Array.drop (i + 1) propsArr
+                    aliveForProp = Set.union alive (Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) Set.empty subsequentProps)
+                    valCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound aliveForProp false val
+                    valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
+                    boxed = boxUnbox valueEnums globalClassFields currentMod Any valTy valCode
+                 in "(String::from(" <> show p <> "), " <> boxed <> ")"
+              ) propsArr
+            in if modName == "Foreign_Object" && className == "Object"
+               then "std::rc::Rc::new(purust_core::SharedRecord::from_entries(vec![" <> String.joinWith ", " entriesCode <> "]))"
+               else "std::rc::Rc::new(" <> structName <> " { " <> fields <> " })"
           _ ->
             let innerCode = codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
                 innerTy = inferTypeExpr currentMod aritiesMap globalClassFields bound inner
