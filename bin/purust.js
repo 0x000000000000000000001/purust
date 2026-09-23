@@ -43425,7 +43425,7 @@ var codegenExpr_ = function(valueEnums) {
                                         }
                                         ;
                                         throw new Error("Failed pattern match at Purust.CodeGen (line 2520, column 37 - line 2522, column 106): " + [v.value0.value0.constructor.name]);
-                                      })() + v.value3;
+                                      })() + sanitizeIdent(v.value3);
                                       var expectedFieldTy = (function() {
                                         var v3 = lookup2(ordString)(ctorFqn)(aritiesMap);
                                         if (v3 instanceof Just) {

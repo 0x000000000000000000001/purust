@@ -2519,7 +2519,7 @@ codegenExpr_ valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap g
                          valTy = inferTypeExpr currentMod aritiesMap globalClassFields fieldBound val
                          ctorFqn = (case mbMod of
                            Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
-                           Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_") <> ctorName
+                           Nothing -> String.replaceAll (Pattern ".") (Replacement "_") currentMod <> "_") <> sanitizeIdent ctorName
                          expectedFieldTy = case Map.lookup ctorFqn aritiesMap of
                            Just ctorTy -> fromMaybe Any (Array.index (extractAllArgTypes ctorTy) i)
                            Nothing -> Any
