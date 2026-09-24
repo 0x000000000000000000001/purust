@@ -138,14 +138,26 @@ d’être toléré.
 
 ### `node-process` et sortie des runners
 
-- [ ] Tester séparément `nextTick` et `nextTick'` : exécution différée, arguments,
+Le runtime porte désormais la sémantique de sortie : `finish_process` termine
+avec le code stocké (`setExitCode` est honoré en fin de programme) et
+`run_program_guarded` donne au callback de capture d’exception la main avant de
+relayer l’exception (qui reste fatale si le callback revient). Limite native
+documentée : après une exception non rattrapée, le calcul interrompu ne peut pas
+reprendre ; le callback doit terminer lui-même pour choisir le statut.
+
+- [x] Tester séparément `nextTick` et `nextTick'` : exécution différée, arguments,
   ordre et nombre d’appels observés.
-- [ ] Tester dans des sous-processus les statuts de sortie et les événements de
-  cycle de vie ; vérifier la capture d’exception au-delà de son enregistrement.
-- [ ] Distinguer les garanties observées en absence de canal IPC des scénarios
-  de communication restant à porter et à tester.
-- [ ] Vérifier la sémantique différée de `Test.Spec.Runner.exit :: Int -> Effect
-  Unit`, puis corriger sa FFI Rust si nécessaire.
+- [x] Tester dans des sous-processus les statuts de sortie et les événements de
+  cycle de vie ; vérifier la capture d’exception au-delà de son enregistrement
+  (l’événement `exit` voit le code, le code naturel est honoré, le callback de
+  capture est réellement exécuté, et une exception non capturée échoue).
+- [x] Distinguer les garanties observées en absence de canal IPC des scénarios
+  de communication restant à porter et à tester : les quatre variantes de
+  `send` renvoient `false` sans rappeler leur callback ; l’IPC réel n’est pas
+  porté.
+- [x] Vérifier la sémantique différée de `Test.Spec.Runner.exit :: Int -> Effect
+  Unit` : la FFI vide les tampons stdio puis termine avec le code (`process.exit`
+  plus sûr pour les reporters) ; validé par les sorties de `spec`/`spec-node`.
 - [ ] Après les changements partagés, vérifier les intégrations Aff restantes
   (hors paquets déjà couverts). `node-fs`, `node-net`, `node-buffer`,
   `node-child-process`, `node-process`, `node-streams`, `node-http` et `spec`

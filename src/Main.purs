@@ -359,13 +359,16 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
           <> "    let failed = std::thread::Builder::new()\n"
           <> "        .name(\"purust-main\".to_owned())\n"
           <> "        .stack_size(stack_size)\n"
-          <> "        .spawn(move || {\n            " <> mainBody <> "\n        })\n"
+          <> "        .spawn(move || {\n"
+          <> "            purust_core::microtasks::run_program_guarded(|| {\n            " <> mainBody <> "\n            })\n"
+          <> "        })\n"
           <> "        .expect(\"failed to start the program thread\")\n"
           <> "        .join()\n"
           <> "        .is_err();\n"
           <> "    if failed {\n"
           <> "        std::process::exit(101);\n"
           <> "    }\n"
+          <> "    purust_core::microtasks::finish_process();\n"
           <> "}\n"
     FS.writeTextFile UTF8 (outDir <> "/src/main.rs") (if threaded then threadedRust mainEntry else mainEntry)
     

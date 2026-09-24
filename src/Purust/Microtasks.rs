@@ -102,3 +102,56 @@ pub fn run_main<R>(main: impl FnOnce() -> R) -> R {
     queue.drain();
     result
 }
+
+// ---------------------------------------------------------------------------
+// Process exit code and uncaught exceptions
+// ---------------------------------------------------------------------------
+
+const EXIT_CODE_UNSET: i32 = i32::MIN;
+static EXIT_CODE: std::sync::atomic::AtomicI32 =
+    std::sync::atomic::AtomicI32::new(EXIT_CODE_UNSET);
+
+/// `process.exitCode = n`: honoured when the program finishes on its own.
+pub fn set_exit_code(code: i32) {
+    EXIT_CODE.store(code, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn exit_code() -> Option<i32> {
+    let code = EXIT_CODE.load(std::sync::atomic::Ordering::SeqCst);
+    if code == EXIT_CODE_UNSET { None } else { Some(code) }
+}
+
+/// Flushes the stdio buffers and terminates with the stored exit code.
+pub fn finish_process() -> ! {
+    use std::io::Write;
+    let _ = std::io::stdout().flush();
+    let _ = std::io::stderr().flush();
+    std::process::exit(exit_code().unwrap_or(0));
+}
+
+thread_local! {
+    static UNCAUGHT_HANDLER: std::cell::RefCell<Option<Box<dyn Fn()>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// `process.setUncaughtExceptionCaptureCallback`: the handler runs when an
+/// exception escapes the program, before the runtime re-raises it.
+pub fn set_uncaught_handler(handler: Option<Box<dyn Fn()>>) {
+    UNCAUGHT_HANDLER.with(|current| *current.borrow_mut() = handler);
+}
+
+/// Catches an exception that escaped the program and gives the capture
+/// callback a chance to run. A callback that returns cannot resume the
+/// interrupted computation, so the exception is re-raised and the runtime
+/// keeps its non-zero status; a callback that terminates picks the status.
+pub fn run_program_guarded<R>(main: impl FnOnce() -> R) -> R {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(main)) {
+        Ok(value) => value,
+        Err(payload) => {
+            let handler = UNCAUGHT_HANDLER.with(|current| current.borrow_mut().take());
+            if let Some(handler) = handler {
+                handler();
+            }
+            std::panic::resume_unwind(payload);
+        }
+    }
+}

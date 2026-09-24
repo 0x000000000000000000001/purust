@@ -28406,9 +28406,9 @@ var toExternImpl = function(env) {
           return new Tuple(new Tuple(v3.value0, new ExternExpr(group4, v3.value1)), v3.value1);
         };
         if (isDict) {
-          var $400 = getLitRecord(v);
-          if ($400 instanceof Just) {
-            var propsWithAnalysis = map(functorArray)(map(functorProp)(freeze2))($400.value0);
+          var $401 = getLitRecord(v);
+          if ($401 instanceof Just) {
+            var propsWithAnalysis = map(functorArray)(map(functorProp)(freeze2))($401.value0);
             var v2 = freeze2(expr);
             return new Tuple(new Tuple(analysisOf(hasAnalysisBackendExpr)(expr), new ExternDict(group4, propsWithAnalysis)), v2.value1);
           }
@@ -28423,9 +28423,9 @@ var toExternImpl = function(env) {
 };
 var toCaseRowVars = function(v) {
   return foldMap(foldableSet)(monoidSemigroupMap3)((function() {
-    var $959 = flip(singleton4)(v.column);
-    return function($960) {
-      return SemigroupMap($959($960));
+    var $964 = flip(singleton4)(v.column);
+    return function($965) {
+      return SemigroupMap($964($965));
     };
   })())(v.pattern.vars);
 };
@@ -28512,7 +28512,7 @@ var normalizeCaseRows = /* @__PURE__ */ (function() {
             return;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 876, column 7 - line 878, column 63): " + [nextColumnFields.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 884, column 7 - line 886, column 63): " + [nextColumnFields.constructor.name]);
         }
         ;
         while (!$tco_done) {
@@ -28620,8 +28620,8 @@ var makeExternEvalRef = function(group4) {
   return function(conv) {
     return function(env) {
       return function(qual) {
-        var $457 = elem2(eqQualified1)(qual)(group4);
-        if ($457) {
+        var $458 = elem2(eqQualified1)(qual)(group4);
+        if ($458) {
           return Nothing.value;
         }
         ;
@@ -28642,8 +28642,8 @@ var makeExternEvalSpine = function(group4) {
             ;
             return true;
           };
-          var $460 = elem2(eqQualified1)(qual)(group4);
-          if ($460) {
+          var $461 = elem2(eqQualified1)(qual)(group4);
+          if ($461) {
             return Nothing.value;
           }
           ;
@@ -28820,10 +28820,10 @@ var isTypeClassDictionaryWithProps = /* @__PURE__ */ (function() {
           return new Tuple(false, []);
         };
         if (v instanceof ExprApp && (v.value2 instanceof ExprLit && v.value2.value1 instanceof LitRecord)) {
-          var $517 = getConstructorMeta(v.value1);
-          if ($517 instanceof Just) {
-            var $518 = eq(eqMeta)($517.value0)(IsTypeClassConstructor.value) || eq(eqMeta)($517.value0)(IsNewtype.value);
-            if ($518) {
+          var $518 = getConstructorMeta(v.value1);
+          if ($518 instanceof Just) {
+            var $519 = eq(eqMeta)($518.value0)(IsTypeClassConstructor.value) || eq(eqMeta)($518.value0)(IsNewtype.value);
+            if ($519) {
               $tco_done2 = true;
               return new Tuple(true, map(functorArray)(propKey)(v.value2.value1.value0));
             }
@@ -28899,8 +28899,8 @@ var inferTransitiveDirective = function(directives) {
                     };
                   };
                 })(empty2)(v.value0);
-                var $532 = isEmpty(newDirs);
-                if ($532) {
+                var $533 = isEmpty(newDirs);
+                if ($533) {
                   return Nothing.value;
                 }
                 ;
@@ -28934,9 +28934,9 @@ var inferTransitiveDirective = function(directives) {
                     return Nothing.value;
                   };
                   if (v4 instanceof Just && v4.value0 instanceof InlineArity) {
-                    var $558 = length5(backendExpr.value1.value1);
-                    var $559 = $558 >= v4.value0.value0;
-                    if ($559) {
+                    var $559 = length5(backendExpr.value1.value1);
+                    var $560 = $559 >= v4.value0.value0;
+                    if ($560) {
                       return apply(Just.create)(singleton4(InlineRef.value)(InlineAlways.value));
                     }
                     ;
@@ -28948,11 +28948,11 @@ var inferTransitiveDirective = function(directives) {
                 ;
                 return Nothing.value;
               };
-              var $570 = isTypeClassDictionaryWithProps(cfn);
-              if ($570.value0) {
-                var $572 = dictSize <= 512e3;
-                if ($572) {
-                  return apply(Just.create)(apply(fromFoldable6)(append(semigroupArray)([new Tuple(InlineRef.value, InlineAlways.value)])(bind(bindArray)($570.value1)(function(p) {
+              var $571 = isTypeClassDictionaryWithProps(cfn);
+              if ($571.value0) {
+                var $573 = dictSize <= 512e3;
+                if ($573) {
+                  return apply(Just.create)(apply(fromFoldable6)(append(semigroupArray)([new Tuple(InlineRef.value, InlineAlways.value)])(bind(bindArray)($571.value1)(function(p) {
                     return [new Tuple(new InlineProp(p), InlineAlways.value), new Tuple(new InlineSpineProp(p), InlineAlways.value)];
                   }))));
                 }
@@ -28963,10 +28963,10 @@ var inferTransitiveDirective = function(directives) {
               return v2(true);
             };
             if (cfn instanceof ExprAbs && cfn.value0.meta instanceof Just) {
-              var $576 = eq(eqMeta)(cfn.value0.meta.value0)(IsTypeClassConstructor.value) || eq(eqMeta)(cfn.value0.meta.value0)(IsNewtype.value);
-              if ($576) {
-                var $577 = dictSize <= 512;
-                if ($577) {
+              var $577 = eq(eqMeta)(cfn.value0.meta.value0)(IsTypeClassConstructor.value) || eq(eqMeta)(cfn.value0.meta.value0)(IsNewtype.value);
+              if ($577) {
+                var $578 = dictSize <= 512;
+                if ($578) {
                   return apply(Just.create)(singleton4(InlineRef.value)(InlineAlways.value));
                 }
                 ;
@@ -29040,7 +29040,7 @@ var inferExprType = function(v) {
       return Nothing.value;
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1197, column 8 - line 1199, column 23): " + [v2.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1205, column 8 - line 1207, column 23): " + [v2.constructor.name]);
   }
   ;
   return Nothing.value;
@@ -29133,7 +29133,7 @@ var decompose = function(chosenColumn) {
         };
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1124, column 22 - line 1128, column 123): " + [l.match.constructor.name, r.match.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1132, column 22 - line 1136, column 123): " + [l.match.constructor.name, r.match.constructor.name]);
     };
   };
   var checkMatch = function(p) {
@@ -29145,12 +29145,12 @@ var decompose = function(chosenColumn) {
         };
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1090, column 1 - line 1090, column 119): " + [p.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1098, column 1 - line 1098, column 119): " + [p.constructor.name]);
     };
-    var $631 = eq(eqLevel)(p.column)(chosenColumn.column);
-    if ($631) {
-      var $632 = eq(eqPatternCase)(patternPatCase(p))(PatWild.value) || on(eq18)(patternPatCase)(chosenColumn)(p);
-      if ($632) {
+    var $632 = eq(eqLevel)(p.column)(chosenColumn.column);
+    if ($632) {
+      var $633 = eq(eqPatternCase)(patternPatCase(p))(PatWild.value) || on(eq18)(patternPatCase)(chosenColumn)(p);
+      if ($633) {
         return {
           nonMatchesBefore: [],
           match: new Just({
@@ -29173,9 +29173,9 @@ var decompose = function(chosenColumn) {
     ;
     if (v instanceof Just) {
       var v1 = foldl1Array(function(l) {
-        var $961 = mergeResults(l);
-        return function($962) {
-          return $961(checkMatch($962));
+        var $966 = mergeResults(l);
+        return function($967) {
+          return $966(checkMatch($967));
         };
       })(checkMatch)(v.value0);
       if (v1.match instanceof Just) {
@@ -29188,8 +29188,8 @@ var decompose = function(chosenColumn) {
             nonMatchesAfter: v1.match.value0.nonMatchesAfter
           }],
           rowsNoMatch: (function() {
-            var $636 = eq(eqPatternCase)(patternPatCase(v1.match.value0.match))(PatWild.value);
-            if ($636) {
+            var $637 = eq(eqPatternCase)(patternPatCase(v1.match.value0.match))(PatWild.value);
+            if ($637) {
               return [row];
             }
             ;
@@ -29205,10 +29205,10 @@ var decompose = function(chosenColumn) {
         };
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1096, column 7 - line 1104, column 12): " + [v1.match.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1104, column 7 - line 1112, column 12): " + [v1.match.constructor.name]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1092, column 3 - line 1104, column 12): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1100, column 3 - line 1112, column 12): " + [v.constructor.name]);
   });
 };
 var currentLevel = function(env) {
@@ -29238,10 +29238,10 @@ var chooseNextPattern = function(row0Patterns) {
                 return apply(Just.create)(singleton10(next2));
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 980, column 19 - line 983, column 52): " + [v2.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 988, column 19 - line 991, column 52): " + [v2.constructor.name]);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 978, column 7 - line 983, column 52): " + [acc.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 986, column 7 - line 991, column 52): " + [acc.constructor.name]);
           };
         };
         return foldl(dictFoldable)(keepAllMax)(Nothing.value);
@@ -29277,23 +29277,23 @@ var chooseNextPattern = function(row0Patterns) {
                 tailRowIndices: guard(monoidArray)(on(eq18)(patternPatCase)(v2.value1)(v1.value0))([rowIdx + 1 | 0]),
                 ctors: apply(guard(monoidSet1)(notEq(eqPatternCase)(patternPatCase(v1.value0))(PatWild.value)))(apply(singleton5)(patternPatCase(v1.value0))),
                 aScore: apply(Additive)(apply(negate2)(apply(length)(apply(filter((function() {
-                  var $963 = notEq(eqPatternCase)(PatWild.value);
-                  return function($964) {
-                    return $963(patternPatCase($964));
+                  var $968 = notEq(eqPatternCase)(PatWild.value);
+                  return function($969) {
+                    return $968(patternPatCase($969));
                   };
                 })()))(patternSubterms(v1.value0)))))
               };
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 952, column 15 - line 959, column 20): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 960, column 15 - line 967, column 20): " + [v1.constructor.name]);
           };
         }));
         return {
           pattern: v2.value1,
           pScore: foldl(foldableArray)(function(l) {
             return function(r) {
-              var $657 = (l + 1 | 0) === r;
-              if ($657) {
+              var $658 = (l + 1 | 0) === r;
+              if ($658) {
                 return r;
               }
               ;
@@ -29309,16 +29309,16 @@ var chooseNextPattern = function(row0Patterns) {
       })))(composeKleisli(bindMaybe)(maximumByAll(foldableNonEmptyArray)(comparing(ordInt)(function(v2) {
         return v2.bScore;
       })))((function() {
-        var $965 = map(functorMaybe)(function($968) {
+        var $970 = map(functorMaybe)(function($973) {
           return (function(v2) {
             return v2.pattern;
-          })(head2($968));
+          })(head2($973));
         });
-        var $966 = maximumByAll(foldableNonEmptyArray)(comparing(ordInt)(function(v2) {
+        var $971 = maximumByAll(foldableNonEmptyArray)(comparing(ordInt)(function(v2) {
           return v2.aScore;
         }));
-        return function($967) {
-          return $965($966($967));
+        return function($972) {
+          return $970($971($972));
         };
       })()));
       var v = heuristic(matchingPatternGroups);
@@ -29330,10 +29330,10 @@ var chooseNextPattern = function(row0Patterns) {
         return apply(snd)(head2(row0Patterns));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 970, column 7 - line 972, column 57): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 978, column 7 - line 980, column 57): " + [v.constructor.name]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 943, column 3 - line 972, column 57): " + [expandIfPossible.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 951, column 3 - line 980, column 57): " + [expandIfPossible.constructor.name]);
   };
 };
 var buildM = function(a) {
@@ -29395,7 +29395,7 @@ var makeLet2 = function(id2) {
           return apply(make)(new Let(id2, lvl, a, intro(foldableArray)([id2.value0])(lvl)(k(lvl))));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1136, column 3 - line 1140, column 56): " + [id2.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1144, column 3 - line 1148, column 56): " + [id2.constructor.name]);
       });
     };
   };
@@ -29443,7 +29443,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
                   accessor: buildAccessor(idx)(nextArg),
                   pattern: v
                 };
-              })(apply($lazy_binderToPattern(827))(toBinder(nextArg)));
+              })(apply($lazy_binderToPattern(835))(toBinder(nextArg)));
             };
           }));
         };
@@ -29470,7 +29470,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
           subterms: r.subterms,
           vars: insert2(ordIdent)(v.value1)(r.vars)
         };
-      })))($lazy_binderToPattern(770)(v.value2));
+      })))($lazy_binderToPattern(778)(v.value2));
     }
     ;
     if (v instanceof BinderLit) {
@@ -29510,7 +29510,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
         })(propValue);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 771, column 22 - line 791, column 18): " + [v.value1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 779, column 22 - line 799, column 18): " + [v.value1.constructor.name]);
     }
     ;
     if (v instanceof BinderConstructor) {
@@ -29539,7 +29539,7 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
       };
       if (v.value0.meta instanceof Just && v.value0.meta.value0 instanceof IsNewtype) {
         if (v.value3.length === 1) {
-          return $lazy_binderToPattern(797)(v["value3"][0]);
+          return $lazy_binderToPattern(805)(v["value3"][0]);
         }
         ;
         return v1(true);
@@ -29548,12 +29548,31 @@ var $lazy_binderToPattern = /* @__PURE__ */ $runtime_lazy7("binderToPattern", "P
       return v1(true);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 765, column 19 - line 813, column 55): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 773, column 19 - line 821, column 55): " + [v.constructor.name]);
   };
 });
-var binderToPattern = /* @__PURE__ */ $lazy_binderToPattern(764);
+var binderToPattern = /* @__PURE__ */ $lazy_binderToPattern(772);
 var toBackendExprWithType = function(mbTy) {
   return function(expr) {
+    var stripTypeApps = function($copy_v) {
+      var $tco_done = false;
+      var $tco_result;
+      function $tco_loop(v) {
+        if (v instanceof ExprTypeApp) {
+          $copy_v = v.value1;
+          return;
+        }
+        ;
+        $tco_done = true;
+        return v;
+      }
+      ;
+      while (!$tco_done) {
+        $tco_result = $tco_loop($copy_v);
+      }
+      ;
+      return $tco_result;
+    };
     var go = /* @__PURE__ */ (function() {
       var toInitialCaseRows = function(idents) {
         return function(alts) {
@@ -29608,11 +29627,11 @@ var toBackendExprWithType = function(mbTy) {
                           return apply(mainCb)(apply(snoc(caseRows))(apply(buildCaseRow)(new GuardedFn(v1.value0))));
                         }
                         ;
-                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 701, column 23 - line 704, column 86): " + [v1.constructor.name]);
+                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 709, column 23 - line 712, column 86): " + [v1.constructor.name]);
                       })(v.value1.value0)([]);
                     }
                     ;
-                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 690, column 13 - line 707, column 21): " + [v.value1.constructor.name]);
+                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 698, column 13 - line 715, column 21): " + [v.value1.constructor.name]);
                   });
                 };
               };
@@ -29636,11 +29655,11 @@ var toBackendExprWithType = function(mbTy) {
                 return buildM(new Var(v.value1));
               };
               if (v.value1.value0 instanceof Just) {
-                var $720 = eq(eqModuleName)(v.value1.value0.value0)(v12.currentModule);
-                if ($720) {
-                  var $721 = lookup2(ordIdent)(v.value1.value1)(v12.toLevel);
-                  if ($721 instanceof Just) {
-                    return buildM(new Local(new Just(v.value1.value1), $721.value0));
+                var $725 = eq(eqModuleName)(v.value1.value0.value0)(v12.currentModule);
+                if ($725) {
+                  var $726 = lookup2(ordIdent)(v.value1.value1)(v12.toLevel);
+                  if ($726 instanceof Just) {
+                    return buildM(new Local(new Just(v.value1.value1), $726.value0));
                   }
                   ;
                   return v4(true);
@@ -29652,9 +29671,9 @@ var toBackendExprWithType = function(mbTy) {
               return v4(true);
             };
             if (v.value1.value0 instanceof Nothing) {
-              var $727 = lookup2(ordIdent)(v.value1.value1)(v12.toLevel);
-              if ($727 instanceof Just) {
-                return buildM(new Local(new Just(v.value1.value1), $727.value0));
+              var $732 = lookup2(ordIdent)(v.value1.value1)(v12.toLevel);
+              if ($732 instanceof Just) {
+                return buildM(new Local(new Just(v.value1.value1), $732.value0));
               }
               ;
               return v2(true);
@@ -29665,8 +29684,8 @@ var toBackendExprWithType = function(mbTy) {
         }
         ;
         if (v instanceof ExprLit) {
-          return bindFlipped(bindFn)(function($969) {
-            return buildM(Lit.create($969));
+          return bindFlipped(bindFn)(function($974) {
+            return buildM(Lit.create($974));
           })(traverse(traversableLiteral)(applicativeFn)(toBackendExpr)(v.value1));
         }
         ;
@@ -29686,9 +29705,9 @@ var toBackendExprWithType = function(mbTy) {
         ;
         if (v instanceof ExprAccessor) {
           return bindFlipped(bindFn)((function() {
-            var $970 = flip(Accessor.create)(new GetProp(v.value2));
-            return function($971) {
-              return buildM($970($971));
+            var $975 = flip(Accessor.create)(new GetProp(v.value2));
+            return function($976) {
+              return buildM($975($976));
             };
           })())(toBackendExpr(v.value1));
         }
@@ -29729,17 +29748,17 @@ var toBackendExprWithType = function(mbTy) {
                   throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 578, column 1 - line 578, column 76): " + [bind$prime.constructor.name]);
                 };
                 if (bind$prime instanceof Rec) {
-                  var $767 = fromArray2(bind$prime.value0);
-                  if ($767 instanceof Just) {
+                  var $772 = fromArray2(bind$prime.value0);
+                  if ($772 instanceof Just) {
                     return bind(bindFn)(currentLevel)(function(lvl) {
                       var idents = map(functorNonEmptyArray)(function(v4) {
                         return v4.value1;
-                      })($767.value0);
+                      })($772.value0);
                       return apply(join2)(apply2(applyFn)(map(functorFn)(function(x) {
                         return function(y) {
                           return buildM(new LetRec(lvl, x, y));
                         };
-                      })(intro(foldableNonEmptyArray)(idents)(lvl)(traverse(traversableNonEmptyArray)(applicativeFn)(toBackendBinding)($767.value0))))(intro(foldableNonEmptyArray)(idents)(lvl)(next2)));
+                      })(intro(foldableNonEmptyArray)(idents)(lvl)(traverse(traversableNonEmptyArray)(applicativeFn)(toBackendBinding)($772.value0))))(intro(foldableNonEmptyArray)(idents)(lvl)(next2)));
                     });
                   }
                   ;
@@ -29769,7 +29788,7 @@ var toBackendExprWithType = function(mbTy) {
                 return [];
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 660, column 24 - line 662, column 24): " + [v3.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 668, column 24 - line 670, column 24): " + [v3.constructor.name]);
             })();
             return foldr(foldableArray)(function(v3) {
               return function(next2) {
@@ -29785,7 +29804,7 @@ var toBackendExprWithType = function(mbTy) {
                       return Nothing.value;
                     }
                     ;
-                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 667, column 25 - line 669, column 37): " + [v4.constructor.name]);
+                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 675, column 25 - line 677, column 37): " + [v4.constructor.name]);
                   })();
                   return makeLet2(Nothing.value)(toBackendExprWithType(altTy)(v3.value1))(function(tmp) {
                     return next2(snoc(idents)(tmp));
@@ -29802,7 +29821,8 @@ var toBackendExprWithType = function(mbTy) {
           throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 578, column 1 - line 578, column 76): " + [v.constructor.name]);
         };
         if (v instanceof ExprApp) {
-          if (v.value1 instanceof ExprVar && (v.value1.value0.meta instanceof Just && v.value1.value0.meta.value0 instanceof IsNewtype)) {
+          var $799 = stripTypeApps(v.value1);
+          if ($799 instanceof ExprVar && ($799.value0.meta instanceof Just && $799.value0.meta.value0 instanceof IsNewtype)) {
             return toBackendExpr(v.value2);
           }
           ;
@@ -29818,20 +29838,20 @@ var toBackendExprWithType = function(mbTy) {
         return v2.type;
       };
       if (expr instanceof ExprApp && (expr.value0.meta instanceof Just && (expr.value0.meta.value0 instanceof IsSyntheticApp && expr.value0.type instanceof Just))) {
-        var $804 = exprAnn(expr.value1);
-        if ($804.type instanceof Just) {
-          var $805 = eq(eqExprType)(expr.value0.type.value0)($804.type.value0);
-          if ($805) {
+        var $809 = exprAnn(expr.value1);
+        if ($809.type instanceof Just) {
+          var $810 = eq(eqExprType)(expr.value0.type.value0)($809.type.value0);
+          if ($810) {
             if (expr.value0.type.value0 instanceof ConstrainedType) {
-              var $807 = uncons(expr.value0.type.value0.value0);
-              if ($807 instanceof Just) {
+              var $812 = uncons(expr.value0.type.value0.value0);
+              if ($812 instanceof Just) {
                 return apply(Just.create)((function() {
-                  var $808 = $$null($807.value0.tail);
-                  if ($808) {
+                  var $813 = $$null($812.value0.tail);
+                  if ($813) {
                     return expr.value0.type.value0.value1;
                   }
                   ;
-                  return new ConstrainedType($807.value0.tail, expr.value0.type.value0.value1);
+                  return new ConstrainedType($812.value0.tail, expr.value0.type.value0.value1);
                 })());
               }
               ;
@@ -29900,8 +29920,8 @@ var buildCaseTreeFromRows = function(denormalizedRows) {
     var row0NonPatWildPatterns = apply(fromArray2)(apply(foldlWithIndex(foldableWithIndexArray)(function(idx) {
       return function(acc) {
         return function(p) {
-          var $834 = notEq(eqPatternCase)(patternPatCase(p))(PatWild.value);
-          if ($834) {
+          var $839 = notEq(eqPatternCase)(patternPatCase(p))(PatWild.value);
+          if ($839) {
             return snoc(acc)(new Tuple(idx, p));
           }
           ;
@@ -29917,10 +29937,10 @@ var buildCaseTreeFromRows = function(denormalizedRows) {
       return apply(buildCasePattern(chooseNextPattern(row0NonPatWildPatterns.value0)(v1.tail)))(toArray3(v.value0));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 862, column 5 - line 866, column 95): " + [row0NonPatWildPatterns.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 870, column 5 - line 874, column 95): " + [row0NonPatWildPatterns.constructor.name]);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 851, column 42 - line 866, column 95): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 859, column 42 - line 874, column 95): " + [v.constructor.name]);
 };
 var buildCasePattern = function(chosenColumn) {
   return function(rows) {
@@ -30024,7 +30044,7 @@ var buildCasePattern = function(chosenColumn) {
       return buildCaseBranch(guardBoolean(v.value0));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 992, column 38 - line 1012, column 37): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1000, column 38 - line 1020, column 37): " + [v.constructor.name]);
   };
 };
 var buildCaseLeaf = function(row0) {
@@ -30061,7 +30081,7 @@ var buildCaseLeaf = function(row0) {
       })(orderedArgs)([]);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 917, column 3 - line 939, column 11): " + [row0.guardFn.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 925, column 3 - line 947, column 11): " + [row0.guardFn.constructor.name]);
   };
 };
 var toTopLevelBackendBinding = function(group4) {
@@ -30102,8 +30122,8 @@ var toTopLevelBackendBinding = function(group4) {
         };
         if (v22 instanceof Just) {
           if (v1.value1 instanceof ExprSyntax && v1.value1.value1 instanceof Typed) {
-            var $895 = eq(eqExprType)(v1.value1.value1.value0)(v22.value0);
-            if ($895) {
+            var $900 = eq(eqExprType)(v1.value1.value1.value0)(v22.value0);
+            if ($900) {
               return v1.value1;
             }
             ;
@@ -30132,10 +30152,10 @@ var toTopLevelBackendBinding = function(group4) {
           implementations: insert(ordQualified1)(qualifiedIdent)(v2.value0)(env.implementations),
           moduleImplementations: insert(ordQualified1)(qualifiedIdent)(v2.value0)(env.moduleImplementations),
           optimizationSteps: apply(maybe(env.optimizationSteps)((function() {
-            var $972 = snoc(env.optimizationSteps);
-            var $973 = Tuple.create(qualifiedIdent);
-            return function($974) {
-              return $972($973($974));
+            var $977 = snoc(env.optimizationSteps);
+            var $978 = Tuple.create(qualifiedIdent);
+            return function($979) {
+              return $977($978($979));
             };
           })()))(fromArray2(v1.value0)),
           directives: (function() {
@@ -30212,10 +30232,10 @@ var toBackendTopLevelBindingGroups = function(binds) {
             return v1.bindings;
           })(toArray3(as))
         };
-      })(groupBy(on(conj2)(function($975) {
+      })(groupBy(on(conj2)(function($980) {
         return !(function(v1) {
           return v1.recursive;
-        })($975);
+        })($980);
       }))(result.value))
     };
   };
@@ -30241,7 +30261,7 @@ var alignClassMemberAnnotations = function(classDecls) {
       return v;
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1222, column 54 - line 1224, column 23): " + [v1.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1230, column 54 - line 1232, column 23): " + [v1.constructor.name]);
   };
   var goBind = function(v) {
     if (v instanceof NonRec) {
@@ -30252,7 +30272,7 @@ var alignClassMemberAnnotations = function(classDecls) {
       return new Rec(map(functorArray)(goBinding)(v.value0));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1218, column 12 - line 1220, column 49): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Convert (line 1226, column 12 - line 1228, column 49): " + [v.constructor.name]);
   };
   return map(functorArray)(goBind);
 };
@@ -30262,8 +30282,8 @@ var toBackendModuleWithoutSourceUsage = function(v) {
     var isBindingUsed = function(deps) {
       return function(v1) {
         var res = member2(ordIdent)(v1.value0)(localExports) || member2(ordQualified1)(new Qualified(new Just(v.name), v1.value0))(deps);
-        var $935 = unwrap()(v.name) === "Data.Set";
-        if ($935) {
+        var $940 = unwrap()(v.name) === "Data.Set";
+        if ($940) {
           return res;
         }
         ;
@@ -30291,8 +30311,8 @@ var toBackendModuleWithoutSourceUsage = function(v) {
           });
         };
       })(group4));
-      var sizes = map(functorNonEmptyArray)(function($976) {
-        return length(snd(snd($976)));
+      var sizes = map(functorNonEmptyArray)(function($981) {
+        return length(snd(snd($981)));
       })(group4);
       return new Tuple(proper, {
         constructors,
@@ -30325,16 +30345,16 @@ var toBackendModuleWithoutSourceUsage = function(v) {
       return function(group4) {
         var v1 = (function() {
           if (group4.recursive) {
-            var $944 = any2(isBindingUsed(deps))(group4.bindings);
-            if ($944) {
+            var $949 = any2(isBindingUsed(deps))(group4.bindings);
+            if ($949) {
               return {
-                accum: append(semigroupSet1)(foldMap(foldableArray)(monoidSet4)(function($977) {
-                  return fst(snd($977));
+                accum: append(semigroupSet1)(foldMap(foldableArray)(monoidSet4)(function($982) {
+                  return fst(snd($982));
                 })(group4.bindings))(deps),
                 value: map(functorArray)((function() {
-                  var $978 = map(functorTuple)(snd);
-                  return function($979) {
-                    return Just.create($978($979));
+                  var $983 = map(functorTuple)(snd);
+                  return function($984) {
+                    return Just.create($983($984));
                   };
                 })())(group4.bindings)
               };
@@ -30348,8 +30368,8 @@ var toBackendModuleWithoutSourceUsage = function(v) {
           ;
           return mapAccumR(traversableArray)(function(deps$prime) {
             return function(v2) {
-              var $946 = isBindingUsed(deps$prime)(v2);
-              if ($946) {
+              var $951 = isBindingUsed(deps$prime)(v2);
+              if ($951) {
                 return {
                   accum: append(semigroupSet1)(v2.value1.value0)(deps$prime),
                   value: new Just(new Tuple(v2.value0, v2.value1.value1))
@@ -30384,11 +30404,11 @@ var toBackendModuleWithoutSourceUsage = function(v) {
       classDecls: v.classDecls,
       imports: usedImports,
       dataTypes: filter2(ordProperName)((function() {
-        var $980 = any2(isBindingUsed(usedBindings.accum));
-        return function($981) {
-          return $980(toUnfoldable12((function(v1) {
+        var $985 = any2(isBindingUsed(usedBindings.accum));
+        return function($986) {
+          return $985(toUnfoldable12((function(v1) {
             return v1.constructors;
-          })($981)));
+          })($986)));
         };
       })())(dataTypes),
       bindings: usedBindings.value,
@@ -45331,7 +45351,7 @@ var local_default = "dXNlIHN0ZDo6cHRyOjpOb25OdWxsOwp1c2Ugc3RkOjphbGxvYzo6e2FsbG9
 var threaded_default = "dXNlIHN0ZDo6b3BzOjpEZXJlZjsKdXNlIHN0ZDo6c3luYzo6QXJjOwoKLy8vIFNoYXJlZCBpbW11dGFibGUgZGF0YSB3aXRoIGNvcHktb24td3JpdGUgdXBkYXRlcyBpbiBjb25jdXJyZW50IHByb2dyYW1zLgpwdWIgc3RydWN0IFBlcmNldXNQdHI8VD4oQXJjPFQ+KTsKCmltcGw8VD4gUGVyY2V1c1B0cjxUPiB7CiAgICBwdWIgY29uc3QgU1RJQ0tZX0NPVU5UOiB1MzIgPSB1MzI6Ok1BWDsKICAgIHB1YiBmbiBuZXcodmFsdWU6IFQpIC0+IFNlbGYgewogICAgICAgIFNlbGYoQXJjOjpuZXcodmFsdWUpKQogICAgfQogICAgcHViIGZuIGlzX3VuaXF1ZSgmc2VsZikgLT4gYm9vbCB7CiAgICAgICAgQXJjOjpzdHJvbmdfY291bnQoJnNlbGYuMCkgPT0gMQogICAgfQogICAgcHViIGZuIGNvdW50KCZzZWxmKSAtPiB1MzIgewogICAgICAgIEFyYzo6c3Ryb25nX2NvdW50KCZzZWxmLjApLm1pbih1MzI6Ok1BWCBhcyB1c2l6ZSkgYXMgdTMyCiAgICB9CiAgICBwdWIgZm4gZHJvcF9leHBsaWNpdChzZWxmKSB7fQp9CmltcGw8VDogQ2xvbmU+IFBlcmNldXNQdHI8VD4gewogICAgcHViIGZuIG1ha2VfbXV0KHRoaXM6ICZtdXQgU2VsZikgLT4gJm11dCBUIHsKICAgICAgICBBcmM6Om1ha2VfbXV0KCZtdXQgdGhpcy4wKQogICAgfQogICAgLy8vIEluaXRpYWxpemF0aW9uIGlzIHBlcm1pdHRlZCBvbmx5IGJlZm9yZSB0aGUgdmFsdWUgaGFzIGJlZW4gc2hhcmVkLgogICAgcHViIHVuc2FmZSBmbiBmb3JjZV9tdXQodGhpczogJm11dCBTZWxmKSAtPiAmbXV0IFQgewogICAgICAgIEFyYzo6Z2V0X211dCgmbXV0IHRoaXMuMCkuZXhwZWN0KCJjYW5ub3QgaW5pdGlhbGl6ZSBhIHB1Ymxpc2hlZCB2YWx1ZSIpCiAgICB9Cn0KaW1wbDxUPiBDbG9uZSBmb3IgUGVyY2V1c1B0cjxUPiB7CiAgICBmbiBjbG9uZSgmc2VsZikgLT4gU2VsZiB7CiAgICAgICAgU2VsZihzZWxmLjAuY2xvbmUoKSkKICAgIH0KfQppbXBsPFQ+IERlcmVmIGZvciBQZXJjZXVzUHRyPFQ+IHsKICAgIHR5cGUgVGFyZ2V0ID0gVDsKICAgIGZuIGRlcmVmKCZzZWxmKSAtPiAmVCB7CiAgICAgICAgJnNlbGYuMAogICAgfQp9Cg==";
 
 // src/Purust/Microtasks.rs
-var Microtasks_default = "Ly8gUHJvbWlzZSByZWFjdGlvbnMgcnVuIGF0IGEgY2hlY2twb2ludCwgbmV2ZXIgb24gdGhlIHJlc29sdmluZyB3b3JrZXIncyBzdGFjay4KLy8gU3luY2hyb25vdXMgQWZmIHR1cm5zIG1heSBydW4gY29uY3VycmVudGx5OyBhIGNoZWNrcG9pbnQgd2FpdHMgdW50aWwgdGhleSBlbmQuCnVzZSBzdGQ6OnJjOjpSYzsKdXNlIHN0ZDo6Y29sbGVjdGlvbnM6OlZlY0RlcXVlOwp1c2Ugc3RkOjpzeW5jOjp7Q29uZHZhciwgTXV0ZXh9OwoKdHlwZSBKb2IgPSBCb3g8ZHluIEZuT25jZSgpICsgJ3N0YXRpYz47CnN0cnVjdCBTdGF0ZSB7CiAgICBqb2JzOiBWZWNEZXF1ZTxKb2I+LAogICAgY2hlY2tzOiBWZWNEZXF1ZTxKb2I+LAogICAgdHVybnM6IHVzaXplLAogICAgZHJhaW5pbmc6IGJvb2wsCn0KcHViIHN0cnVjdCBRdWV1ZSB7CiAgICBzdGF0ZTogTXV0ZXg8U3RhdGU+LAogICAgaWRsZTogQ29uZHZhciwKICAgIHdha2U6IEJveDxkeW4gRm4oKSArICdzdGF0aWM+LAp9CnRocmVhZF9sb2NhbCEgewogICAgc3RhdGljIENVUlJFTlQ6IHN0ZDo6Y2VsbDo6UmVmQ2VsbDxPcHRpb248UmM8UXVldWU+Pj4gPSBjb25zdCB7IHN0ZDo6Y2VsbDo6UmVmQ2VsbDo6bmV3KE5vbmUpIH07CiAgICBzdGF0aWMgVFVSTjogc3RkOjpjZWxsOjpSZWZDZWxsPE9wdGlvbjxSYzxRdWV1ZT4+PiA9IGNvbnN0IHsgc3RkOjpjZWxsOjpSZWZDZWxsOjpuZXcoTm9uZSkgfTsKfQpwdWIgc3RydWN0IFNjb3BlKE9wdGlvbjxSYzxRdWV1ZT4+KTsKaW1wbCBTY29wZSB7CiAgICBwdWIgZm4gZW50ZXIocXVldWU6IFJjPFF1ZXVlPikgLT4gU2VsZiB7CiAgICAgICAgU2VsZihDVVJSRU5ULndpdGgofGN1cnJlbnR8IGN1cnJlbnQucmVwbGFjZShTb21lKHF1ZXVlKSkpKQogICAgfQp9CmltcGwgRHJvcCBmb3IgU2NvcGUgewogICAgZm4gZHJvcCgmbXV0IHNlbGYpIHsgQ1VSUkVOVC53aXRoKHxjdXJyZW50fCBjdXJyZW50LnJlcGxhY2Uoc2VsZi4wLnRha2UoKSkpOyB9Cn0KcHViIGZuIGN1cnJlbnQoKSAtPiBSYzxRdWV1ZT4gewogICAgQ1VSUkVOVC53aXRoKHxjdXJyZW50fCBjdXJyZW50LmJvcnJvdygpLmNsb25lKCkpLmV4cGVjdCgiUHJvbWlzZSByZXF1aXJlcyBhIHB1cnVzdCBtaWNyb3Rhc2sgc2NvcGUiKQp9CnN0cnVjdCBUdXJuIHsKICAgIHF1ZXVlOiBSYzxRdWV1ZT4sCiAgICBwcmV2aW91czogT3B0aW9uPFJjPFF1ZXVlPj4sCiAgICBjaGVja3BvaW50OiBib29sLAp9CmltcGwgRHJvcCBmb3IgVHVybiB7CiAgICBmbiBkcm9wKCZtdXQgc2VsZikgewogICAgICAgIFRVUk4ud2l0aCh8Y3VycmVudHwgY3VycmVudC5yZXBsYWNlKHNlbGYucHJldmlvdXMudGFrZSgpKSk7CiAgICAgICAgbGV0IG11dCBzdGF0ZSA9IHNlbGYucXVldWUuc3RhdGUubG9jaygpLnVud3JhcCgpOwogICAgICAgIGlmIHNlbGYuY2hlY2twb2ludCB7IHN0YXRlLmRyYWluaW5nID0gZmFsc2U7IH0gZWxzZSB7IHN0YXRlLnR1cm5zIC09IDE7IH0KICAgICAgICBsZXQgd2FrZSA9ICghc3RhdGUuam9icy5pc19lbXB0eSgpIHx8ICFzdGF0ZS5jaGVja3MuaXNfZW1wdHkoKSkgJiYgc3RhdGUudHVybnMgPT0gMDsKICAgICAgICBkcm9wKHN0YXRlKTsKICAgICAgICBzZWxmLnF1ZXVlLmlkbGUubm90aWZ5X2FsbCgpOwogICAgICAgIGlmIHdha2UgeyAoc2VsZi5xdWV1ZS53YWtlKSgpOyB9CiAgICB9Cn0KaW1wbCBRdWV1ZSB7CiAgICBwdWIgZm4gbmV3KHdha2U6IGltcGwgRm4oKSArICdzdGF0aWMpIC0+IFJjPFNlbGY+IHsKICAgICAgICBSYzo6bmV3KFNlbGYgeyBzdGF0ZTogTXV0ZXg6Om5ldyhTdGF0ZSB7IGpvYnM6IFZlY0RlcXVlOjpuZXcoKSwgY2hlY2tzOiBWZWNEZXF1ZTo6bmV3KCksIHR1cm5zOiAwLCBkcmFpbmluZzogZmFsc2UgfSksCiAgICAgICAgICAgIGlkbGU6IENvbmR2YXI6Om5ldygpLCB3YWtlOiBCb3g6Om5ldyh3YWtlKSB9KQogICAgfQogICAgcHViIGZuIGVucXVldWUoJnNlbGYsIGpvYjogaW1wbCBGbk9uY2UoKSArICdzdGF0aWMpIHsKICAgICAgICBzZWxmLnN0YXRlLmxvY2soKS51bndyYXAoKS5qb2JzLnB1c2hfYmFjayhCb3g6Om5ldyhqb2IpKTsKICAgICAgICAoc2VsZi53YWtlKSgpOwogICAgfQogICAgcHViIGZuIGFmdGVyX2NoZWNrcG9pbnQoJnNlbGYsIGNoZWNrOiBpbXBsIEZuT25jZSgpICsgJ3N0YXRpYykgewogICAgICAgIHNlbGYuc3RhdGUubG9jaygpLnVud3JhcCgpLmNoZWNrcy5wdXNoX2JhY2soQm94OjpuZXcoY2hlY2spKTsKICAgICAgICAoc2VsZi53YWtlKSgpOwogICAgfQogICAgcHViIGZuIHR1cm48Uj4oc2VsZjogJlJjPFNlbGY+LCBhY3Rpb246IGltcGwgRm5PbmNlKCkgLT4gUikgLT4gUiB7CiAgICAgICAgbGV0IF9zY29wZSA9IFNjb3BlOjplbnRlcihzZWxmLmNsb25lKCkpOwogICAgICAgIGlmIFRVUk4ud2l0aCh8Y3VycmVudHwgY3VycmVudC5ib3Jyb3coKS5hc19yZWYoKS5pc19zb21lX2FuZCh8cXVldWV8IFJjOjpwdHJfZXEocXVldWUsIHNlbGYpKSkgewogICAgICAgICAgICByZXR1cm4gYWN0aW9uKCk7CiAgICAgICAgfQogICAgICAgIGxldCBtdXQgc3RhdGUgPSBzZWxmLnN0YXRlLmxvY2soKS51bndyYXAoKTsKICAgICAgICB3aGlsZSBzdGF0ZS5kcmFpbmluZyB7IHN0YXRlID0gc2VsZi5pZGxlLndhaXQoc3RhdGUpLnVud3JhcCgpOyB9CiAgICAgICAgc3RhdGUudHVybnMgKz0gMTsKICAgICAgICBkcm9wKHN0YXRlKTsKICAgICAgICBsZXQgX3R1cm4gPSBUdXJuIHsgcXVldWU6IHNlbGYuY2xvbmUoKSwgY2hlY2twb2ludDogZmFsc2UsCiAgICAgICAgICAgIHByZXZpb3VzOiBUVVJOLndpdGgofGN1cnJlbnR8IGN1cnJlbnQucmVwbGFjZShTb21lKHNlbGYuY2xvbmUoKSkpKSB9OwogICAgICAgIGFjdGlvbigpCiAgICB9CiAgICAvLyBBIGJ1c3kgdHVybiB3YWtlcyB0aGUgZXhlY3V0b3Igb24gZXhpdC4gRG8gbm90IGJsb2NrIHRoZSBleGVjdXRvciBoZXJlLgogICAgcHViIGZuIGRyYWluKHNlbGY6ICZSYzxTZWxmPikgewogICAgICAgIGxldCBtdXQgc3RhdGUgPSBzZWxmLnN0YXRlLmxvY2soKS51bndyYXAoKTsKICAgICAgICBpZiBzdGF0ZS5kcmFpbmluZyB8fCBzdGF0ZS50dXJucyAhPSAwIHx8IChzdGF0ZS5qb2JzLmlzX2VtcHR5KCkgJiYgc3RhdGUuY2hlY2tzLmlzX2VtcHR5KCkpIHsgcmV0dXJuOyB9CiAgICAgICAgc3RhdGUuZHJhaW5pbmcgPSB0cnVlOwogICAgICAgIGRyb3Aoc3RhdGUpOwogICAgICAgIGxldCBfc2NvcGUgPSBTY29wZTo6ZW50ZXIoc2VsZi5jbG9uZSgpKTsKICAgICAgICBsZXQgX3R1cm4gPSBUdXJuIHsgcXVldWU6IHNlbGYuY2xvbmUoKSwgY2hlY2twb2ludDogdHJ1ZSwKICAgICAgICAgICAgcHJldmlvdXM6IFRVUk4ud2l0aCh8Y3VycmVudHwgY3VycmVudC5yZXBsYWNlKFNvbWUoc2VsZi5jbG9uZSgpKSkpIH07CiAgICAgICAgbG9vcCB7CiAgICAgICAgICAgIGxldCBqb2IgPSB7CiAgICAgICAgICAgICAgICBsZXQgbXV0IHN0YXRlID0gc2VsZi5zdGF0ZS5sb2NrKCkudW53cmFwKCk7CiAgICAgICAgICAgICAgICBzdGF0ZS5qb2JzLnBvcF9mcm9udCgpLm9yX2Vsc2UofHwgc3RhdGUuY2hlY2tzLnBvcF9mcm9udCgpKQogICAgICAgICAgICB9OwogICAgICAgICAgICBtYXRjaCBqb2IgeyBTb21lKGpvYikgPT4gam9iKCksIE5vbmUgPT4gYnJlYWsgfQogICAgICAgIH0KICAgIH0KICAgIHB1YiBmbiBoYXNfam9icygmc2VsZikgLT4gYm9vbCB7CiAgICAgICAgbGV0IHN0YXRlID0gc2VsZi5zdGF0ZS5sb2NrKCkudW53cmFwKCk7CiAgICAgICAgIXN0YXRlLmpvYnMuaXNfZW1wdHkoKSB8fCAhc3RhdGUuY2hlY2tzLmlzX2VtcHR5KCkKICAgIH0KfQpwdWIgZm4gcnVuX21haW48Uj4obWFpbjogaW1wbCBGbk9uY2UoKSAtPiBSKSAtPiBSIHsKICAgIGxldCBxdWV1ZSA9IFF1ZXVlOjpuZXcofHwge30pOwogICAgbGV0IHJlc3VsdCA9IHF1ZXVlLnR1cm4obWFpbik7CiAgICBxdWV1ZS5kcmFpbigpOwogICAgcmVzdWx0Cn0K";
+var Microtasks_default = "Ly8gUHJvbWlzZSByZWFjdGlvbnMgcnVuIGF0IGEgY2hlY2twb2ludCwgbmV2ZXIgb24gdGhlIHJlc29sdmluZyB3b3JrZXIncyBzdGFjay4KLy8gU3luY2hyb25vdXMgQWZmIHR1cm5zIG1heSBydW4gY29uY3VycmVudGx5OyBhIGNoZWNrcG9pbnQgd2FpdHMgdW50aWwgdGhleSBlbmQuCnVzZSBzdGQ6OnJjOjpSYzsKdXNlIHN0ZDo6Y29sbGVjdGlvbnM6OlZlY0RlcXVlOwp1c2Ugc3RkOjpzeW5jOjp7Q29uZHZhciwgTXV0ZXh9OwoKdHlwZSBKb2IgPSBCb3g8ZHluIEZuT25jZSgpICsgJ3N0YXRpYz47CnN0cnVjdCBTdGF0ZSB7CiAgICBqb2JzOiBWZWNEZXF1ZTxKb2I+LAogICAgY2hlY2tzOiBWZWNEZXF1ZTxKb2I+LAogICAgdHVybnM6IHVzaXplLAogICAgZHJhaW5pbmc6IGJvb2wsCn0KcHViIHN0cnVjdCBRdWV1ZSB7CiAgICBzdGF0ZTogTXV0ZXg8U3RhdGU+LAogICAgaWRsZTogQ29uZHZhciwKICAgIHdha2U6IEJveDxkeW4gRm4oKSArICdzdGF0aWM+LAp9CnRocmVhZF9sb2NhbCEgewogICAgc3RhdGljIENVUlJFTlQ6IHN0ZDo6Y2VsbDo6UmVmQ2VsbDxPcHRpb248UmM8UXVldWU+Pj4gPSBjb25zdCB7IHN0ZDo6Y2VsbDo6UmVmQ2VsbDo6bmV3KE5vbmUpIH07CiAgICBzdGF0aWMgVFVSTjogc3RkOjpjZWxsOjpSZWZDZWxsPE9wdGlvbjxSYzxRdWV1ZT4+PiA9IGNvbnN0IHsgc3RkOjpjZWxsOjpSZWZDZWxsOjpuZXcoTm9uZSkgfTsKfQpwdWIgc3RydWN0IFNjb3BlKE9wdGlvbjxSYzxRdWV1ZT4+KTsKaW1wbCBTY29wZSB7CiAgICBwdWIgZm4gZW50ZXIocXVldWU6IFJjPFF1ZXVlPikgLT4gU2VsZiB7CiAgICAgICAgU2VsZihDVVJSRU5ULndpdGgofGN1cnJlbnR8IGN1cnJlbnQucmVwbGFjZShTb21lKHF1ZXVlKSkpKQogICAgfQp9CmltcGwgRHJvcCBmb3IgU2NvcGUgewogICAgZm4gZHJvcCgmbXV0IHNlbGYpIHsgQ1VSUkVOVC53aXRoKHxjdXJyZW50fCBjdXJyZW50LnJlcGxhY2Uoc2VsZi4wLnRha2UoKSkpOyB9Cn0KcHViIGZuIGN1cnJlbnQoKSAtPiBSYzxRdWV1ZT4gewogICAgQ1VSUkVOVC53aXRoKHxjdXJyZW50fCBjdXJyZW50LmJvcnJvdygpLmNsb25lKCkpLmV4cGVjdCgiUHJvbWlzZSByZXF1aXJlcyBhIHB1cnVzdCBtaWNyb3Rhc2sgc2NvcGUiKQp9CnN0cnVjdCBUdXJuIHsKICAgIHF1ZXVlOiBSYzxRdWV1ZT4sCiAgICBwcmV2aW91czogT3B0aW9uPFJjPFF1ZXVlPj4sCiAgICBjaGVja3BvaW50OiBib29sLAp9CmltcGwgRHJvcCBmb3IgVHVybiB7CiAgICBmbiBkcm9wKCZtdXQgc2VsZikgewogICAgICAgIFRVUk4ud2l0aCh8Y3VycmVudHwgY3VycmVudC5yZXBsYWNlKHNlbGYucHJldmlvdXMudGFrZSgpKSk7CiAgICAgICAgbGV0IG11dCBzdGF0ZSA9IHNlbGYucXVldWUuc3RhdGUubG9jaygpLnVud3JhcCgpOwogICAgICAgIGlmIHNlbGYuY2hlY2twb2ludCB7IHN0YXRlLmRyYWluaW5nID0gZmFsc2U7IH0gZWxzZSB7IHN0YXRlLnR1cm5zIC09IDE7IH0KICAgICAgICBsZXQgd2FrZSA9ICghc3RhdGUuam9icy5pc19lbXB0eSgpIHx8ICFzdGF0ZS5jaGVja3MuaXNfZW1wdHkoKSkgJiYgc3RhdGUudHVybnMgPT0gMDsKICAgICAgICBkcm9wKHN0YXRlKTsKICAgICAgICBzZWxmLnF1ZXVlLmlkbGUubm90aWZ5X2FsbCgpOwogICAgICAgIGlmIHdha2UgeyAoc2VsZi5xdWV1ZS53YWtlKSgpOyB9CiAgICB9Cn0KaW1wbCBRdWV1ZSB7CiAgICBwdWIgZm4gbmV3KHdha2U6IGltcGwgRm4oKSArICdzdGF0aWMpIC0+IFJjPFNlbGY+IHsKICAgICAgICBSYzo6bmV3KFNlbGYgeyBzdGF0ZTogTXV0ZXg6Om5ldyhTdGF0ZSB7IGpvYnM6IFZlY0RlcXVlOjpuZXcoKSwgY2hlY2tzOiBWZWNEZXF1ZTo6bmV3KCksIHR1cm5zOiAwLCBkcmFpbmluZzogZmFsc2UgfSksCiAgICAgICAgICAgIGlkbGU6IENvbmR2YXI6Om5ldygpLCB3YWtlOiBCb3g6Om5ldyh3YWtlKSB9KQogICAgfQogICAgcHViIGZuIGVucXVldWUoJnNlbGYsIGpvYjogaW1wbCBGbk9uY2UoKSArICdzdGF0aWMpIHsKICAgICAgICBzZWxmLnN0YXRlLmxvY2soKS51bndyYXAoKS5qb2JzLnB1c2hfYmFjayhCb3g6Om5ldyhqb2IpKTsKICAgICAgICAoc2VsZi53YWtlKSgpOwogICAgfQogICAgcHViIGZuIGFmdGVyX2NoZWNrcG9pbnQoJnNlbGYsIGNoZWNrOiBpbXBsIEZuT25jZSgpICsgJ3N0YXRpYykgewogICAgICAgIHNlbGYuc3RhdGUubG9jaygpLnVud3JhcCgpLmNoZWNrcy5wdXNoX2JhY2soQm94OjpuZXcoY2hlY2spKTsKICAgICAgICAoc2VsZi53YWtlKSgpOwogICAgfQogICAgcHViIGZuIHR1cm48Uj4oc2VsZjogJlJjPFNlbGY+LCBhY3Rpb246IGltcGwgRm5PbmNlKCkgLT4gUikgLT4gUiB7CiAgICAgICAgbGV0IF9zY29wZSA9IFNjb3BlOjplbnRlcihzZWxmLmNsb25lKCkpOwogICAgICAgIGlmIFRVUk4ud2l0aCh8Y3VycmVudHwgY3VycmVudC5ib3Jyb3coKS5hc19yZWYoKS5pc19zb21lX2FuZCh8cXVldWV8IFJjOjpwdHJfZXEocXVldWUsIHNlbGYpKSkgewogICAgICAgICAgICByZXR1cm4gYWN0aW9uKCk7CiAgICAgICAgfQogICAgICAgIGxldCBtdXQgc3RhdGUgPSBzZWxmLnN0YXRlLmxvY2soKS51bndyYXAoKTsKICAgICAgICB3aGlsZSBzdGF0ZS5kcmFpbmluZyB7IHN0YXRlID0gc2VsZi5pZGxlLndhaXQoc3RhdGUpLnVud3JhcCgpOyB9CiAgICAgICAgc3RhdGUudHVybnMgKz0gMTsKICAgICAgICBkcm9wKHN0YXRlKTsKICAgICAgICBsZXQgX3R1cm4gPSBUdXJuIHsgcXVldWU6IHNlbGYuY2xvbmUoKSwgY2hlY2twb2ludDogZmFsc2UsCiAgICAgICAgICAgIHByZXZpb3VzOiBUVVJOLndpdGgofGN1cnJlbnR8IGN1cnJlbnQucmVwbGFjZShTb21lKHNlbGYuY2xvbmUoKSkpKSB9OwogICAgICAgIGFjdGlvbigpCiAgICB9CiAgICAvLyBBIGJ1c3kgdHVybiB3YWtlcyB0aGUgZXhlY3V0b3Igb24gZXhpdC4gRG8gbm90IGJsb2NrIHRoZSBleGVjdXRvciBoZXJlLgogICAgcHViIGZuIGRyYWluKHNlbGY6ICZSYzxTZWxmPikgewogICAgICAgIGxldCBtdXQgc3RhdGUgPSBzZWxmLnN0YXRlLmxvY2soKS51bndyYXAoKTsKICAgICAgICBpZiBzdGF0ZS5kcmFpbmluZyB8fCBzdGF0ZS50dXJucyAhPSAwIHx8IChzdGF0ZS5qb2JzLmlzX2VtcHR5KCkgJiYgc3RhdGUuY2hlY2tzLmlzX2VtcHR5KCkpIHsgcmV0dXJuOyB9CiAgICAgICAgc3RhdGUuZHJhaW5pbmcgPSB0cnVlOwogICAgICAgIGRyb3Aoc3RhdGUpOwogICAgICAgIGxldCBfc2NvcGUgPSBTY29wZTo6ZW50ZXIoc2VsZi5jbG9uZSgpKTsKICAgICAgICBsZXQgX3R1cm4gPSBUdXJuIHsgcXVldWU6IHNlbGYuY2xvbmUoKSwgY2hlY2twb2ludDogdHJ1ZSwKICAgICAgICAgICAgcHJldmlvdXM6IFRVUk4ud2l0aCh8Y3VycmVudHwgY3VycmVudC5yZXBsYWNlKFNvbWUoc2VsZi5jbG9uZSgpKSkpIH07CiAgICAgICAgbG9vcCB7CiAgICAgICAgICAgIGxldCBqb2IgPSB7CiAgICAgICAgICAgICAgICBsZXQgbXV0IHN0YXRlID0gc2VsZi5zdGF0ZS5sb2NrKCkudW53cmFwKCk7CiAgICAgICAgICAgICAgICBzdGF0ZS5qb2JzLnBvcF9mcm9udCgpLm9yX2Vsc2UofHwgc3RhdGUuY2hlY2tzLnBvcF9mcm9udCgpKQogICAgICAgICAgICB9OwogICAgICAgICAgICBtYXRjaCBqb2IgeyBTb21lKGpvYikgPT4gam9iKCksIE5vbmUgPT4gYnJlYWsgfQogICAgICAgIH0KICAgIH0KICAgIHB1YiBmbiBoYXNfam9icygmc2VsZikgLT4gYm9vbCB7CiAgICAgICAgbGV0IHN0YXRlID0gc2VsZi5zdGF0ZS5sb2NrKCkudW53cmFwKCk7CiAgICAgICAgIXN0YXRlLmpvYnMuaXNfZW1wdHkoKSB8fCAhc3RhdGUuY2hlY2tzLmlzX2VtcHR5KCkKICAgIH0KfQpwdWIgZm4gcnVuX21haW48Uj4obWFpbjogaW1wbCBGbk9uY2UoKSAtPiBSKSAtPiBSIHsKICAgIGxldCBxdWV1ZSA9IFF1ZXVlOjpuZXcofHwge30pOwogICAgbGV0IHJlc3VsdCA9IHF1ZXVlLnR1cm4obWFpbik7CiAgICBxdWV1ZS5kcmFpbigpOwogICAgcmVzdWx0Cn0KCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQovLyBQcm9jZXNzIGV4aXQgY29kZSBhbmQgdW5jYXVnaHQgZXhjZXB0aW9ucwovLyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmNvbnN0IEVYSVRfQ09ERV9VTlNFVDogaTMyID0gaTMyOjpNSU47CnN0YXRpYyBFWElUX0NPREU6IHN0ZDo6c3luYzo6YXRvbWljOjpBdG9taWNJMzIgPQogICAgc3RkOjpzeW5jOjphdG9taWM6OkF0b21pY0kzMjo6bmV3KEVYSVRfQ09ERV9VTlNFVCk7CgovLy8gYHByb2Nlc3MuZXhpdENvZGUgPSBuYDogaG9ub3VyZWQgd2hlbiB0aGUgcHJvZ3JhbSBmaW5pc2hlcyBvbiBpdHMgb3duLgpwdWIgZm4gc2V0X2V4aXRfY29kZShjb2RlOiBpMzIpIHsKICAgIEVYSVRfQ09ERS5zdG9yZShjb2RlLCBzdGQ6OnN5bmM6OmF0b21pYzo6T3JkZXJpbmc6OlNlcUNzdCk7Cn0KCnB1YiBmbiBleGl0X2NvZGUoKSAtPiBPcHRpb248aTMyPiB7CiAgICBsZXQgY29kZSA9IEVYSVRfQ09ERS5sb2FkKHN0ZDo6c3luYzo6YXRvbWljOjpPcmRlcmluZzo6U2VxQ3N0KTsKICAgIGlmIGNvZGUgPT0gRVhJVF9DT0RFX1VOU0VUIHsgTm9uZSB9IGVsc2UgeyBTb21lKGNvZGUpIH0KfQoKLy8vIEZsdXNoZXMgdGhlIHN0ZGlvIGJ1ZmZlcnMgYW5kIHRlcm1pbmF0ZXMgd2l0aCB0aGUgc3RvcmVkIGV4aXQgY29kZS4KcHViIGZuIGZpbmlzaF9wcm9jZXNzKCkgLT4gISB7CiAgICB1c2Ugc3RkOjppbzo6V3JpdGU7CiAgICBsZXQgXyA9IHN0ZDo6aW86OnN0ZG91dCgpLmZsdXNoKCk7CiAgICBsZXQgXyA9IHN0ZDo6aW86OnN0ZGVycigpLmZsdXNoKCk7CiAgICBzdGQ6OnByb2Nlc3M6OmV4aXQoZXhpdF9jb2RlKCkudW53cmFwX29yKDApKTsKfQoKdGhyZWFkX2xvY2FsISB7CiAgICBzdGF0aWMgVU5DQVVHSFRfSEFORExFUjogc3RkOjpjZWxsOjpSZWZDZWxsPE9wdGlvbjxCb3g8ZHluIEZuKCk+Pj4gPSBjb25zdCB7IHN0ZDo6Y2VsbDo6UmVmQ2VsbDo6bmV3KE5vbmUpIH07Cn0KCi8vLyBgcHJvY2Vzcy5zZXRVbmNhdWdodEV4Y2VwdGlvbkNhcHR1cmVDYWxsYmFja2A6IHRoZSBoYW5kbGVyIHJ1bnMgd2hlbiBhbgovLy8gZXhjZXB0aW9uIGVzY2FwZXMgdGhlIHByb2dyYW0sIGJlZm9yZSB0aGUgcnVudGltZSByZS1yYWlzZXMgaXQuCnB1YiBmbiBzZXRfdW5jYXVnaHRfaGFuZGxlcihoYW5kbGVyOiBPcHRpb248Qm94PGR5biBGbigpPj4pIHsKICAgIFVOQ0FVR0hUX0hBTkRMRVIud2l0aCh8Y3VycmVudHwgKmN1cnJlbnQuYm9ycm93X211dCgpID0gaGFuZGxlcik7Cn0KCi8vLyBDYXRjaGVzIGFuIGV4Y2VwdGlvbiB0aGF0IGVzY2FwZWQgdGhlIHByb2dyYW0gYW5kIGdpdmVzIHRoZSBjYXB0dXJlCi8vLyBjYWxsYmFjayBhIGNoYW5jZSB0byBydW4uIEEgY2FsbGJhY2sgdGhhdCByZXR1cm5zIGNhbm5vdCByZXN1bWUgdGhlCi8vLyBpbnRlcnJ1cHRlZCBjb21wdXRhdGlvbiwgc28gdGhlIGV4Y2VwdGlvbiBpcyByZS1yYWlzZWQgYW5kIHRoZSBydW50aW1lCi8vLyBrZWVwcyBpdHMgbm9uLXplcm8gc3RhdHVzOyBhIGNhbGxiYWNrIHRoYXQgdGVybWluYXRlcyBwaWNrcyB0aGUgc3RhdHVzLgpwdWIgZm4gcnVuX3Byb2dyYW1fZ3VhcmRlZDxSPihtYWluOiBpbXBsIEZuT25jZSgpIC0+IFIpIC0+IFIgewogICAgbWF0Y2ggc3RkOjpwYW5pYzo6Y2F0Y2hfdW53aW5kKHN0ZDo6cGFuaWM6OkFzc2VydFVud2luZFNhZmUobWFpbikpIHsKICAgICAgICBPayh2YWx1ZSkgPT4gdmFsdWUsCiAgICAgICAgRXJyKHBheWxvYWQpID0+IHsKICAgICAgICAgICAgbGV0IGhhbmRsZXIgPSBVTkNBVUdIVF9IQU5ETEVSLndpdGgofGN1cnJlbnR8IGN1cnJlbnQuYm9ycm93X211dCgpLnRha2UoKSk7CiAgICAgICAgICAgIGlmIGxldCBTb21lKGhhbmRsZXIpID0gaGFuZGxlciB7CiAgICAgICAgICAgICAgICBoYW5kbGVyKCk7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgc3RkOjpwYW5pYzo6cmVzdW1lX3Vud2luZChwYXlsb2FkKTsKICAgICAgICB9CiAgICB9Cn0K";
 
 // output/Purust.Runtime/foreign.js
 var microtasksSource = Buffer2.from(Microtasks_default, "base64").toString("utf8");
@@ -45449,7 +45469,7 @@ var configureThreading = function(v) {
     return replaceAll("[dependencies]\n")('[dependencies]\ntokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync", "macros"] }\n');
   }
   ;
-  throw new Error("Failed pattern match at Main (line 400, column 1 - line 400, column 50): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 403, column 1 - line 403, column 50): " + [v.constructor.name]);
 };
 var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend total")(function(v) {
   return bind(bindAff)(liftEffect(monadEffectAff)(argv))(function(args) {
@@ -46100,7 +46120,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                     ;
                     return "purust_core::microtasks::run_main(|| {\n" + (registrations + ("    " + (runMain + " });")));
                   })();
-                  var mainEntry = "#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\n" + ("fn main() {\n" + ("    // Deeply recursive PureScript programs (and their drops) need more than\n" + ("    // the platform default; run on a thread with a large, configurable stack.\n" + ('    let stack_size = std::env::var("PURUST_STACK_SIZE")\n' + ("        .ok()\n" + ("        .and_then(|value| value.parse::<usize>().ok())\n" + ("        .filter(|size| *size > 0)\n" + ("        .unwrap_or(1024 * 1024 * 1024);\n" + ("    let failed = std::thread::Builder::new()\n" + ('        .name("purust-main".to_owned())\n' + ("        .stack_size(stack_size)\n" + ("        .spawn(move || {\n            " + (mainBody + '\n        })\n        .expect("failed to start the program thread")\n        .join()\n        .is_err();\n    if failed {\n        std::process::exit(101);\n    }\n}\n')))))))))))));
+                  var mainEntry = "#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\n" + ("fn main() {\n" + ("    // Deeply recursive PureScript programs (and their drops) need more than\n" + ("    // the platform default; run on a thread with a large, configurable stack.\n" + ('    let stack_size = std::env::var("PURUST_STACK_SIZE")\n' + ("        .ok()\n" + ("        .and_then(|value| value.parse::<usize>().ok())\n" + ("        .filter(|size| *size > 0)\n" + ("        .unwrap_or(1024 * 1024 * 1024);\n" + ("    let failed = std::thread::Builder::new()\n" + ('        .name("purust-main".to_owned())\n' + ("        .stack_size(stack_size)\n" + ("        .spawn(move || {\n" + ("            purust_core::microtasks::run_program_guarded(|| {\n            " + (mainBody + '\n            })\n        })\n        .expect("failed to start the program thread")\n        .join()\n        .is_err();\n    if failed {\n        std::process::exit(101);\n    }\n    purust_core::microtasks::finish_process();\n}\n'))))))))))))));
                   writeTextFile(UTF8.value)(outDir + "/src/main.rs")((function() {
                     if (threaded) {
                       return threadedRust(mainEntry);
