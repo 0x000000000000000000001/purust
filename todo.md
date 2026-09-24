@@ -1,131 +1,247 @@
-# FBIP via TAST : état au 17 septembre 2026
+# Purust — rétablir et démontrer l’intégrité des tests
 
-Objectif conservé : réduire de 50 % le temps de `Test.RBTree` par rapport à
-la baseline Rust officielle d'`altbak.pub/README.md`, soit passer de
-8 788,42 µs à 4 394,21 µs. **Objectif de performance non atteint.**
+Plan du 24 septembre 2026.
 
-## Corrections terminées
+## Objectif
 
-- [x] Lire directement `bindingUsage` et `variableUse`, sans marqueur racine.
-  Les faits absents restent inconnus ; les identités locales sont validées
-  avec leur module et leur portée. `usageCount` et `escapes` ne sont plus lus.
-- [x] Documenter leur portée : une dernière occurrence dans le source ne
-  prouve ni l'unicité de l'allocation ni la dernière utilisation après PBO.
-- [x] Supprimer `UsageMeta`, qui avait bloqué les simplifications PBO. La
-  dépendance effective est `htdocs/purescript-backend-optimizer-purust`.
-- [x] Invalider les faits source en sortie de monomorphisation et avant
-  conversion vers l'IR backend. Conserver les types et `TypeApp`.
-- [x] Conserver les décisions clone/move fondées sur la liveness finale
-  (`alive`) et les contrôles d'unicité Rc. Les faits source ne les remplacent
-  pas ; aucune enveloppe d'usage ne subsiste dans le générateur Rust.
-- [x] Ajouter `--trace-phases` pour repérer le module et la phase coûteuse.
-- [x] Recompiler le compilateur et le backend, vérifier les régressions et
-  compiler/exécuter RBTree dans un workspace isolé avec manifest frais.
+Préserver intégralement la couverture amont et `gopurs` lors du port Rust :
+les modifications de tests ne peuvent qu’ajouter des vérifications ou adapter
+leur forme native avec des invariants au moins équivalents. Restaurer les
+scénarios perdus, corriger les succès insuffisamment vérifiés, puis valider
+les runners en mode normal et avec `-c`.
 
-Migration du 17 septembre : build Purust réussi, 12 tests de lecture/validation
-et 5 tests de recalcul PBO réussis. Génération : 76/80 tests réussis, quatre
-tests FFI bloqués par le conteneur de référence arrêté, y compris après
-relance avec accès au socket Docker. Les intégrations TAST `record-borrows`
-et `rotations` passent. Contrat :
-`htdocs/purescript-backend-optimizer-purust/CORE_FN_USAGE.md`.
+La baseline initiale de 37 paquets reste obligatoire. Les 53 runners annoncés
+précédemment ne prouvent pas une couverture équivalente ; intégrer également
+la suite indépendante de `spec-node` au périmètre final.
 
-## Mesures vérifiées
+Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
 
-La génération Rust termine en 9,52 s sur les anciens fichiers TAST. L'ancien
-bundle instrumenté dépassait le budget de 200 000 appels de génération après
-78 s tout en progressant entre modules : la boucle infinie supposée n'est
-pas démontrée, mais les wrappers provoquaient une régression d'optimisation.
+## Principe : uniquement des ajouts sur l’amont
 
-Cinq séries non instrumentées, chacune avec le protocole officiel (3 warm-ups,
-meilleur de 10) : **8 538,08 ; 8 329,88 ; 8 608,62 ; 8 536,29 ; 8 348,96 µs**.
-Médiane des cinq résultats : **8 536,29 µs**, proche de la baseline historique.
-La sortie attendue, `22`, est validée à chaque série.
+- **Aucune perte** : un scénario, une fixture, une assertion, un groupe de
+  tests ou un fichier amont ne peut être supprimé, désactivé, affaibli ou
+  remplacé par une vérification plus faible. Les ajouts natifs complètent les
+  assertions amont ; ils ne s’y substituent jamais.
+- **Adaptation légitime** : seul un blocage réel du backend natif justifie de
+  changer la forme d’un test, à contrat et invariants égaux. Exemple de
+  référence : `purust-aff`, où le parallélisme réel d’Aff rend l’ordre
+  d’observation imprévisible ; les tests comparent alors des ensembles, des
+  tris ou des comptes d’occurrences, sans relâcher l’assertion.
+- **Formes interdites** : « ça arrive parfois », attente par sommeil
+  arbitraire, assertion vidée, test commenté, marqueur de progression à la
+  place du résultat, tautologie (`|| true`), assertion sans attente de son
+  callback. Ces formes sont des échecs à corriger, pas des adaptations.
+- **Justification locale** : toute adaptation non triviale porte, dans le
+  test, un commentaire précisant la raison native et le contrat conservé.
+- **Tests non portés ou en échec** : ils restent visibles et ouverts (échec
+  réel du runner ou tâche listée). Un défaut hérité de l’amont est réparé en
+  renforçant le test, jamais en le retirant.
 
-Un comptage séparé sur le Rust fraîchement généré établit, pour 100 000 clés :
+## Règles de réalisation
 
-- **100 001 allocations** : la cellule initiale et un nœud par clé ;
-- **2 483 932 succès de `get_mut`, aucun échec** sur le scénario unique ;
-- **99 978 rotations sur place** ;
-- **2 183 976 clones temporaires de références** pendant la descente ;
-- **200 000 clones** pendant le parcours `depth`.
+- Pour chaque adaptation, identifier le contrat, la raison technique et la
+  vérification équivalente. Un test désactivé ou une fonctionnalité
+  neutralisée reste un travail ouvert.
+- Corriger le backend, les FFI, PBO ou le fork Haskell lorsque le blocage vient
+  de leur implémentation ; limiter les modifications au besoin démontré.
+- Vérifier les résultats, les erreurs et la terminaison effective des actions
+  asynchrones. Un message de progression ne constitue pas une assertion.
+- Préserver les forks `js-bigints` et `exists` et leurs travaux natifs.
+- Exécuter les contrôles ciblés après chaque correction, puis les deux passes
+  globales sur l’état final. Répéter les contrôles selon les changements et
+  les échecs rencontrés.
 
-Les invariants rouge/noir, l'ordre des clés, les quatre rotations, les
-références faibles, 200 versions conservées et les bilans mémoire sont
-vérifiés. Les compteurs ne sont pas utilisés pour mesurer le temps.
+## 1. Figer le périmètre et les références
 
-## Décisions d'équilibrage intégrées — 16 septembre 2026
+- [ ] Relever les commits de référence amont/Go/Rust et l’état local des dépôts
+  concernés avant les modifications.
+- [ ] Inventorier, pour les paquets de la batterie, les modules de tests,
+  scénarios, fixtures, tests FFI et commandes réellement exécutés.
+- [ ] Relier chaque scénario de référence à son équivalent natif ; distinguer
+  les défauts hérités des pertes introduites lors du port.
+- [ ] Recenser explicitement les suites non raccordées et les paquets
+  exclusivement constitués de types, avec leur mode de validation approprié.
 
-- [x] Générer des tests de constructeurs avec champs empruntés, puis partager
-  une continuation répétée lorsque sa portée le permet. Rendu générique,
-  budget global de 128 décisions et repli vers l'ancien rendu.
-- [x] Conserver tous les contrôles Rc : le module RBTree généré garde ses
-  103 occurrences de `Rc::get_mut` et ses 652 `.clone()`.
-- [x] Vérifier le gain sur le runner complet : deux campagnes de 21 paires,
-  **−2,96 % / −4,03 % sur RBTree**, **−2,73 % / −3,65 % sur le total**.
-  Les 14 sorties sont validées à chaque passage. L'objectif −50 % reste ouvert.
-- [x] Ajouter 1 078 cas de décisions Rc/Arc et vérifier les régressions :
-  75 tests réussis, quatre tests FFI bloqués par l'environnement Docker.
-- [x] Prouver une autre marge sur Records, dans une copie du Rust généré :
-  **376,17 µs → 3,54 µs**, soit environ **−4,04 % sur le total** du runner
-  complet en comparaison appariée. Le partage des entrées est conservé.
-- [x] Généraliser la variante Records dans le backend : champs primitifs
-  gardés dans des variables de boucle, matérialisation du record à la sortie,
-  conservation des dépendances entre anciennes/nouvelles valeurs et du COW.
-  La passe est intégrée pour les records fermés à feuilles Int ; les types
-  nécessaires existent déjà dans le TAST.
+## 2. Rendre les verdicts des runners fiables
 
-Rapports :
-`htdocs/altbak.pub-purust/scratch/compact-guards-integration-20260916/REPORT.md`
-et `htdocs/altbak.pub-purust/scratch/records-tast-opportunity-20260916/REPORT.md`.
-Ces premières expériences précèdent la campagne intégrée ci-dessous.
+- [ ] Corriger `batch.sh` : statut non nul dès qu’un runner obligatoire échoue
+  ou manque ; comptabiliser séparément succès, échecs et exclusions explicites.
+- [ ] Préserver le statut réel des commandes, y compris en présence de pipes
+  ou de captures de sortie. Borner les blocages par des timeouts.
+- [ ] Remplacer les marqueurs de progression utilisés comme preuve de succès
+  par des résultats vérifiés et une preuve de fin de la suite attendue.
+- [ ] Vérifier les scénarios d’échec attendu avec leurs statuts et sorties ;
+  vérifier qu’une assertion en échec ou un callback attendu absent fait échouer
+  le runner concerné.
+- [ ] Clarifier le passage des arguments aux suites, notamment les intégrations
+  de `spec`, et garantir leur exécution dans la validation complète.
 
-## Scalarisation Records intégrée — 16 septembre 2026
+## 3. Fiabiliser les dépendances événementielles natives
 
-- [x] Intégrer `RecordScalarization` dans Purust, après PBO : les boucles
-  reconnues transportent les champs Int dans des paramètres natifs et
-  reconstruisent le record à la sortie. L'ABI publique reste conservée.
-- [x] Étendre la passe aux appels locaux purs dont le corps est disponible,
-  via `RecordScalarCalls` : un worker Int par champ modifié, dépendances
-  calculées sur l'IR final, champs conservés réutilisés.
-- [x] Vérifier zéro itération, zéro écriture, mises à jour simultanées et
-  conditionnelles, champs constants, partage des anciennes versions,
-  entrée unique sans allocation, collisions et replis prudents sous Rc/Arc.
-- [x] Recompiler et mesurer le runner complet sur 21 paires : Records
-  **394,08 → 3,92 µs (−99,01 %)** ; total **9,06451 → 8,66750 ms**,
-  **−4,65 % en comparaison appariée**. Le témoin inclut déjà l'optimisation
-  RBTree précédente ; son Rust généré est identique entre les deux variantes.
-- [x] Mesurer les appels générés dans un fixture séparé :
-  **336,084 → 5,167 µs** avec inlining normal ;
-  **349,292 → 21,542 µs (−93,62 %)** en empêchant l'inlining des helpers.
-  Les quatre appels scalaires par itération restent visibles en assembleur.
-  Ce fixture n'est pas une mesure supplémentaire du runner officiel.
-- [x] Vérifier la génération : **76 tests réussis sur 80**, quatre tests FFI
-  bloqués par Docker (conteneur de référence arrêté). Les ajouts ciblés
-  finaux passent également sous Rc/Arc.
-- [x] Évaluer les étapes PBO et Haskell : aucune modification nécessaire
-  pour ce périmètre. Les résumés sont calculés dans Purust ; les appels
-  opaques ou externes non analysables conservent le chemin existant.
+### `node-streams`
 
-Rapport, protocole, limites et mesures brutes :
-`htdocs/altbak.pub-purust/scratch/record-scalarization-integration-20260916/REPORT.md`.
-L'objectif initial de −50 % sur RBTree reste non atteint.
+- [ ] Corriger `testSetEncoding` : écrire dans les bons streams, installer les
+  listeners au bon moment et attendre toutes les assertions attendues.
+- [ ] Rendre les tests d’écriture, de fin, de lecture et du pipeline gzip
+  sensibles aux callbacks absents, répétés ou exécutés trop tôt.
+- [ ] Vérifier le contenu complet du pipeline gzip/gunzip et sa terminaison,
+  avec une référence indépendante pour le format gzip.
+- [ ] Raccorder `Test.Main1` à `Test.Main4` avec des fixtures locales adaptées
+  aux fichiers, à stdin et à la durée de vie native.
+- [ ] Réparer les défauts hérités de ces tests, dont `expected == expected`
+  dans `Main2`, en rétablissant une entrée et un résultat attendu cohérents.
+- [ ] Couvrir les lectures partielles, EOF, plusieurs chunks, les encodages,
+  la contre-pression, `unpipe` et les options de terminaison des pipes.
+- [ ] Vérifier puis corriger le rejeu des buffers et événements : chaque octet
+  est consommé comme prévu, `end` n’est ni prématuré ni dupliqué, les sources
+  initialement vides peuvent recevoir des données ultérieurement.
+- [ ] Vérifier les chemins `read`/`read'` et `readEither`/`readEither'`, leurs
+  représentations `Nullable`/`Chunk` et leurs erreurs sur encodage incompatible.
+- [ ] Compléter les exports JavaScript correspondant aux nouvelles FFI pour
+  permettre la comparaison du même contrat sur les deux backends.
 
-## Autres pistes FBIP
+### `node-event-emitter`
 
-- [ ] Mesurer une suppression des clones temporaires de descente, en
-  comparant des workers empruntant les enfants aux substitutions actuelles.
-  Les clones actuels ne provoquent pas d'allocations supplémentaires.
-- [ ] Mesurer un parcours `depth` par emprunt, avec destruction comptabilisée
-  de façon identique dans les variantes comparées.
-- [ ] Si des preuves statiques plus fortes sont nécessaires, définir des
-  contrats par paramètre (emprunt/consommation), provenance du résultat,
-  partage des enfants et multiplicité des closures. Recalculer ou invalider
-  ces preuves après chaque transformation susceptible de les changer.
+- [ ] Établir et préserver le contrat de l’API amont `unsafeEmitFn`. Résoudre le
+  problème d’arité dans l’adaptation native sans considérer les seuls tests
+  réécrits contre `unsafeEmitFn1/2/3` comme preuve de compatibilité générale.
+- [ ] Mettre en cohérence déclarations PureScript, FFI Rust, FFI JS et exemples.
+- [ ] Vérifier plusieurs listeners par événement : ordre normal et prepend,
+  exécution unique de `once`, désabonnement, réentrance et notifications prévues
+  par le contrat amont.
+- [ ] Reproduire puis corriger l’insertion suspecte de `prependListener` lorsque
+  tous les listeners existants concernent le même événement.
 
-Un taux de réemploi déjà égal à 100 % ne peut pas être amélioré par une simple
-borne source `bindingUsage.maxUses`. Ne pas remplacer les contrôles dynamiques par une
-supposition d'unicité, et ne pas promettre zéro allocation pour la création
-de nouvelles clés.
+### `node-process` et sortie des runners
 
-Preuves et commandes :
-`htdocs/altbak.pub/scratch/purust-fbip-20260916/REPORT.md`.
+- [ ] Tester séparément `nextTick` et `nextTick'` : exécution différée, arguments,
+  ordre et nombre d’appels observés.
+- [ ] Tester dans des sous-processus les statuts de sortie et les événements de
+  cycle de vie ; vérifier la capture d’exception au-delà de son enregistrement.
+- [ ] Distinguer les garanties observées en absence de canal IPC des scénarios
+  de communication restant à porter et à tester.
+- [ ] Vérifier la sémantique différée de `Test.Spec.Runner.exit :: Int -> Effect
+  Unit`, puis corriger sa FFI Rust si nécessaire.
+- [ ] Après les changements partagés, vérifier `node-fs`, `node-net`,
+  `node-child-process`, `node-http` et les intégrations Aff concernées.
+
+## 4. Restaurer les suites réduites
+
+### `st`
+
+- [ ] Reprendre les tests Go de `STRef.read`, `write`, `modify` et `modify'`, y
+  compris leurs valeurs de retour.
+- [ ] Reprendre `ST.while`, `ST.for`, `ST.foreach` et `MonadRec`.
+- [ ] Conserver le contrôle de `sumOfSquares`, puis aligner le verdict du runner
+  sur l’ensemble des groupes effectivement exécutés.
+
+### `foreign`
+
+- [ ] Restaurer la classification des fonctions, objets et autres valeurs, les
+  cas négatifs de `isArray` et les contrôles `isNull`/`isUndefined` pertinents.
+- [ ] Restaurer les conversions Int/Number, les valeurs négatives, les nombres
+  fractionnaires et les rejets sur types incompatibles.
+- [ ] Porter les contrats Go de classification des fonctions ordinaires,
+  partiellement appliquées et munies de métadonnées vers les carriers Rust.
+- [ ] Résoudre le contrat de `hasProperty`/`hasOwnProperty` par comparaison avec
+  la référence, puis le tester ; conserver les ajouts sur caractères et clés.
+- [ ] Remplacer l’assertion dupliquée sur `readProp "name"` par un cas distinct.
+
+### `js-bigints`
+
+- [ ] Restaurer les générateurs et propriétés QuickCheck de la suite amont.
+- [ ] Restaurer les lois `Eq`, `Ord`, `Semiring`, `Ring`, `CommutativeRing` et
+  `EuclideanRing`, avec des domaines évitant les débordements du type témoin
+  lorsqu’une comparaison avec `Int` l’exige.
+- [ ] Conserver et compléter les cas déterministes ajoutés : grands entiers,
+  signes, préfixes, entrées invalides, conversions, décalages et troncatures.
+- [ ] Comparer le parsing et les opérations au wrapper JS du paquet ; conserver
+  sa division euclidienne et son traitement documenté du diviseur nul.
+- [ ] Faire échouer explicitement les helpers de tests lorsqu’une construction
+  de valeur attendue échoue, plutôt que lui substituer silencieusement zéro.
+
+### `js-promise`
+
+- [ ] Restaurer `all` avec rejet, les courses entre promesses en attente,
+  `finally` sur succès et rejet, et `Lazy.catch`/`Lazy.finally`/`Lazy.all`.
+- [ ] Contrôler les résolutions avec des synchronisations déterministes et
+  vérifier que les handlers d’erreur ne masquent pas les échecs d’assertions.
+- [ ] Raccorder `test/native-contract.mjs` à `bin/test` : comparaison JS/Rust,
+  modes Rc et Arc, ordre des réactions, adoption, cycles, exceptions,
+  finalisation, agrégations et chaînes profondes.
+- [ ] Conserver la suite PureScript via Aff comme validation de bout en bout.
+
+### `random`
+
+- [ ] Remplacer la tautologie booléenne par des contrôles utiles du contrat.
+- [ ] Ajouter des cas limites sur les bornes et, lorsque nécessaire, des
+  fixtures déterministes ; éviter les verdicts statistiques fragiles.
+
+## 5. Rétablir les fonctionnalités et intégrations de Spec
+
+### `spec-node`
+
+- [ ] Restaurer la persistance réelle et la lecture de `.spec-results`, les
+  codecs nécessaires et la compatibilité du format amont.
+- [ ] Vérifier la conservation/fusion des résultats et le comportement en
+  absence de fichier ou en présence de données invalides.
+- [ ] Adapter les fixtures pour compiler puis lancer les binaires natifs en
+  sous-processus avec capture fiable de stdout, stderr et du statut de sortie.
+- [ ] Raccorder tous les scénarios CLI existants : filtres, fail-fast, timeout,
+  only-failures, next-failure, combinaisons et générateurs non-Identity.
+- [ ] Ajouter `bin/test`, son mode `-c` et l’entrée dans la batterie globale.
+
+### `spec`
+
+- [ ] Adapter les fixtures d’intégration au compilateur et au backend Rust en
+  conservant les cas et les sorties attendues pertinentes.
+- [ ] Inclure les intégrations dans le parcours complet exécuté par la batterie.
+- [ ] Conserver les specs unitaires et les trois cas pending hérités ; rendre
+  leur statut explicite dans le bilan.
+
+### `spec-discovery`
+
+- [ ] Définir une découverte AOT fondée sur les modules/exports réellement
+  disponibles à la construction et sur leur enregistrement dans le binaire.
+- [ ] Préserver le contrat observable de sélection par motif, de noms de specs
+  et d’exécution ; identifier explicitement toute limite native restante.
+- [ ] Remplacer le `panic!` de la FFI par le mécanisme de découverte retenu.
+- [ ] Faire passer les tests par `discover`/`discoverAndRunSpecs`.
+- [ ] Vérifier inclusion, exclusion, absence de résultat et ajout automatique
+  d’une nouvelle fixture sans modification manuelle des imports du test.
+
+### `yoga-json`
+
+- [ ] Conserver la sélection des quatre modules de specs existants.
+- [ ] Renforcer les helpers de round-trip pour comparer les valeurs décodées
+  aux valeurs d’origine, avec les contraintes de types appropriées.
+- [ ] Vérifier les scénarios null/undefined et les erreurs sur le backend natif.
+
+## 6. Restaurer la couverture HTTP/HTTPS
+
+- [ ] Réactiver le scénario HTTPS local avec une fixture de certificat maîtrisée
+  et une véritable implémentation TLS native.
+- [ ] Remplacer les dépendances à des services publics par des serveurs locaux
+  exerçant les mêmes contrats HTTPS et cookies.
+- [ ] Vérifier explicitement statuts, headers, corps complets, cookies et sockets
+  d’upgrade ; conserver les assertions existantes sur les chemins d’upgrade.
+- [ ] Attendre la fin effective des échanges et la fermeture des ressources.
+- [ ] Ajuster le résumé du runner au périmètre réellement exécuté.
+
+## 7. Validation finale et critères de clôture
+
+- [ ] Reprendre l’inventaire de couverture et résoudre chaque scénario perdu
+  ou exclusion injustifiée identifié par l’audit.
+- [ ] Exécuter les tests du compilateur/PBO/Haskell appropriés aux modifications
+  effectivement réalisées et les contrats FFI concernés.
+- [ ] Exécuter la batterie complète en mode normal, puis avec `-c`, sur l’état
+  final et en contrôlant les statuts réels.
+- [ ] Conserver des logs distincts par campagne et paquet avec commandes,
+  révisions, modes, nombre de scénarios et échecs/pending éventuels.
+- [ ] Vérifier le périmètre initial de 37 paquets, tous les runners ajoutés et
+  `spec-node` ; expliquer les validations exclusivement typées séparément.
+- [ ] Relire les diffs de tests : chaque suppression ou adaptation doit avoir
+  une justification et un équivalent vérifié, chaque fonctionnalité annoncée
+  doit disposer d’un test effectivement exécuté.
+- [ ] Mettre à jour les bilans de couverture et les affirmations de complétude
+  selon ces preuves. Les tâches encore bloquées restent ouvertes.
