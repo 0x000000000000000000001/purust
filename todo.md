@@ -22,6 +22,11 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
   tests ou un fichier amont ne peut être supprimé, désactivé, affaibli ou
   remplacé par une vérification plus faible. Les ajouts natifs complètent les
   assertions amont ; ils ne s’y substituent jamais.
+- **Ajouts bienvenus** : les tests supplémentaires au-delà de l’amont ou de
+  `gopurs` sont encouragés et conservés (par exemple `Test/Stress.purs`,
+  `test/function-data_test.go`, ou les modules natifs `Concurrency` et
+  `NativeIO`). Le socle à ne jamais réduire est l’union amont + `gopurs` ;
+  un ajout ne compense jamais la disparition d’un test existant.
 - **Adaptation légitime** : seul un blocage réel du backend natif justifie de
   changer la forme d’un test, à contrat et invariants égaux. Exemple de
   référence : `purust-aff`, où le parallélisme réel d’Aff rend l’ordre
@@ -129,52 +134,61 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
 
 ### `st`
 
-- [ ] Reprendre les tests Go de `STRef.read`, `write`, `modify` et `modify'`, y
+- [x] Reprendre les tests Go de `STRef.read`, `write`, `modify` et `modify'`, y
   compris leurs valeurs de retour.
-- [ ] Reprendre `ST.while`, `ST.for`, `ST.foreach` et `MonadRec`.
-- [ ] Conserver le contrôle de `sumOfSquares`, puis aligner le verdict du runner
+- [x] Reprendre `ST.while`, `ST.for`, `ST.foreach` et `MonadRec`.
+- [x] Conserver le contrôle de `sumOfSquares`, puis aligner le verdict du runner
   sur l’ensemble des groupes effectivement exécutés.
 
 ### `foreign`
 
-- [ ] Restaurer la classification des fonctions, objets et autres valeurs, les
+L’amont ne fournit aucune suite de tests pour ce paquet : la référence est la
+suite ajoutée par `gopurs`, y compris ses fixtures Go de classification des
+fonctions. Ces tests sont conservés et complétés, sans retrait d’assertion.
+
+- [x] Restaurer la classification des fonctions, objets et autres valeurs, les
   cas négatifs de `isArray` et les contrôles `isNull`/`isUndefined` pertinents.
-- [ ] Restaurer les conversions Int/Number, les valeurs négatives, les nombres
+- [x] Restaurer les conversions Int/Number, les valeurs négatives, les nombres
   fractionnaires et les rejets sur types incompatibles.
-- [ ] Porter les contrats Go de classification des fonctions ordinaires,
+- [x] Porter les contrats Go de classification des fonctions ordinaires,
   partiellement appliquées et munies de métadonnées vers les carriers Rust.
-- [ ] Résoudre le contrat de `hasProperty`/`hasOwnProperty` par comparaison avec
+- [x] Résoudre le contrat de `hasProperty`/`hasOwnProperty` par comparaison avec
   la référence, puis le tester ; conserver les ajouts sur caractères et clés.
-- [ ] Remplacer l’assertion dupliquée sur `readProp "name"` par un cas distinct.
+- [x] Remplacer l’assertion dupliquée sur `readProp "name"` par un cas distinct.
 
 ### `js-bigints`
 
-- [ ] Restaurer les générateurs et propriétés QuickCheck de la suite amont.
-- [ ] Restaurer les lois `Eq`, `Ord`, `Semiring`, `Ring`, `CommutativeRing` et
+La loi `EuclideanRing` s’exécute sur le domaine où `degree` reste exact et
+l’identité quotient/reste est vérifiée sur tout le domaine généré : la
+saturation native de `degree` (le JS renvoyait un BigInt hors type `Int`) est
+couverte sans affaiblir l’identité.
+
+- [x] Restaurer les générateurs et propriétés QuickCheck de la suite amont.
+- [x] Restaurer les lois `Eq`, `Ord`, `Semiring`, `Ring`, `CommutativeRing` et
   `EuclideanRing`, avec des domaines évitant les débordements du type témoin
   lorsqu’une comparaison avec `Int` l’exige.
-- [ ] Conserver et compléter les cas déterministes ajoutés : grands entiers,
+- [x] Conserver et compléter les cas déterministes ajoutés : grands entiers,
   signes, préfixes, entrées invalides, conversions, décalages et troncatures.
-- [ ] Comparer le parsing et les opérations au wrapper JS du paquet ; conserver
+- [x] Comparer le parsing et les opérations au wrapper JS du paquet ; conserver
   sa division euclidienne et son traitement documenté du diviseur nul.
-- [ ] Faire échouer explicitement les helpers de tests lorsqu’une construction
+- [x] Faire échouer explicitement les helpers de tests lorsqu’une construction
   de valeur attendue échoue, plutôt que lui substituer silencieusement zéro.
 
 ### `js-promise`
 
-- [ ] Restaurer `all` avec rejet, les courses entre promesses en attente,
+- [x] Restaurer `all` avec rejet, les courses entre promesses en attente,
   `finally` sur succès et rejet, et `Lazy.catch`/`Lazy.finally`/`Lazy.all`.
-- [ ] Contrôler les résolutions avec des synchronisations déterministes et
+- [x] Contrôler les résolutions avec des synchronisations déterministes et
   vérifier que les handlers d’erreur ne masquent pas les échecs d’assertions.
-- [ ] Raccorder `test/native-contract.mjs` à `bin/test` : comparaison JS/Rust,
+- [x] Raccorder `test/native-contract.mjs` à `bin/test` : comparaison JS/Rust,
   modes Rc et Arc, ordre des réactions, adoption, cycles, exceptions,
   finalisation, agrégations et chaînes profondes.
-- [ ] Conserver la suite PureScript via Aff comme validation de bout en bout.
+- [x] Conserver la suite PureScript via Aff comme validation de bout en bout.
 
 ### `random`
 
-- [ ] Remplacer la tautologie booléenne par des contrôles utiles du contrat.
-- [ ] Ajouter des cas limites sur les bornes et, lorsque nécessaire, des
+- [x] Remplacer la tautologie booléenne par des contrôles utiles du contrat.
+- [x] Ajouter des cas limites sur les bornes et, lorsque nécessaire, des
   fixtures déterministes ; éviter les verdicts statistiques fragiles.
 
 ## 5. Rétablir les fonctionnalités et intégrations de Spec
