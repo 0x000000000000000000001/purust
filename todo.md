@@ -69,17 +69,18 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
 
 ## 2. Rendre les verdicts des runners fiables
 
-- [ ] Corriger `batch.sh` : statut non nul dès qu’un runner obligatoire échoue
+- [x] Corriger `batch.sh` : statut non nul dès qu’un runner obligatoire échoue
   ou manque ; comptabiliser séparément succès, échecs et exclusions explicites.
-- [ ] Préserver le statut réel des commandes, y compris en présence de pipes
+- [x] Préserver le statut réel des commandes, y compris en présence de pipes
   ou de captures de sortie. Borner les blocages par des timeouts.
-- [ ] Remplacer les marqueurs de progression utilisés comme preuve de succès
+- [x] Remplacer les marqueurs de progression utilisés comme preuve de succès
   par des résultats vérifiés et une preuve de fin de la suite attendue.
-- [ ] Vérifier les scénarios d’échec attendu avec leurs statuts et sorties ;
+- [x] Vérifier les scénarios d’échec attendu avec leurs statuts et sorties ;
   vérifier qu’une assertion en échec ou un callback attendu absent fait échouer
   le runner concerné.
 - [ ] Clarifier le passage des arguments aux suites, notamment les intégrations
-  de `spec`, et garantir leur exécution dans la validation complète.
+  de `spec`, et garantir leur exécution dans la validation complète. À traiter
+  avec les intégrations de `spec` (§5).
 
 ## 3. Fiabiliser les dépendances événementielles natives
 
@@ -140,8 +141,10 @@ d’être toléré.
   de communication restant à porter et à tester.
 - [ ] Vérifier la sémantique différée de `Test.Spec.Runner.exit :: Int -> Effect
   Unit`, puis corriger sa FFI Rust si nécessaire.
-- [ ] Après les changements partagés, vérifier `node-fs`, `node-net`,
-  `node-child-process`, `node-http` et les intégrations Aff concernées.
+- [ ] Après les changements partagés, vérifier `node-fs`, `node-http` et les
+  intégrations Aff concernées. `node-net`, `node-buffer`, `node-child-process`,
+  `node-process`, `node-streams` et `spec` ont déjà été revérifiés après les
+  changements d’émetteur et d’encodage.
 
 ## 4. Restaurer les suites réduites
 
@@ -233,18 +236,26 @@ spawn natif résout un chemin relatif contre le `cwd` de l’enfant.
 
 ### `spec-discovery`
 
-- [ ] Définir une découverte AOT fondée sur les modules/exports réellement
+Découverte AOT : le backend enregistre dans le `main` généré les modules qui
+exportent un `spec` nul (avec les dépendances Cargo nécessaires), et la FFI
+filtre les noms enregistrés avec le motif au moment de l’appel. Contrat amont
+préservé, y compris pour un module ajouté après coup. Limite native : seuls les
+modules exportant un `spec` nul sont candidats (pas de scan dynamique de
+modules compilés), et un motif invalide lève une exception comme en JavaScript.
+
+- [x] Définir une découverte AOT fondée sur les modules/exports réellement
   disponibles à la construction et sur leur enregistrement dans le binaire.
-- [ ] Préserver le contrat observable de sélection par motif, de noms de specs
+- [x] Préserver le contrat observable de sélection par motif, de noms de specs
   et d’exécution ; identifier explicitement toute limite native restante.
-- [ ] Remplacer le `panic!` de la FFI par le mécanisme de découverte retenu.
-- [ ] Faire passer les tests par `discover`/`discoverAndRunSpecs`.
-- [ ] Vérifier inclusion, exclusion, absence de résultat et ajout automatique
+- [x] Remplacer le `panic!` de la FFI par le mécanisme de découverte retenu.
+- [x] Faire passer les tests par `discover`/`discoverAndRunSpecs`.
+- [x] Vérifier inclusion, exclusion, absence de résultat et ajout automatique
   d’une nouvelle fixture sans modification manuelle des imports du test.
 
 ### `yoga-json`
 
-- [ ] Conserver la sélection des quatre modules de specs existants.
+- [x] Conserver la sélection des quatre modules de specs existants (le `Main`
+  du port les importe explicitement).
 - [ ] Renforcer les helpers de round-trip pour comparer les valeurs décodées
   aux valeurs d’origine, avec les contraintes de types appropriées.
 - [ ] Vérifier les scénarios null/undefined et les erreurs sur le backend natif.

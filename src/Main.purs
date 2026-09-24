@@ -301,10 +301,38 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     let preludeRsContent = (if threaded then threadedPrelude else identity) (codegenPrelude allShapes)
     
     let mainModuleSanitized = String.replaceAll (Pattern ".") (Replacement "_") mainModule
+    -- AOT spec discovery: when the discovery module is part of the program,
+    -- every module exporting a nullary `spec` value is registered in the
+    -- generated main. The runtime pattern filter keeps the upstream contract
+    -- (any module name matching the pattern), so new fixtures are picked up
+    -- by rebuilding alone.
+    let specModules =
+          if Map.member "Test_Spec_Discovery" allModules then
+            Array.mapMaybe
+              (\(Module mod) ->
+                let dotted = unwrap mod.name
+                    key = String.replaceAll (Pattern ".") (Replacement "_") dotted
+                    hasAccessor = case Map.lookup key allModules of
+                      Just generated -> String.contains (Pattern ("pub fn " <> key <> "_spec()")) generated.code
+                      Nothing -> false
+                in if key /= "Test_Spec_Discovery"
+                     && Array.elem (Ident "spec") mod.exports
+                     && hasAccessor
+                   then Just (Tuple dotted key)
+                   else Nothing)
+              (List.toUnfoldable finalModules :: Array (Module Ann))
+          else []
+    let registrationDeps =
+          if Array.null specModules then ""
+          else "Purs_Test_Spec_Discovery = { path = \"Purs_Test_Spec_Discovery\" }\n"
+            <> String.joinWith "" (map (\(Tuple _ key) -> "Purs_" <> key <> " = { path = \"Purs_" <> key <> "\" }\n") specModules)
+    let registrations = String.joinWith "" (map (\(Tuple dotted key) ->
+          "    Purs_Test_Spec_Discovery::purust_register_spec(" <> show dotted <> ".to_string(), || purust_core::Value::Class(std::rc::Rc::new(Purs_" <> key <> "::" <> key <> "_spec())));\n"
+        ) specModules)
     let workspaceMembers = "\"perceus_ptr\", \"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String GeneratedModule)))
     let runsAff = threaded && Map.member "Effect_Aff" allModules
     let affDependency = if runsAff then "Purs_Effect_Aff = { path = \"Purs_Effect_Aff\" }\n" else ""
-    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n" <> runtimeDependency threaded "perceus_ptr"
+    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n" <> registrationDeps <> runtimeDependency threaded "perceus_ptr"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") (configureThreading threaded (rootCargoToml <> affDependency))
     
     -- `main :: Unit -> Unit` (an `Effect Unit` is opaque, but the tests of
@@ -316,8 +344,8 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     let runMain = if nativeMain
           then "Purs_" <> mainModuleSanitized <> "::main(())"
           else "let _effect = Purs_" <> mainModuleSanitized <> "::main();\n    (_effect.unwrap_func1())(purust_core::Value::Unit)"
-    let mainBody = if runsAff then "Purs_Effect_Aff::purust_aff_run_main(|| { " <> runMain <> " });"
-          else "purust_core::microtasks::run_main(|| { " <> runMain <> " });"
+    let mainBody = if runsAff then "Purs_Effect_Aff::purust_aff_run_main(|| {\n" <> registrations <> "    " <> runMain <> " });"
+          else "purust_core::microtasks::run_main(|| {\n" <> registrations <> "    " <> runMain <> " });"
     let mainEntry =
           "#[global_allocator]\nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;\n\n"
           <> "fn main() {\n"
@@ -339,7 +367,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
           <> "        std::process::exit(101);\n"
           <> "    }\n"
           <> "}\n"
-    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") mainEntry
+    FS.writeTextFile UTF8 (outDir <> "/src/main.rs") (if threaded then threadedRust mainEntry else mainEntry)
     
     let coreDir = outDir <> "/purust_core"
     coreExists <- FS.exists coreDir
