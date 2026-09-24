@@ -309,17 +309,24 @@ Node ; la FFI dédiée corrige l’ancienne valeur brute). Le HTTPS local reste 
 faire : TLS natif côté serveur (accepteur), écriture de socket via TLS et
 connexion cliente.
 
-- [ ] Réactiver le scénario HTTPS local avec une fixture de certificat maîtrisée
-  et une véritable implémentation TLS native.
+- [x] Réactiver le scénario HTTPS local avec une fixture de certificat
+  maîtrisée et une véritable implémentation TLS native : `native-tls` dans la
+  couche réseau (accepteur TLS au serveur, handshake client avant `connect`,
+  session partagée lecture/écriture avec timeout court), écritures HTTP
+  routées par la socket (`socket_write`), FFI `https.createServer`/`request'`/
+  `requestOpts` câblées. Deux groupes locaux vérifient statut 200 et corps :
+  `testHttpsServer` (`secure-hello`, options explicites) et `testHttps`
+  (`secure:/badge`, URL + `rejectUnauthorized: false`).
 - [x] Remplacer la dépendance à un service public pour les cookies par un
   serveur local exerçant le même contrat ; le remplacement des appels HTTPS
   publics se fera avec le TLS local.
 - [x] Vérifier explicitement statuts, headers, corps complets, cookies et sockets
   d’upgrade ; conserver les assertions existantes sur les chemins d’upgrade.
-- [ ] Attendre la fin effective des échanges et la fermeture des ressources
-  (couvert par les groupes locaux ; à revérifier avec TLS).
+- [x] Attendre la fin effective des échanges et la fermeture des ressources :
+  les serveurs HTTPS locaux sont fermés par les tests, les corps sont lus en
+  entier et les marqueurs vérifiés par le runner.
 - [x] Ajuster le résumé du runner au périmètre réellement exécuté (basic,
-  upgrade, cookies locaux ; à réajuster avec TLS).
+  upgrade, cookies et HTTPS locaux).
 
 ## 7. Validation finale et critères de clôture
 
