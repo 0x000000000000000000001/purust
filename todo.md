@@ -101,12 +101,17 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
   (`Test.Main2` compte les lignes réelles et sort en 0/1).
 - [x] Couvrir les lectures partielles, EOF, plusieurs chunks et les encodages
   dans la suite par défaut.
-- [ ] Couvrir la contre-pression et `unpipe` (aujourd’hui un no-op) ainsi que
-  les options de terminaison des pipes.
-- [ ] Vérifier puis corriger les événements restants : l’`end` d’une source
-  tamponnée est encore émis tôt (les lecteurs Aff compensent en drainant) ; le
-  rejeu flowing et les sources qui reçoivent des données après création
-  restent à contrôler.
+- [x] Couvrir la contre-pression (`write` renvoie `false` au-delà du high water
+  mark, `drain` est émis quand une lecture repasse en dessous) et `unpipe`
+  (qui retire réellement les listeners, avec `unpipeAll`).
+- [ ] Couvrir les options de terminaison de `pipe'` (`end: false`) et le cas
+  `unpipeAll` sans pipe préalable.
+- [x] Vérifier puis corriger les événements restants : l’`end` d’une source
+  tamponnée attend désormais la consommation du tampon (un lecteur flowing ou
+  une source statique le reçoit immédiatement) ; le rejeu des données
+  bufferisées vers un lecteur tardif est couvert par le test de pipe.
+- [ ] Contrôler les sources alimentées après création par un producteur natif
+  asynchrone (socket, sous-processus) au-delà des cas déjà couverts.
 - [x] Vérifier les chemins `read`/`read'` et `readEither`/`readEither'`, leurs
   représentations `Nullable`/`Chunk` et leurs erreurs sur encodage incompatible.
 - [x] Compléter les exports JavaScript correspondant aux nouvelles FFI pour
@@ -141,10 +146,10 @@ d’être toléré.
   de communication restant à porter et à tester.
 - [ ] Vérifier la sémantique différée de `Test.Spec.Runner.exit :: Int -> Effect
   Unit`, puis corriger sa FFI Rust si nécessaire.
-- [ ] Après les changements partagés, vérifier `node-fs`, `node-http` et les
-  intégrations Aff concernées. `node-net`, `node-buffer`, `node-child-process`,
-  `node-process`, `node-streams` et `spec` ont déjà été revérifiés après les
-  changements d’émetteur et d’encodage.
+- [ ] Après les changements partagés, vérifier les intégrations Aff restantes
+  (hors paquets déjà couverts). `node-fs`, `node-net`, `node-buffer`,
+  `node-child-process`, `node-process`, `node-streams`, `node-http` et `spec`
+  ont été revérifiés après les changements d’émetteur, d’encodage et de flux.
 
 ## 4. Restaurer les suites réduites
 
@@ -262,14 +267,23 @@ modules compilés), et un motif invalide lève une exception comme en JavaScript
 
 ## 6. Restaurer la couverture HTTP/HTTPS
 
+Les groupes `basic`, `upgrade` et `cookies` tournent localement et vérifient
+statuts, headers et cookies (`IM.cookies` renvoie toujours un tableau, comme
+Node ; la FFI dédiée corrige l’ancienne valeur brute). Le HTTPS local reste à
+faire : TLS natif côté serveur (accepteur), écriture de socket via TLS et
+connexion cliente.
+
 - [ ] Réactiver le scénario HTTPS local avec une fixture de certificat maîtrisée
   et une véritable implémentation TLS native.
-- [ ] Remplacer les dépendances à des services publics par des serveurs locaux
-  exerçant les mêmes contrats HTTPS et cookies.
-- [ ] Vérifier explicitement statuts, headers, corps complets, cookies et sockets
+- [x] Remplacer la dépendance à un service public pour les cookies par un
+  serveur local exerçant le même contrat ; le remplacement des appels HTTPS
+  publics se fera avec le TLS local.
+- [x] Vérifier explicitement statuts, headers, corps complets, cookies et sockets
   d’upgrade ; conserver les assertions existantes sur les chemins d’upgrade.
-- [ ] Attendre la fin effective des échanges et la fermeture des ressources.
-- [ ] Ajuster le résumé du runner au périmètre réellement exécuté.
+- [ ] Attendre la fin effective des échanges et la fermeture des ressources
+  (couvert par les groupes locaux ; à revérifier avec TLS).
+- [x] Ajuster le résumé du runner au périmètre réellement exécuté (basic,
+  upgrade, cookies locaux ; à réajuster avec TLS).
 
 ## 7. Validation finale et critères de clôture
 

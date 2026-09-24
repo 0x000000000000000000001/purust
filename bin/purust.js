@@ -20006,7 +20006,7 @@ var simplifyCondIsTag = function(v) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1728, column 1 - line 1728, column 81): " + [v.constructor.name, v1.constructor.name, def.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1738, column 1 - line 1738, column 81): " + [v.constructor.name, v1.constructor.name, def.constructor.name]);
       };
       var $749 = untypedExpr(v1.value0);
       if ($749 instanceof ExprSyntax && ($749.value1 instanceof PrimOp && ($749.value1.value0 instanceof Op1 && $749.value1.value0.value0 instanceof OpIsTag))) {
@@ -20045,8 +20045,8 @@ var shouldUnpackUpdate = function(ident) {
           if ($773 instanceof Just) {
             var $774 = $773.value0.total === ($773.value0.access + $773.value0.update | 0);
             if ($774) {
-              var analysis = apply(updated(level))(append(semigroupBackendAnalysis)(analysisOf(hasAnalysisBackendExpr)(binding.value1.value0))(foldr(foldableArray)(function($2533) {
-                return append5(analysisOf2(propValue($2533)));
+              var analysis = apply(updated(level))(append(semigroupBackendAnalysis)(analysisOf(hasAnalysisBackendExpr)(binding.value1.value0))(foldr(foldableArray)(function($2542) {
+                return append5(analysisOf2(propValue($2542)));
               })(complex(NonTrivial.value)(bound(level)(v)))(binding.value1.value1)));
               return apply(Just.create)(apply(ExprRewrite.create(withRewrite(analysis)))(new RewriteUnpackOp(ident, level, new UnpackUpdate(binding.value1.value0, binding.value1.value1), body)));
             }
@@ -20075,8 +20075,8 @@ var shouldUnpackRecord = function(ident) {
           if ($782 instanceof Just) {
             var $783 = $782.value0.total === ($782.value0.access + $782.value0.update | 0);
             if ($783) {
-              var analysis = foldr(foldableArray)(function($2534) {
-                return append5(analysisOf2(propValue($2534)));
+              var analysis = foldr(foldableArray)(function($2543) {
+                return append5(analysisOf2(propValue($2543)));
               })(complex(NonTrivial.value)(bound(level)(v)))(binding.value1.value0.value0);
               return apply(Just.create)(apply(ExprRewrite.create(withRewrite(analysis)))(new RewriteUnpackOp(ident, level, new UnpackRecord(binding.value1.value0.value0), body)));
             }
@@ -20105,8 +20105,8 @@ var shouldUnpackCtor = function(ident) {
           if ($791 instanceof Just) {
             var $792 = $791.value0.total === ($791.value0.access + $791["value0"]["case"] | 0);
             if ($792) {
-              var analysis = foldr(foldableArray)(function($2535) {
-                return append5(analysisOf2(snd($2535)));
+              var analysis = foldr(foldableArray)(function($2544) {
+                return append5(analysisOf2(snd($2544)));
               })(complex(NonTrivial.value)(bound(level)(v)))(a.value1.value4);
               return apply(Just.create)(apply(ExprRewrite.create(withRewrite(analysis)))(new RewriteUnpackOp(ident, level, new UnpackData(a.value1.value0, a.value1.value1, a.value1.value2, a.value1.value3, a.value1.value4), body)));
             }
@@ -20135,8 +20135,8 @@ var shouldUnpackArray = function(ident) {
           if ($803 instanceof Just) {
             var $804 = $803.value0.total === $803.value0.access;
             if ($804) {
-              var analysis = foldr(foldableArray)(function($2536) {
-                return append5(analysisOf2($2536));
+              var analysis = foldr(foldableArray)(function($2545) {
+                return append5(analysisOf2($2545));
               })(complex(NonTrivial.value)(bound(level)(v)))(binding.value1.value0.value0);
               return apply(Just.create)(apply(ExprRewrite.create(withRewrite(analysis)))(new RewriteUnpackOp(ident, level, new UnpackArray(binding.value1.value0.value0), body)));
             }
@@ -20197,7 +20197,7 @@ var shouldInlineExternLiteral = function(v) {
     return $$null(v.value0);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2026, column 29 - line 2033, column 30): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2036, column 29 - line 2043, column 30): " + [v.constructor.name]);
 };
 var shouldInlineExternAppArg = function(v) {
   return function(v1) {
@@ -20308,12 +20308,12 @@ var shouldDistributeBranchUncurriedApps = function(analysis1) {
   return function(branches) {
     return function(def) {
       return function(spine3) {
-        var $868 = all2(function($2537) {
+        var $868 = all2(function($2546) {
           return (function(v) {
             return lessThanOrEq(ordComplexity)(v)(Deref.value);
           })((function(v) {
             return v.complexity;
-          })(unwrap4(analysisOf2($2537))));
+          })(unwrap4(analysisOf2($2546))));
         })(spine3);
         if ($868) {
           var analysis = append(semigroupBackendAnalysis)(analysis1)(foldMap(foldableArray)(monoidBackendAnalysis)(analysisOf2)(spine3));
@@ -20373,12 +20373,12 @@ var shouldDistributeBranchApps = function(analysis1) {
   return function(branches) {
     return function(def) {
       return function(spine3) {
-        var $871 = all5(function($2538) {
+        var $871 = all5(function($2547) {
           return (function(v) {
             return lessThanOrEq(ordComplexity)(v)(Deref.value);
           })((function(v) {
             return v.complexity;
-          })(unwrap4(analysisOf2($2538))));
+          })(unwrap4(analysisOf2($2547))));
         })(spine3);
         if ($871) {
           var analysis = append(semigroupBackendAnalysis)(analysis1)(foldMap(foldableNonEmptyArray)(monoidBackendAnalysis)(analysisOf2)(spine3));
@@ -20415,7 +20415,7 @@ var rewriteInline = function(ident) {
             return s2;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1802, column 19 - line 1807, column 11): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1812, column 19 - line 1817, column 11): " + [v.constructor.name]);
         })();
         return apply(ExprRewrite.create(withRewrite(bound(level)(powAnalysis))))(new RewriteInline(ident, level, binding, body));
       };
@@ -20457,7 +20457,7 @@ var purely = function(v) {
     return v;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1517, column 1 - line 1517, column 21): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1527, column 1 - line 1527, column 21): " + [v.constructor.name]);
 };
 var primOpOrdNot = function(v) {
   if (v instanceof OpEq) {
@@ -20484,7 +20484,7 @@ var primOpOrdNot = function(v) {
     return OpLt.value;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1095, column 16 - line 1101, column 16): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1105, column 16 - line 1111, column 16): " + [v.constructor.name]);
 };
 var nextLevel = function(v) {
   return apply(Tuple.create(v.currentLevel))({
@@ -20528,8 +20528,8 @@ var lookupLocal = function(v) {
     return lookup2(ordInt)(v1)(v.locals);
   };
 };
-var liftString = function($2539) {
-  return NeutLit.create(LitString.create($2539));
+var liftString = function($2548) {
+  return NeutLit.create(LitString.create($2548));
 };
 var liftOp2 = function(op) {
   return function(a) {
@@ -20543,14 +20543,14 @@ var liftOp1 = function(op) {
     return new NeutPrimOp(new Op1(op, a));
   };
 };
-var liftNumber = function($2540) {
-  return NeutLit.create(LitNumber.create($2540));
+var liftNumber = function($2549) {
+  return NeutLit.create(LitNumber.create($2549));
 };
-var liftInt = function($2541) {
-  return NeutLit.create(LitInt.create($2541));
+var liftInt = function($2550) {
+  return NeutLit.create(LitInt.create($2550));
 };
-var liftBoolean = function($2542) {
-  return NeutLit.create(LitBoolean.create($2542));
+var liftBoolean = function($2551) {
+  return NeutLit.create(LitBoolean.create($2551));
 };
 var isSimplePredicate = function(e) {
   var v = untypedExpr(e);
@@ -20610,7 +20610,7 @@ var isNotTypeApp = function(v) {
   ;
   return true;
 };
-var isKnownEffect = function($2543) {
+var isKnownEffect = function($2552) {
   return (function(v) {
     if (v instanceof Just && v.value0 instanceof PrimEffect) {
       return true;
@@ -20629,7 +20629,7 @@ var isKnownEffect = function($2543) {
     }
     ;
     return false;
-  })(syntaxOf2($2543));
+  })(syntaxOf2($2552));
 };
 var isIdentityImplementation = function(expr) {
   var stripTyped = function($copy_v) {
@@ -20687,7 +20687,7 @@ var isAssocPrimOp = function(v) {
   ;
   return false;
 };
-var isAbs = function($2544) {
+var isAbs = function($2553) {
   return (function(v) {
     if (v instanceof Just && v.value0 instanceof Abs) {
       return true;
@@ -20706,7 +20706,7 @@ var isAbs = function($2544) {
     }
     ;
     return false;
-  })(syntaxOf2($2544));
+  })(syntaxOf2($2553));
 };
 var shouldInlineLet = function(level) {
   return function(a) {
@@ -20722,7 +20722,7 @@ var shouldInlineLet = function(level) {
         return eq(eqComplexity)(v.complexity)(Trivial.value) || (eq(eqCapture)(v2.value0.captured)(CaptureNone.value) && v2.value0.total === 1 || (lessThanOrEq(ordCapture)(v2.value0.captured)(CaptureBranch.value) && (lessThanOrEq(ordComplexity)(v.complexity)(Deref.value) && v.size < 5) || (eq(eqComplexity)(v.complexity)(Deref.value) && v2.value0.call === v2.value0.total || (eq(eqComplexity)(v.complexity)(KnownSize.value) && v2.value0.total === 1 || (isAbs(a) && (v2.value0.total === 1 || (isEmpty(v.usages) || v.size < 16)) || isKnownEffect(a) && v2.value0.total === 1)))));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1960, column 3 - line 1970, column 43): " + [v2.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1970, column 3 - line 1980, column 43): " + [v2.constructor.name]);
     };
   };
 };
@@ -20774,8 +20774,8 @@ var guardFailOver = function(dictFoldable) {
           ;
           return Nothing.value;
         };
-        var v = findMap(dictFoldable)(function($2545) {
-          return toFail(f($2545));
+        var v = findMap(dictFoldable)(function($2554) {
+          return toFail(f($2554));
         })(as);
         if (v instanceof Just) {
           return v.value0;
@@ -20785,7 +20785,7 @@ var guardFailOver = function(dictFoldable) {
           return k(as);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2265, column 3 - line 2267, column 20): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2275, column 3 - line 2277, column 20): " + [v.constructor.name]);
       };
     };
   };
@@ -20837,7 +20837,7 @@ var foldBackendExpr = function(foldSyntax) {
               return apply(foldSyntax)(new Let(v.value1.value0, v.value1.value1, foldSyntax(new CtorSaturated(v.value1.value2.value0, v.value1.value2.value1, v.value1.value2.value2, v.value1.value2.value3, map(functorArray)(map(functorTuple)(go))(v.value1.value2.value4))), go(v.value1.value3)));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2195, column 11 - line 2203, column 117): " + [v.value1.value2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2205, column 11 - line 2213, column 117): " + [v.value1.value2.constructor.name]);
           }
           ;
           if (v.value1 instanceof RewriteDistBranchesLet) {
@@ -20870,14 +20870,14 @@ var foldBackendExpr = function(foldSyntax) {
               return apply(foldSyntax)(apply(PrimOp.create)(new Op2(v.value1.value2.value1, go(v.value1.value2.value0), branches$prime)));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2208, column 11 - line 2220, column 63): " + [v.value1.value2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2218, column 11 - line 2230, column 63): " + [v.value1.value2.constructor.name]);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2187, column 7 - line 2220, column 63): " + [v.value1.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2197, column 7 - line 2230, column 63): " + [v.value1.constructor.name]);
         })());
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2183, column 8 - line 2220, column 63): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2193, column 8 - line 2230, column 63): " + [v.constructor.name]);
     };
     return go;
   };
@@ -20901,7 +20901,7 @@ var $lazy_floatLetWith = /* @__PURE__ */ $runtime_lazy6("floatLetWith", "PureScr
           var $tco_result;
           function $tco_loop(f, ident1, binding1, k1) {
             if (binding1 instanceof SemLet) {
-              $tco_var_f = $lazy_makeLet(842);
+              $tco_var_f = $lazy_makeLet(846);
               $tco_var_ident1 = binding1.value0;
               $tco_var_binding1 = binding1.value1;
               $copy_k1 = function(nextBinding2) {
@@ -20913,7 +20913,24 @@ var $lazy_floatLetWith = /* @__PURE__ */ $runtime_lazy6("floatLetWith", "PureScr
             if (binding1 instanceof SemLetRec) {
               $tco_done = true;
               return new SemLetRec(binding1.value0, function(nextBindings) {
-                return $lazy_makeLet(846)(ident1)(binding1.value1(nextBindings))(k1);
+                return $lazy_makeLet(850)(ident1)(binding1.value1(nextBindings))(k1);
+              });
+            }
+            ;
+            if (binding1 instanceof SemTyped && binding1.value1 instanceof SemLet) {
+              $tco_var_f = $lazy_makeLet(852);
+              $tco_var_ident1 = binding1.value1.value0;
+              $tco_var_binding1 = binding1.value1.value1;
+              $copy_k1 = function(nextBinding2) {
+                return f(ident1)(new SemTyped(binding1.value0, binding1.value1.value2(nextBinding2)))(k1);
+              };
+              return;
+            }
+            ;
+            if (binding1 instanceof SemTyped && binding1.value1 instanceof SemLetRec) {
+              $tco_done = true;
+              return new SemLetRec(binding1.value1.value0, function(nextBindings) {
+                return $lazy_makeLet(856)(ident1)(new SemTyped(binding1.value0, binding1.value1.value1(nextBindings)))(k1);
               });
             }
             ;
@@ -20971,7 +20988,7 @@ var $lazy_makeLet = /* @__PURE__ */ $runtime_lazy6("makeLet", "PureScript.Backen
   };
   return $lazy_floatLetWith(810)(go);
 });
-var floatLetWith = /* @__PURE__ */ $lazy_floatLetWith(832);
+var floatLetWith = /* @__PURE__ */ $lazy_floatLetWith(836);
 var makeLet = /* @__PURE__ */ $lazy_makeLet(809);
 var floatLet = /* @__PURE__ */ (function() {
   return floatLetWith($$const(applyFlipped))(Nothing.value);
@@ -21109,7 +21126,7 @@ var evalPrimOpOrdNumber = function(op) {
         return x <= y;
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1022, column 30 - line 1028, column 18): " + [op.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1032, column 30 - line 1038, column 18): " + [op.constructor.name]);
     };
   };
 };
@@ -21142,7 +21159,7 @@ var evalPrimOpOrd = function(dictOrd) {
           return lessThanOrEq(dictOrd)(x)(y);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1010, column 24 - line 1016, column 18): " + [op.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1020, column 24 - line 1026, column 18): " + [op.constructor.name]);
       };
     };
   };
@@ -21180,7 +21197,7 @@ var evalPrimOpNot = function(v) {
     return liftOp1(OpBooleanNot.value)(liftOp2(v.value0)(v.value1)(v.value2));
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1071, column 17 - line 1091, column 46): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1081, column 17 - line 1101, column 46): " + [v.constructor.name]);
 };
 var evalEvalRef = function(v) {
   if (v instanceof EvalExtern) {
@@ -21191,7 +21208,7 @@ var evalEvalRef = function(v) {
     return new NeutLocal(v.value0, v.value1);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1187, column 15 - line 1191, column 24): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1197, column 15 - line 1201, column 24): " + [v.constructor.name]);
 };
 var $$eval = function(dict) {
   return dict["eval"];
@@ -21222,7 +21239,7 @@ var effectfully = function(v) {
     };
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1511, column 1 - line 1511, column 26): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1521, column 1 - line 1521, column 26): " + [v.constructor.name]);
 };
 var deref = function($copy_v) {
   var $tco_done = false;
@@ -21332,16 +21349,16 @@ var evalPrimOpNumInt = function(op) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1045, column 1 - line 1045, column 105): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1055, column 1 - line 1055, column 105): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
       };
-      var $1154 = deref(x);
-      if ($1154 instanceof NeutLit && $1154.value0 instanceof LitInt) {
-        var $1155 = deref(y);
-        if ($1155 instanceof NeutLit && $1155.value0 instanceof LitInt) {
+      var $1163 = deref(x);
+      if ($1163 instanceof NeutLit && $1163.value0 instanceof LitInt) {
+        var $1164 = deref(y);
+        if ($1164 instanceof NeutLit && $1164.value0 instanceof LitInt) {
           if (op instanceof OpAdd) {
-            var res = $1154.value0.value0 + $1155.value0.value0 | 0;
-            var $1157 = $1155.value0.value0 > 0 && res < $1154.value0.value0 || $1155.value0.value0 < 0 && res > $1154.value0.value0;
-            if ($1157) {
+            var res = $1163.value0.value0 + $1164.value0.value0 | 0;
+            var $1166 = $1164.value0.value0 > 0 && res < $1163.value0.value0 || $1164.value0.value0 < 0 && res > $1163.value0.value0;
+            if ($1166) {
               return Nothing.value;
             }
             ;
@@ -21349,9 +21366,9 @@ var evalPrimOpNumInt = function(op) {
           }
           ;
           if (op instanceof OpMultiply) {
-            var res = $1154.value0.value0 * $1155.value0.value0 | 0;
-            var $1158 = $1154.value0.value0 !== div(euclideanRingInt)(res)($1155.value0.value0);
-            if ($1158) {
+            var res = $1163.value0.value0 * $1164.value0.value0 | 0;
+            var $1167 = $1163.value0.value0 !== div(euclideanRingInt)(res)($1164.value0.value0);
+            if ($1167) {
               return Nothing.value;
             }
             ;
@@ -21359,9 +21376,9 @@ var evalPrimOpNumInt = function(op) {
           }
           ;
           if (op instanceof OpSubtract) {
-            var res = $1154.value0.value0 - $1155.value0.value0 | 0;
-            var $1159 = $1155.value0.value0 > 0 && res > $1154.value0.value0 || $1155.value0.value0 < 0 && res < $1154.value0.value0;
-            if ($1159) {
+            var res = $1163.value0.value0 - $1164.value0.value0 | 0;
+            var $1168 = $1164.value0.value0 > 0 && res > $1163.value0.value0 || $1164.value0.value0 < 0 && res < $1163.value0.value0;
+            if ($1168) {
               return Nothing.value;
             }
             ;
@@ -21369,14 +21386,14 @@ var evalPrimOpNumInt = function(op) {
           }
           ;
           if (op instanceof OpDivide) {
-            return apply(Just.create)(liftInt(div(euclideanRingInt)($1154.value0.value0)($1155.value0.value0)));
+            return apply(Just.create)(liftInt(div(euclideanRingInt)($1163.value0.value0)($1164.value0.value0)));
           }
           ;
           if (op instanceof OpMod) {
-            return apply(Just.create)(liftInt(mod(euclideanRingInt)($1154.value0.value0)($1155.value0.value0)));
+            return apply(Just.create)(liftInt(mod(euclideanRingInt)($1163.value0.value0)($1164.value0.value0)));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1049, column 7 - line 1065, column 37): " + [op.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1059, column 7 - line 1075, column 37): " + [op.constructor.name]);
         }
         ;
         return v(true);
@@ -21394,34 +21411,34 @@ var evalPrimOpNumNumber = function(op) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1031, column 1 - line 1031, column 108): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1041, column 1 - line 1041, column 108): " + [op.constructor.name, x.constructor.name, y.constructor.name]);
       };
-      var $1170 = deref(x);
-      if ($1170 instanceof NeutLit && $1170.value0 instanceof LitNumber) {
-        var $1171 = deref(y);
-        if ($1171 instanceof NeutLit && $1171.value0 instanceof LitNumber) {
+      var $1179 = deref(x);
+      if ($1179 instanceof NeutLit && $1179.value0 instanceof LitNumber) {
+        var $1180 = deref(y);
+        if ($1180 instanceof NeutLit && $1180.value0 instanceof LitNumber) {
           return apply(Just.create)(liftNumber((function() {
             if (op instanceof OpAdd) {
-              return $1170.value0.value0 + $1171.value0.value0;
+              return $1179.value0.value0 + $1180.value0.value0;
             }
             ;
             if (op instanceof OpMultiply) {
-              return $1170.value0.value0 * $1171.value0.value0;
+              return $1179.value0.value0 * $1180.value0.value0;
             }
             ;
             if (op instanceof OpSubtract) {
-              return $1170.value0.value0 - $1171.value0.value0;
+              return $1179.value0.value0 - $1180.value0.value0;
             }
             ;
             if (op instanceof OpDivide) {
-              return $1170.value0.value0 / $1171.value0.value0;
+              return $1179.value0.value0 / $1180.value0.value0;
             }
             ;
             if (op instanceof OpMod) {
               return 0;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1035, column 25 - line 1040, column 21): " + [op.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1045, column 25 - line 1050, column 21): " + [op.constructor.name]);
           })()));
         }
         ;
@@ -21457,7 +21474,7 @@ var evalRefSpine = function(env) {
             return new SemTypeApp(v.value0, force(sem));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1173, column 34 - line 1183, column 30): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1183, column 34 - line 1193, column 30): " + [v.constructor.name]);
         };
       };
     };
@@ -21475,9 +21492,9 @@ var evalRef = function(v) {
             }));
           };
           if (ref instanceof EvalExtern) {
-            var $1189 = v.evalExternSpine(v)(ref.value0)(spine$prime);
-            if ($1189 instanceof Just) {
-              return $1189.value0;
+            var $1198 = v.evalExternSpine(v)(ref.value0)(spine$prime);
+            if ($1198 instanceof Just) {
+              return $1198.value0;
             }
             ;
             return v1(true);
@@ -21510,16 +21527,16 @@ var evalPrimOp = function(env) {
                     }
                     ;
                     return floatLet(v.value1)((function() {
-                      var $2546 = Op1.create(v.value0);
-                      return function($2547) {
-                        return NeutPrimOp.create($2546($2547));
+                      var $2555 = Op1.create(v.value0);
+                      return function($2556) {
+                        return NeutPrimOp.create($2555($2556));
                       };
                     })());
                   };
                   if (v.value0 instanceof OpNumberNegate) {
-                    var $1201 = deref(v.value1);
-                    if ($1201 instanceof NeutLit && $1201.value0 instanceof LitNumber) {
-                      return liftNumber(-$1201.value0.value0);
+                    var $1210 = deref(v.value1);
+                    if ($1210 instanceof NeutLit && $1210.value0 instanceof LitNumber) {
+                      return liftNumber(-$1210.value0.value0);
                     }
                     ;
                     return v13(true);
@@ -21528,9 +21545,9 @@ var evalPrimOp = function(env) {
                   return v13(true);
                 };
                 if (v.value0 instanceof OpIntNegate) {
-                  var $1206 = deref(v.value1);
-                  if ($1206 instanceof NeutLit && $1206.value0 instanceof LitInt) {
-                    return liftInt(-$1206.value0.value0 | 0);
+                  var $1215 = deref(v.value1);
+                  if ($1215 instanceof NeutLit && $1215.value0 instanceof LitInt) {
+                    return liftInt(-$1215.value0.value0 | 0);
                   }
                   ;
                   return v11(true);
@@ -21539,9 +21556,9 @@ var evalPrimOp = function(env) {
                 return v11(true);
               };
               if (v.value0 instanceof OpArrayLength) {
-                var $1211 = deref(v.value1);
-                if ($1211 instanceof NeutLit && $1211.value0 instanceof LitArray) {
-                  return liftInt(length($1211.value0.value0));
+                var $1220 = deref(v.value1);
+                if ($1220 instanceof NeutLit && $1220.value0 instanceof LitArray) {
+                  return liftInt(length($1220.value0.value0));
                 }
                 ;
                 return v9(true);
@@ -21550,9 +21567,9 @@ var evalPrimOp = function(env) {
               return v9(true);
             };
             if (v.value0 instanceof OpIsTag) {
-              var $1216 = deref(v.value1);
-              if ($1216 instanceof NeutData) {
-                return liftBoolean(eq(eqQualified2)(v.value0.value0)($1216.value0));
+              var $1225 = deref(v.value1);
+              if ($1225 instanceof NeutData) {
+                return liftBoolean(eq(eqQualified2)(v.value0.value0)($1225.value0));
               }
               ;
               return v7(true);
@@ -21561,9 +21578,9 @@ var evalPrimOp = function(env) {
             return v7(true);
           };
           if (v.value0 instanceof OpIntBitNot) {
-            var $1225 = deref(v.value1);
-            if ($1225 instanceof NeutLit && $1225.value0 instanceof LitInt) {
-              return liftInt(~$1225.value0.value0);
+            var $1234 = deref(v.value1);
+            if ($1234 instanceof NeutLit && $1234.value0 instanceof LitInt) {
+              return liftInt(~$1234.value0.value0);
             }
             ;
             return v5(true);
@@ -21582,9 +21599,9 @@ var evalPrimOp = function(env) {
         return v3(true);
       };
       if (v.value0 instanceof OpBooleanNot) {
-        var $1234 = deref(v.value1);
-        if ($1234 instanceof NeutLit && $1234.value0 instanceof LitBoolean) {
-          return liftBoolean(!$1234.value0.value0);
+        var $1243 = deref(v.value1);
+        if ($1243 instanceof NeutLit && $1243.value0 instanceof LitBoolean) {
+          return liftBoolean(!$1243.value0.value0);
         }
         ;
         return v1(true);
@@ -21655,8 +21672,8 @@ var evalPrimOp = function(env) {
                                                             ;
                                                             return floatLet(v.value1)(function(x$prime) {
                                                               return floatLet(v.value2)(function(y$prime) {
-                                                                var $1252 = isAssocPrimOp(v.value0);
-                                                                if ($1252) {
+                                                                var $1261 = isAssocPrimOp(v.value0);
+                                                                if ($1261) {
                                                                   return evalAssocOp(env)(new Right(v.value0))(x$prime)(y$prime);
                                                                 }
                                                                 ;
@@ -21689,11 +21706,11 @@ var evalPrimOp = function(env) {
                                                         return v51(true);
                                                       };
                                                       if (v.value0 instanceof OpStringOrd) {
-                                                        var $1265 = deref(v.value1);
-                                                        if ($1265 instanceof NeutLit && $1265.value0 instanceof LitString) {
-                                                          var $1266 = deref(v.value2);
-                                                          if ($1266 instanceof NeutLit && $1266.value0 instanceof LitString) {
-                                                            return liftBoolean(evalPrimOpOrd(ordString)(v.value0.value0)($1265.value0.value0)($1266.value0.value0));
+                                                        var $1274 = deref(v.value1);
+                                                        if ($1274 instanceof NeutLit && $1274.value0 instanceof LitString) {
+                                                          var $1275 = deref(v.value2);
+                                                          if ($1275 instanceof NeutLit && $1275.value0 instanceof LitString) {
+                                                            return liftBoolean(evalPrimOpOrd(ordString)(v.value0.value0)($1274.value0.value0)($1275.value0.value0));
                                                           }
                                                           ;
                                                           return v49(true);
@@ -21705,11 +21722,11 @@ var evalPrimOp = function(env) {
                                                       return v49(true);
                                                     };
                                                     if (v.value0 instanceof OpNumberOrd) {
-                                                      var $1273 = deref(v.value1);
-                                                      if ($1273 instanceof NeutLit && $1273.value0 instanceof LitNumber) {
-                                                        var $1274 = deref(v.value2);
-                                                        if ($1274 instanceof NeutLit && $1274.value0 instanceof LitNumber) {
-                                                          return liftBoolean(evalPrimOpOrdNumber(v.value0.value0)($1273.value0.value0)($1274.value0.value0));
+                                                      var $1282 = deref(v.value1);
+                                                      if ($1282 instanceof NeutLit && $1282.value0 instanceof LitNumber) {
+                                                        var $1283 = deref(v.value2);
+                                                        if ($1283 instanceof NeutLit && $1283.value0 instanceof LitNumber) {
+                                                          return liftBoolean(evalPrimOpOrdNumber(v.value0.value0)($1282.value0.value0)($1283.value0.value0));
                                                         }
                                                         ;
                                                         return v47(true);
@@ -21721,9 +21738,9 @@ var evalPrimOp = function(env) {
                                                     return v47(true);
                                                   };
                                                   if (v.value0 instanceof OpNumberNum) {
-                                                    var $1281 = evalPrimOpNumNumber(v.value0.value0)(v.value1)(v.value2);
-                                                    if ($1281 instanceof Just) {
-                                                      return $1281.value0;
+                                                    var $1290 = evalPrimOpNumNumber(v.value0.value0)(v.value1)(v.value2);
+                                                    if ($1290 instanceof Just) {
+                                                      return $1290.value0;
                                                     }
                                                     ;
                                                     return v45(true);
@@ -21732,8 +21749,8 @@ var evalPrimOp = function(env) {
                                                   return v45(true);
                                                 };
                                                 if (v.value0 instanceof OpNumberNum && v.value0.value0 instanceof OpSubtract) {
-                                                  var $1285 = deref(v.value1);
-                                                  if ($1285 instanceof NeutLit && ($1285.value0 instanceof LitNumber && $1285.value0.value0 === 0)) {
+                                                  var $1294 = deref(v.value1);
+                                                  if ($1294 instanceof NeutLit && ($1294.value0 instanceof LitNumber && $1294.value0.value0 === 0)) {
                                                     return evalPrimOp(env)(new Op1(OpNumberNegate.value, v.value2));
                                                   }
                                                   ;
@@ -21743,11 +21760,11 @@ var evalPrimOp = function(env) {
                                                 return v43(true);
                                               };
                                               if (v.value0 instanceof OpIntOrd) {
-                                                var $1290 = deref(v.value1);
-                                                if ($1290 instanceof NeutLit && $1290.value0 instanceof LitInt) {
-                                                  var $1291 = deref(v.value2);
-                                                  if ($1291 instanceof NeutLit && $1291.value0 instanceof LitInt) {
-                                                    return liftBoolean(evalPrimOpOrd(ordInt)(v.value0.value0)($1290.value0.value0)($1291.value0.value0));
+                                                var $1299 = deref(v.value1);
+                                                if ($1299 instanceof NeutLit && $1299.value0 instanceof LitInt) {
+                                                  var $1300 = deref(v.value2);
+                                                  if ($1300 instanceof NeutLit && $1300.value0 instanceof LitInt) {
+                                                    return liftBoolean(evalPrimOpOrd(ordInt)(v.value0.value0)($1299.value0.value0)($1300.value0.value0));
                                                   }
                                                   ;
                                                   return v41(true);
@@ -21759,9 +21776,9 @@ var evalPrimOp = function(env) {
                                               return v41(true);
                                             };
                                             if (v.value0 instanceof OpIntNum) {
-                                              var $1298 = evalPrimOpNumInt(v.value0.value0)(v.value1)(v.value2);
-                                              if ($1298 instanceof Just) {
-                                                return $1298.value0;
+                                              var $1307 = evalPrimOpNumInt(v.value0.value0)(v.value1)(v.value2);
+                                              if ($1307 instanceof Just) {
+                                                return $1307.value0;
                                               }
                                               ;
                                               return v39(true);
@@ -21770,8 +21787,8 @@ var evalPrimOp = function(env) {
                                             return v39(true);
                                           };
                                           if (v.value0 instanceof OpIntNum && v.value0.value0 instanceof OpSubtract) {
-                                            var $1302 = deref(v.value1);
-                                            if ($1302 instanceof NeutLit && ($1302.value0 instanceof LitInt && $1302.value0.value0 === 0)) {
+                                            var $1311 = deref(v.value1);
+                                            if ($1311 instanceof NeutLit && ($1311.value0 instanceof LitInt && $1311.value0.value0 === 0)) {
                                               return evalPrimOp(env)(new Op1(OpIntNegate.value, v.value2));
                                             }
                                             ;
@@ -21781,11 +21798,11 @@ var evalPrimOp = function(env) {
                                           return v37(true);
                                         };
                                         if (v.value0 instanceof OpIntBitZeroFillShiftRight) {
-                                          var $1307 = deref(v.value1);
-                                          if ($1307 instanceof NeutLit && $1307.value0 instanceof LitInt) {
-                                            var $1308 = deref(v.value2);
-                                            if ($1308 instanceof NeutLit && $1308.value0 instanceof LitInt) {
-                                              return liftInt($1307.value0.value0 >>> $1308.value0.value0);
+                                          var $1316 = deref(v.value1);
+                                          if ($1316 instanceof NeutLit && $1316.value0 instanceof LitInt) {
+                                            var $1317 = deref(v.value2);
+                                            if ($1317 instanceof NeutLit && $1317.value0 instanceof LitInt) {
+                                              return liftInt($1316.value0.value0 >>> $1317.value0.value0);
                                             }
                                             ;
                                             return v35(true);
@@ -21797,11 +21814,11 @@ var evalPrimOp = function(env) {
                                         return v35(true);
                                       };
                                       if (v.value0 instanceof OpIntBitXor) {
-                                        var $1314 = deref(v.value1);
-                                        if ($1314 instanceof NeutLit && $1314.value0 instanceof LitInt) {
-                                          var $1315 = deref(v.value2);
-                                          if ($1315 instanceof NeutLit && $1315.value0 instanceof LitInt) {
-                                            return liftInt($1314.value0.value0 ^ $1315.value0.value0);
+                                        var $1323 = deref(v.value1);
+                                        if ($1323 instanceof NeutLit && $1323.value0 instanceof LitInt) {
+                                          var $1324 = deref(v.value2);
+                                          if ($1324 instanceof NeutLit && $1324.value0 instanceof LitInt) {
+                                            return liftInt($1323.value0.value0 ^ $1324.value0.value0);
                                           }
                                           ;
                                           return v33(true);
@@ -21813,11 +21830,11 @@ var evalPrimOp = function(env) {
                                       return v33(true);
                                     };
                                     if (v.value0 instanceof OpIntBitShiftRight) {
-                                      var $1321 = deref(v.value1);
-                                      if ($1321 instanceof NeutLit && $1321.value0 instanceof LitInt) {
-                                        var $1322 = deref(v.value2);
-                                        if ($1322 instanceof NeutLit && $1322.value0 instanceof LitInt) {
-                                          return liftInt($1321.value0.value0 >> $1322.value0.value0);
+                                      var $1330 = deref(v.value1);
+                                      if ($1330 instanceof NeutLit && $1330.value0 instanceof LitInt) {
+                                        var $1331 = deref(v.value2);
+                                        if ($1331 instanceof NeutLit && $1331.value0 instanceof LitInt) {
+                                          return liftInt($1330.value0.value0 >> $1331.value0.value0);
                                         }
                                         ;
                                         return v31(true);
@@ -21829,11 +21846,11 @@ var evalPrimOp = function(env) {
                                     return v31(true);
                                   };
                                   if (v.value0 instanceof OpIntBitShiftLeft) {
-                                    var $1328 = deref(v.value1);
-                                    if ($1328 instanceof NeutLit && $1328.value0 instanceof LitInt) {
-                                      var $1329 = deref(v.value2);
-                                      if ($1329 instanceof NeutLit && $1329.value0 instanceof LitInt) {
-                                        return liftInt($1328.value0.value0 << $1329.value0.value0);
+                                    var $1337 = deref(v.value1);
+                                    if ($1337 instanceof NeutLit && $1337.value0 instanceof LitInt) {
+                                      var $1338 = deref(v.value2);
+                                      if ($1338 instanceof NeutLit && $1338.value0 instanceof LitInt) {
+                                        return liftInt($1337.value0.value0 << $1338.value0.value0);
                                       }
                                       ;
                                       return v29(true);
@@ -21845,11 +21862,11 @@ var evalPrimOp = function(env) {
                                   return v29(true);
                                 };
                                 if (v.value0 instanceof OpIntBitOr) {
-                                  var $1335 = deref(v.value1);
-                                  if ($1335 instanceof NeutLit && $1335.value0 instanceof LitInt) {
-                                    var $1336 = deref(v.value2);
-                                    if ($1336 instanceof NeutLit && $1336.value0 instanceof LitInt) {
-                                      return liftInt($1335.value0.value0 | $1336.value0.value0);
+                                  var $1344 = deref(v.value1);
+                                  if ($1344 instanceof NeutLit && $1344.value0 instanceof LitInt) {
+                                    var $1345 = deref(v.value2);
+                                    if ($1345 instanceof NeutLit && $1345.value0 instanceof LitInt) {
+                                      return liftInt($1344.value0.value0 | $1345.value0.value0);
                                     }
                                     ;
                                     return v27(true);
@@ -21861,11 +21878,11 @@ var evalPrimOp = function(env) {
                                 return v27(true);
                               };
                               if (v.value0 instanceof OpIntBitAnd) {
-                                var $1342 = deref(v.value1);
-                                if ($1342 instanceof NeutLit && $1342.value0 instanceof LitInt) {
-                                  var $1343 = deref(v.value2);
-                                  if ($1343 instanceof NeutLit && $1343.value0 instanceof LitInt) {
-                                    return liftInt($1342.value0.value0 & $1343.value0.value0);
+                                var $1351 = deref(v.value1);
+                                if ($1351 instanceof NeutLit && $1351.value0 instanceof LitInt) {
+                                  var $1352 = deref(v.value2);
+                                  if ($1352 instanceof NeutLit && $1352.value0 instanceof LitInt) {
+                                    return liftInt($1351.value0.value0 & $1352.value0.value0);
                                   }
                                   ;
                                   return v25(true);
@@ -21877,11 +21894,11 @@ var evalPrimOp = function(env) {
                               return v25(true);
                             };
                             if (v.value0 instanceof OpCharOrd) {
-                              var $1349 = deref(v.value1);
-                              if ($1349 instanceof NeutLit && $1349.value0 instanceof LitChar) {
-                                var $1350 = deref(v.value2);
-                                if ($1350 instanceof NeutLit && $1350.value0 instanceof LitChar) {
-                                  return liftBoolean(evalPrimOpOrd(ordChar)(v.value0.value0)($1349.value0.value0)($1350.value0.value0));
+                              var $1358 = deref(v.value1);
+                              if ($1358 instanceof NeutLit && $1358.value0 instanceof LitChar) {
+                                var $1359 = deref(v.value2);
+                                if ($1359 instanceof NeutLit && $1359.value0 instanceof LitChar) {
+                                  return liftBoolean(evalPrimOpOrd(ordChar)(v.value0.value0)($1358.value0.value0)($1359.value0.value0));
                                 }
                                 ;
                                 return v23(true);
@@ -21893,11 +21910,11 @@ var evalPrimOp = function(env) {
                             return v23(true);
                           };
                           if (v.value0 instanceof OpBooleanOrd) {
-                            var $1357 = deref(v.value1);
-                            if ($1357 instanceof NeutLit && $1357.value0 instanceof LitBoolean) {
-                              var $1358 = deref(v.value2);
-                              if ($1358 instanceof NeutLit && $1358.value0 instanceof LitBoolean) {
-                                return liftBoolean(evalPrimOpOrd(ordBoolean)(v.value0.value0)($1357.value0.value0)($1358.value0.value0));
+                            var $1366 = deref(v.value1);
+                            if ($1366 instanceof NeutLit && $1366.value0 instanceof LitBoolean) {
+                              var $1367 = deref(v.value2);
+                              if ($1367 instanceof NeutLit && $1367.value0 instanceof LitBoolean) {
+                                return liftBoolean(evalPrimOpOrd(ordBoolean)(v.value0.value0)($1366.value0.value0)($1367.value0.value0));
                               }
                               ;
                               return v21(true);
@@ -21909,9 +21926,9 @@ var evalPrimOp = function(env) {
                           return v21(true);
                         };
                         if (v.value0 instanceof OpBooleanOrd && v.value0.value0 instanceof OpEq) {
-                          var $1365 = deref(v.value2);
-                          if ($1365 instanceof NeutLit && $1365.value0 instanceof LitBoolean) {
-                            if ($1365.value0.value0) {
+                          var $1374 = deref(v.value2);
+                          if ($1374 instanceof NeutLit && $1374.value0 instanceof LitBoolean) {
+                            if ($1374.value0.value0) {
                               return v.value1;
                             }
                             ;
@@ -21924,9 +21941,9 @@ var evalPrimOp = function(env) {
                         return v19(true);
                       };
                       if (v.value0 instanceof OpBooleanOrd && v.value0.value0 instanceof OpEq) {
-                        var $1371 = deref(v.value1);
-                        if ($1371 instanceof NeutLit && $1371.value0 instanceof LitBoolean) {
-                          if ($1371.value0.value0) {
+                        var $1380 = deref(v.value1);
+                        if ($1380 instanceof NeutLit && $1380.value0 instanceof LitBoolean) {
+                          if ($1380.value0.value0) {
                             return v.value2;
                           }
                           ;
@@ -21939,8 +21956,8 @@ var evalPrimOp = function(env) {
                       return v17(true);
                     };
                     if (v.value0 instanceof OpBooleanOr) {
-                      var $1377 = deref(v.value2);
-                      if ($1377 instanceof NeutLit && ($1377.value0 instanceof LitBoolean && $1377.value0.value0)) {
+                      var $1386 = deref(v.value2);
+                      if ($1386 instanceof NeutLit && ($1386.value0 instanceof LitBoolean && $1386.value0.value0)) {
                         return v.value2;
                       }
                       ;
@@ -21950,8 +21967,8 @@ var evalPrimOp = function(env) {
                     return v15(true);
                   };
                   if (v.value0 instanceof OpBooleanOr) {
-                    var $1381 = deref(v.value1);
-                    if ($1381 instanceof NeutLit && ($1381.value0 instanceof LitBoolean && $1381.value0.value0)) {
+                    var $1390 = deref(v.value1);
+                    if ($1390 instanceof NeutLit && ($1390.value0 instanceof LitBoolean && $1390.value0.value0)) {
                       return v.value1;
                     }
                     ;
@@ -21961,8 +21978,8 @@ var evalPrimOp = function(env) {
                   return v13(true);
                 };
                 if (v.value0 instanceof OpBooleanOr) {
-                  var $1385 = deref(v.value2);
-                  if ($1385 instanceof NeutLit && ($1385.value0 instanceof LitBoolean && !$1385.value0.value0)) {
+                  var $1394 = deref(v.value2);
+                  if ($1394 instanceof NeutLit && ($1394.value0 instanceof LitBoolean && !$1394.value0.value0)) {
                     return v.value1;
                   }
                   ;
@@ -21972,8 +21989,8 @@ var evalPrimOp = function(env) {
                 return v11(true);
               };
               if (v.value0 instanceof OpBooleanOr) {
-                var $1389 = deref(v.value1);
-                if ($1389 instanceof NeutLit && ($1389.value0 instanceof LitBoolean && !$1389.value0.value0)) {
+                var $1398 = deref(v.value1);
+                if ($1398 instanceof NeutLit && ($1398.value0 instanceof LitBoolean && !$1398.value0.value0)) {
                   return v.value2;
                 }
                 ;
@@ -21983,8 +22000,8 @@ var evalPrimOp = function(env) {
               return v9(true);
             };
             if (v.value0 instanceof OpBooleanAnd) {
-              var $1393 = deref(v.value2);
-              if ($1393 instanceof NeutLit && ($1393.value0 instanceof LitBoolean && $1393.value0.value0)) {
+              var $1402 = deref(v.value2);
+              if ($1402 instanceof NeutLit && ($1402.value0 instanceof LitBoolean && $1402.value0.value0)) {
                 return v.value1;
               }
               ;
@@ -21994,8 +22011,8 @@ var evalPrimOp = function(env) {
             return v7(true);
           };
           if (v.value0 instanceof OpBooleanAnd) {
-            var $1397 = deref(v.value1);
-            if ($1397 instanceof NeutLit && ($1397.value0 instanceof LitBoolean && $1397.value0.value0)) {
+            var $1406 = deref(v.value1);
+            if ($1406 instanceof NeutLit && ($1406.value0 instanceof LitBoolean && $1406.value0.value0)) {
               return v.value2;
             }
             ;
@@ -22005,8 +22022,8 @@ var evalPrimOp = function(env) {
           return v5(true);
         };
         if (v.value0 instanceof OpBooleanAnd) {
-          var $1401 = deref(v.value2);
-          if ($1401 instanceof NeutLit && ($1401.value0 instanceof LitBoolean && !$1401.value0.value0)) {
+          var $1410 = deref(v.value2);
+          if ($1410 instanceof NeutLit && ($1410.value0 instanceof LitBoolean && !$1410.value0.value0)) {
             return v.value2;
           }
           ;
@@ -22016,8 +22033,8 @@ var evalPrimOp = function(env) {
         return v3(true);
       };
       if (v.value0 instanceof OpBooleanAnd) {
-        var $1405 = deref(v.value1);
-        if ($1405 instanceof NeutLit && ($1405.value0 instanceof LitBoolean && !$1405.value0.value0)) {
+        var $1414 = deref(v.value1);
+        if ($1414 instanceof NeutLit && ($1414.value0 instanceof LitBoolean && !$1414.value0.value0)) {
           return v.value1;
         }
         ;
@@ -22027,7 +22044,7 @@ var evalPrimOp = function(env) {
       return v1(true);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 864, column 18 - line 1006, column 45): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 874, column 18 - line 1016, column 45): " + [v.constructor.name]);
   };
 };
 var evalAssocOp$prime = function(v) {
@@ -22044,14 +22061,14 @@ var evalAssocOp$prime = function(v) {
             return apply(SemAssocOp.create(op))(cons$prime(a)([b]));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1151, column 5 - line 1155, column 52): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1161, column 5 - line 1165, column 52): " + [v1.constructor.name]);
         }
         ;
         if (op instanceof Right) {
           return evalPrimOp(v)(new Op2(op.value0, a, b));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1149, column 35 - line 1157, column 36): " + [op.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1159, column 35 - line 1167, column 36): " + [op.constructor.name]);
       };
     };
   };
@@ -22104,10 +22121,10 @@ var evalAssocOp = function($copy_env) {
             return apply(SemAssocOp.create(op1))(cons$prime(v)([v1]));
           };
           if (v instanceof SemAssocOp && v1 instanceof SemAssocOp) {
-            var $1440 = eq(eqEither2)(op1)(v.value0);
-            if ($1440) {
-              var $1441 = eq(eqEither2)(v.value0)(v1.value0);
-              if ($1441) {
+            var $1449 = eq(eqEither2)(op1)(v.value0);
+            if ($1449) {
+              var $1450 = eq(eqEither2)(v.value0)(v1.value0);
+              if ($1450) {
                 var v3 = evalAssocOp$prime(env)(op1)(last3(v.value1))(head2(v1.value1));
                 if (v3 instanceof SemAssocOp && eq(eqEither2)(v1.value0)(v3.value0)) {
                   $tco_done = true;
@@ -22189,9 +22206,9 @@ var evalAccessor = function(env) {
               };
               if (v instanceof NeutData) {
                 if (accessor instanceof GetCtorField) {
-                  var $1483 = index(v.value4)(accessor.value5);
-                  if ($1483 instanceof Just) {
-                    return $1483.value0.value1;
+                  var $1492 = index(v.value4)(accessor.value5);
+                  if ($1492 instanceof Just) {
+                    return $1492.value0.value1;
                   }
                   ;
                   return v7(true);
@@ -22204,9 +22221,9 @@ var evalAccessor = function(env) {
             };
             if (v instanceof NeutLit && v.value0 instanceof LitArray) {
               if (accessor instanceof GetIndex) {
-                var $1500 = index(v.value0.value0)(accessor.value0);
-                if ($1500 instanceof Just) {
-                  return $1500.value0;
+                var $1509 = index(v.value0.value0)(accessor.value0);
+                if ($1509 instanceof Just) {
+                  return $1509.value0;
                 }
                 ;
                 return v5(true);
@@ -22240,11 +22257,11 @@ var evalAccessor = function(env) {
         };
         if (v instanceof NeutLit && v.value0 instanceof LitRecord) {
           if (accessor instanceof GetProp) {
-            var $1520 = findMap2(function(v2) {
+            var $1529 = findMap2(function(v2) {
               return voidLeft(functorMaybe)(guard2(alternativeMaybe)(v2.value0 === accessor.value0))(v2.value1);
             })(v.value0.value0);
-            if ($1520 instanceof Just) {
-              return $1520.value0;
+            if ($1529 instanceof Just) {
+              return $1529.value0;
             }
             ;
             return v1(true);
@@ -22273,17 +22290,17 @@ var evalTypeApp = function(env) {
         return new SemTypeApp(v1, v);
       };
       if (v instanceof SemTyped && v.value0 instanceof ForAll) {
-        var $1534 = uncons(v.value0.value0);
-        if ($1534 instanceof Just) {
+        var $1543 = uncons(v.value0.value0);
+        if ($1543 instanceof Just) {
           var rest = (function() {
-            var $1535 = $$null($1534.value0.tail);
-            if ($1535) {
+            var $1544 = $$null($1543.value0.tail);
+            if ($1544) {
               return v.value0.value1;
             }
             ;
-            return new ForAll($1534.value0.tail, v.value0.value1);
+            return new ForAll($1543.value0.tail, v.value0.value1);
           })();
-          var instantiated = substitute(singleton4($1534.value0.head)(v1))(rest);
+          var instantiated = substitute(singleton4($1543.value0.head)(v1))(rest);
           return new SemTyped(instantiated, evalTypeApp(env)(v.value1)(v1));
         }
         ;
@@ -22346,8 +22363,8 @@ var build = function(ctx) {
                                       return buildDefault(ctx)(v);
                                     };
                                     if (v instanceof EffectDefer) {
-                                      var $1584 = unwrapBackendExpr(v.value0);
-                                      if ($1584 instanceof ExprSyntax && $1584.value1 instanceof EffectDefer) {
+                                      var $1593 = unwrapBackendExpr(v.value0);
+                                      if ($1593 instanceof ExprSyntax && $1593.value1 instanceof EffectDefer) {
                                         return v.value0;
                                       }
                                       ;
@@ -22357,12 +22374,12 @@ var build = function(ctx) {
                                     return v33(true);
                                   };
                                   if (v instanceof EffectBind) {
-                                    var $1590 = unwrapBackendExpr(v.value3);
-                                    if ($1590 instanceof ExprSyntax && $1590.value1 instanceof EffectPure) {
-                                      var $1591 = unwrapBackendExpr($1590.value1.value0);
-                                      if ($1591 instanceof ExprSyntax && $1591.value1 instanceof Local) {
-                                        var $1592 = eq(eqLevel)(v.value1)($1591.value1.value1);
-                                        if ($1592) {
+                                    var $1599 = unwrapBackendExpr(v.value3);
+                                    if ($1599 instanceof ExprSyntax && $1599.value1 instanceof EffectPure) {
+                                      var $1600 = unwrapBackendExpr($1599.value1.value0);
+                                      if ($1600 instanceof ExprSyntax && $1600.value1 instanceof Local) {
+                                        var $1601 = eq(eqLevel)(v.value1)($1600.value1.value1);
+                                        if ($1601) {
                                           return v.value2;
                                         }
                                         ;
@@ -22378,9 +22395,9 @@ var build = function(ctx) {
                                   return v31(true);
                                 };
                                 if (v instanceof EffectBind) {
-                                  var $1605 = unwrapBackendExpr(v.value3);
-                                  if ($1605 instanceof ExprSyntax && $1605.value1 instanceof EffectDefer) {
-                                    return apply(build(ctx))(new EffectBind(v.value0, v.value1, v.value2, $1605.value1.value0));
+                                  var $1614 = unwrapBackendExpr(v.value3);
+                                  if ($1614 instanceof ExprSyntax && $1614.value1 instanceof EffectDefer) {
+                                    return apply(build(ctx))(new EffectBind(v.value0, v.value1, v.value2, $1614.value1.value0));
                                   }
                                   ;
                                   return v29(true);
@@ -22389,9 +22406,9 @@ var build = function(ctx) {
                                 return v29(true);
                               };
                               if (v instanceof EffectBind) {
-                                var $1614 = unwrapBackendExpr(v.value2);
-                                if ($1614 instanceof ExprSyntax && $1614.value1 instanceof EffectDefer) {
-                                  return apply(build(ctx))(new EffectBind(v.value0, v.value1, $1614.value1.value0, v.value3));
+                                var $1623 = unwrapBackendExpr(v.value2);
+                                if ($1623 instanceof ExprSyntax && $1623.value1 instanceof EffectDefer) {
+                                  return apply(build(ctx))(new EffectBind(v.value0, v.value1, $1623.value1.value0, v.value3));
                                 }
                                 ;
                                 return v27(true);
@@ -22400,11 +22417,11 @@ var build = function(ctx) {
                               return v27(true);
                             };
                             if (v instanceof PrimOp && v.value0 instanceof Op2) {
-                              var $1623 = untypedExpr(v.value0.value2);
-                              if ($1623 instanceof ExprSyntax && $1623.value1 instanceof Branch) {
-                                var $1624 = shouldDistributeBranchPrimOp2R(analysisOf(hasAnalysisBackendExpr)(v.value0.value2))($1623.value1.value0)($1623.value1.value1)(v.value0.value1)(v.value0.value0);
-                                if ($1624 instanceof Just) {
-                                  return $1624.value0;
+                              var $1632 = untypedExpr(v.value0.value2);
+                              if ($1632 instanceof ExprSyntax && $1632.value1 instanceof Branch) {
+                                var $1633 = shouldDistributeBranchPrimOp2R(analysisOf(hasAnalysisBackendExpr)(v.value0.value2))($1632.value1.value0)($1632.value1.value1)(v.value0.value1)(v.value0.value0);
+                                if ($1633 instanceof Just) {
+                                  return $1633.value0;
                                 }
                                 ;
                                 return v25(true);
@@ -22416,11 +22433,11 @@ var build = function(ctx) {
                             return v25(true);
                           };
                           if (v instanceof PrimOp && v.value0 instanceof Op2) {
-                            var $1635 = untypedExpr(v.value0.value1);
-                            if ($1635 instanceof ExprSyntax && $1635.value1 instanceof Branch) {
-                              var $1636 = shouldDistributeBranchPrimOp2L(analysisOf(hasAnalysisBackendExpr)(v.value0.value1))($1635.value1.value0)($1635.value1.value1)(v.value0.value0)(v.value0.value2);
-                              if ($1636 instanceof Just) {
-                                return $1636.value0;
+                            var $1644 = untypedExpr(v.value0.value1);
+                            if ($1644 instanceof ExprSyntax && $1644.value1 instanceof Branch) {
+                              var $1645 = shouldDistributeBranchPrimOp2L(analysisOf(hasAnalysisBackendExpr)(v.value0.value1))($1644.value1.value0)($1644.value1.value1)(v.value0.value0)(v.value0.value2);
+                              if ($1645 instanceof Just) {
+                                return $1645.value0;
                               }
                               ;
                               return v23(true);
@@ -22432,11 +22449,11 @@ var build = function(ctx) {
                           return v23(true);
                         };
                         if (v instanceof PrimOp && v.value0 instanceof Op1) {
-                          var $1647 = untypedExpr(v.value0.value1);
-                          if ($1647 instanceof ExprSyntax && $1647.value1 instanceof Branch) {
-                            var $1648 = shouldDistributeBranchPrimOp1(analysisOf(hasAnalysisBackendExpr)(v.value0.value1))($1647.value1.value0)($1647.value1.value1)(v.value0.value0);
-                            if ($1648 instanceof Just) {
-                              return $1648.value0;
+                          var $1656 = untypedExpr(v.value0.value1);
+                          if ($1656 instanceof ExprSyntax && $1656.value1 instanceof Branch) {
+                            var $1657 = shouldDistributeBranchPrimOp1(analysisOf(hasAnalysisBackendExpr)(v.value0.value1))($1656.value1.value0)($1656.value1.value1)(v.value0.value0);
+                            if ($1657 instanceof Just) {
+                              return $1657.value0;
                             }
                             ;
                             return v21(true);
@@ -22448,11 +22465,11 @@ var build = function(ctx) {
                         return v21(true);
                       };
                       if (v instanceof Accessor) {
-                        var $1658 = untypedExpr(v.value0);
-                        if ($1658 instanceof ExprSyntax && $1658.value1 instanceof Branch) {
-                          var $1659 = shouldDistributeBranchAccessor(analysisOf(hasAnalysisBackendExpr)(v.value0))($1658.value1.value0)($1658.value1.value1)(v.value1);
-                          if ($1659 instanceof Just) {
-                            return $1659.value0;
+                        var $1667 = untypedExpr(v.value0);
+                        if ($1667 instanceof ExprSyntax && $1667.value1 instanceof Branch) {
+                          var $1668 = shouldDistributeBranchAccessor(analysisOf(hasAnalysisBackendExpr)(v.value0))($1667.value1.value0)($1667.value1.value1)(v.value1);
+                          if ($1668 instanceof Just) {
+                            return $1668.value0;
                           }
                           ;
                           return v19(true);
@@ -22464,11 +22481,11 @@ var build = function(ctx) {
                       return v19(true);
                     };
                     if (v instanceof UncurriedApp) {
-                      var $1668 = untypedExpr(v.value0);
-                      if ($1668 instanceof ExprSyntax && $1668.value1 instanceof Branch) {
-                        var $1669 = shouldDistributeBranchUncurriedApps(analysisOf(hasAnalysisBackendExpr)(v.value0))($1668.value1.value0)($1668.value1.value1)(v.value1);
-                        if ($1669 instanceof Just) {
-                          return $1669.value0;
+                      var $1677 = untypedExpr(v.value0);
+                      if ($1677 instanceof ExprSyntax && $1677.value1 instanceof Branch) {
+                        var $1678 = shouldDistributeBranchUncurriedApps(analysisOf(hasAnalysisBackendExpr)(v.value0))($1677.value1.value0)($1677.value1.value1)(v.value1);
+                        if ($1678 instanceof Just) {
+                          return $1678.value0;
                         }
                         ;
                         return v17(true);
@@ -22480,11 +22497,11 @@ var build = function(ctx) {
                     return v17(true);
                   };
                   if (v instanceof App2) {
-                    var $1678 = untypedExpr(v.value0);
-                    if ($1678 instanceof ExprSyntax && $1678.value1 instanceof Branch) {
-                      var $1679 = shouldDistributeBranchApps(analysisOf(hasAnalysisBackendExpr)(v.value0))($1678.value1.value0)($1678.value1.value1)(v.value1);
-                      if ($1679 instanceof Just) {
-                        return $1679.value0;
+                    var $1687 = untypedExpr(v.value0);
+                    if ($1687 instanceof ExprSyntax && $1687.value1 instanceof Branch) {
+                      var $1688 = shouldDistributeBranchApps(analysisOf(hasAnalysisBackendExpr)(v.value0))($1687.value1.value0)($1687.value1.value1)(v.value1);
+                      if ($1688 instanceof Just) {
+                        return $1688.value0;
                       }
                       ;
                       return v15(true);
@@ -22496,9 +22513,9 @@ var build = function(ctx) {
                   return v15(true);
                 };
                 if (v instanceof Let) {
-                  var $1688 = shouldEtaReduce(v.value1)(v.value2)(v.value3);
-                  if ($1688 instanceof Just) {
-                    return $1688.value0;
+                  var $1697 = shouldEtaReduce(v.value1)(v.value2)(v.value3);
+                  if ($1697 instanceof Just) {
+                    return $1697.value0;
                   }
                   ;
                   return v13(true);
@@ -22507,9 +22524,9 @@ var build = function(ctx) {
                 return v13(true);
               };
               if (v instanceof Let) {
-                var $1695 = shouldDistributeBranches(v.value0)(v.value1)(v.value2)(v.value3);
-                if ($1695 instanceof Just) {
-                  return $1695.value0;
+                var $1704 = shouldDistributeBranches(v.value0)(v.value1)(v.value2)(v.value3);
+                if ($1704 instanceof Just) {
+                  return $1704.value0;
                 }
                 ;
                 return v11(true);
@@ -22518,9 +22535,9 @@ var build = function(ctx) {
               return v11(true);
             };
             if (v instanceof Let) {
-              var $1702 = shouldUnpackArray(v.value0)(v.value1)(v.value2)(v.value3);
-              if ($1702 instanceof Just) {
-                return $1702.value0;
+              var $1711 = shouldUnpackArray(v.value0)(v.value1)(v.value2)(v.value3);
+              if ($1711 instanceof Just) {
+                return $1711.value0;
               }
               ;
               return v9(true);
@@ -22529,9 +22546,9 @@ var build = function(ctx) {
             return v9(true);
           };
           if (v instanceof Let) {
-            var $1709 = shouldUnpackCtor(v.value0)(v.value1)(v.value2)(v.value3);
-            if ($1709 instanceof Just) {
-              return $1709.value0;
+            var $1718 = shouldUnpackCtor(v.value0)(v.value1)(v.value2)(v.value3);
+            if ($1718 instanceof Just) {
+              return $1718.value0;
             }
             ;
             return v7(true);
@@ -22540,9 +22557,9 @@ var build = function(ctx) {
           return v7(true);
         };
         if (v instanceof Let) {
-          var $1716 = shouldUnpackUpdate(v.value0)(v.value1)(v.value2)(v.value3);
-          if ($1716 instanceof Just) {
-            return $1716.value0;
+          var $1725 = shouldUnpackUpdate(v.value0)(v.value1)(v.value2)(v.value3);
+          if ($1725 instanceof Just) {
+            return $1725.value0;
           }
           ;
           return v5(true);
@@ -22551,9 +22568,9 @@ var build = function(ctx) {
         return v5(true);
       };
       if (v instanceof Let) {
-        var $1723 = shouldUnpackRecord(v.value0)(v.value1)(v.value2)(v.value3);
-        if ($1723 instanceof Just) {
-          return $1723.value0;
+        var $1732 = shouldUnpackRecord(v.value0)(v.value1)(v.value2)(v.value3);
+        if ($1732 instanceof Just) {
+          return $1732.value0;
         }
         ;
         return v3(true);
@@ -22562,9 +22579,9 @@ var build = function(ctx) {
       return v3(true);
     };
     if (v instanceof Let) {
-      var $1730 = shouldUncurryAbs(v.value0)(v.value1)(v.value2)(v.value3);
-      if ($1730 instanceof Just) {
-        return $1730.value0;
+      var $1739 = shouldUncurryAbs(v.value0)(v.value1)(v.value2)(v.value3);
+      if ($1739 instanceof Just) {
+        return $1739.value0;
       }
       ;
       return v1(true);
@@ -22613,16 +22630,16 @@ var simplifyCondRedundantElse = function(ctx) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1769, column 1 - line 1769, column 89): " + [ctx.constructor.name, v.constructor.name, def.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1779, column 1 - line 1779, column 89): " + [ctx.constructor.name, v.constructor.name, def.constructor.name]);
       };
-      var $1767 = untypedExpr(def);
-      if ($1767 instanceof ExprSyntax && $1767.value1 instanceof Branch) {
-        var $1768 = head2($1767.value1.value0);
-        var $1769 = untypedExpr($1768.value0);
-        if ($1769 instanceof ExprSyntax && ($1769.value1 instanceof PrimOp && ($1769.value1.value0 instanceof Op1 && $1769.value1.value0.value0 instanceof OpBooleanNot))) {
-          var $1770 = eq(eqBackendExpr)(v.value0)($1769.value1.value0.value1);
-          if ($1770) {
-            return apply(Just.create)(buildBranchCond(ctx)(new Pair(v.value0, v.value1))($1768.value1));
+      var $1776 = untypedExpr(def);
+      if ($1776 instanceof ExprSyntax && $1776.value1 instanceof Branch) {
+        var $1777 = head2($1776.value1.value0);
+        var $1778 = untypedExpr($1777.value0);
+        if ($1778 instanceof ExprSyntax && ($1778.value1 instanceof PrimOp && ($1778.value1.value0 instanceof Op1 && $1778.value1.value0.value0 instanceof OpBooleanNot))) {
+          var $1779 = eq(eqBackendExpr)(v.value0)($1778.value1.value0.value1);
+          if ($1779) {
+            return apply(Just.create)(buildBranchCond(ctx)(new Pair(v.value0, v.value1))($1777.value1));
           }
           ;
           return v1(true);
@@ -22643,15 +22660,15 @@ var simplifyCondLiftAnd = function(ctx) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1769, column 1 - line 1769, column 89): " + [ctx.constructor.name, v.constructor.name, def1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1779, column 1 - line 1779, column 89): " + [ctx.constructor.name, v.constructor.name, def1.constructor.name]);
       };
-      var $1792 = untypedExpr(v.value1);
-      if ($1792 instanceof ExprSyntax && $1792.value1 instanceof Branch) {
-        var $1793 = toArray3($1792.value1.value0);
-        if ($1793.length === 1) {
-          var $1794 = eq(eqBackendExpr)(def1)($1792.value1.value1);
-          if ($1794) {
-            return apply(Just.create)(buildBranchCond(ctx)(new Pair(build(ctx)(new PrimOp(new Op2(OpBooleanAnd.value, v.value0, $1793[0].value0))), $1793[0].value1))(def1));
+      var $1801 = untypedExpr(v.value1);
+      if ($1801 instanceof ExprSyntax && $1801.value1 instanceof Branch) {
+        var $1802 = toArray3($1801.value1.value0);
+        if ($1802.length === 1) {
+          var $1803 = eq(eqBackendExpr)(def1)($1801.value1.value1);
+          if ($1803) {
+            return apply(Just.create)(buildBranchCond(ctx)(new Pair(build(ctx)(new PrimOp(new Op2(OpBooleanAnd.value, v.value0, $1802[0].value0))), $1802[0].value1))(def1));
           }
           ;
           return v1(true);
@@ -22676,7 +22693,7 @@ var buildBranchCond = function(ctx) {
                   return build(ctx)(new Branch(singleton10(pair), def));
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1769, column 1 - line 1769, column 89): " + [ctx.constructor.name, pair.constructor.name, def.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1779, column 1 - line 1779, column 89): " + [ctx.constructor.name, pair.constructor.name, def.constructor.name]);
               };
               if (def instanceof ExprSyntax && def.value1 instanceof Branch) {
                 return build(ctx)(new Branch(cons2(pair)(def.value1.value0), def.value1.value1));
@@ -22684,30 +22701,30 @@ var buildBranchCond = function(ctx) {
               ;
               return v82(true);
             };
-            var $1818 = simplifyCondRedundantElse(ctx)(pair)(def);
-            if ($1818 instanceof Just) {
-              return $1818.value0;
+            var $1827 = simplifyCondRedundantElse(ctx)(pair)(def);
+            if ($1827 instanceof Just) {
+              return $1827.value0;
             }
             ;
             return v6(true);
           };
-          var $1823 = simplifyCondLiftAnd(ctx)(pair)(def);
-          if ($1823 instanceof Just) {
-            return $1823.value0;
+          var $1832 = simplifyCondLiftAnd(ctx)(pair)(def);
+          if ($1832 instanceof Just) {
+            return $1832.value0;
           }
           ;
           return v4(true);
         };
-        var $1828 = simplifyCondBoolean(ctx)(pair)(def);
-        if ($1828 instanceof Just) {
-          return $1828.value0;
+        var $1837 = simplifyCondBoolean(ctx)(pair)(def);
+        if ($1837 instanceof Just) {
+          return $1837.value0;
         }
         ;
         return v2(true);
       };
-      var $1833 = simplifyCondIsTag(ctx)(pair)(def);
-      if ($1833 instanceof Just) {
-        return $1833.value0;
+      var $1842 = simplifyCondIsTag(ctx)(pair)(def);
+      if ($1842 instanceof Just) {
+        return $1842.value0;
       }
       ;
       return v(true);
@@ -22727,7 +22744,7 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
       ;
       if (v1 instanceof SemLet) {
         var v2 = nextLevel(v);
-        return apply(build(v))(apply(Let.create(v1.value0)(v2.value0)($lazy_quote(1534)(purely(v))(v1.value1)))(apply($lazy_quote(1534)(v2.value1))(apply(v1.value2)(apply(SemRef.create(new EvalLocal(v1.value0, v2.value0))([]))(defer2(function(v3) {
+        return apply(build(v))(apply(Let.create(v1.value0)(v2.value0)($lazy_quote(1544)(purely(v))(v1.value1)))(apply($lazy_quote(1544)(v2.value1))(apply(v1.value2)(apply(SemRef.create(new EvalLocal(v1.value0, v2.value0))([]))(defer2(function(v3) {
           return deref(v1.value1);
         }))))));
       }
@@ -22740,34 +22757,34 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
           }));
         })(v1.value0);
         return apply(build(v))(new LetRec(v2.value0, map(functorNonEmptyArray)(map(functorTuple)(function(b) {
-          return apply($lazy_quote(1543)(purely(v2.value1)))(b(neutBindings));
-        }))(v1.value0), apply($lazy_quote(1544)(v2.value1))(v1.value1(neutBindings))));
+          return apply($lazy_quote(1553)(purely(v2.value1)))(b(neutBindings));
+        }))(v1.value0), apply($lazy_quote(1554)(v2.value1))(v1.value1(neutBindings))));
       }
       ;
       if (v1 instanceof SemEffectBind) {
         var ctx$prime = effectfully(v);
         var v2 = nextLevel(ctx$prime);
-        return apply(build(v))(apply(EffectBind.create(v1.value0)(v2.value0)($lazy_quote(1548)(ctx$prime)(v1.value1)))(apply($lazy_quote(1548)(v2.value1))(apply(v1.value2)(new NeutLocal(v1.value0, v2.value0)))));
+        return apply(build(v))(apply(EffectBind.create(v1.value0)(v2.value0)($lazy_quote(1558)(ctx$prime)(v1.value1)))(apply($lazy_quote(1558)(v2.value1))(apply(v1.value2)(new NeutLocal(v1.value0, v2.value0)))));
       }
       ;
       if (v1 instanceof SemEffectPure) {
-        return apply(build(v))(new EffectPure($lazy_quote(1550)(purely(v))(v1.value0)));
+        return apply(build(v))(new EffectPure($lazy_quote(1560)(purely(v))(v1.value0)));
       }
       ;
       if (v1 instanceof SemEffectDefer) {
-        return apply(build(v))(new EffectDefer($lazy_quote(1552)(effectfully(v))(v1.value0)));
+        return apply(build(v))(new EffectDefer($lazy_quote(1562)(effectfully(v))(v1.value0)));
       }
       ;
       if (v1 instanceof SemBranch) {
         var ctx$prime = purely(v);
         var quoteCond = function(v22) {
-          return new Pair(apply($lazy_quote(1555)(ctx$prime))(force(v22.value0)), apply($lazy_quote(1555)(v))(force(v22.value1)));
+          return new Pair(apply($lazy_quote(1565)(ctx$prime))(force(v22.value0)), apply($lazy_quote(1565)(v))(force(v22.value1)));
         };
         var branches$prime = map(functorNonEmptyArray)(quoteCond)(v1.value0);
         return foldr(foldableNonEmptyArray)(buildBranchCond(v))(apply((function() {
-          var $2548 = $lazy_quote(1557)(v);
-          return function($2549) {
-            return $2548(force($2549));
+          var $2557 = $lazy_quote(1567)(v);
+          return function($2558) {
+            return $2557(force($2558));
           };
         })())(v1.value1))(branches$prime);
       }
@@ -22781,12 +22798,12 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
           return apply(go(v))(neutralSpine(new NeutLocal(v1.value0.value0, v1.value0.value1))(v1.value1));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1561, column 7 - line 1565, column 57): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1571, column 7 - line 1575, column 57): " + [v1.value0.constructor.name]);
       }
       ;
       if (v1 instanceof SemLam) {
         var v2 = nextLevel(v);
-        return apply(build(v))(apply(Abs.create(singleton10(new Tuple(v1.value0, v2.value0))))(apply($lazy_quote(1568)(purely(v2.value1)))(apply(v1.value1)(new NeutLocal(v1.value0, v2.value0)))));
+        return apply(build(v))(apply(Abs.create(singleton10(new Tuple(v1.value0, v2.value0))))(apply($lazy_quote(1578)(purely(v2.value1)))(apply(v1.value1)(new NeutLocal(v1.value0, v2.value0)))));
       }
       ;
       if (v1 instanceof SemMkFn) {
@@ -22808,10 +22825,10 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
                 ;
                 if (v22 instanceof MkFnApplied) {
                   $tco_done = true;
-                  return apply(build(ctx$prime2))(apply(UncurriedAbs.create(idents))($lazy_quote(1576)(purely(ctx$prime2))(v22.value0)));
+                  return apply(build(ctx$prime2))(apply(UncurriedAbs.create(idents))($lazy_quote(1586)(purely(ctx$prime2))(v22.value0)));
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1571, column 28 - line 1576, column 72): " + [v22.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1581, column 28 - line 1586, column 72): " + [v22.constructor.name]);
               }
               ;
               while (!$tco_done) {
@@ -22844,10 +22861,10 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
                 ;
                 if (v22 instanceof MkFnApplied) {
                   $tco_done1 = true;
-                  return apply(build(ctx$prime2))(apply(UncurriedEffectAbs.create(idents))($lazy_quote(1585)(purely(ctx$prime2))(v22.value0)));
+                  return apply(build(ctx$prime2))(apply(UncurriedEffectAbs.create(idents))($lazy_quote(1595)(purely(ctx$prime2))(v22.value0)));
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1580, column 28 - line 1585, column 78): " + [v22.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1590, column 28 - line 1595, column 78): " + [v22.constructor.name]);
               }
               ;
               while (!$tco_done1) {
@@ -22865,16 +22882,16 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
         return foldl1Array(function(a) {
           return function(b) {
             if (v1.value0 instanceof Left) {
-              return apply(build(v))(apply(App2.create(build(v)(new Var(v1.value0.value0))))(cons$prime(a)([$lazy_quote(1591)(v)(b)])));
+              return apply(build(v))(apply(App2.create(build(v)(new Var(v1.value0.value0))))(cons$prime(a)([$lazy_quote(1601)(v)(b)])));
             }
             ;
             if (v1.value0 instanceof Right) {
-              return apply(build(v))(new PrimOp(new Op2(v1.value0.value0, a, $lazy_quote(1593)(v)(b))));
+              return apply(build(v))(new PrimOp(new Op2(v1.value0.value0, a, $lazy_quote(1603)(v)(b))));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1589, column 19 - line 1593, column 62): " + [v1.value0.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1599, column 19 - line 1603, column 62): " + [v1.value0.constructor.name]);
           };
-        })($lazy_quote(1595)(v))(v1.value1);
+        })($lazy_quote(1605)(v))(v1.value1);
       }
       ;
       if (v1 instanceof NeutLocal) {
@@ -22890,7 +22907,7 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
       }
       ;
       if (v1 instanceof NeutData) {
-        return apply(build(v))(new CtorSaturated(v1.value0, v1.value1, v1.value2, v1.value3, map(functorArray)(map(functorTuple)($lazy_quote(1604)(v)))(v1.value4)));
+        return apply(build(v))(new CtorSaturated(v1.value0, v1.value1, v1.value2, v1.value3, map(functorArray)(map(functorTuple)($lazy_quote(1614)(v)))(v1.value4)));
       }
       ;
       if (v1 instanceof NeutCtorDef) {
@@ -22906,20 +22923,20 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
       ;
       if (v1 instanceof NeutUncurriedApp) {
         var ctx$prime = purely(v);
-        var hd$prime = $lazy_quote(1614)(ctx$prime)(v1.value0);
-        return apply(build(v))(new UncurriedApp(hd$prime, map(functorArray)($lazy_quote(1615)(ctx$prime))(v1.value1)));
+        var hd$prime = $lazy_quote(1624)(ctx$prime)(v1.value0);
+        return apply(build(v))(new UncurriedApp(hd$prime, map(functorArray)($lazy_quote(1625)(ctx$prime))(v1.value1)));
       }
       ;
       if (v1 instanceof NeutUncurriedEffectApp) {
         var ctx$prime = purely(v);
-        var hd$prime = $lazy_quote(1618)(ctx$prime)(v1.value0);
-        return apply(build(v))(new UncurriedEffectApp(hd$prime, map(functorArray)($lazy_quote(1619)(ctx$prime))(v1.value1)));
+        var hd$prime = $lazy_quote(1628)(ctx$prime)(v1.value0);
+        return apply(build(v))(new UncurriedEffectApp(hd$prime, map(functorArray)($lazy_quote(1629)(ctx$prime))(v1.value1)));
       }
       ;
       if (v1 instanceof NeutApp) {
         var ctx$prime = purely(v);
-        var hd$prime = $lazy_quote(1622)(ctx$prime)(v1.value0);
-        var v2 = fromArray2(map(functorArray)($lazy_quote(1623)(ctx$prime))(v1.value1));
+        var hd$prime = $lazy_quote(1632)(ctx$prime)(v1.value0);
+        var v2 = fromArray2(map(functorArray)($lazy_quote(1633)(ctx$prime))(v1.value1));
         if (v2 instanceof Nothing) {
           return hd$prime;
         }
@@ -22928,27 +22945,27 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
           return apply(build(v))(new App2(hd$prime, v2.value0));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1623, column 7 - line 1627, column 35): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1633, column 7 - line 1637, column 35): " + [v2.constructor.name]);
       }
       ;
       if (v1 instanceof NeutAccessor) {
-        return apply(build(v))(new Accessor($lazy_quote(1629)(v)(v1.value0), v1.value1));
+        return apply(build(v))(new Accessor($lazy_quote(1639)(v)(v1.value0), v1.value1));
       }
       ;
       if (v1 instanceof NeutUpdate) {
-        return apply(build(v))(new Update($lazy_quote(1631)(v)(v1.value0), map(functorArray)(map(functorProp)($lazy_quote(1631)(v)))(v1.value1)));
+        return apply(build(v))(new Update($lazy_quote(1641)(v)(v1.value0), map(functorArray)(map(functorProp)($lazy_quote(1641)(v)))(v1.value1)));
       }
       ;
       if (v1 instanceof NeutLit) {
-        return apply(build(v))(new Lit(map(functorLiteral)($lazy_quote(1633)(v))(v1.value0)));
+        return apply(build(v))(new Lit(map(functorLiteral)($lazy_quote(1643)(v))(v1.value0)));
       }
       ;
       if (v1 instanceof NeutPrimOp) {
-        return apply(build(v))(new PrimOp(map(functorBackendOperator)($lazy_quote(1635)(v))(v1.value0)));
+        return apply(build(v))(new PrimOp(map(functorBackendOperator)($lazy_quote(1645)(v))(v1.value0)));
       }
       ;
       if (v1 instanceof NeutPrimEffect) {
-        return apply(build(v))(new PrimEffect(map(functorBackendEffect)($lazy_quote(1637)(purely(v)))(v1.value0)));
+        return apply(build(v))(new PrimEffect(map(functorBackendEffect)($lazy_quote(1647)(purely(v)))(v1.value0)));
       }
       ;
       if (v1 instanceof NeutPrimUndefined) {
@@ -22959,12 +22976,12 @@ var $lazy_quote = /* @__PURE__ */ $runtime_lazy6("quote", "PureScript.Backend.Op
         return apply(build(v))(new Fail(v1.value0));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1526, column 36 - line 1641, column 27): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 1536, column 36 - line 1651, column 27): " + [v1.constructor.name]);
     };
   };
   return go;
 });
-var quote = /* @__PURE__ */ $lazy_quote(1523);
+var quote = /* @__PURE__ */ $lazy_quote(1533);
 var bindLocal = function(v) {
   return function(sem) {
     return {
@@ -22999,8 +23016,8 @@ var evalApp = function(env) {
             }
             ;
             if (v1 instanceof ConstrainedType) {
-              var $1940 = v < length(v1.value0);
-              if ($1940) {
+              var $1949 = v < length(v1.value0);
+              if ($1949) {
                 $tco_done = true;
                 return new Just(new ConstrainedType(drop(v)(v1.value0), v1.value1));
               }
@@ -23011,8 +23028,8 @@ var evalApp = function(env) {
             }
             ;
             if (v1 instanceof Func) {
-              var $1943 = v < length(v1.value0);
-              if ($1943) {
+              var $1952 = v < length(v1.value0);
+              if ($1952) {
                 $tco_done = true;
                 return new Just(new Func(drop(v)(v1.value0), v1.value1));
               }
@@ -23148,9 +23165,9 @@ var evalMkFn = function(env) {
       if (otherwise) {
         if (sem instanceof SemLam) {
           return new MkFnNext(sem.value0, (function() {
-            var $2550 = evalMkFn(env)(n - 1 | 0);
-            return function($2551) {
-              return $2550(sem.value1($2551));
+            var $2559 = evalMkFn(env)(n - 1 | 0);
+            return function($2560) {
+              return $2559(sem.value1($2560));
             };
           })());
         }
@@ -23161,7 +23178,7 @@ var evalMkFn = function(env) {
         });
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2223, column 1 - line 2223, column 68): " + [env.constructor.name, n.constructor.name, sem.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2233, column 1 - line 2233, column 68): " + [env.constructor.name, n.constructor.name, sem.constructor.name]);
     };
   };
 };
@@ -23276,7 +23293,7 @@ var mkUncurriedAppRewrite = function(env) {
           });
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2239, column 3 - line 2243, column 42): " + [acc.constructor.name, n.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2249, column 3 - line 2253, column 42): " + [acc.constructor.name, n.constructor.name]);
       };
     };
     return go([]);
@@ -23353,17 +23370,17 @@ var mkFnFromArgs = function(dictEval) {
           return function(next2) {
             return function(env$prime) {
               return new MkFnNext(v.value0, (function() {
-                var $2552 = bindLocal(env$prime);
-                return function($2553) {
-                  return next2($2552(One.create($2553)));
+                var $2561 = bindLocal(env$prime);
+                return function($2562) {
+                  return next2($2561(One.create($2562)));
                 };
               })());
             };
           };
         })((function() {
-          var $2554 = flip(eval1)(body);
-          return function($2555) {
-            return MkFnApplied.create($2554($2555));
+          var $2563 = flip(eval1)(body);
+          return function($2564) {
+            return MkFnApplied.create($2563($2564));
           };
         })())(args)(env));
       };
@@ -23409,9 +23426,9 @@ var evalBackendSyntax = function(dictEval) {
             return apply(unsafeCrashWith)("Unbound local at level " + show(showInt)(unwrap()(v1.value1)));
           };
           if (v2 instanceof Just && v2.value0 instanceof Group) {
-            var $2035 = bindFlipped(bindMaybe)(flip(lookup5)(v2.value0.value0))(v1.value0);
-            if ($2035 instanceof Just) {
-              return force($2035.value0);
+            var $2044 = bindFlipped(bindMaybe)(flip(lookup5)(v2.value0.value0))(v1.value0);
+            if ($2044 instanceof Just) {
+              return force($2044.value0);
             }
             ;
             return v3(true);
@@ -23479,9 +23496,9 @@ var evalBackendSyntax = function(dictEval) {
             return function(next2) {
               return function(env$prime) {
                 return new SemLam(v22.value0, (function() {
-                  var $2556 = bindLocal(env$prime);
-                  return function($2557) {
-                    return next2($2556(One.create($2557)));
+                  var $2565 = bindLocal(env$prime);
+                  return function($2566) {
+                    return next2($2565(One.create($2566)));
                   };
                 })());
               };
@@ -23489,10 +23506,10 @@ var evalBackendSyntax = function(dictEval) {
           })(function(v22) {
             return function(env$prime) {
               return new SemLam(v22.value0, (function() {
-                var $2558 = flip(eval1)(v1.value1);
-                var $2559 = bindLocal(env$prime);
-                return function($2560) {
-                  return $2558($2559(One.create($2560)));
+                var $2567 = flip(eval1)(v1.value1);
+                var $2568 = bindLocal(env$prime);
+                return function($2569) {
+                  return $2567($2568(One.create($2569)));
                 };
               })());
             };
@@ -23501,20 +23518,20 @@ var evalBackendSyntax = function(dictEval) {
         ;
         if (v1 instanceof Let) {
           return makeLet(v1.value0)($$eval(dictEval)(v)(v1.value2))((function() {
-            var $2561 = flip(eval1)(v1.value3);
-            var $2562 = bindLocal(v);
-            return function($2563) {
-              return $2561($2562(One.create($2563)));
+            var $2570 = flip(eval1)(v1.value3);
+            var $2571 = bindLocal(v);
+            return function($2572) {
+              return $2570($2571(One.create($2572)));
             };
           })());
         }
         ;
         if (v1 instanceof LetRec) {
           var bindGroup = function(sem) {
-            var $2564 = flip(eval1)(sem);
-            var $2565 = bindLocal(v);
-            return function($2566) {
-              return $2564($2565(Group.create($2566)));
+            var $2573 = flip(eval1)(sem);
+            var $2574 = bindLocal(v);
+            return function($2575) {
+              return $2573($2574(Group.create($2575)));
             };
           };
           return new SemLetRec(map(functorNonEmptyArray)(map(functorTuple)(bindGroup))(v1.value1), bindGroup(v1.value2));
@@ -23522,10 +23539,10 @@ var evalBackendSyntax = function(dictEval) {
         ;
         if (v1 instanceof EffectBind) {
           return makeEffectBind(v1.value0)($$eval(dictEval)(v)(v1.value2))((function() {
-            var $2567 = flip(eval1)(v1.value3);
-            var $2568 = bindLocal(v);
-            return function($2569) {
-              return $2567($2568(One.create($2569)));
+            var $2576 = flip(eval1)(v1.value3);
+            var $2577 = bindLocal(v);
+            return function($2578) {
+              return $2576($2577(One.create($2578)));
             };
           })());
         }
@@ -23629,10 +23646,10 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                       };
                     };
                   })((function() {
-                    var $2570 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                    var $2571 = bindLocal(env);
-                    return function($2572) {
-                      return $2570($2571(One.create(NeutLit.create(LitRecord.create($2572)))));
+                    var $2579 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                    var $2580 = bindLocal(env);
+                    return function($2581) {
+                      return $2579($2580(One.create(NeutLit.create(LitRecord.create($2581)))));
                     };
                   })())(v.value1.value2.value0)([]);
                 }
@@ -23649,11 +23666,11 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                         };
                       };
                     })((function() {
-                      var $2573 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                      var $2574 = bindLocal(env);
-                      var $2575 = NeutUpdate.create(hd$prime);
-                      return function($2576) {
-                        return $2573($2574(One.create($2575($2576))));
+                      var $2582 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                      var $2583 = bindLocal(env);
+                      var $2584 = NeutUpdate.create(hd$prime);
+                      return function($2585) {
+                        return $2582($2583(One.create($2584($2585))));
                       };
                     })())(v.value1.value2.value1)([]);
                   });
@@ -23670,10 +23687,10 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                       };
                     };
                   })((function() {
-                    var $2577 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                    var $2578 = bindLocal(env);
-                    return function($2579) {
-                      return $2577($2578(One.create(NeutLit.create(LitArray.create($2579)))));
+                    var $2586 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                    var $2587 = bindLocal(env);
+                    return function($2588) {
+                      return $2586($2587(One.create(NeutLit.create(LitArray.create($2588)))));
                     };
                   })())(v.value1.value2.value0)([]);
                 }
@@ -23689,11 +23706,11 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                       };
                     };
                   })((function() {
-                    var $2580 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
-                    var $2581 = bindLocal(env);
-                    var $2582 = NeutData.create(v.value1.value2.value0)(v.value1.value2.value1)(v.value1.value2.value2)(v.value1.value2.value3);
-                    return function($2583) {
-                      return $2580($2581(One.create($2582($2583))));
+                    var $2589 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value3);
+                    var $2590 = bindLocal(env);
+                    var $2591 = NeutData.create(v.value1.value2.value0)(v.value1.value2.value1)(v.value1.value2.value2)(v.value1.value2.value3);
+                    return function($2592) {
+                      return $2589($2590(One.create($2591($2592))));
                     };
                   })())(v.value1.value2.value4)([]);
                 }
@@ -23704,10 +23721,10 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
               if (v.value1 instanceof RewriteDistBranchesLet) {
                 $tco_done = true;
                 return apply(rewriteBranches((function() {
-                  var $2584 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value4);
-                  var $2585 = bindLocal(env);
-                  return function($2586) {
-                    return $2584($2585(One.create($2586)));
+                  var $2593 = flip($$eval($lazy_evalBackendExpr(0)))(v.value1.value4);
+                  var $2594 = bindLocal(env);
+                  return function($2595) {
+                    return $2593($2594(One.create($2595)));
                   };
                 })()))(evalBranches(env)(map(functorNonEmptyArray)(evalPair($lazy_evalBackendExpr(0))(env))(v.value1.value2))(defer2(function(v1) {
                   return $$eval($lazy_evalBackendExpr(0))(env)(v.value1.value3);
@@ -23729,26 +23746,26 @@ var $lazy_evalBackendExpr = /* @__PURE__ */ $runtime_lazy6("evalBackendExpr", "P
                   }
                   ;
                   if (v.value1.value2 instanceof DistPrimOp1) {
-                    var $2587 = evalPrimOp(env);
-                    var $2588 = Op1.create(v.value1.value2.value0);
-                    return function($2589) {
-                      return $2587($2588($2589));
+                    var $2596 = evalPrimOp(env);
+                    var $2597 = Op1.create(v.value1.value2.value0);
+                    return function($2598) {
+                      return $2596($2597($2598));
                     };
                   }
                   ;
                   if (v.value1.value2 instanceof DistPrimOp2L) {
-                    var $2590 = evalPrimOp(env);
-                    var $2591 = flip(Op2.create(v.value1.value2.value0))($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value1));
-                    return function($2592) {
-                      return $2590($2591($2592));
+                    var $2599 = evalPrimOp(env);
+                    var $2600 = flip(Op2.create(v.value1.value2.value0))($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value1));
+                    return function($2601) {
+                      return $2599($2600($2601));
                     };
                   }
                   ;
                   if (v.value1.value2 instanceof DistPrimOp2R) {
-                    var $2593 = evalPrimOp(env);
-                    var $2594 = Op2.create(v.value1.value2.value1)($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value0));
-                    return function($2595) {
-                      return $2593($2594($2595));
+                    var $2602 = evalPrimOp(env);
+                    var $2603 = Op2.create(v.value1.value2.value1)($$eval($lazy_evalBackendExpr(0))(env)(v.value1.value2.value0));
+                    return function($2604) {
+                      return $2602($2603($2604));
                     };
                   }
                   ;
@@ -23804,8 +23821,8 @@ var optimize = function(traceSteps) {
               return function(e) {
                 return function(expr) {
                   var v1 = analysisOf(hasAnalysisBackendExpr)(expr);
-                  var $2166 = v1.size <= 2e3;
-                  if ($2166) {
+                  var $2175 = v1.size <= 2e3;
+                  if ($2175) {
                     return quote(c)($$eval(evalBackendExpr)(e)(expr));
                   }
                   ;
@@ -23914,17 +23931,17 @@ var optimize = function(traceSteps) {
                     return quote(c)($$eval(evalBackendExpr)(e)(expr));
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2097, column 9 - line 2173, column 34): " + [expr.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2107, column 9 - line 2183, column 34): " + [expr.constructor.name]);
                 };
               };
             };
             var goStep = function(n) {
               return function(expr1) {
                 if (n === 0) {
-                  var name2 = foldMap(foldableMaybe)(monoidString)(function($2596) {
+                  var name2 = foldMap(foldableMaybe)(monoidString)(function($2605) {
                     return (function(v12) {
                       return v12 + ".";
-                    })(unwrap1($2596));
+                    })(unwrap1($2605));
                   })(v.value0) + v.value1;
                   return apply(unsafeCrashWith)(name2 + ": Possible infinite optimization loop.");
                 }
@@ -23936,11 +23953,11 @@ var optimize = function(traceSteps) {
                     return new Tuple(v3.rewrite, expr22);
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2059, column 1 - line 2059, column 116): " + [n.constructor.name, expr1.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Semantics (line 2069, column 1 - line 2069, column 116): " + [n.constructor.name, expr1.constructor.name]);
                 };
-                var $2234 = analysisOf(hasAnalysisBackendExpr)(expr1);
-                var $2235 = $2234.size > 2e3;
-                if ($2235) {
+                var $2243 = analysisOf(hasAnalysisBackendExpr)(expr1);
+                var $2244 = $2243.size > 2e3;
+                if ($2244) {
                   var expr2 = optimizeChunk(ctx)(env)(expr1);
                   return new Tuple(false, expr2);
                 }
@@ -24047,8 +24064,8 @@ var envForGroup = function(v) {
           ;
           return v;
         })();
-        var $2261 = $$null(group4);
-        if ($2261) {
+        var $2270 = $$null(group4);
+        if ($2270) {
           return scopedEnv;
         }
         ;
@@ -24086,8 +24103,8 @@ var evalExternFromImpl = function($copy_v) {
                 return Nothing.value;
               }
               ;
-              if (v2.value1 instanceof ExternExpr && any2(function($2597) {
-                return !isNotTypeApp($2597);
+              if (v2.value1 instanceof ExternExpr && any2(function($2606) {
+                return !isNotTypeApp($2606);
               })(v3)) {
                 return Nothing.value;
               }
@@ -24146,8 +24163,8 @@ var evalExternFromImpl = function($copy_v) {
                   return Nothing.value;
                 };
                 if (v2.value1 instanceof ExternDict) {
-                  var $2316 = findProp(v82[0].value0.value0)(v2.value1.value1);
-                  if ($2316 instanceof Just) {
+                  var $2325 = findProp(v82[0].value0.value0)(v2.value1.value1);
+                  if ($2325 instanceof Just) {
                     var ref = new EvalExtern(v1);
                     var v10 = bind(bindMaybe)(lookup2(ordEvalRef)(ref)(v.directives))(lookup2(ordInlineAccessor)(new InlineProp(v82[0].value0.value0)));
                     if (v10 instanceof Just && v10.value0 instanceof InlineNever) {
@@ -24155,15 +24172,15 @@ var evalExternFromImpl = function($copy_v) {
                     }
                     ;
                     if (v10 instanceof Just && v10.value0 instanceof InlineAlways) {
-                      return apply(Just.create)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2316.value0.value1));
+                      return apply(Just.create)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2325.value0.value1));
                     }
                     ;
                     if (v10 instanceof Just && v10.value0 instanceof InlineArity) {
                       return Nothing.value;
                     }
                     ;
-                    if (shouldInlineExternAccessor(v1)($2316.value0.value0)($2316.value0.value1)(v82[0].value0)) {
-                      return apply(Just.create)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2316.value0.value1));
+                    if (shouldInlineExternAccessor(v1)($2325.value0.value0)($2325.value0.value1)(v82[0].value0)) {
+                      return apply(Just.create)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2325.value0.value1));
                     }
                     ;
                     return Nothing.value;
@@ -24205,8 +24222,8 @@ var evalExternFromImpl = function($copy_v) {
                   return Nothing.value;
                 };
                 if (v2.value1 instanceof ExternDict) {
-                  var $2339 = findProp(v82[0].value0.value0)(v2.value1.value1);
-                  if ($2339 instanceof Just) {
+                  var $2348 = findProp(v82[0].value0.value0)(v2.value1.value1);
+                  if ($2348 instanceof Just) {
                     var ref = new EvalExtern(v1);
                     var v10 = bind(bindMaybe)(lookup2(ordEvalRef)(ref)(v.directives))(lookup2(ordInlineAccessor)(new InlineProp(v82[0].value0.value0)));
                     if (v10 instanceof Just && v10.value0 instanceof InlineNever) {
@@ -24214,12 +24231,12 @@ var evalExternFromImpl = function($copy_v) {
                     }
                     ;
                     if (v10 instanceof Just && v10.value0 instanceof InlineAlways) {
-                      return apply(Just.create)(evalApp(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2339.value0.value1))(v82[1].value0));
+                      return apply(Just.create)(evalApp(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2348.value0.value1))(v82[1].value0));
                     }
                     ;
                     if (v10 instanceof Just && v10.value0 instanceof InlineArity) {
                       if (length(v82[1].value0) >= v10.value0.value0) {
-                        return apply(Just.create)(evalApp(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2339.value0.value1))(v82[1].value0));
+                        return apply(Just.create)(evalApp(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2348.value0.value1))(v82[1].value0));
                       }
                       ;
                       if (otherwise) {
@@ -24228,8 +24245,8 @@ var evalExternFromImpl = function($copy_v) {
                       ;
                     }
                     ;
-                    if (shouldInlineExternApp(v1)($2339.value0.value0)($2339.value0.value1)(v82[1].value0)) {
-                      return apply(Just.create)(evalApp(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2339.value0.value1))(v82[1].value0));
+                    if (shouldInlineExternApp(v1)($2348.value0.value0)($2348.value0.value1)(v82[1].value0)) {
+                      return apply(Just.create)(evalApp(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp(v82[0].value0.value0))(v2.value1.value0))($2348.value0.value1))(v82[1].value0));
                     }
                     ;
                     return Nothing.value;
@@ -24363,8 +24380,8 @@ var evalExternFromImpl = function($copy_v) {
                   var v13 = function(v142) {
                     return Nothing.value;
                   };
-                  var $2439 = uncons(filter(isNotTypeApp)(v3));
-                  if ($2439 instanceof Just && $2439.value0.head instanceof ExternApp) {
+                  var $2448 = uncons(filter(isNotTypeApp)(v3));
+                  if ($2448 instanceof Just && $2448.value0.head instanceof ExternApp) {
                     if (v2.value1 instanceof ExternExpr) {
                       var ref3 = new EvalExtern(v1);
                       var v14 = bind(bindMaybe)(lookup2(ordEvalRef)(ref3)(v.directives))(lookup2(ordInlineAccessor)(InlineRef.value));
@@ -24380,15 +24397,15 @@ var evalExternFromImpl = function($copy_v) {
                   ;
                   return v13(true);
                 };
-                var $2450 = uncons(filter(isNotTypeApp)(v3));
-                if ($2450 instanceof Just && $2450.value0.head instanceof ExternApp) {
-                  var $2451 = uncons($2450.value0.tail);
-                  if ($2451 instanceof Just && ($2451.value0.head instanceof ExternAccessor && $2451.value0.head.value0 instanceof GetProp)) {
+                var $2459 = uncons(filter(isNotTypeApp)(v3));
+                if ($2459 instanceof Just && $2459.value0.head instanceof ExternApp) {
+                  var $2460 = uncons($2459.value0.tail);
+                  if ($2460 instanceof Just && ($2460.value0.head instanceof ExternAccessor && $2460.value0.head.value0 instanceof GetProp)) {
                     if (v2.value1 instanceof ExternExpr) {
                       var ref2 = new EvalExtern(v1);
-                      var v12 = bind(bindMaybe)(lookup2(ordEvalRef)(ref2)(v.directives))(lookup2(ordInlineAccessor)(new InlineSpineProp($2451.value0.head.value0.value0)));
+                      var v12 = bind(bindMaybe)(lookup2(ordEvalRef)(ref2)(v.directives))(lookup2(ordInlineAccessor)(new InlineSpineProp($2460.value0.head.value0.value0)));
                       if (v12 instanceof Just && v12.value0 instanceof InlineAlways) {
-                        return apply(Just.create)(evalSpine(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref2)(new InlineSpineProp($2451.value0.head.value0.value0))(v2.value1.value0))(v2.value1.value1))(v3));
+                        return apply(Just.create)(evalSpine(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref2)(new InlineSpineProp($2460.value0.head.value0.value0))(v2.value1.value0))(v2.value1.value1))(v3));
                       }
                       ;
                       return Nothing.value;
@@ -24402,13 +24419,13 @@ var evalExternFromImpl = function($copy_v) {
                 ;
                 return v112(true);
               };
-              var $2467 = uncons(filter(isNotTypeApp)(v3));
-              if ($2467 instanceof Just && ($2467.value0.head instanceof ExternAccessor && $2467.value0.head.value0 instanceof GetProp)) {
+              var $2476 = uncons(filter(isNotTypeApp)(v3));
+              if ($2476 instanceof Just && ($2476.value0.head instanceof ExternAccessor && $2476.value0.head.value0 instanceof GetProp)) {
                 if (v2.value1 instanceof ExternExpr) {
                   var ref = new EvalExtern(v1);
-                  var v10 = bind(bindMaybe)(lookup2(ordEvalRef)(ref)(v.directives))(lookup2(ordInlineAccessor)(new InlineProp($2467.value0.head.value0.value0)));
+                  var v10 = bind(bindMaybe)(lookup2(ordEvalRef)(ref)(v.directives))(lookup2(ordInlineAccessor)(new InlineProp($2476.value0.head.value0.value0)));
                   if (v10 instanceof Just && v10.value0 instanceof InlineAlways) {
-                    return apply(Just.create)(evalSpine(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp($2467.value0.head.value0.value0))(v2.value1.value0))(v2.value1.value1))(v3));
+                    return apply(Just.create)(evalSpine(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp($2476.value0.head.value0.value0))(v2.value1.value0))(v2.value1.value1))(v3));
                   }
                   ;
                   return Nothing.value;
@@ -24418,12 +24435,12 @@ var evalExternFromImpl = function($copy_v) {
                   return Nothing.value;
                 };
                 if (v2.value1 instanceof ExternDict) {
-                  var $2474 = findProp($2467.value0.head.value0.value0)(v2.value1.value1);
-                  if ($2474 instanceof Just) {
+                  var $2483 = findProp($2476.value0.head.value0.value0)(v2.value1.value1);
+                  if ($2483 instanceof Just) {
                     var ref = new EvalExtern(v1);
-                    var v11 = bind(bindMaybe)(lookup2(ordEvalRef)(ref)(v.directives))(lookup2(ordInlineAccessor)(new InlineProp($2467.value0.head.value0.value0)));
+                    var v11 = bind(bindMaybe)(lookup2(ordEvalRef)(ref)(v.directives))(lookup2(ordInlineAccessor)(new InlineProp($2476.value0.head.value0.value0)));
                     if (v11 instanceof Just && v11.value0 instanceof InlineAlways) {
-                      return apply(Just.create)(evalSpine(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp($2467.value0.head.value0.value0))(v2.value1.value0))($2474.value0.value1))($2467.value0.tail));
+                      return apply(Just.create)(evalSpine(v)($$eval(evalNeutralExpr)(envForGroup(v)(ref)(new InlineProp($2476.value0.head.value0.value0))(v2.value1.value0))($2483.value0.value1))($2476.value0.tail));
                     }
                     ;
                     return Nothing.value;
@@ -24438,14 +24455,14 @@ var evalExternFromImpl = function($copy_v) {
               return v9(true);
             };
             if (v2.value1 instanceof ExternExpr) {
-              var $2493 = uncons(v3);
-              if ($2493 instanceof Just && $2493.value0.head instanceof ExternTypeApp) {
-                var $2494 = v.instantiateNeutral($2493.value0.head.value0)(v2.value1.value1);
-                if ($2494 instanceof Just) {
+              var $2502 = uncons(v3);
+              if ($2502 instanceof Just && $2502.value0.head instanceof ExternTypeApp) {
+                var $2503 = v.instantiateNeutral($2502.value0.head.value0)(v2.value1.value1);
+                if ($2503 instanceof Just) {
                   $tco_var_v = v;
                   $tco_var_v1 = v1;
-                  $tco_var_v2 = new Tuple(v2.value0, new ExternExpr(v2.value1.value0, $2494.value0));
-                  $copy_v3 = $2493.value0.tail;
+                  $tco_var_v2 = new Tuple(v2.value0, new ExternExpr(v2.value1.value0, $2503.value0));
+                  $copy_v3 = $2502.value0.tail;
                   return;
                 }
                 ;
@@ -24461,10 +24478,10 @@ var evalExternFromImpl = function($copy_v) {
             return v6(true);
           };
           if (v2.value1 instanceof ExternExpr) {
-            var $2508 = uncons(v3);
-            if ($2508 instanceof Just && $2508.value0.head instanceof ExternTypeApp) {
-              var $2509 = bind(bindMaybe)(lookup2(ordEvalRef)(new EvalExtern(v1))(v.directives))(lookup2(ordInlineAccessor)(InlineRef.value));
-              if ($2509 instanceof Just && $2509.value0 instanceof InlineNever) {
+            var $2517 = uncons(v3);
+            if ($2517 instanceof Just && $2517.value0.head instanceof ExternTypeApp) {
+              var $2518 = bind(bindMaybe)(lookup2(ordEvalRef)(new EvalExtern(v1))(v.directives))(lookup2(ordInlineAccessor)(InlineRef.value));
+              if ($2518 instanceof Just && $2518.value0 instanceof InlineNever) {
                 $tco_done = true;
                 return apply(Just.create)(neutralSpine(new NeutStop(v1))(v3));
               }
