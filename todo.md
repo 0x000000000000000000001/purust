@@ -78,9 +78,10 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
 - [x] Vérifier les scénarios d’échec attendu avec leurs statuts et sorties ;
   vérifier qu’une assertion en échec ou un callback attendu absent fait échouer
   le runner concerné.
-- [ ] Clarifier le passage des arguments aux suites, notamment les intégrations
-  de `spec`, et garantir leur exécution dans la validation complète. À traiter
-  avec les intégrations de `spec` (§5).
+- [x] Clarifier le passage des arguments aux suites : `bin/test` exécute les
+  intégrations de `spec` par défaut (`--no-integration` pour les sauter,
+  `bin/integration` pour un parcours isolé) ; elles sont donc couvertes par la
+  batterie.
 
 ## 3. Fiabiliser les dépendances événementielles natives
 
@@ -257,11 +258,17 @@ spawn natif résout un chemin relatif contre le `cwd` de l’enfant.
 
 ### `spec`
 
-- [ ] Adapter les fixtures d’intégration au compilateur et au backend Rust en
-  conservant les cas et les sorties attendues pertinentes.
-- [ ] Inclure les intégrations dans le parcours complet exécuté par la batterie.
-- [ ] Conserver les specs unitaires et les trois cas pending hérités ; rendre
-  leur statut explicite dans le bilan.
+- [x] Adapter les fixtures d’intégration au compilateur et au backend Rust :
+  `bin/integration` construit un projet Spago isolé avec les paquets du port,
+  compile chaque cas, exécute le binaire natif et compare la sortie
+  (ANSI retiré) aux goldens amont — **8/8 cas identiques**, y compris les
+  échecs, le fail-fast, les timeouts et la sortie parallèle.
+- [x] Inclure les intégrations dans le parcours complet : `bin/test` les
+  exécute par défaut (`--no-integration` pour les sauter, `-c` reconstruit
+  l’environnement d’intégration), donc la batterie les couvre.
+- [x] Conserver les specs unitaires et les trois cas pending hérités : le
+  runner vérifie `62 passing`, l’absence d’échecs et **explicitement
+  `3 pending`**, et le résumé les mentionne.
 
 ### `spec-discovery`
 
