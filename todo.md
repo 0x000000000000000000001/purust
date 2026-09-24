@@ -92,10 +92,21 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
   sensibles aux callbacks absents, répétés ou exécutés trop tôt.
 - [x] Vérifier le contenu complet du pipeline gzip/gunzip et sa terminaison,
   avec une référence indépendante pour le format gzip (octets magiques).
-- [ ] Raccorder `Test.Main1` à `Test.Main4` avec des fixtures locales adaptées
-  aux fichiers, à stdin et à la durée de vie native. Il manque des FFI natives
-  pour `createReadStream`/`createWriteStream`, `argv` et `stdin`, ainsi que la
-  vérification des sémantiques destroyed/concurrent de `Main1`.
+- [x] Raccorder `Test.Main1` à `Test.Main4` avec des fixtures locales : `Main1`
+  (18 scénarios Aff, fichiers et sémantiques destroyed/concurrent de la
+  version amont) passe en utilisant les modules natifs (`Node.FS.Stream`,
+  `Node.Process`) ; `Main3` lit un vrai fichier de 1 Mio depuis `argv` ;
+  `Main4` utilise un PassThrough en attente (stdin n’est pas alimenté par le
+  harnais) ; `Main2` reste concurrent. Adaptations documentées : le test
+  « overflow » vérifie l’aller-retour complet (l’amont n’assertait rien) et
+  les attentes `readagain` après la fin sont celles du port, l’ordre des ticks
+  Node n’étant pas reproductible.
+- [x] Corriger les sémantiques natives de flux découvertes par `Main1` :
+  `readable`/`readableEnded` reflètent la fin consommée (le `end` est rapporté
+  par la lecture qui atteint EOF), `destroy` émet `close`, les lecteurs Aff se
+  resynchronisent après l’enregistrement des listeners (course réelle avec le
+  runtime multi-thread), et `readSome`/`readAll`/`readN` terminent sur un flux
+  détruit.
 - [x] Réparer les défauts hérités de ces tests, dont `expected == expected`
   dans `Main2`, en rétablissant une entrée et un résultat attendu cohérents
   (`Test.Main2` compte les lignes réelles et sort en 0/1).
@@ -106,10 +117,11 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
   (qui retire réellement les listeners, avec `unpipeAll`).
 - [ ] Couvrir les options de terminaison de `pipe'` (`end: false`) et le cas
   `unpipeAll` sans pipe préalable.
-- [x] Vérifier puis corriger les événements restants : l’`end` d’une source
-  tamponnée attend désormais la consommation du tampon (un lecteur flowing ou
-  une source statique le reçoit immédiatement) ; le rejeu des données
-  bufferisées vers un lecteur tardif est couvert par le test de pipe.
+- [x] Vérifier puis corriger les événements restants : un lecteur flowing
+  reçoit `end` dès que la source se termine, un lecteur en pause le reçoit de
+  la lecture qui atteint EOF (`readable` puis `end` au point de contrôle
+  suivant) ; le rejeu des données bufferisées vers un lecteur tardif est
+  couvert par le test de pipe.
 - [ ] Contrôler les sources alimentées après création par un producteur natif
   asynchrone (socket, sous-processus) au-delà des cas déjà couverts.
 - [x] Vérifier les chemins `read`/`read'` et `readEither`/`readEither'`, leurs
