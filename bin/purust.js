@@ -10139,6 +10139,116 @@ var moduleReadConcurrency = () => {
   return /^\d+$/.test(configured) && jobs >= 1 && jobs <= 64 ? jobs : 1;
 };
 
+// output/Node.FS.Async/foreign.js
+import {
+  access,
+  copyFile,
+  mkdtemp,
+  rename,
+  truncate,
+  chown,
+  chmod,
+  stat,
+  lstat,
+  link,
+  symlink,
+  readlink,
+  realpath,
+  unlink,
+  rmdir,
+  rm,
+  mkdir as mkdir2,
+  readdir,
+  utimes,
+  readFile,
+  writeFile,
+  appendFile,
+  open,
+  read as read4,
+  write as write3,
+  close
+} from "node:fs";
+
+// output/Node.FS.Async/index.js
+var show4 = /* @__PURE__ */ show(showEncoding);
+var handleCallback = function(cb) {
+  return function(err, a) {
+    var v = toMaybe(err);
+    if (v instanceof Nothing) {
+      return cb(new Right(a))();
+    }
+    ;
+    if (v instanceof Just) {
+      return cb(new Left(v.value0))();
+    }
+    ;
+    throw new Error("Failed pattern match at Node.FS.Async (line 66, column 43 - line 68, column 30): " + [v.constructor.name]);
+  };
+};
+var readTextFile2 = function(encoding) {
+  return function(file) {
+    return function(cb) {
+      return function() {
+        return readFile(file, {
+          encoding: show4(encoding)
+        }, handleCallback(cb));
+      };
+    };
+  };
+};
+var readdir2 = function(file) {
+  return function(cb) {
+    return function() {
+      return readdir(file, handleCallback(cb));
+    };
+  };
+};
+var stat2 = function(file) {
+  return function(cb) {
+    return function() {
+      return stat(file, handleCallback(cb));
+    };
+  };
+};
+
+// output/Node.FS.Aff/index.js
+var voidLeft2 = /* @__PURE__ */ voidLeft(functorEffect);
+var toAff = function(p) {
+  return makeAff(function(k) {
+    return voidLeft2(p(k))(nonCanceler);
+  });
+};
+var toAff1 = function(f) {
+  return function(a) {
+    return toAff(f(a));
+  };
+};
+var toAff2 = function(f) {
+  return function(a) {
+    return function(b) {
+      return toAff(f(a)(b));
+    };
+  };
+};
+var stat3 = /* @__PURE__ */ toAff1(stat2);
+var readdir3 = /* @__PURE__ */ toAff1(readdir2);
+var readTextFile3 = /* @__PURE__ */ toAff2(readTextFile2);
+
+// output/Node.FS.Stats/foreign.js
+var isDirectoryImpl = (s) => s.isDirectory();
+var isFileImpl = (s) => s.isFile();
+
+// output/Node.FS.Stats/index.js
+var isFile = function(s) {
+  return isFileImpl(s);
+};
+var isDirectory = function(s) {
+  return isDirectoryImpl(s);
+};
+
+// output/PureScript.Backend.Optimizer.CoreFn.Json.Text/foreign.js
+var parseModuleTextImpl = (fallback) => (validate) => (printError) => (text) => fallback(text);
+
 // output/Data.Argonaut.Core/foreign.js
 function stringify(j) {
   return JSON.stringify(j);
@@ -10179,7 +10289,7 @@ var caseJsonNull = function(d) {
     };
   };
 };
-var isNull = /* @__PURE__ */ isJsonType(caseJsonNull);
+var isNull2 = /* @__PURE__ */ isJsonType(caseJsonNull);
 var caseJsonArray = function(d) {
   return function(f) {
     return function(j) {
@@ -10315,113 +10425,6 @@ function _jsonParser(fail3, succ2, s) {
 // output/Data.Argonaut.Parser/index.js
 var jsonParser = function(j) {
   return _jsonParser(Left.create, Right.create, j);
-};
-
-// output/Node.FS.Async/foreign.js
-import {
-  access,
-  copyFile,
-  mkdtemp,
-  rename,
-  truncate,
-  chown,
-  chmod,
-  stat,
-  lstat,
-  link,
-  symlink,
-  readlink,
-  realpath,
-  unlink,
-  rmdir,
-  rm,
-  mkdir as mkdir2,
-  readdir,
-  utimes,
-  readFile,
-  writeFile,
-  appendFile,
-  open,
-  read as read4,
-  write as write3,
-  close
-} from "node:fs";
-
-// output/Node.FS.Async/index.js
-var show4 = /* @__PURE__ */ show(showEncoding);
-var handleCallback = function(cb) {
-  return function(err, a) {
-    var v = toMaybe(err);
-    if (v instanceof Nothing) {
-      return cb(new Right(a))();
-    }
-    ;
-    if (v instanceof Just) {
-      return cb(new Left(v.value0))();
-    }
-    ;
-    throw new Error("Failed pattern match at Node.FS.Async (line 66, column 43 - line 68, column 30): " + [v.constructor.name]);
-  };
-};
-var readTextFile2 = function(encoding) {
-  return function(file) {
-    return function(cb) {
-      return function() {
-        return readFile(file, {
-          encoding: show4(encoding)
-        }, handleCallback(cb));
-      };
-    };
-  };
-};
-var readdir2 = function(file) {
-  return function(cb) {
-    return function() {
-      return readdir(file, handleCallback(cb));
-    };
-  };
-};
-var stat2 = function(file) {
-  return function(cb) {
-    return function() {
-      return stat(file, handleCallback(cb));
-    };
-  };
-};
-
-// output/Node.FS.Aff/index.js
-var voidLeft2 = /* @__PURE__ */ voidLeft(functorEffect);
-var toAff = function(p) {
-  return makeAff(function(k) {
-    return voidLeft2(p(k))(nonCanceler);
-  });
-};
-var toAff1 = function(f) {
-  return function(a) {
-    return toAff(f(a));
-  };
-};
-var toAff2 = function(f) {
-  return function(a) {
-    return function(b) {
-      return toAff(f(a)(b));
-    };
-  };
-};
-var stat3 = /* @__PURE__ */ toAff1(stat2);
-var readdir3 = /* @__PURE__ */ toAff1(readdir2);
-var readTextFile3 = /* @__PURE__ */ toAff2(readTextFile2);
-
-// output/Node.FS.Stats/foreign.js
-var isDirectoryImpl = (s) => s.isDirectory();
-var isFileImpl = (s) => s.isFile();
-
-// output/Node.FS.Stats/index.js
-var isFile = function(s) {
-  return isFileImpl(s);
-};
-var isDirectory = function(s) {
-  return isDirectoryImpl(s);
 };
 
 // output/PureScript.Backend.Optimizer.CoreFn/index.js
@@ -12450,7 +12453,7 @@ var getFieldOptional$prime = function(decode) {
       }
       ;
       if (v instanceof Just) {
-        var $26 = isNull(v.value0);
+        var $26 = isNull2(v.value0);
         if ($26) {
           return new Right(Nothing.value);
         }
@@ -13846,7 +13849,7 @@ var getFieldOptional$prime2 = function(decode) {
       }
       ;
       if (v instanceof Just) {
-        if (isNull(v.value0)) {
+        if (isNull2(v.value0)) {
           return new Right(Nothing.value);
         }
         ;
@@ -14743,6 +14746,17 @@ var decodeModulePS = function(json) {
 var decodeModule = function(json) {
   return decodeModuleImpl(decodeModulePS)(validateSourceUsageModule)(json);
 };
+
+// output/PureScript.Backend.Optimizer.CoreFn.Json.Text/index.js
+var parseModulePS = function(input) {
+  return bind(bindEither)(jsonParser(input))((function() {
+    var $0 = lmap(bifunctorEither)(printJsonDecodeError);
+    return function($1) {
+      return $0(decodeModule($1));
+    };
+  })());
+};
+var parseModule = /* @__PURE__ */ parseModuleTextImpl(parseModulePS)(validateSourceUsageModule)(printJsonDecodeError);
 
 // output/Data.Lazy/foreign.js
 var defer2 = function(thunk) {
@@ -27528,12 +27542,7 @@ var readCoreFnModule = function(filePath) {
       var $6 = isFile(statRes.value0);
       if ($6) {
         return bind(bindAff)(readTextFile3(UTF8.value)(filePath))(function(contents) {
-          var v = bind(bindEither)(jsonParser(contents))((function() {
-            var $28 = lmap(bifunctorEither)(printJsonDecodeError);
-            return function($29) {
-              return $28(decodeModule($29));
-            };
-          })());
+          var v = parseModule(contents);
           if (v instanceof Left) {
             return discard(discardUnit)(bindAff)(apply(liftEffect2)(apply(error2)("Failed to decode " + (filePath + (": " + v.value0)))))(function() {
               return pure(applicativeAff)(Nothing.value);
@@ -27544,7 +27553,7 @@ var readCoreFnModule = function(filePath) {
             return pure(applicativeAff)(new Just(v.value0));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.App (line 50, column 9 - line 54, column 39): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.App (line 47, column 9 - line 51, column 39): " + [v.constructor.name]);
         });
       }
       ;
@@ -27565,7 +27574,7 @@ var readCoreFnModule = function(filePath) {
       });
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.App (line 46, column 3 - line 62, column 19): " + [statRes.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.App (line 43, column 3 - line 59, column 19): " + [statRes.constructor.name]);
   });
 };
 var loadDirectives = /* @__PURE__ */ (function() {
@@ -27601,7 +27610,7 @@ var coreFnModulesFromOutput = function(outputDir) {
           });
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.App (line 78, column 5 - line 84, column 38): " + [remaining.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.App (line 75, column 5 - line 81, column 38): " + [remaining.constructor.name]);
       };
       return bind(bindAff)((function() {
         var $20 = jobs === 1;
@@ -27609,8 +27618,8 @@ var coreFnModulesFromOutput = function(outputDir) {
           return traverse(traversableArray)(applicativeAff)(readDirectory)(files);
         }
         ;
-        return map(functorAff)(function($30) {
-          return concat(fromFoldable5($30));
+        return map(functorAff)(function($28) {
+          return concat(fromFoldable5($28));
         })(loadBatches(files));
       })())(function(mbModules) {
         var modulesArray = catMaybes(mbModules);

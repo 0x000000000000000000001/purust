@@ -292,9 +292,14 @@ modules compilés), et un motif invalide lève une exception comme en JavaScript
 
 - [x] Conserver la sélection des quatre modules de specs existants (le `Main`
   du port les importe explicitement).
-- [ ] Renforcer les helpers de round-trip pour comparer les valeurs décodées
-  aux valeurs d’origine, avec les contraintes de types appropriées.
-- [ ] Vérifier les scénarios null/undefined et les erreurs sur le backend natif.
+- [x] Renforcer les helpers de round-trip pour comparer les valeurs décodées
+  aux valeurs d’origine : `Test.Util.roundtrips` compare désormais la valeur
+  décodée à l’entrée (`Eq`/`Show`), ce qui durcit les 52 round-trips amont.
+- [x] Vérifier les scénarios null/undefined et les erreurs sur le backend
+  natif : `null` → `Nothing`/`Nullable.null`, `Nullable.null` s’écrit `null`,
+  un champ `Nothing` est omis comme avec `JSON.stringify` (`writeJSON Nothing`
+  n’a pas de valeur JSON, l’amont l’évite aussi) ; `undefined` et les entrées
+  invalides échouent avec les messages de type V8. 61/61 tests.
 
 ## 6. Restaurer la couverture HTTP/HTTPS
 
