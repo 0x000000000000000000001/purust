@@ -85,36 +85,49 @@ Chemins des paquets ci-dessous : relatifs à `htdocs/purust/`.
 
 ### `node-streams`
 
-- [ ] Corriger `testSetEncoding` : écrire dans les bons streams, installer les
+- [x] Corriger `testSetEncoding` : écrire dans les bons streams, installer les
   listeners au bon moment et attendre toutes les assertions attendues.
-- [ ] Rendre les tests d’écriture, de fin, de lecture et du pipeline gzip
+- [x] Rendre les tests d’écriture, de fin, de lecture et du pipeline gzip
   sensibles aux callbacks absents, répétés ou exécutés trop tôt.
-- [ ] Vérifier le contenu complet du pipeline gzip/gunzip et sa terminaison,
-  avec une référence indépendante pour le format gzip.
+- [x] Vérifier le contenu complet du pipeline gzip/gunzip et sa terminaison,
+  avec une référence indépendante pour le format gzip (octets magiques).
 - [ ] Raccorder `Test.Main1` à `Test.Main4` avec des fixtures locales adaptées
-  aux fichiers, à stdin et à la durée de vie native.
-- [ ] Réparer les défauts hérités de ces tests, dont `expected == expected`
-  dans `Main2`, en rétablissant une entrée et un résultat attendu cohérents.
-- [ ] Couvrir les lectures partielles, EOF, plusieurs chunks, les encodages,
-  la contre-pression, `unpipe` et les options de terminaison des pipes.
-- [ ] Vérifier puis corriger le rejeu des buffers et événements : chaque octet
-  est consommé comme prévu, `end` n’est ni prématuré ni dupliqué, les sources
-  initialement vides peuvent recevoir des données ultérieurement.
-- [ ] Vérifier les chemins `read`/`read'` et `readEither`/`readEither'`, leurs
+  aux fichiers, à stdin et à la durée de vie native. Il manque des FFI natives
+  pour `createReadStream`/`createWriteStream`, `argv` et `stdin`, ainsi que la
+  vérification des sémantiques destroyed/concurrent de `Main1`.
+- [x] Réparer les défauts hérités de ces tests, dont `expected == expected`
+  dans `Main2`, en rétablissant une entrée et un résultat attendu cohérents
+  (`Test.Main2` compte les lignes réelles et sort en 0/1).
+- [x] Couvrir les lectures partielles, EOF, plusieurs chunks et les encodages
+  dans la suite par défaut.
+- [ ] Couvrir la contre-pression et `unpipe` (aujourd’hui un no-op) ainsi que
+  les options de terminaison des pipes.
+- [ ] Vérifier puis corriger les événements restants : l’`end` d’une source
+  tamponnée est encore émis tôt (les lecteurs Aff compensent en drainant) ; le
+  rejeu flowing et les sources qui reçoivent des données après création
+  restent à contrôler.
+- [x] Vérifier les chemins `read`/`read'` et `readEither`/`readEither'`, leurs
   représentations `Nullable`/`Chunk` et leurs erreurs sur encodage incompatible.
-- [ ] Compléter les exports JavaScript correspondant aux nouvelles FFI pour
+- [x] Compléter les exports JavaScript correspondant aux nouvelles FFI pour
   permettre la comparaison du même contrat sur les deux backends.
 
 ### `node-event-emitter`
 
-- [ ] Établir et préserver le contrat de l’API amont `unsafeEmitFn`. Résoudre le
+L’API amont polymorphe `unsafeEmitFn` est scindée par arité
+(`unsafeEmitFn1..4`, jusqu’à nom + 3 arguments comme l’exemple amont) et ce
+contrat est documenté et testé pour chaque arité (arguments transmis et valeur
+de retour). Divergence connue : émettre moins d’arguments qu’un listener typé
+n’en attend passe `Unit` au lieu d’`undefined`, donc l’appel est refusé au lieu
+d’être toléré.
+
+- [x] Établir et préserver le contrat de l’API amont `unsafeEmitFn`. Résoudre le
   problème d’arité dans l’adaptation native sans considérer les seuls tests
   réécrits contre `unsafeEmitFn1/2/3` comme preuve de compatibilité générale.
-- [ ] Mettre en cohérence déclarations PureScript, FFI Rust, FFI JS et exemples.
-- [ ] Vérifier plusieurs listeners par événement : ordre normal et prepend,
+- [x] Mettre en cohérence déclarations PureScript, FFI Rust, FFI JS et exemples.
+- [x] Vérifier plusieurs listeners par événement : ordre normal et prepend,
   exécution unique de `once`, désabonnement, réentrance et notifications prévues
   par le contrat amont.
-- [ ] Reproduire puis corriger l’insertion suspecte de `prependListener` lorsque
+- [x] Reproduire puis corriger l’insertion suspecte de `prependListener` lorsque
   tous les listeners existants concernent le même événement.
 
 ### `node-process` et sortie des runners
@@ -195,15 +208,20 @@ couverte sans affaiblir l’identité.
 
 ### `spec-node`
 
-- [ ] Restaurer la persistance réelle et la lecture de `.spec-results`, les
+La capture expose succès/échec et le marqueur `ERR_CHILD_PROCESS` pour les
+processus tués par signal ; les codes de sortie exacts ne sont pas exposés par
+l’API du port. Les binaires de fixture sont passés en chemins absolus car le
+spawn natif résout un chemin relatif contre le `cwd` de l’enfant.
+
+- [x] Restaurer la persistance réelle et la lecture de `.spec-results`, les
   codecs nécessaires et la compatibilité du format amont.
-- [ ] Vérifier la conservation/fusion des résultats et le comportement en
+- [x] Vérifier la conservation/fusion des résultats et le comportement en
   absence de fichier ou en présence de données invalides.
-- [ ] Adapter les fixtures pour compiler puis lancer les binaires natifs en
+- [x] Adapter les fixtures pour compiler puis lancer les binaires natifs en
   sous-processus avec capture fiable de stdout, stderr et du statut de sortie.
-- [ ] Raccorder tous les scénarios CLI existants : filtres, fail-fast, timeout,
+- [x] Raccorder tous les scénarios CLI existants : filtres, fail-fast, timeout,
   only-failures, next-failure, combinaisons et générateurs non-Identity.
-- [ ] Ajouter `bin/test`, son mode `-c` et l’entrée dans la batterie globale.
+- [x] Ajouter `bin/test`, son mode `-c` et l’entrée dans la batterie globale.
 
 ### `spec`
 
