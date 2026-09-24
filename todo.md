@@ -330,18 +330,72 @@ connexion cliente.
 
 ## 7. Validation finale et critères de clôture
 
-- [ ] Reprendre l’inventaire de couverture et résoudre chaque scénario perdu
-  ou exclusion injustifiée identifié par l’audit.
-- [ ] Exécuter les tests du compilateur/PBO/Haskell appropriés aux modifications
-  effectivement réalisées et les contrats FFI concernés.
-- [ ] Exécuter la batterie complète en mode normal, puis avec `-c`, sur l’état
-  final et en contrôlant les statuts réels.
-- [ ] Conserver des logs distincts par campagne et paquet avec commandes,
-  révisions, modes, nombre de scénarios et échecs/pending éventuels.
-- [ ] Vérifier le périmètre initial de 37 paquets, tous les runners ajoutés et
-  `spec-node` ; expliquer les validations exclusivement typées séparément.
-- [ ] Relire les diffs de tests : chaque suppression ou adaptation doit avoir
+- [x] Reprendre l’inventaire de couverture et résoudre chaque scénario perdu
+  ou exclusion injustifiée identifié par l’audit : voir le rapport ci-dessous
+  (baseline 37 + 17 runners, adaptations justifiées, aucun scénario retiré).
+- [x] Exécuter les tests du compilateur/PBO/Haskell appropriés aux modifications
+  effectivement réalisées et les contrats FFI concernés : `stack test` du fork
+  → **1365 exemples, 0 échec** ; le backend purust est couvert par les 54
+  runners (TAST + Rust). PBO n’a pas été modifié.
+- [x] Exécuter la batterie complète en mode normal, puis avec `-c`, sur l’état
+  final et en contrôlant les statuts réels : normale **54/54** (36 directs +
+  18 repris hors-ligne), `-c` **54/54**, statuts réels contrôlés par `batch.sh`.
+- [x] Conserver des logs distincts par campagne et paquet avec commandes,
+  révisions, modes, nombre de scénarios et échecs/pending éventuels :
+  `purust/logs/<horodatage>-<mode>/{campaign.log,<paquet>.log}` (campagne,
+  commande, compilateur, version, SHA du bundle ; verdicts par paquet).
+- [x] Vérifier le périmètre initial de 37 paquets, tous les runners ajoutés et
+  `spec-node` ; expliquer les validations exclusivement typées séparément :
+  les 37 premiers paquets de `batch.sh` sont la baseline, +17 runners ajoutés
+  ou restaurés = 54, aucune exclusion.
+- [x] Relire les diffs de tests : chaque suppression ou adaptation doit avoir
   une justification et un équivalent vérifié, chaque fonctionnalité annoncée
-  doit disposer d’un test effectivement exécuté.
-- [ ] Mettre à jour les bilans de couverture et les affirmations de complétude
-  selon ces preuves. Les tâches encore bloquées restent ouvertes.
+  doit disposer d’un test effectivement exécuté : voir le rapport ci-dessous.
+- [x] Mettre à jour les bilans de couverture et les affirmations de complétude
+  selon ces preuves. Les tâches encore bloquées restent ouvertes : voir §8.
+
+## 8. Rapport de validation (25/09/2026)
+
+### Campagnes
+
+- **Normale** : `logs/20260924-201320-normal` → 36/54 OK puis coupure réseau
+  (`index.crates.io`) sur 18 paquets ; reprise hors-ligne
+  (`logs/20260924-233648-normal`, `logs/20260925-000856-normal`) → **18/18 OK,
+  0 échec**. `batch.sh` exporte désormais `CARGO_NET_OFFLINE=true` (cache du
+  registre complet, `native-tls` compris) : la batterie ne dépend plus du
+  réseau. `aff` avait échoué pendant l’incident ; 3 passes de contrôle
+  ultérieures : OK.
+- **`-c`** : `logs/20260925-001456-clean` → **54/54 OK, 0 échec**. Le
+  compilateur a été reconstruit depuis les sources courantes (commit
+  `3c8fcfd`, binaire `purs` du fork) et chaque paquet repart de `.spago` et
+  de son cargo à zéro.
+- **Haskell** : `stack test` dans `htdocs/purescript` → **1365 exemples,
+  0 échec** (érasure des newtypes, TAST, compilateur).
+
+### Périmètre final
+
+- Baseline initiale : **37 paquets** (les 37 premiers de `batch.sh`).
+- Runners ajoutés/restaurés (17) : `node-process`, `spec`, `node-http`,
+  `yoga-json`, `spec-discovery`, `js-bigints`, `exists`, `now`,
+  `strings-extra`, `uuid`, `lazy`, `random`, `foreign`, `js-promise`,
+  `node-streams`, `node-event-emitter`, `spec-node` → **54**.
+- Aucune exclusion : un runner ou un paquet manquant est un FAIL.
+
+### Adaptations de tests justifiées
+
+- `node-streams` : « overflow PassThrough » vérifie l’aller-retour complet
+  (l’amont n’assertait rien) ; les attentes `readagain` dépendantes des ticks
+  Node sont remplacées par le contrat terminal (aucune donnée rejouée, fin
+  observée) ; `Main1`–`Main4` utilisent les modules natifs
+  (`Node.FS.Stream`, `Node.Process`, PassThrough) ; nouvelles assertions sur
+  la contre-pression, `unpipe`, destroyed et la fin différée.
+- `node-event-emitter` : `unsafeEmitFn` scindé par arité (1..4), documenté et
+  testé par arité ; ordre/prepend/once/désabonnement/réentrance/notifications.
+- `yoga-json` : helpers de round-trip renforcés (comparaison des valeurs) et
+  scénarios null/undefined + erreurs de parsing vérifiés.
+- `spec` : 3 pending hérités explicitement exigés ; 8/8 cas d’intégration
+  natifs identiques aux goldens amont.
+- `spec-node` : capture succès/échec et marqueur `ERR_CHILD_PROCESS` ; chemins
+  absolus pour les fixtures.
+- `st`, `foreign`, `js-bigints`, `js-promise`, `random` : ajouts natifs à
+  contrat égal (voir §4), aucun scénario retiré.
