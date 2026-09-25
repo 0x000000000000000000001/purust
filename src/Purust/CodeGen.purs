@@ -769,22 +769,38 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
       
       Func expArgs expRet, _ ->
         let arity = Array.length expArgs
+            -- When the boxed function already has the expected Value-level
+            -- signature, unwrap it directly. The general path below would
+            -- allocate an Rc closure whose body only forwards its arguments.
+            alreadyBoxed = arity > 0
+              && Array.all (\expTy -> codegenExprTypeWithValueEnums valueEnums currentMod false expTy == "crate::UnknownType") expArgs
+              && codegenExprTypeWithValueEnums valueEnums currentMod true expRet == "crate::UnknownType"
         in if (actStr == "crate::UnknownType" || actStr == "purust_core::Value") && arity > 0 && arity <= maxNativeFunctionArity then
-             let
-               expArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) expArgs
-               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
-               argsCall = String.joinWith ", " (Array.mapWithIndex (\i expTy -> boxUnbox renames valueEnums globalClassFields currentMod Any expTy ("_a" <> show i)) expArgs)
-               retStr = codegenExprTypeWithValueEnums valueEnums currentMod true expRet
-             in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").unwrap_func" <> show arity <> "(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox renames valueEnums globalClassFields currentMod expRet Any ("_f(" <> argsCall <> ")") <> " } }))"
+             if alreadyBoxed then "(" <> code <> ").unwrap_func" <> show arity <> "()"
+             else
+               let
+                 expArgTypes = map (codegenExprTypeWithValueEnums valueEnums currentMod false) expArgs
+                 argsDecl = String.joinWith ", " (Array.mapWithIndex (\i ty -> "mut _a" <> show i <> ": " <> ty) expArgTypes)
+                 argsCall = String.joinWith ", " (Array.mapWithIndex (\i expTy -> boxUnbox renames valueEnums globalClassFields currentMod Any expTy ("_a" <> show i)) expArgs)
+                 retStr = codegenExprTypeWithValueEnums valueEnums currentMod true expRet
+               in "purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").unwrap_func" <> show arity <> "(); move |" <> argsDecl <> "| -> " <> retStr <> " { " <> boxUnbox renames valueEnums globalClassFields currentMod expRet Any ("_f(" <> argsCall <> ")") <> " } }))"
            else code
 
       _, Func actArgs actRet ->
         let arity = Array.length actArgs
+            -- A function already typed at Value level keeps its Static/Shared
+            -- variant instead of gaining an Rc forwarding closure, so the
+            -- callee can still dispatch statically after unwrap_funcN.
+            alreadyBoxed = arity > 0
+              && Array.all (\actTy -> codegenExprTypeWithValueEnums valueEnums currentMod false actTy == "crate::UnknownType") actArgs
+              && codegenExprTypeWithValueEnums valueEnums currentMod true actRet == "crate::UnknownType"
         in if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && arity > 0 && arity <= maxNativeFunctionArity then
-             let
-               argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut _a" <> show i <> ": crate::UnknownType") actArgs)
-               argsCall = String.joinWith ", " (Array.mapWithIndex (\i actTy -> boxUnbox renames valueEnums globalClassFields currentMod actTy Any ("_a" <> show i)) actArgs)
-             in "purust_core::Value::Func" <> show arity <> "(purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> crate::UnknownType { " <> boxUnbox renames valueEnums globalClassFields currentMod Any actRet ("_f(" <> argsCall <> ")") <> " } })))"
+             if alreadyBoxed then "purust_core::Value::Func" <> show arity <> "(" <> code <> ")"
+             else
+               let
+                 argsDecl = String.joinWith ", " (Array.mapWithIndex (\i _ -> "mut _a" <> show i <> ": crate::UnknownType") actArgs)
+                 argsCall = String.joinWith ", " (Array.mapWithIndex (\i actTy -> boxUnbox renames valueEnums globalClassFields currentMod actTy Any ("_a" <> show i)) actArgs)
+               in "purust_core::Value::Func" <> show arity <> "(purust_core::Func" <> show arity <> "::Shared(std::rc::Rc::new({ let _f = (" <> code <> ").clone(); move |" <> argsDecl <> "| -> crate::UnknownType { " <> boxUnbox renames valueEnums globalClassFields currentMod Any actRet ("_f(" <> argsCall <> ")") <> " } })))"
            else code
 
       _, _ ->
