@@ -366,7 +366,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     let workspaceMembers = "\"perceus_ptr\", \"purust_core\", " <> String.joinWith ", " (map (\(Tuple k _) -> "\"Purs_" <> k <> "\"") (Map.toUnfoldable allModules :: Array (Tuple String GeneratedModule)))
     let runsAff = threaded && Map.member "Effect_Aff" allModules
     let affDependency = if runsAff then "Purs_Effect_Aff = { path = \"Purs_Effect_Aff\" }\n" else ""
-    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n" <> registrationDeps <> runtimeDependency threaded "perceus_ptr"
+    let rootCargoToml = "[workspace]\nmembers = [\n  " <> workspaceMembers <> "\n]\n\n[package]\nname = \"purust_output\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[profile.release]\ndebug = true\nopt-level = 1\nlto = \"thin\"\n\n[dependencies]\nmimalloc = \"0.1.32\"\nPurs_" <> mainModuleSanitized <> " = { path = \"Purs_" <> mainModuleSanitized <> "\" }\npurust_core = { path = \"purust_core\" }\n" <> registrationDeps <> runtimeDependency threaded "perceus_ptr"
     FS.writeTextFile UTF8 (outDir <> "/Cargo.toml") (configureThreading threaded (rootCargoToml <> affDependency))
     
     -- `main :: Unit -> Unit` (an `Effect Unit` is opaque, but the tests of

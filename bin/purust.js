@@ -46627,7 +46627,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                     ;
                     return "";
                   })();
-                  var rootCargoToml = "[workspace]\nmembers = [\n  " + (workspaceMembers + ('\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + (mainModuleSanitized + (' = { path = "Purs_' + (mainModuleSanitized + ('" }\npurust_core = { path = "purust_core" }\n' + (registrationDeps + runtimeDependency(threaded)("perceus_ptr"))))))));
+                  var rootCargoToml = "[workspace]\nmembers = [\n  " + (workspaceMembers + ('\n]\n\n[package]\nname = "purust_output"\nversion = "0.1.0"\nedition = "2021"\n\n[profile.release]\ndebug = true\nopt-level = 1\nlto = "thin"\n\n[dependencies]\nmimalloc = "0.1.32"\nPurs_' + (mainModuleSanitized + (' = { path = "Purs_' + (mainModuleSanitized + ('" }\npurust_core = { path = "purust_core" }\n' + (registrationDeps + runtimeDependency(threaded)("perceus_ptr"))))))));
                   writeTextFile(UTF8.value)(outDir + "/Cargo.toml")(configureThreading(threaded)(rootCargoToml + affDependency))();
                   var nativeMain = (function() {
                     var v2 = lookup2(ordString)(mainModuleSanitized + "_main")(prepared.globalArities);
