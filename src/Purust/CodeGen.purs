@@ -2762,32 +2762,94 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
 
 printAST :: NeutralExpr -> String
-printAST (NeutralExpr expr) = case expr of
-  Syn.TypeApp a _ -> "TypeApp(" <> printAST a <> ")"
-  App fn _ -> "App(" <> printAST fn <> ")"
-  Lit _ -> "Lit"
-  Var _ -> "Var(...)"
-  Let _ _ _ _ -> "Let(...)"
-  Local _ _ -> "Local(...)"
-  Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
-  Typed _ inner -> "Typed(" <> printAST inner <> ")"
-  EffectBind _ _ _ _ -> "EffectBind"
-  EffectPure _ -> "EffectPure"
-  Update _ _ -> "Update"
-  Accessor inner prop -> "Accessor(" <> printAST inner <> ")"
-  UncurriedEffectApp fn _ -> "UncurriedEffectApp(" <> printAST fn <> ")"
-  LetRec _ _ inner -> "LetRec(..., " <> printAST inner <> ")"
-  Branch _ _ -> "Branch(...)"
+printAST = auditExpr
+
+auditExpr :: NeutralExpr -> String
+auditExpr (NeutralExpr expr) = case expr of
+  Syn.TypeApp a t -> "TypeApp(" <> auditExpr a <> ", " <> auditType t <> ")"
+  App fn args -> "App(" <> auditExpr fn <> ", [" <> String.joinWith ", " (map auditExpr (NonEmptyArray.toArray args)) <> "])"
+  Lit lit -> "Lit(" <> auditLit lit <> ")"
+  Var q -> "Var(" <> auditQualified q <> ")"
+  Let mbId lvl val body -> "Let(" <> auditMb mbId <> "#" <> show (unwrap lvl) <> ", " <> auditExpr val <> ", " <> auditExpr body <> ")"
+  Local mbId lvl -> "Local(" <> auditMb mbId <> "#" <> show (unwrap lvl) <> ")"
+  Abs params inner -> "Abs([" <> String.joinWith ", " (map auditParam (NonEmptyArray.toArray params)) <> "], " <> auditExpr inner <> ")"
+  Typed ty inner -> "Typed(" <> auditType ty <> " <- " <> auditExpr inner <> ")"
+  EffectBind mbId lvl val body -> "EffectBind(" <> auditMb mbId <> "#" <> show (unwrap lvl) <> ", " <> auditExpr val <> ", " <> auditExpr body <> ")"
+  EffectPure val -> "EffectPure(" <> auditExpr val <> ")"
+  Update base props -> "Update(" <> auditExpr base <> ", [" <> String.joinWith ", " (map (\(Prop k v) -> k <> "=" <> auditExpr v) props) <> "])"
+  Accessor inner prop -> "Accessor(" <> auditExpr inner <> ", " <> auditAccessor prop <> ")"
+  UncurriedEffectApp fn args -> "UncurriedEffectApp(" <> auditExpr fn <> ", [" <> String.joinWith ", " (map auditExpr args) <> "])"
+  LetRec _ _ inner -> "LetRec([...], " <> auditExpr inner <> ")"
+  Branch branches _ -> "Branch(" <> show (NonEmptyArray.length branches) <> " arms, ...)"
   PrimOp _ -> "PrimOp(...)"
-  UncurriedApp fn _ -> "UncurriedApp(" <> printAST fn <> ")"
+  UncurriedApp fn args -> "UncurriedApp(" <> auditExpr fn <> ", [" <> String.joinWith ", " (map auditExpr args) <> "])"
   CtorSaturated _ _ _ _ _ -> "CtorSaturated(...)"
-  UncurriedAbs _ inner -> "UncurriedAbs(..., " <> printAST inner <> ")"
-  UncurriedEffectAbs _ inner -> "UncurriedEffectAbs(..., " <> printAST inner <> ")"
+  UncurriedAbs params inner -> "UncurriedAbs([" <> String.joinWith ", " (map auditParam params) <> "], " <> auditExpr inner <> ")"
+  UncurriedEffectAbs params inner -> "UncurriedEffectAbs([" <> String.joinWith ", " (map auditParam params) <> "], " <> auditExpr inner <> ")"
   CtorDef _ _ _ _ -> "CtorDef"
-  EffectDefer inner -> "EffectDefer(" <> printAST inner <> ")"
+  EffectDefer inner -> "EffectDefer(" <> auditExpr inner <> ")"
   PrimEffect _ -> "PrimEffect(...)"
   PrimUndefined -> "PrimUndefined"
   Fail msg -> "Fail(" <> msg <> ")"
+
+auditParam :: Tuple (Maybe Ident) Level -> String
+auditParam (Tuple mbId lvl) = auditMb mbId <> "#" <> show (unwrap lvl)
+
+auditMb :: Maybe Ident -> String
+auditMb = case _ of
+  Just (Ident i) -> i
+  Nothing -> "_"
+
+auditQualified :: Qualified Ident -> String
+auditQualified (Qualified mbMod (Ident i)) = case mbMod of
+  Just (ModuleName mn) -> mn <> "." <> i
+  Nothing -> i
+
+auditAccessor :: BackendAccessor -> String
+auditAccessor = case _ of
+  GetProp k -> "GetProp " <> k
+  GetIndex i -> "GetIndex " <> show i
+  GetCtorField q idx _ _ _ f -> "GetCtorField " <> show f <> "(" <> auditQualifiedQ q <> ", " <> show idx <> ")"
+
+auditQualifiedQ :: Qualified ProperName -> String
+auditQualifiedQ (Qualified mbMod (ProperName p)) = case mbMod of
+  Just (ModuleName mn) -> mn <> "." <> p
+  Nothing -> p
+
+auditLit :: Literal NeutralExpr -> String
+auditLit = case _ of
+  LitInt n -> "Int " <> show n
+  LitNumber n -> "Number " <> show n
+  LitString s -> "String " <> show s
+  LitChar c -> "Char " <> show c
+  LitBoolean b -> "Boolean " <> show b
+  LitArray items -> "[" <> String.joinWith ", " (map auditExpr items) <> "]"
+  LitRecord props -> "{" <> String.joinWith ", " (map (\(Prop k v) -> k <> "=" <> auditExpr v) props) <> "}"
+
+auditType :: ExprType -> String
+auditType = case _ of
+  Int -> "Int"
+  Number -> "Number"
+  String -> "String"
+  Char -> "Char"
+  Boolean -> "Boolean"
+  Unit -> "Unit"
+  Any -> "Any"
+  TypeLevelString s -> "Symbol " <> s
+  Array ty -> "Array " <> auditType ty
+  TypeVar name -> name
+  ADT _ fqn args -> String.joinWith "." fqn <> auditArgs args
+  TypeApp base args -> auditType base <> auditArgs args
+  Func args ret -> "(" <> String.joinWith " -> " (map auditType args) <> " -> " <> auditType ret <> ")"
+  Row fields tail -> "{" <> String.joinWith ", " (map (\(Tuple k v) -> k <> " :: " <> auditType v) fields) <> "| " <> (case tail of
+    Just t -> auditType t
+    Nothing -> "") <> "}"
+  Record row -> "Record " <> auditType row
+  ForAll vars ty -> "forall " <> String.joinWith " " vars <> ". " <> auditType ty
+  ConstrainedType cs ty -> "(" <> String.joinWith ", " (map (\(Tuple fqn args) -> String.joinWith "." fqn <> auditArgs args) cs) <> ") => " <> auditType ty
+
+auditArgs :: Array ExprType -> String
+auditArgs args = if Array.null args then "" else " " <> String.joinWith " " (map (\t -> "(" <> auditType t <> ")") args)
 
 freeVariables :: NeutralExpr -> Set String
 freeVariables (NeutralExpr expr) = case expr of
