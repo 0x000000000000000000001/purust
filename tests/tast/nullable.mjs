@@ -113,13 +113,14 @@ try {
       assert.throws(() => checkRealFFI(code), expected);
       const manifest = join(rust, 'Cargo.toml');
       if (kind === 'missing-file') {
-        // The compiler forwards an absent FFI type as an unconstructible empty
-        // enum (see foreign-types.mjs), so the crate still type-checks and the
-        // stubs panic instead of rejecting the build.
+        // The compiler forwards an absent FFI type as an empty marker enum (see
+        // foreign-types.mjs) and uses the boxed runtime Value at its use sites,
+        // so the crate still type-checks and the stubs panic instead of
+        // rejecting the build.
         run('cargo', ['check', '--offline', '--manifest-path', manifest, '-p', 'Purs_NullableProbe', '--lib']);
         const fallback = readFileSync(join(rust, 'Purs_Data_Nullable/src/lib.rs'), 'utf8');
-        assert.match(fallback, /pub enum Nullable \{\}/, 'missing FFI types stay unconstructible');
-        assert.match(fallback, /pub fn Data_Nullable_null\(\) -> std::(?:rc::Rc|sync::Arc)<crate::Nullable> \{ unimplemented!\(\) \}/);
+        assert.match(fallback, /pub enum Nullable \{\}/, 'missing FFI types keep their marker');
+        assert.match(fallback, /pub fn Data_Nullable_null\(\) -> crate::UnknownType \{ unimplemented!\(\) \}/);
       } else {
         installTests(rust, threaded);
         const check = run('cargo', ['test', '--offline', '--manifest-path', manifest, '-p', 'Purs_NullableProbe', '--test', 'nullable',

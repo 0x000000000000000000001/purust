@@ -55,3 +55,27 @@ readGenKw value = value.gen_kw
 
 replaceGen :: Int -> CollisionFields -> CollisionFields
 replaceGen genValue value = value { gen = genValue }
+
+-- Numeric labels are legal PureScript field names but not Rust identifiers.
+type NumericFields = { "01" :: Int, "2" :: Int, other :: Int }
+
+makeNumeric :: Int -> Int -> Int -> NumericFields
+makeNumeric first second third = { "01": first, "2": second, other: third }
+
+readNumeric01 :: NumericFields -> Int
+readNumeric01 value = value."01"
+
+readNumeric2 :: NumericFields -> Int
+readNumeric2 value = value."2"
+
+readNumericOther :: NumericFields -> Int
+readNumericOther value = value.other
+
+replaceNumeric01 :: Int -> NumericFields -> NumericFields
+replaceNumeric01 numericValue value = value { "01" = numericValue }
+
+readNumericDynamic :: String -> NumericFields -> Int
+readNumericDynamic = unsafeGet
+
+replaceNumericDynamic :: String -> Int -> NumericFields -> NumericFields
+replaceNumericDynamic = unsafeSet

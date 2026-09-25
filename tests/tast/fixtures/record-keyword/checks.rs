@@ -119,3 +119,41 @@ fn collision_fields_keep_the_purescript_dynamic_keys() {
     let changed = RecordKeywordProbe_replaceDynamic("gen_kw".into(), 29, value);
     assert_eq!(RecordKeywordProbe_readGenKw(changed), 29);
 }
+
+// Numeric labels cannot start a Rust identifier, so the native field gains a
+// leading underscore while the logical label and dynamic key stay "01"/"2".
+#[test]
+fn numeric_fields_get_valid_rust_names() {
+    let original = RecordKeywordProbe_makeNumeric(5, 13, 18);
+    assert_eq!(RecordKeywordProbe_readNumeric01(original.clone()), 5);
+    assert_eq!(RecordKeywordProbe_readNumeric2(original.clone()), 13);
+    assert_eq!(RecordKeywordProbe_readNumericOther(original.clone()), 18);
+    let changed = RecordKeywordProbe_replaceNumeric01(23, original.clone());
+    assert_eq!(RecordKeywordProbe_readNumeric01(changed.clone()), 23);
+    assert_eq!(RecordKeywordProbe_readNumeric2(changed.clone()), 13);
+    assert_eq!(RecordKeywordProbe_readNumericOther(changed), 18);
+    assert_eq!(RecordKeywordProbe_readNumeric01(original), 5);
+}
+
+#[test]
+fn numeric_dynamic_keys_keep_the_purescript_spelling() {
+    let mut value = purust_core::Value::Record__01__2_other(perceus_ptr::PerceusPtr::new(purust_core::Record__01__2_other {
+        _01: Some(purust_core::mk_int(7)),
+        _2: Some(purust_core::mk_int(11)),
+        other: Some(purust_core::mk_int(13)),
+        ..Default::default()
+    }));
+    assert_eq!(value.get__01().unwrap_int(), 7);
+    assert_eq!(value.__purust_borrow__01().unwrap_int(), 7);
+    assert_eq!(value.get__2().unwrap_int(), 11);
+    assert_eq!(value.__purust_get_field("01").unwrap().unwrap_int(), 7);
+    assert_eq!(value.__purust_get_field("2").unwrap().unwrap_int(), 11);
+    assert!(value.__purust_get_field("_01").is_none());
+    value.set__01(purust_core::mk_int(19));
+    assert_eq!(value.get__01().unwrap_int(), 19);
+    let original = RecordKeywordProbe_makeNumeric(5, 13, 18);
+    assert_eq!(RecordKeywordProbe_readNumericDynamic("01".into(), original.clone()), 5);
+    assert_eq!(RecordKeywordProbe_readNumericDynamic("2".into(), original.clone()), 13);
+    let changed = RecordKeywordProbe_replaceNumericDynamic("01".into(), 23, original);
+    assert_eq!(RecordKeywordProbe_readNumeric01(changed), 23);
+}

@@ -28,7 +28,7 @@ import Purust.ChildBranchPrinter (predicateFunction)
 import Purust.ChildUpdates (childUpdate)
 import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpdate)
 import Purust.ClassFields (superclassFields)
-import Purust.DataLayout (ValueEnums, isValueEnum)
+import Purust.DataLayout (ValueEnums, isValueEnum, isOpaqueForeignType)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import Purust.RecordScalarization (optimizeRecordLoops)
 import Purust.FunctionFusion (countedFunctionProducers)
@@ -37,6 +37,7 @@ import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(.
 import PureScript.Backend.Optimizer.CoreFn as CoreFn
 import Debug as Debug
 import Data.String as String
+import Data.String.CodeUnits as SCU
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Foldable (foldMap)
@@ -296,14 +297,15 @@ recordStructName renames fields = case String.joinWith "_" (map (fieldBase renam
   shape -> "Record_" <> shape
 
 codegenPrelude :: Set.Set String -> String
-codegenPrelude fields = codegenPreludeWithRenames (fieldRenames (shapeLabels fields)) fields
+codegenPrelude fields = codegenPreludeWithRenames (fieldRenames (shapeLabels fields)) (Array.fromFoldable fields)
 
 -- The CLI shares one compilation-wide map so the prelude, every module and the
--- class dictionaries agree on each label spelling.
-codegenPreludeWithRenames :: Map.Map String String -> Set.Set String -> String
-codegenPreludeWithRenames renames fields =
+-- class dictionaries agree on each label spelling. Shapes are ordered so the
+-- native carrier enumerates its fields in the order the source wrote them;
+-- `chooseRecordShapes` in Main keeps one ordered representative per label set.
+codegenPreludeWithRenames :: Map.Map String String -> Array String -> String
+codegenPreludeWithRenames renames shapes =
   let
-    shapes = Array.fromFoldable fields
     
     uniqueFields = Array.fromFoldable (Set.fromFoldable (Array.concatMap (\shape -> String.split (Pattern ",") shape) shapes))
     validUniqueFields = Array.filter (not <<< String.null) uniqueFields
@@ -653,6 +655,9 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
            -- FreeView and the Step constructors keep their native layouts.
            else if modName == "Control_Monad_Free" && actualClassName == "Val" then "crate::UnknownType"
            else if (modName == "Data_Function_Uncurried" || modName == "Control_Monad_ST_Uncurried") && (String.indexOf (Pattern "Fn") actualClassName == Just 0 || String.indexOf (Pattern "STFn") actualClassName == Just 0) then "crate::UnknownType"
+           -- A foreign import data type with no Rust FFI binding has no native
+           -- layout; values cross through unsafeCoerce as boxed runtime Values.
+           else if isOpaqueForeignType valueEnums modName actualClassName then "crate::UnknownType"
            else if isValueEnum valueEnums modName actualClassName then
              (if modName == currentMod then "crate::" else "Purs_" <> modName <> "::") <> sanitizeIdent actualClassName
            else if modName == currentMod then "std::rc::Rc<crate::" <> sanitizeIdent actualClassName <> ">"
@@ -2980,7 +2985,16 @@ fieldBase renames field = fromMaybe (fieldBasePure field) (Map.lookup field rena
 fieldBasePure :: String -> String
 fieldBasePure field
   | Set.member field unrawableFieldKeywords = field <> "_kw"
-  | otherwise = sanitizeIdent field
+  | otherwise = case sanitizeIdent field of
+      -- Rust identifiers cannot start with a digit, and a lone underscore is
+      -- a wildcard, not a name.
+      "_" -> "_underscore"
+      name | startsWithDigit name -> "_" <> name
+      name -> name
+  where
+  startsWithDigit name = case SCU.charAt 0 name of
+    Just c -> c >= '0' && c <= '9'
+    Nothing -> false
 
 recordFieldIdent :: Map.Map String String -> String -> String
 recordFieldIdent renames field

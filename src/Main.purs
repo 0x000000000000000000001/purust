@@ -18,12 +18,12 @@ import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, wr
 import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
 import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
-import Purust.DataLayout (valueEnumsForModules)
+import Purust.DataLayout (opaqueForeignTypeKey, valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Threading (threadedRust, threadedPrelude)
 import Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource)
 import Purust.FfiCargo (loadFfiCargo)
-import Purust.ForeignTypes (foreignTypeForwards)
+import Purust.ForeignTypes (foreignTypeForwards, foreignUnboundTypes)
 import Purust.ASTCollector as Purust.ASTCollector
 import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
 import Data.Map as Map
@@ -33,6 +33,7 @@ import Data.Array as Array
 import Data.String as String
 import Data.String.CodeUnits as SCU
 import Data.Foldable (foldl)
+import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Debug as Debug
@@ -70,9 +71,11 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
 
   -- Field spellings are resolved once for the whole compilation: record rows
   -- and class dictionaries must agree everywhere, including purust_core.
-  let allShapes = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectRecordShapesModule mod)) Set.empty finalModules
+  let shapeOccurrences = Array.concatMap (\mod -> Purust.ASTCollector.collectRecordShapesModule mod)
+        (List.toUnfoldable finalModules :: Array (Module Ann))
+  let allShapes = chooseRecordShapes shapeOccurrences
   let shapeLabels = Set.fromFoldable (Array.filter (not <<< String.null)
-        (Array.concatMap (\shape -> String.split (Pattern ",") shape) (Set.toUnfoldable allShapes :: Array String)))
+        (Array.concatMap (\shape -> String.split (Pattern ",") shape) allShapes))
   let classLabels = foldl (\acc (Module mod) -> foldl (\a classDecl ->
         Set.union a (Set.fromFoldable (map (\(Tuple n _) -> n)
           (Array.concat [ superclassFields classDecl, classDecl.methods ])))) acc mod.classDecls) Set.empty finalModules
@@ -164,7 +167,29 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     let globalArities = buildGlobalArities finalModules
     let globalTypes = buildGlobalTypes finalModules
     let globalClassFields = buildGlobalClassFields finalModules
-    let globalValueEnums = valueEnumsForModules finalModules
+
+    -- A foreign import data type with no native Rust declaration carries
+    -- arbitrary coerced values (freeap's Val). Its layout is the boxed runtime
+    -- Value, so generated code must not wrap or downcast it. The declaration
+    -- scan needs only the module source and its FFI file, so it runs before
+    -- code generation and joins the shared layout-fact set.
+    let
+      gatherOpaque (Module m) = do
+        let dotted = unwrap m.name
+        let modName = String.replaceAll (Pattern ".") (Replacement "_") dotted
+        ffiPathMb <- findFfiFile ".rs" [] ffiDir dotted (Just m.path)
+        ffiContent <- case ffiPathMb of
+          Just ffiPath -> do
+            exists <- FS.exists ffiPath
+            if exists then FS.readTextFile UTF8 ffiPath else pure ""
+          Nothing -> pure ""
+        sourceExists <- FS.exists m.path
+        source <- if sourceExists then FS.readTextFile UTF8 m.path else pure ""
+        pure $ map (opaqueForeignTypeKey modName) (foreignUnboundTypes source ffiContent)
+    opaqueForeignTypes <- liftEffect do
+      perModule <- traverse gatherOpaque (List.toUnfoldable finalModules :: Array (Module Ann))
+      pure $ Set.fromFoldable (Array.concat perModule)
+    let globalValueEnums = Set.union (valueEnumsForModules finalModules) opaqueForeignTypes
 
     directives <- loadDirectives
 
@@ -407,6 +432,43 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
 
     
     log "Successfully generated Rust code."
+
+
+-- A record shape is shared by every record with the same labels, so its native
+-- Rust carrier has a single field order. Preserve the order the source wrote
+-- while every occurrence of a label set agrees; fall back to the canonical
+-- (sorted) order when the program writes the same set in several orders.
+chooseRecordShapes :: Array { literal :: Boolean, shape :: String } -> Array String
+chooseRecordShapes occurrences = map choose (Array.fromFoldable (Map.values (foldl insert Map.empty occurrences)))
+  where
+  insert acc occurrence =
+    let labels = Array.filter (not <<< String.null) (String.split (Pattern ",") occurrence.shape)
+    in if Array.null labels then acc
+       else
+         let key = String.joinWith "," (Array.sortBy compare (Array.nub labels))
+         in case Map.lookup key acc of
+           Nothing -> Map.insert key
+             { key
+             , literals: if occurrence.literal then [ occurrence.shape ] else []
+             , types: if occurrence.literal then [] else [ occurrence.shape ]
+             }
+             acc
+           Just entry -> Map.insert key
+             ( if occurrence.literal
+                 then entry { literals = Array.snoc entry.literals occurrence.shape }
+                 else entry { types = Array.snoc entry.types occurrence.shape }
+             )
+             acc
+
+  -- Literal orders are what JavaScript enumerates, so they win over annotation
+  -- orders; when either source disagrees with itself the canonical (sorted)
+  -- order stays in place.
+  choose entry = case Array.nub entry.literals of
+    [ only ] -> only
+    [] -> case Array.nub entry.types of
+      [ only ] -> only
+      _ -> entry.key
+    _ -> entry.key
 
 
 configureThreading :: Boolean -> String -> String

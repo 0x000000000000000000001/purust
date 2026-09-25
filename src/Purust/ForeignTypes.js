@@ -44,3 +44,10 @@ export const foreignTypeForwards = source => rust => declarations(source)
     return '// Opaque FFI declaration only: no native values can be constructed.\n' +
       '#[derive(Clone, Debug)]\npub enum ' + name + ' {}\n';
   }).join('\n');
+
+// Foreign data types without a native Rust declaration carry arbitrary values
+// through unsafeCoerce (freeap's Val, for example). Their layout is the boxed
+// runtime Value, so generated code must not wrap them in Rc<X> or downcast
+// them. Declared foreign types keep their native layout.
+export const foreignUnboundTypes = source => rust => [...new Set(declarations(source))]
+  .filter(name => !nativeDefinition(rust, name));

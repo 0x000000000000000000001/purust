@@ -25,7 +25,14 @@ const allKeywords = Object.keys(renamedKeywords).concat(rawKeywords);
 // Mirrors fieldRenames in Purust.CodeGen: sorted first label wins, later
 // colliding labels take _1, _2, ... so the mapping stays injective.
 const sanitizedKeywords = { type: 'type_kw', gen: 'gen_kw' };
-const baseName = field => renamedKeywords[field] ?? sanitizedKeywords[field] ?? field;
+// Numeric labels cannot start a Rust identifier, and a lone underscore is a
+// wildcard rather than a name.
+const sanitizeBase = field => {
+  const name = sanitizedKeywords[field] ?? field;
+  if (name === '_') return '_underscore';
+  return /^[0-9]/.test(name) ? `_${name}` : name;
+};
+const baseName = field => renamedKeywords[field] ?? sanitizeBase(field);
 const resolveRenames = labels => {
   const used = new Set(), renames = new Map();
   for (const label of [...new Set(labels)].sort()) {
@@ -40,11 +47,11 @@ const resolveRenames = labels => {
 const shapes = fromFoldable(foldableArray)(ordString)(['final,final_kw', 'type,value',
   'async,async_kw,match,match_kw,where,where_kw',
   'self,other', 'Self,super,crate', 'static,static_kw', 'self,self_kw', 'gen', 'gen_kw',
-  'gen,gen_kw', 'type,type_kw', allKeywords.join(',')]);
+  'gen,gen_kw', 'type,type_kw', '01,2,other', '_', allKeywords.join(',')]);
 const code = codegenPrelude(shapes);
 const shapeStrings = ['final,final_kw', 'type,value', 'async,async_kw,match,match_kw,where,where_kw',
   'self,other', 'Self,super,crate', 'static,static_kw', 'self,self_kw', 'gen', 'gen_kw',
-  'gen,gen_kw', 'type,type_kw', allKeywords.join(',')];
+  'gen,gen_kw', 'type,type_kw', '01,2,other', '_', allKeywords.join(',')];
 const allLabels = shapeStrings.flatMap(shape => shape.split(','));
 const renames = resolveRenames(allLabels);
 const fieldBase = field => renames.get(field) ?? baseName(field);
@@ -110,6 +117,20 @@ for (const field of rawKeywords) {
   assert.doesNotMatch(code, new RegExp(`\\bpub ${field}:`));
 }
 
+// Numeric labels and a lone underscore are legal PureScript labels but not
+// Rust identifiers, so the native field gains a prefix while the logical label
+// and its dynamic key stay untouched.
+for (const [label, renamed] of [['01', '_01'], ['2', '_2'], ['_', '_underscore']]) {
+  assert.equal(fieldBase(label), renamed);
+  assert.equal(fieldIdent(label), renamed);
+  assert.match(code, new RegExp(`pub ${renamed}: Option<UnknownType>`));
+  assert.match(code, new RegExp(`pub fn get_${renamed}\\(`));
+  assert.match(code, new RegExp(`pub fn set_${renamed}\\(`));
+  assert.match(code, new RegExp(`"${label}" => r\\.${renamed}\\.clone\\(\\)`));
+  assert.doesNotMatch(code, new RegExp(`\\bpub ${label}:`));
+}
+assert.match(code, /pub struct Record__01__2_other/);
+
 // A keyword and its literal *_kw twin must keep distinct fields, methods and
 // struct names instead of collapsing on the same spelling.
 for (const [label, twin, renamed] of [['self', 'self_kw', 'self_kw'], ['gen', 'gen_kw', 'gen_kw'],
@@ -138,6 +159,8 @@ const compileGroups = [
   { fields: ['gen'], values: [29] },
   { fields: ['gen_kw'], values: [39] },
   { fields: ['type', 'type_kw'], values: [40, 41] },
+  { fields: ['01', '2', 'other'], values: [46, 47, 48] },
+  { fields: ['_'], values: [49] },
   { fields: allKeywords, values: allKeywords.map((_, index) => index + 51) },
 ];
 const groupsCode = compileGroups.map(({ fields, values }, group) => {

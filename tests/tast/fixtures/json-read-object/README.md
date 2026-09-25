@@ -19,18 +19,26 @@ After the `toArrayWithKey` port, `purust-json-read-object-c60DIK` executed 165
 fresh TAST modules and 17 tests in each Linux mode: 16 passed, one failed, in
 both Rc and Arc. The original JSON/tagged-sum paths and all four direct FFI
 tests passed. No `Expected Class` or unimplemented fallback remained. The
-report deliberately stays `complete: false` for the ordering divergence below.
+report stayed `complete: false` for the ordering divergence below until the
+compiler limitations were resolved; native runs now complete with 17/17 tests
+in both modes.
 
-## Separate compiler limitations (not fixed by these tests)
+## Record-label compiler limitations this fixture tracked
 
-- Numeric PS record labels are currently emitted as invalid Rust field names.
-  `purust-json-read-object-qzCFHx` retains the compile error for `pub 01:`.
-  Numeric enumeration is therefore qualified with actual runtime
-  `DynamicRecord` and `SharedRecord` input, not such a PS literal.
+Both limitations below were fixed in the compiler instead of rebaselining the
+original assertions. The independent dynamic/native numeric-order test is
+unchanged.
+
+- Numeric PS record labels used to be emitted as invalid Rust field names
+  (`purust-json-read-object-qzCFHx` retains the compile error for `pub 01:`).
+  The native field now gains a leading underscore (`pub _01`) while the
+  logical label and its dynamic key stay `"01"`;
+  `tests/tast/record-keyword.mjs` compiles and exercises the resulting Rust.
 - For the valid PS fields `z, alpha, constructor, beta`, fresh TAST Row fields
-  and official JS preserve that order. The native generated record carrier in
-  `purust-json-read-object-d5NTXF` enumerates `alpha, beta, constructor, z`.
-  `own_property_order_matches_javascript` retains the original order assertion
-  and fails on this divergence; it is not rebaselined to alphabetic order.
-  The dynamic/native numeric-order test is independent, so this failure cannot
-  hide its result. No compiler modification belongs to this fixture.
+  and official JS preserve that order, while the native carrier in
+  `purust-json-read-object-d5NTXF` enumerated `alpha, beta, constructor, z`
+  (`own_property_order_matches_javascript` was left red, not rebaselined).
+  Record shape collection now carries a literal's label order into the native
+  carrier, so the assertion passes with source order. When the same label set
+  is written in several orders, the carrier keeps its canonical (sorted)
+  order.

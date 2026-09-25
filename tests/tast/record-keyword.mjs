@@ -53,21 +53,28 @@ try {
     assert.match(prelude, /pub gen_kw: Option<UnknownType>/);
     assert.match(prelude, /pub gen_kw_1: Option<UnknownType>/);
     assert.match(prelude, /pub fn get_gen_kw_1\(/);
+    assert.match(prelude, /pub _01: Option<UnknownType>/);
+    assert.match(prelude, /pub _2: Option<UnknownType>/);
+    assert.match(prelude, /pub fn get__01\(/);
+    assert.match(prelude, /pub fn set__01\(/);
+    assert.doesNotMatch(prelude, /pub 01: Option<UnknownType>/);
     assert.doesNotMatch(prelude, /pub self: Option<UnknownType>/);
     assert.doesNotMatch(prelude, /(?:Record_|get_|set_|__purust_borrow_)r#final/);
     const generated = readFileSync(join(rust, 'Purs_RecordKeywordProbe/src/lib.rs'), 'utf8');
     assert.match(generated, /pub fn RecordKeywordProbe_readFinal\([^\n]+\) -> i64/);
     assert.match(generated, /pub fn RecordKeywordProbe_readSelf\([^\n]+\) -> i64/);
     assert.match(generated, /pub fn RecordKeywordProbe_readGen\([^\n]+\) -> i64/);
+    assert.match(generated, /pub fn RecordKeywordProbe_readNumeric01\([^\n]+\) -> i64/);
     assert.match(generated, /Record_final_final_kw \{ r#final:/);
     assert.match(generated, /Record_other_self_kw \{ self_kw:/);
     assert.match(generated, /Record_gen_kw_gen_kw_1 \{ gen_kw:/);
+    assert.match(generated, /Record__01__2_other \{ _01:/);
     const tests = join(rust, 'Purs_RecordKeywordProbe/tests'); mkdirSync(tests);
     writeFileSync(join(tests, 'keyword.rs'), readFileSync(join(fixtures, 'checks.rs')));
     const result = run('cargo', ['test', '--offline', '--manifest-path', manifest,
       '-p', 'Purs_RecordKeywordProbe', '--test', 'keyword', '--', '--test-threads=1']);
-    assert.match(result, /8 passed; 0 failed/);
-    console.log(`${mode}: 2 fresh TAST modules, 8 record keyword tests passed`);
+    assert.match(result, /10 passed; 0 failed/);
+    console.log(`${mode}: 2 fresh TAST modules, 10 record keyword tests passed`);
   }
   assert.equal(hash(join(root, 'bin/purust.js')), provenance.bundleSha256);
   provenance.inputs.forEach(input => assert.equal(hash(input.path), input.sha256));
