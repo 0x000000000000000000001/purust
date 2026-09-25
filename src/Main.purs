@@ -15,7 +15,7 @@ import PureScript.Backend.Optimizer.Builder (buildModules)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModuleWithOptions, codegenPrelude, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
+import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
 import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
 import Purust.DataLayout (valueEnumsForModules)
@@ -67,6 +67,16 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
                                    Nothing -> "output"
                      Nothing -> "output"
   finalModules <- Metrics.measure "load TAST + sort" \_ -> coreFnModulesFromOutput sourceDir
+
+  -- Field spellings are resolved once for the whole compilation: record rows
+  -- and class dictionaries must agree everywhere, including purust_core.
+  let allShapes = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectRecordShapesModule mod)) Set.empty finalModules
+  let shapeLabels = Set.fromFoldable (Array.filter (not <<< String.null)
+        (Array.concatMap (\shape -> String.split (Pattern ",") shape) (Set.toUnfoldable allShapes :: Array String)))
+  let classLabels = foldl (\acc (Module mod) -> foldl (\a classDecl ->
+        Set.union a (Set.fromFoldable (map (\(Tuple n _) -> n)
+          (Array.concat [ superclassFields classDecl, classDecl.methods ])))) acc mod.classDecls) Set.empty finalModules
+  let fieldRenameMap = fieldRenames (Set.union shapeLabels classLabels)
   
   let
     buildGlobalArities :: List.List (Module Ann) -> Map.Map String ExprType
@@ -145,7 +155,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
         in foldl (\a classDecl -> 
              let 
                superNames = superclassFields classDecl
-               methodNames = map (\(Tuple mName mTy) -> Tuple (sanitizeIdent mName) mTy) classDecl.methods
+               methodNames = map (\(Tuple mName mTy) -> Tuple mName mTy) classDecl.methods
                allFields = Array.concat [superNames, methodNames]
              in Map.insert (modPrefix <> sanitizeIdent classDecl.name) allFields a
            ) acc mod.classDecls
@@ -177,7 +187,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
         when tracePhases $ liftEffect $ log ("[purust] codegen " <> modNameStr)
-        let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
+        let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod), fieldRenames: fieldRenameMap } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
           when tracePhases $ log ("[purust] generated " <> modNameStr)
@@ -297,8 +307,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     finalTcMap <- Ref.read tcRef
 
     
-    let allShapes = foldl (\acc mod -> Set.union acc (Purust.ASTCollector.collectRecordShapesModule mod)) Set.empty finalModules
-    let preludeRsContent = (if threaded then threadedPrelude else identity) (codegenPrelude allShapes)
+    let preludeRsContent = (if threaded then threadedPrelude else identity) (codegenPreludeWithRenames fieldRenameMap allShapes)
     
     let mainModuleSanitized = String.replaceAll (Pattern ".") (Replacement "_") mainModule
     -- AOT spec discovery: when the discovery module is part of the program,

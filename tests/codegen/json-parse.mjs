@@ -176,8 +176,11 @@ try {
 extern crate self as purust_core;
 extern crate self as Purs_Foreign_Object_ST;
 extern crate self as Purs_Foreign_Object;
+extern crate self as Purs_Data_Maybe;
 extern crate self as Purs_JS_BigInt;
 extern crate self as Purs_Effect_Exception;
+mod maybe { #[derive(Clone)] pub enum Maybe { Nothing, Just(purust_core::Value) } }
+pub use maybe::Maybe;
 mod perceus_ptr { ${read('tests/runtime/perceus_ptr/src/lib.rs').replace('mod local;', `mod local { ${read('tests/runtime/perceus_ptr/src/local.rs')} }`).replace('mod threaded;', `mod threaded { ${read('tests/runtime/perceus_ptr/src/threaded.rs')} }`)} }
 mod object_st { ${adapt(read('../purust-foreign-object/src/Foreign/Object/ST.rs'))} }
 pub use object_st::STObject;
@@ -193,7 +196,7 @@ ${adapt(checks)}`;
     writeFileSync(join(dir, 'main.rs'), code);
     const manifest = JSON.parse(read('../purust-yoga-json/src/Yoga/JSON.rs.cargo.json'));
     const bigintManifest = JSON.parse(read('../purust-js-bigints/src/JS/BigInt.rs.cargo.json'));
-    writeFileSync(join(dir, 'Cargo.toml'), `[package]\nname="json_parse"\nversion="0.0.0"\nedition="2021"\n[[bin]]\nname="json_parse"\npath="main.rs"\n[features]\nthreaded=[]\n[dependencies]\nryu-js="${manifest.dependencies['ryu-js'].version}"\nnum-bigint-dig={version="${bigintManifest.dependencies['num-bigint-dig'].version}",default-features=false}\n`);
+    writeFileSync(join(dir, 'Cargo.toml'), `[package]\nname="json_parse"\nversion="0.0.0"\nedition="2021"\n[[bin]]\nname="json_parse"\npath="main.rs"\n[features]\nthreaded=[]\n[dependencies]\nryu-js="${manifest.dependencies['ryu-js'].version}"\nnum-bigint-dig={version="${bigintManifest.dependencies['num-bigint-dig'].version}",default-features=false}\nnum-traits="${bigintManifest.dependencies['num-traits'].version}"\n`);
     const remote = '/var/www/b8x/run/bak/' + relative(mount, dir);
     const prefix = docker ? ['exec', '-w', remote, '-e', 'CARGO_BUILD_JOBS=1', '-e', 'CARGO_PROFILE_DEV_DEBUG=0', '-e', 'CARGO_INCREMENTAL=0', 'core-api-cli-1', 'cargo'] : [];
     const result = spawnSync(docker ? 'docker' : 'cargo', [...prefix, 'run', '--offline', '--quiet', ...(threaded ? ['--features', 'threaded'] : [])], {

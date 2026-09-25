@@ -47,3 +47,75 @@ fn dynamic_keys_keep_the_purescript_spelling() {
     assert_eq!(RecordKeywordProbe_readDynamic("unseen".into(), widened), 31);
     assert_eq!(RecordKeywordProbe_readFinal(original), 7);
 }
+
+// `self` cannot be a Rust identifier nor r#self, so the native field is
+// self_kw while the logical label and its dynamic key stay "self".
+#[test]
+fn self_field_is_renamed_at_the_native_field_site() {
+    let original = RecordKeywordProbe_makeSelf(5, 13);
+    assert_eq!(RecordKeywordProbe_readSelf(original.clone()), 5);
+    assert_eq!(RecordKeywordProbe_readSelfOther(original.clone()), 13);
+    let changed = RecordKeywordProbe_replaceSelf(23, original.clone());
+    assert_eq!(RecordKeywordProbe_readSelf(changed.clone()), 23);
+    assert_eq!(RecordKeywordProbe_readSelfOther(changed), 13);
+    assert_eq!(RecordKeywordProbe_readSelf(original), 5);
+}
+
+#[test]
+fn self_field_keeps_the_logical_dynamic_key() {
+    let mut value = purust_core::Value::Record_other_self_kw(perceus_ptr::PerceusPtr::new(purust_core::Record_other_self_kw {
+        self_kw: Some(purust_core::mk_int(7)),
+        other: Some(purust_core::mk_int(11)),
+        ..Default::default()
+    }));
+    assert_eq!(value.get_self_kw().unwrap_int(), 7);
+    assert_eq!(value.__purust_borrow_self_kw().unwrap_int(), 7);
+    assert_eq!(value.__purust_get_field("self").unwrap().unwrap_int(), 7);
+    assert!(value.__purust_get_field("self_kw").is_none());
+    value.set_self_kw(purust_core::mk_int(19));
+    assert_eq!(value.get_self_kw().unwrap_int(), 19);
+    let replaced = RecordKeywordProbe_replaceSelfDynamic("self".into(), 29, value.clone());
+    assert_eq!(RecordKeywordProbe_readSelf(replaced), 29);
+    let widened = RecordKeywordProbe_replaceSelfDynamic("other".into(), 31, value);
+    assert_eq!(RecordKeywordProbe_readSelfOther(widened), 31);
+}
+
+#[test]
+fn self_dynamic_keys_keep_the_purescript_spelling() {
+    let original = RecordKeywordProbe_makeSelf(5, 13);
+    assert_eq!(RecordKeywordProbe_readSelfDynamic("self".into(), original.clone()), 5);
+    assert_eq!(RecordKeywordProbe_readSelfDynamic("other".into(), original.clone()), 13);
+    let changed = RecordKeywordProbe_replaceSelfDynamic("self".into(), 23, original);
+    assert_eq!(RecordKeywordProbe_readSelf(changed), 23);
+}
+
+// A keyword and its literal *_kw twin share one record. The compilation-wide
+// rename map must keep their fields, methods and dynamic keys distinct.
+#[test]
+fn keyword_and_twin_fields_get_distinct_rust_names() {
+    let original = RecordKeywordProbe_makeCollision(5, 13);
+    assert_eq!(RecordKeywordProbe_readGen(original.clone()), 5);
+    assert_eq!(RecordKeywordProbe_readGenKw(original.clone()), 13);
+    let changed = RecordKeywordProbe_replaceGen(23, original.clone());
+    assert_eq!(RecordKeywordProbe_readGen(changed.clone()), 23);
+    assert_eq!(RecordKeywordProbe_readGenKw(changed), 13);
+    assert_eq!(RecordKeywordProbe_readGen(original), 5);
+}
+
+#[test]
+fn collision_fields_keep_the_purescript_dynamic_keys() {
+    let mut value = purust_core::Value::Record_gen_kw_gen_kw_1(perceus_ptr::PerceusPtr::new(purust_core::Record_gen_kw_gen_kw_1 {
+        gen_kw: Some(purust_core::mk_int(7)),
+        gen_kw_1: Some(purust_core::mk_int(11)),
+        ..Default::default()
+    }));
+    assert_eq!(value.get_gen_kw().unwrap_int(), 7);
+    assert_eq!(value.get_gen_kw_1().unwrap_int(), 11);
+    assert_eq!(value.__purust_get_field("gen").unwrap().unwrap_int(), 7);
+    assert_eq!(value.__purust_get_field("gen_kw").unwrap().unwrap_int(), 11);
+    value.set_gen_kw(purust_core::mk_int(19));
+    assert_eq!(value.get_gen_kw().unwrap_int(), 19);
+    assert_eq!(value.get_gen_kw_1().unwrap_int(), 11);
+    let changed = RecordKeywordProbe_replaceDynamic("gen_kw".into(), 29, value);
+    assert_eq!(RecordKeywordProbe_readGenKw(changed), 29);
+}

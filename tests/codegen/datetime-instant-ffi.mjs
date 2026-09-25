@@ -197,7 +197,7 @@ extern crate self as Purs_Data_DateTime;
 extern crate self as Purs_Data_Date;
 mod perceus_ptr { ${read('tests/runtime/perceus_ptr/src/lib.rs').replace('mod local;', `mod local { ${read('tests/runtime/perceus_ptr/src/local.rs')} }`).replace('mod threaded;', `mod threaded { ${read('tests/runtime/perceus_ptr/src/threaded.rs')} }`)} }
 mod date { ${adapt(read('../purust-datetime/src/Data/Date.rs'))} }
-pub use date::purust_date_from_days;
+pub use date::{purust_date_from_days, purust_utc_milliseconds};
 mod ffi { ${adapt(read('../purust-datetime/src/Data/DateTime/Instant.rs'))} }
 ${adapt(checks)}`;
     writeFileSync(join(dir, 'main.rs'), code);

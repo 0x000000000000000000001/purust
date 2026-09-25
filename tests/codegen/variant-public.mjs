@@ -30,7 +30,7 @@ for (const current of ['Data_Variant', 'Consumer']) for (const isRet of [false, 
 }
 const name='VariantValues', variant=adt('Data.Variant','Variant'), native=adt(name,'Variant');
 const methods=[new Tuple('type',StringType.value),new Tuple('value',Int.value)];
-const fieldTypes=[new Tuple('type_kw',StringType.value),new Tuple('value',Int.value)];
+const fieldTypes=[new Tuple('type',StringType.value),new Tuple('value',Int.value)];
 const fields=insert(ordString)(`${name}_Variant`)(fieldTypes)(
   // Known scalar projection tests both dispatch and unboxing of a Value field.
   insert(ordString)('Data_Variant_Variant')(fieldTypes)(empty));

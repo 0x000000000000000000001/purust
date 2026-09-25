@@ -16,7 +16,8 @@ import { Tuple } from '../../output/Data.Tuple/index.js';
 import { ADT, Any, Func, Int, LitInt, LitRecord, Prop, Qualified, SumType } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
 import { Abs, Accessor, CtorSaturated, GetProp, Lit, Local, Typed } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
 const name = 'ClassKeywords', type = new ADT(`${name}.Keywords`, [name, 'Keywords'], []);
-const names = ['async', 'async_kw', 'match', 'match_kw', 'where', 'where_kw', 'final', 'final_kw'];
+const names = ['async', 'async_kw', 'match', 'match_kw', 'where', 'where_kw', 'final', 'final_kw',
+  'self', 'static', 'unsafe'];
 const methods = names.map(field => new Tuple(field, Int.value));
 const props = names.map((field, index) => new Prop(field, new Lit(new LitInt(index + 1))));
 const fields = insert(ordString)(`${name}_Keywords`)(methods)(emptyMap);
@@ -33,7 +34,10 @@ const bindings = [
 const generated = codegenModule(emptyMap)(fields)({ name, dataDecls: [], classDecls: [
   { name: 'Keywords', vars: [], methods, superclasses: [] },
 ] })({ name, bindings: [{ recursive: false, bindings }] });
-for (const keyword of ['async', 'match', 'where', 'final']) assert.ok(generated.includes(`pub r#${keyword}: i64`));
+for (const keyword of ['async', 'match', 'where', 'final', 'static', 'unsafe']) {
+  assert.ok(generated.includes(`pub r#${keyword}: i64`));
+}
+assert.ok(generated.includes('pub self_kw: i64'), 'the reserved raw identifier takes the *_kw spelling');
 const main = `fn main() {
     for dictionary in [ClassKeywords_literal(), ClassKeywords_convert(ClassKeywords_raw()), ClassKeywords_constructor()] {
         ${names.map((field, index) => `assert_eq!(ClassKeywords_read_${field}(dictionary.clone()), ${index + 1});`).join('\n')}

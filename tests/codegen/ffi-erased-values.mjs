@@ -52,25 +52,32 @@ fn main() {
     assert!(values(map(Func1::Static(|_| panic!("empty map must not call its function")), array(&[]))).is_empty());
 
     let compare: fn(Func2<Value, Value, i64>, Value, Value) -> i64 = Data_Ord_ordArrayImpl;
+    // Data.Ord.ordArray passes toDelta, where a positive delta means "less
+    // than" (LT -> 1, GT -> -1); its wrapper then compares that delta with zero.
     let cmp = Func2::Static(|a: Value, b: Value| match a.unwrap_int().cmp(&b.unwrap_int()) {
+        std::cmp::Ordering::Less => 1,
+        std::cmp::Ordering::Equal => 0,
+        std::cmp::Ordering::Greater => -1,
+    });
+    let finalOrdering = |delta: i64| match 0_i64.cmp(&delta) {
         std::cmp::Ordering::Less => -1,
         std::cmp::Ordering::Equal => 0,
         std::cmp::Ordering::Greater => 1,
-    });
+    };
     for (left, right, expected) in [
         (&[][..], &[][..], 0), (&[][..], &[1][..], -1), (&[1][..], &[][..], 1),
         (&[1, 2][..], &[1, 2][..], 0), (&[1, 2][..], &[1, 3][..], -1),
         (&[1, 3][..], &[1, 2][..], 1), (&[1][..], &[1, 2][..], -1),
     ] {
-        assert_eq!(compare(cmp.clone(), array(left), array(right)), expected);
+        assert_eq!(finalOrdering(compare(cmp.clone(), array(left), array(right))), expected);
     }
     let comparisons = std::rc::Rc::new(std::cell::Cell::new(0));
     let captured_comparisons = comparisons.clone();
     let early = Func2::Shared(std::rc::Rc::new(move |_, _| {
         captured_comparisons.set(captured_comparisons.get() + 1);
-        -7
+        1
     }));
-    assert_eq!(compare(early, array(&[1, 2]), array(&[3, 4])), -7);
+    assert_eq!(finalOrdering(compare(early, array(&[1, 2]), array(&[3, 4]))), -1);
     assert_eq!(comparisons.get(), 1);
 
     let discharge: fn(Value) -> Value = Partial_Unsafe__unsafePartial;
