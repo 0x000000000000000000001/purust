@@ -50,7 +50,7 @@ import Data.Set as Set
 import Data.Map (Map)
 import Data.Map as Map
 import Data.String.Pattern (Pattern(..), Replacement(..))
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Partial.Unsafe (unsafeCrashWith)
 import Effect.Ref as Ref
 import Effect.Console (log)
@@ -59,6 +59,78 @@ import Effect.Unsafe (unsafePerformEffect)
 -- Includes the twelve arguments in the observed VariantF traversal path.
 maxNativeFunctionArity :: Int
 maxNativeFunctionArity = 12
+
+-- Monomorphic array traversals for call sites whose callback and element
+-- representation are statically known. The caller instantiates the generic
+-- helper with a concrete closure, so the boxed callback layer and the boxed
+-- accumulator disappear once the loop is inlined.
+typedTraversalsSource :: String
+typedTraversalsSource = "\n\npub mod typed {\n" <>
+  "    use crate::*;\n" <>
+  "    pub trait Repr: Sized {\n" <>
+  "        fn from_value(value: &Value) -> Self;\n" <>
+  "        fn into_value(self) -> Value;\n" <>
+  "    }\n" <>
+  "    impl Repr for Value {\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_value(value: &Value) -> Value { value.clone() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn into_value(self) -> Value { self }\n" <>
+  "    }\n" <>
+  "    impl Repr for i64 {\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_value(value: &Value) -> i64 { value.unwrap_int() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn into_value(self) -> Value { mk_int(self) }\n" <>
+  "    }\n" <>
+  "    impl Repr for f64 {\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_value(value: &Value) -> f64 { value.unwrap_number() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn into_value(self) -> Value { mk_number(self) }\n" <>
+  "    }\n" <>
+  "    impl Repr for bool {\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_value(value: &Value) -> bool { value.unwrap_bool() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn into_value(self) -> Value { mk_bool(self) }\n" <>
+  "    }\n" <>
+  "    impl Repr for char {\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_value(value: &Value) -> char { value.unwrap_char() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn into_value(self) -> Value { mk_char(self) }\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn foldl<A: Repr, B: Repr, F: FnMut(B, A) -> B>(xs: Value, init: B, mut f: F) -> B {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let mut acc = init;\n" <>
+  "        for item in arr.iter() {\n" <>
+  "            acc = f(acc, A::from_value(item));\n" <>
+  "        }\n" <>
+  "        acc\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn foldr<A: Repr, B: Repr, F: FnMut(A, B) -> B>(xs: Value, init: B, mut f: F) -> B {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let mut acc = init;\n" <>
+  "        for item in arr.iter().rev() {\n" <>
+  "            acc = f(A::from_value(item), acc);\n" <>
+  "        }\n" <>
+  "        acc\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn filter<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> Value {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let mut result = Vec::with_capacity(arr.len());\n" <>
+  "        for item in arr.iter() {\n" <>
+  "            if p(A::from_value(item)) {\n" <>
+  "                result.push(item.clone());\n" <>
+  "            }\n" <>
+  "        }\n" <>
+  "        mk_array(result)\n" <>
+  "    }\n" <>
+  "}\n"
 
 chunkArray :: forall a. Int -> Array a -> Array (Array a)
 chunkArray size arr =
@@ -579,7 +651,8 @@ codegenPreludeWithRenames renames shapes =
   "}\n\n" <>
   recordStructs <>
   "\n\n" <>
-  funcWrappers
+  funcWrappers <>
+  typedTraversalsSource
     
 unwrapType :: ExprType -> ExprType
 unwrapType (ForAll _ t) = unwrapType t
@@ -1220,6 +1293,138 @@ alignDiscardedCallbackArgs expected actual expr =
     NeutralExpr (UncurriedAbs params body) -> align params body
     _ -> expr
 
+-- A known foreign array helper applied to a statically known callback runs as
+-- a monomorphic loop. The callback is emitted inside the caller's crate, so
+-- neither the per-element dispatch nor the boxed accumulator survives, while
+-- the array representation itself stays unchanged.
+typedTraversalCall :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array NeutralExpr -> Array String -> NeutralExpr -> Maybe (Tuple ExprType String)
+typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext aritiesMap globalClassFields bound alive argsArray argsCodeArray fn = case calleeName fn of
+  Just callee -> case argsArray of
+    [ cbArg, initArg, xsArg ] | callee == "Data_Foldable_foldlArray" -> foldTraversal "foldl" true cbArg initArg xsArg
+    [ cbArg, initArg, xsArg ] | callee == "Data_Foldable_foldrArray" -> foldTraversal "foldr" false cbArg initArg xsArg
+    [ predArg, xsArg ] | callee == "Data_Array_filterImpl" -> filterTraversal predArg xsArg
+    _ -> Nothing
+  Nothing -> Nothing
+  where
+  infer ty = inferTypeExpr currentMod aritiesMap globalClassFields bound ty
+
+  rustTy ty = codegenExprTypeWithValueEnums valueEnums currentMod false ty
+
+  primitiveTy ty = case rustTy ty of
+    "i64" -> Just ty
+    "f64" -> Just ty
+    "bool" -> Just ty
+    "char" -> Just ty
+    _ -> Nothing
+
+  stripExpr (NeutralExpr (Typed _ inner)) = stripExpr inner
+  stripExpr (NeutralExpr (Syn.TypeApp inner _)) = stripExpr inner
+  stripExpr e = e
+
+  calleeName e = case stripExpr e of
+    NeutralExpr (Var q@(Qualified _ (Ident name))) -> Just (getTyPrefix currentMod q <> sanitizeIdent name)
+    _ -> Nothing
+
+  arrayElement ty = case unwrapType ty of
+    Array el -> Just el
+    _ -> Nothing
+
+  -- The element type of an array argument: its own annotation when PBO kept
+  -- one, otherwise the declared result of a producer call such as rangeImpl.
+  arrayElementFromExpr expr = case arrayElement (infer expr) of
+    Just el -> Just el
+    Nothing -> case stripExpr expr of
+      NeutralExpr (UncurriedApp producer _) -> do
+        callee <- calleeName producer
+        declared <- Map.lookup callee aritiesMap
+        case unwrapType declared of
+          ADT _ fqn args ->
+            case Array.last fqn of
+              Just fnName | String.indexOf (Pattern "Fn") fnName == Just 0 -> case Array.last args of
+                Just retTy -> arrayElement retTy
+                Nothing -> Nothing
+              _ -> Nothing
+          _ -> Nothing
+      _ -> Nothing
+
+  functionParts ty = case unwrapType ty of
+    Func argTys retTy -> Just (Tuple argTys retTy)
+    _ -> Nothing
+
+  -- Emit the callback as a concrete Rust closure. A global native function is
+  -- called directly once its declared signature matches the instantiated one;
+  -- a capture-free lambda has its body emitted with the parameters bound.
+  callableFor argTys retTy arg = case stripExpr arg of
+    NeutralExpr (Var q@(Qualified _ (Ident name))) ->
+      let fullName = getTyPrefix currentMod q <> sanitizeIdent name
+          declared = Map.lookup fullName aritiesMap
+          sameRust left right = rustTy left == rustTy right
+      in case declared >>= functionParts of
+        Just (Tuple declArgs declRet)
+          | Array.length declArgs == Array.length argTys
+          , Array.all identity (Array.zipWith sameRust declArgs argTys)
+          , sameRust declRet retTy
+          , Array.all identity (map (isJust <<< primitiveTy) argTys)
+          , isJust (primitiveTy retTy) ->
+              let names = Array.mapWithIndex (\i _ -> "__purust_cb_" <> show i) argTys
+                  params = String.joinWith ", " (Array.zipWith (\n ty -> n <> ": " <> rustTy ty) names argTys)
+                  callArgs = String.joinWith ", " names
+              in Just ("move |" <> params <> "| " <> fullName <> "(" <> callArgs <> ")")
+        _ -> Nothing
+    NeutralExpr (Abs params body) -> inlineLambda (NonEmptyArray.toArray params) body
+    NeutralExpr (UncurriedAbs params body) -> inlineLambda params body
+    _ -> Nothing
+    where
+    inlineLambda params body =
+      let names = map (\(Tuple mbId _) -> case mbId of
+            Just (Ident name) -> sanitizeIdent name
+            Nothing -> "_") params
+          bound' = Map.union (Map.fromFoldable (Array.zip names argTys)) bound
+      in if Array.length names /= Array.length argTys
+           then Nothing
+           else if not (Array.all identity (map (isJust <<< primitiveTy) argTys)) || not (isJust (primitiveTy retTy))
+             then Nothing
+             else
+               let bodyVars = freeVariables body
+                   paramsSet = Set.fromFoldable names
+               in if not (Set.isEmpty (Set.difference bodyVars paramsSet)) then Nothing
+                  else
+                    let bodyCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound' alive false body
+                        bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields bound' body
+                    in if bodyTy /= retTy then Nothing
+                       else
+                         let converted = boxUnbox renames valueEnums globalClassFields currentMod retTy bodyTy bodyCode
+                             paramsCode = String.joinWith ", " (Array.zipWith (\n ty -> n <> ": " <> rustTy ty) names argTys)
+                         in Just ("move |" <> paramsCode <> "| " <> converted)
+
+  foldTraversal helperName leftToRight cbArg initArg xsArg = do
+    elTy <- arrayElementFromExpr xsArg
+    _ <- primitiveTy elTy
+    accTy <- primitiveTy (infer initArg)
+    Tuple cbArgs cbRet <- functionParts (infer cbArg)
+    if Array.length cbArgs /= 2 || not (cbRet == accTy)
+      then Nothing
+      else do
+        let first = fromMaybe Any (Array.index cbArgs 0)
+            second = fromMaybe Any (Array.index cbArgs 1)
+            ordered = if leftToRight then [ first, second ] else [ second, first ]
+        if not (first == accTy && second == elTy)
+          then Nothing
+          else do
+            closure <- callableFor ordered accTy cbArg
+            let xsCode = fromMaybe "" (Array.index argsCodeArray 2)
+                initCode = fromMaybe "" (Array.index argsCodeArray 1)
+                call = "purust_core::typed::" <> helperName <> "::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _>(" <> xsCode <> ", " <> initCode <> ", " <> closure <> ")"
+            pure (Tuple accTy call)
+
+  filterTraversal predArg xsArg = do
+    elTy <- arrayElementFromExpr xsArg
+    _ <- primitiveTy elTy
+    closure <- callableFor [ elTy ] Boolean predArg
+    let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
+        call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
+    pure (Tuple (Array elTy) call)
+
 genApp :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
 genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive appTy fn originalArgs =
     let
@@ -1350,7 +1555,11 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
         
 
         
-        resultCode = 
+        typedCall = typedTraversalCall renames valueEnums modNameStr allZeroArity reuseContext aritiesMap globalClassFields bound alive argsArray argsCodeArray fn
+        resultCode = case typedCall of
+          Just (Tuple actualTy typedCode) -> boxUnbox renames valueEnums globalClassFields modNameStr appTy actualTy typedCode
+          Nothing -> plainResult
+        plainResult = 
             let mbFnName = case getInner fn of
                   NeutralExpr (Var (Qualified mbMod (Ident name))) ->
                     let prefix = case mbMod of
@@ -2762,94 +2971,32 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
 
 printAST :: NeutralExpr -> String
-printAST = auditExpr
-
-auditExpr :: NeutralExpr -> String
-auditExpr (NeutralExpr expr) = case expr of
-  Syn.TypeApp a t -> "TypeApp(" <> auditExpr a <> ", " <> auditType t <> ")"
-  App fn args -> "App(" <> auditExpr fn <> ", [" <> String.joinWith ", " (map auditExpr (NonEmptyArray.toArray args)) <> "])"
-  Lit lit -> "Lit(" <> auditLit lit <> ")"
-  Var q -> "Var(" <> auditQualified q <> ")"
-  Let mbId lvl val body -> "Let(" <> auditMb mbId <> "#" <> show (unwrap lvl) <> ", " <> auditExpr val <> ", " <> auditExpr body <> ")"
-  Local mbId lvl -> "Local(" <> auditMb mbId <> "#" <> show (unwrap lvl) <> ")"
-  Abs params inner -> "Abs([" <> String.joinWith ", " (map auditParam (NonEmptyArray.toArray params)) <> "], " <> auditExpr inner <> ")"
-  Typed ty inner -> "Typed(" <> auditType ty <> " <- " <> auditExpr inner <> ")"
-  EffectBind mbId lvl val body -> "EffectBind(" <> auditMb mbId <> "#" <> show (unwrap lvl) <> ", " <> auditExpr val <> ", " <> auditExpr body <> ")"
-  EffectPure val -> "EffectPure(" <> auditExpr val <> ")"
-  Update base props -> "Update(" <> auditExpr base <> ", [" <> String.joinWith ", " (map (\(Prop k v) -> k <> "=" <> auditExpr v) props) <> "])"
-  Accessor inner prop -> "Accessor(" <> auditExpr inner <> ", " <> auditAccessor prop <> ")"
-  UncurriedEffectApp fn args -> "UncurriedEffectApp(" <> auditExpr fn <> ", [" <> String.joinWith ", " (map auditExpr args) <> "])"
-  LetRec _ _ inner -> "LetRec([...], " <> auditExpr inner <> ")"
-  Branch branches _ -> "Branch(" <> show (NonEmptyArray.length branches) <> " arms, ...)"
+printAST (NeutralExpr expr) = case expr of
+  Syn.TypeApp a _ -> "TypeApp(" <> printAST a <> ")"
+  App fn _ -> "App(" <> printAST fn <> ")"
+  Lit _ -> "Lit"
+  Var _ -> "Var(...)"
+  Let _ _ _ _ -> "Let(...)"
+  Local _ _ -> "Local(...)"
+  Abs _ inner -> "Abs(..., " <> printAST inner <> ")"
+  Typed _ inner -> "Typed(" <> printAST inner <> ")"
+  EffectBind _ _ _ _ -> "EffectBind"
+  EffectPure _ -> "EffectPure"
+  Update _ _ -> "Update"
+  Accessor inner prop -> "Accessor(" <> printAST inner <> ")"
+  UncurriedEffectApp fn _ -> "UncurriedEffectApp(" <> printAST fn <> ")"
+  LetRec _ _ inner -> "LetRec(..., " <> printAST inner <> ")"
+  Branch _ _ -> "Branch(...)"
   PrimOp _ -> "PrimOp(...)"
-  UncurriedApp fn args -> "UncurriedApp(" <> auditExpr fn <> ", [" <> String.joinWith ", " (map auditExpr args) <> "])"
+  UncurriedApp fn _ -> "UncurriedApp(" <> printAST fn <> ")"
   CtorSaturated _ _ _ _ _ -> "CtorSaturated(...)"
-  UncurriedAbs params inner -> "UncurriedAbs([" <> String.joinWith ", " (map auditParam params) <> "], " <> auditExpr inner <> ")"
-  UncurriedEffectAbs params inner -> "UncurriedEffectAbs([" <> String.joinWith ", " (map auditParam params) <> "], " <> auditExpr inner <> ")"
+  UncurriedAbs _ inner -> "UncurriedAbs(..., " <> printAST inner <> ")"
+  UncurriedEffectAbs _ inner -> "UncurriedEffectAbs(..., " <> printAST inner <> ")"
   CtorDef _ _ _ _ -> "CtorDef"
-  EffectDefer inner -> "EffectDefer(" <> auditExpr inner <> ")"
+  EffectDefer inner -> "EffectDefer(" <> printAST inner <> ")"
   PrimEffect _ -> "PrimEffect(...)"
   PrimUndefined -> "PrimUndefined"
   Fail msg -> "Fail(" <> msg <> ")"
-
-auditParam :: Tuple (Maybe Ident) Level -> String
-auditParam (Tuple mbId lvl) = auditMb mbId <> "#" <> show (unwrap lvl)
-
-auditMb :: Maybe Ident -> String
-auditMb = case _ of
-  Just (Ident i) -> i
-  Nothing -> "_"
-
-auditQualified :: Qualified Ident -> String
-auditQualified (Qualified mbMod (Ident i)) = case mbMod of
-  Just (ModuleName mn) -> mn <> "." <> i
-  Nothing -> i
-
-auditAccessor :: BackendAccessor -> String
-auditAccessor = case _ of
-  GetProp k -> "GetProp " <> k
-  GetIndex i -> "GetIndex " <> show i
-  GetCtorField q idx _ _ _ f -> "GetCtorField " <> show f <> "(" <> auditQualifiedQ q <> ", " <> show idx <> ")"
-
-auditQualifiedQ :: Qualified ProperName -> String
-auditQualifiedQ (Qualified mbMod (ProperName p)) = case mbMod of
-  Just (ModuleName mn) -> mn <> "." <> p
-  Nothing -> p
-
-auditLit :: Literal NeutralExpr -> String
-auditLit = case _ of
-  LitInt n -> "Int " <> show n
-  LitNumber n -> "Number " <> show n
-  LitString s -> "String " <> show s
-  LitChar c -> "Char " <> show c
-  LitBoolean b -> "Boolean " <> show b
-  LitArray items -> "[" <> String.joinWith ", " (map auditExpr items) <> "]"
-  LitRecord props -> "{" <> String.joinWith ", " (map (\(Prop k v) -> k <> "=" <> auditExpr v) props) <> "}"
-
-auditType :: ExprType -> String
-auditType = case _ of
-  Int -> "Int"
-  Number -> "Number"
-  String -> "String"
-  Char -> "Char"
-  Boolean -> "Boolean"
-  Unit -> "Unit"
-  Any -> "Any"
-  TypeLevelString s -> "Symbol " <> s
-  Array ty -> "Array " <> auditType ty
-  TypeVar name -> name
-  ADT _ fqn args -> String.joinWith "." fqn <> auditArgs args
-  TypeApp base args -> auditType base <> auditArgs args
-  Func args ret -> "(" <> String.joinWith " -> " (map auditType args) <> " -> " <> auditType ret <> ")"
-  Row fields tail -> "{" <> String.joinWith ", " (map (\(Tuple k v) -> k <> " :: " <> auditType v) fields) <> "| " <> (case tail of
-    Just t -> auditType t
-    Nothing -> "") <> "}"
-  Record row -> "Record " <> auditType row
-  ForAll vars ty -> "forall " <> String.joinWith " " vars <> ". " <> auditType ty
-  ConstrainedType cs ty -> "(" <> String.joinWith ", " (map (\(Tuple fqn args) -> String.joinWith "." fqn <> auditArgs args) cs) <> ") => " <> auditType ty
-
-auditArgs :: Array ExprType -> String
-auditArgs args = if Array.null args then "" else " " <> String.joinWith " " (map (\t -> "(" <> auditType t <> ")") args)
 
 freeVariables :: NeutralExpr -> Set String
 freeVariables (NeutralExpr expr) = case expr of
