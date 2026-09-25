@@ -891,6 +891,66 @@ leadingAbsArity (NeutralExpr (Typed _ inner)) = leadingAbsArity inner
 leadingAbsArity (NeutralExpr (Abs params body)) = NonEmptyArray.length params + leadingAbsArity body
 leadingAbsArity _ = 0
 
+-- Apply an already-emitted function value to a binding's remaining
+-- parameters, boxing every argument to the expected type. Call sites use this
+-- instead of building a `FuncN::Shared(Rc::new(...))` closure and applying it
+-- immediately, which allocated on every call.
+buildCallBindingGroupAt :: Map.Map String String -> ValueEnums -> Map.Map String (Array (Tuple String ExprType)) -> String -> Array (Tuple ExprType String) -> ExprType -> String -> Int -> Tuple ExprType String
+buildCallBindingGroupAt renames valueEnums globalClassFields currentMod argsCodeAndType = go
+  where
+  go accTy accCode idx = if idx >= Array.length argsCodeAndType then Tuple accTy accCode else
+    case unwrapType accTy of
+      Func argTys retTy ->
+        let arity = Array.length argTys
+        in if arity > 0 && arity <= maxNativeFunctionArity then
+             let availableArgsCount = Array.length argsCodeAndType - idx
+             in if availableArgsCount >= arity then
+                  let passedArgs = Array.slice idx (idx + arity) argsCodeAndType
+                      boxedArgs = Array.mapWithIndex (\i (Tuple argTy argCode) ->
+                          let expectedTy = fromMaybe Any (Array.index argTys i)
+                          in boxUnbox renames valueEnums globalClassFields currentMod expectedTy argTy argCode
+                        ) passedArgs
+                      nextCode = "(" <> accCode <> ")(" <> String.joinWith ", " boxedArgs <> ")"
+                  in go retTy nextCode (idx + arity)
+                else
+                  let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
+                  in go Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox renames valueEnums globalClassFields currentMod Any argTy argCode <> ")") (idx + 1)
+           else
+             let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
+             in go Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox renames valueEnums globalClassFields currentMod Any argTy argCode <> ")") (idx + 1)
+      _ ->
+        let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
+        in go Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox renames valueEnums globalClassFields currentMod Any argTy argCode <> ")") (idx + 1)
+
+-- Rebuild the function type a body expression actually returns: nested
+-- lambdas keep their curried grouping, while a direct accessor or global keeps
+-- the flat remaining signature.
+shapeFunctionType :: String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> ExprType -> NeutralExpr -> ExprType
+shapeFunctionType modNameStr aritiesMap globalClassFields bound = go
+  where
+  go currentTy expr = case expr of
+    NeutralExpr (Typed _ _) -> inferTypeExpr modNameStr aritiesMap globalClassFields bound expr
+    NeutralExpr (Syn.TypeApp _ _) -> inferTypeExpr modNameStr aritiesMap globalClassFields bound expr
+    NeutralExpr (Abs params body) ->
+      let
+        expectedArgs = extractAllArgTypes currentTy
+        arity = NonEmptyArray.length params
+        paramTys = Array.take arity expectedArgs
+        restArgs = Array.drop arity expectedArgs
+        retTy = extractFinalRetType currentTy
+        bodyExpectedTy = if Array.length restArgs > 0 then Func restArgs retTy else retTy
+      in Func paramTys (go bodyExpectedTy body)
+    NeutralExpr (UncurriedAbs params body) ->
+      let
+        expectedArgs = extractAllArgTypes currentTy
+        arity = Array.length params
+        paramTys = Array.take arity expectedArgs
+        restArgs = Array.drop arity expectedArgs
+        retTy = extractFinalRetType currentTy
+        bodyExpectedTy = if Array.length restArgs > 0 then Func restArgs retTy else retTy
+      in Func paramTys (go bodyExpectedTy body)
+    _ -> currentTy
+
 codegenBindingGroup :: { threaded :: Boolean, moduleValues :: Set Ident, fieldRenames :: Map.Map String String } -> ValueEnums -> ModuleName -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
 codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseContext aritiesMap globalClassFields group = unsafePerformEffect do
   let renames = options.fieldRenames
@@ -987,6 +1047,32 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                             "_function_result = (" <> callback <> ")(_function_result); _function_count -= 1; } " <>
                             "_function_result } else " <> fallback
                         _, _, _ -> fallback
+                -- Partial eta expansion: the binding body is a lambda with
+                -- fewer parameters than the public arity (class accessors such
+                -- as `\\dict -> dict.add`). Emit the body and apply the
+                -- remaining public parameters directly instead of building and
+                -- calling a closure, which allocated on every call.
+                Nothing
+                  | not isSelfRecursive
+                  , prefixArity <- leadingAbsArity expr
+                  , prefixArity > 0
+                  , prefixArity < Array.length argTypes
+                  , Just (Tuple prefixParams body) <- extractAbsParams prefixArity expr ->
+                      let
+                        prefixTypes = Array.take prefixArity argTypes
+                        remainingTypes = Array.drop prefixArity argTypes
+                        prefixNames = prefixParams
+                        prefixBound = Map.fromFoldable (Array.filter (\(Tuple name _) -> name /= "_")
+                          (Array.zip prefixNames prefixTypes))
+                        captures = Array.mapWithIndex (\i ty -> "    let __purust_arg_" <> show i <> ": " <>
+                          codegenExprTypeWithValueEnums valueEnums modNameStr true ty <> " = a" <> show (prefixArity + i) <> ".clone();\n") remainingTypes
+                        aliases = Array.mapWithIndex (\i name -> if name == "_" then "" else "    let " <> name <> " = a" <> show i <> ";\n") prefixNames
+                        bodyCode = codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext Nothing mergedArities globalClassFields prefixBound Set.empty false body
+                        bodyBaseTy = if Array.length remainingTypes > 0 then Func remainingTypes retType else retType
+                        bodyExpectedTy = shapeFunctionType modNameStr mergedArities globalClassFields prefixBound bodyBaseTy body
+                        remainingArgs = Array.mapWithIndex (\i ty -> Tuple ty ("__purust_arg_" <> show i <> ".clone()")) remainingTypes
+                        Tuple actualRetTy callCode = buildCallBindingGroupAt renames valueEnums globalClassFields modNameStr remainingArgs bodyExpectedTy bodyCode 0
+                      in foldMap identity captures <> foldMap identity aliases <> boxUnbox renames valueEnums globalClassFields modNameStr retType actualRetTy callCode
                 Nothing -> 
                    let shapeTypeToAST :: ExprType -> NeutralExpr -> ExprType
                        -- Typed applications may retain a flattened public
@@ -1020,31 +1106,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                        fnTy = shapeTypeToAST inferredType expr
                        argsCodeAndType = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in Tuple ty (sanitizeIdent p <> ".clone()")) deduped
                        
-                       buildCallBindingGroup :: ExprType -> String -> Int -> Tuple ExprType String
-                       buildCallBindingGroup accTy accCode idx = if idx >= Array.length argsCodeAndType then Tuple accTy accCode else
-                         case unwrapType accTy of
-                           Func argTys retTy ->
-                             let arity = Array.length argTys
-                             in if arity > 0 && arity <= maxNativeFunctionArity then
-                                  let availableArgsCount = Array.length argsCodeAndType - idx
-                                  in if availableArgsCount >= arity then
-                                       let passedArgs = Array.slice idx (idx + arity) argsCodeAndType
-                                           boxedArgs = Array.mapWithIndex (\i (Tuple argTy argCode) -> 
-                                               let expectedTy = fromMaybe Any (Array.index argTys i)
-                                               in boxUnbox renames valueEnums globalClassFields modNameStr expectedTy argTy argCode
-                                             ) passedArgs
-                                           nextCode = "(" <> accCode <> ")(" <> String.joinWith ", " boxedArgs <> ")"
-                                       in buildCallBindingGroup retTy nextCode (idx + arity)
-                                     else
-                                       let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
-                                       in buildCallBindingGroup Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox renames valueEnums globalClassFields modNameStr Any argTy argCode <> ")") (idx + 1)
-                                else
-                                  let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
-                                  in buildCallBindingGroup Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox renames valueEnums globalClassFields modNameStr Any argTy argCode <> ")") (idx + 1)
-                           _ -> 
-                             let (Tuple argTy argCode) = fromMaybe (Tuple Any "") (Array.index argsCodeAndType idx)
-                             in buildCallBindingGroup Any ("(" <> accCode <> ").unwrap_func1()(" <> boxUnbox renames valueEnums globalClassFields modNameStr Any argTy argCode <> ")") (idx + 1)
-                       Tuple actualRetTy callCode = buildCallBindingGroup fnTy fnCode 0
+                       Tuple actualRetTy callCode = buildCallBindingGroupAt renames valueEnums globalClassFields modNameStr argsCodeAndType fnTy fnCode 0
                    in boxUnbox renames valueEnums globalClassFields modNameStr retType actualRetTy callCode
             in { paramsCode: pCode, retCode: codegenExprTypeWithValueEnums valueEnums modNameStr true retType, bodyCode: bodyCodeRaw, isFunc: true }
           else 
