@@ -93,6 +93,10 @@ fn call_checks() {
     assert_eq!((node(node(&result).0).1, node(node(&result).2).1), (7, 8));
 }
 fn main() {
+    // `mixed` is a nullary top-level binding promoted to a cached module value
+    // (see module-values.mjs); prime that cache before measuring, it is not a
+    // per-call allocation and lives for the thread's lifetime.
+    let _ = SharedNullaries_mixed();
     let a = ALLOCS.load(Ordering::Relaxed);
     let f = FREES.load(Ordering::Relaxed);
     let cost = leaf_checks();

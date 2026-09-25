@@ -113,17 +113,22 @@ try {
       assert.throws(() => checkRealFFI(code), expected);
       const manifest = join(rust, 'Cargo.toml');
       if (kind === 'missing-file') {
-        const check = run('cargo', ['check', '--offline', '--manifest-path', manifest, '-p', 'Purs_NullableProbe', '--lib'], 101);
-        assert.match(check.stderr, /cannot find type `Nullable`/);
+        // The compiler forwards an absent FFI type as an unconstructible empty
+        // enum (see foreign-types.mjs), so the crate still type-checks and the
+        // stubs panic instead of rejecting the build.
+        run('cargo', ['check', '--offline', '--manifest-path', manifest, '-p', 'Purs_NullableProbe', '--lib']);
+        const fallback = readFileSync(join(rust, 'Purs_Data_Nullable/src/lib.rs'), 'utf8');
+        assert.match(fallback, /pub enum Nullable \{\}/, 'missing FFI types stay unconstructible');
+        assert.match(fallback, /pub fn Data_Nullable_null\(\) -> std::(?:rc::Rc|sync::Arc)<crate::Nullable> \{ unimplemented!\(\) \}/);
       } else {
         installTests(rust, threaded);
         const check = run('cargo', ['test', '--offline', '--manifest-path', manifest, '-p', 'Purs_NullableProbe', '--test', 'nullable',
           'typed_scalar_round_trips_and_instances', '--', '--exact', '--test-threads=1'], 101);
         assert.match(check.stdout, /not implemented/); assert.match(check.stdout, /0 passed; 1 failed/);
       }
-      negatives.push({ kind, mode, rejectedByGuard: true, nativeStatus: 101 });
+      negatives.push({ kind, mode, rejectedByGuard: true, nativeStatus: kind === 'missing-file' ? 0 : 101 });
       writeFileSync(join(directory, 'negative-checks.json'), JSON.stringify(negatives, null, 2) + '\n');
-      console.log(`${kind}/${mode}: explicit regression rejection and native failure confirmed`);
+      console.log(`${kind}/${mode}: explicit regression rejection ${kind === 'missing-file' ? 'and unconstructible fallback' : 'and native failure'} confirmed`);
     }
   }
   assert.equal(hash(join(root, 'bin/purust.js')), provenance.bundleSha256);

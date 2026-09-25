@@ -134,7 +134,7 @@ try {
   }
   walk(t.decls); assert.ok(sites.has(error) && sites.has(carrier));
   report.tast = tast; report.foreignNames = t.foreign;
-  assert.deepEqual([...t.foreign].sort(), ['isArray', 'isNull', 'isUndefined', 'tagOf', 'typeOf']); save();
+  assert.deepEqual([...t.foreign].sort(), ['isArray', 'isNull', 'isUndefined', 'readStringImpl', 'tagOf', 'typeOf']); save();
   assert.match(run('reference', process.execPath, [join(fixtures, 'js-checks.mjs'), tast]).stdout, /JS: 10 contract groups passed/);
   const predicates = await predicateTests(tast);
   const actualFFI = readFileSync(source.replace(/\.purs$/, '.rs'), 'utf8');

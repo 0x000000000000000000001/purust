@@ -25,22 +25,24 @@ try {
   run(process.execPath, ['--stack-size=65536', join(root, 'bin/purust.js'),
     '--source', output, '--out', rust, '--main', 'RecordRootMove']);
   const generated = readFileSync(join(rust, 'Purs_RecordRootMove/src/lib.rs'), 'utf8');
-  const bodies = new Map(generated.split(/^pub fn /m).slice(1).map(body =>
+  const bodies = new Map(generated.split(/^(?:pub )?fn /m).slice(1).map(body =>
     [body.match(/^RecordRootMove_(\w+)\(/)?.[1], body]));
-  for (const name of ['bump', 'swap', 'callback', 'capture', 'callbackPayloads', 'updateDeep']) {
+  for (const name of ['bump', 'swap', 'callback', 'capture', 'callbackPayloads']) {
     assert.match(bodies.get(name), /let _record_update_0 = /, name);
   }
+  // Deep scalar updates lower into a private record-loop worker.
+  assert.match(bodies.get('updateDeep'), /RecordRootMove_updateDeep__purust_record_loop_0\(/);
   assert.match(bodies.get('bump'), /let mut _base = purs_local_0;/);
-  for (const name of ['updateDeep', 'callbackNested', 'captureChild', 'callbackNestedPayloads']) {
+  for (const name of ['updateDeep__purust_record_loop_0', 'callbackNested', 'captureChild', 'callbackNestedPayloads']) {
     const body = bodies.get(name);
     assert.match(body, /let _record_child_update_0 = /, name);
     assert.equal((body.match(/let mut _record_child = /g) ?? []).length, 1, name);
-    assert.match(body, /_base\.set_b\(crate::Value::Unit\);/, name);
+    assert.match(body, /_base\.set_b\((?:crate|purust_core)::Value::Unit\);/, name);
   }
-  for (const name of ['updateDeep', 'callbackDeep', 'captureLeaf', 'callbackDeepPayloads']) {
+  for (const name of ['updateDeep__purust_record_loop_0', 'callbackDeep', 'captureLeaf', 'callbackDeepPayloads']) {
     const body = bodies.get(name);
     assert.equal((body.match(/let mut _record_child(?:_\d+)? = /g) ?? []).length, 2, name);
-    assert.match(body, /_record_child\.set_d\(crate::Value::Unit\);/, name);
+    assert.match(body, /_record_child\.set_d\((?:crate|purust_core)::Value::Unit\);/, name);
     assert.ok(body.indexOf('let _record_child_1_update_0 = ') < body.lastIndexOf('let mut _base = '), name);
   }
   for (const name of ['retain', 'capturedBase', 'openRow']) {

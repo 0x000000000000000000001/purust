@@ -120,6 +120,7 @@ fn main() {
   writeFileSync(join(crate, 'examples/hash_pipeline.rs'), checks);
   const prefix = ['exec', '-w', remote(rust), '-e', 'CARGO_BUILD_JOBS=1', '-e', 'CARGO_PROFILE_DEV_DEBUG=0',
     '-e', 'CARGO_INCREMENTAL=0', 'core-api-cli-1'];
+  run('fetch', 'docker', [...prefix, 'cargo', 'fetch']);
   run('build', 'docker', [...prefix, 'cargo', 'build', '--offline', '--quiet', '-p', 'Purs_CryptoHashProbe', '--example', 'hash_pipeline']);
   const binary = remote(join(rust, 'target/debug/examples/hash_pipeline'));
   const tested = run('pipeline', 'docker', [...prefix, 'timeout', '-k', '1s', '10s', binary]);

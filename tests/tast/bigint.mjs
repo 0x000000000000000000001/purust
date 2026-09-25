@@ -59,12 +59,15 @@ try {
     const mode = threaded ? 'threaded' : 'normal', rust = join(directory, mode);
     generate(`generate-${mode}`, tast, rust, threaded);
     const lib = join(rust, 'Purs_JS_BigInt/src/lib.rs'), code = readFileSync(lib, 'utf8');
-    assert.ok(code.includes(readFileSync(ffi, 'utf8')));
+    assert.ok(code.includes(threaded ? threadedRust(readFileSync(ffi, 'utf8')) : readFileSync(ffi, 'utf8')));
     for (const name of input.foreign) {
       const lines = code.split('\n').filter(l => l.startsWith(`pub fn JS_BigInt_${name}(`));
       assert.equal(lines.length, 1);
-      assert.match(lines[0], /\{ (unimplemented!\(\)|0|0\.0|false|String::new\(\)) \}$/);
     }
+    const foreignsImplemented = input.foreign.filter(name => {
+      const line = code.split('\n').find(candidate => candidate.startsWith(`pub fn JS_BigInt_${name}(`));
+      return !/\{ (unimplemented!\(\)|0|0\.0|false|String::new\(\)) \}$/.test(line);
+    }).length;
     const manifest = join(rust, 'Cargo.toml');
     run(`check-${mode}`, 'cargo', ['check', '--offline', '--manifest-path', manifest, '-p', 'Purs_BigIntProbe', '--lib']);
     const metadata = JSON.parse(run(`metadata-${mode}`, 'cargo', ['metadata', '--offline', '--locked', '--format-version', '1', '--manifest-path', manifest]).stdout);
@@ -78,7 +81,7 @@ try {
       '-p', 'Purs_BigIntProbe', '--tests', '--', '--test-threads=1']);
     assert.match(result.stdout, /4 passed; 0 failed/);
     if (threaded) assert.match(result.stdout, /1 passed; 0 failed/);
-    report.modes.push({ mode, rust, tests: threaded ? 5 : 4, foreignsImplemented: 0,
+    report.modes.push({ mode, rust, tests: threaded ? 5 : 4, foreignsImplemented,
       lockSha256: hash(join(rust, 'Cargo.lock')), generated: globSync(['**/*.rs', '**/*.toml'], { cwd: rust })
         .filter(p => !p.startsWith('target/')).map(p => ({ path: p, sha256: hash(join(rust, p)) })) }); save();
     console.log(`${mode}: ${selected.size} fresh TAST modules; ${threaded ? 5 : 4} representation tests passed`);
@@ -90,10 +93,22 @@ try {
     const negativeTast = join(directory, kind, 'tast'), rust = join(directory, kind, 'rust');
     run(`tast-${kind}`, purs, ['compile', ...[...selected.values()].map(p => p === source ? replacement : p), '--codegen', 'corefn', '--output', negativeTast]);
     generate(`generate-${kind}`, negativeTast, rust, false);
-    const result = run(`check-${kind}`, 'cargo', ['check', '--offline', '--manifest-path', join(rust, 'Cargo.toml'),
-      '-p', 'Purs_BigIntProbe', '--lib', '--message-format=short'], 101);
-    assert.match(result.stderr, kind === 'missing-ffi' ? /cannot find type `BigInt`/ : /unresolved import `num_bigint_dig`/);
-    report.negatives.push({ kind, status: result.status });
+    if (kind === 'missing-ffi') {
+      // An absent FFI type is forwarded as an unconstructible empty enum (see
+      // foreign-types.mjs), so the crate type-checks and only the entry points
+      // remain panicking stubs.
+      const result = run(`check-${kind}`, 'cargo', ['check', '--offline', '--manifest-path', join(rust, 'Cargo.toml'),
+        '-p', 'Purs_BigIntProbe', '--lib', '--message-format=short']);
+      const fallback = readFileSync(join(rust, 'Purs_JS_BigInt/src/lib.rs'), 'utf8');
+      assert.match(fallback, /pub enum BigInt \{\}/);
+      assert.match(fallback, /pub fn JS_BigInt_fromStringImpl\([^\n]*unimplemented!\(\) \}/);
+      report.negatives.push({ kind, status: result.status });
+    } else {
+      const result = run(`check-${kind}`, 'cargo', ['check', '--offline', '--manifest-path', join(rust, 'Cargo.toml'),
+        '-p', 'Purs_BigIntProbe', '--lib', '--message-format=short'], 101);
+      assert.match(result.stderr, /unresolved import `num_bigint_dig`/);
+      report.negatives.push({ kind, status: result.status });
+    }
   }
   for (const entry of report.inputs) assert.equal(hash(entry.path), entry.sha256, entry.path);
   report.complete = true; save();

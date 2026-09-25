@@ -193,6 +193,7 @@ ${adapt(checks)}`;
     writeFileSync(join(dir, 'main.rs'), code); writeFileSync(join(dir, 'cases.tsv'), vectors);
     const dependency = manifest.dependencies.uuid;
     writeFileSync(join(dir, 'Cargo.toml'), `[package]\nname="uuid_ffi"\nversion="0.0.0"\nedition="2021"\n[[bin]]\nname="uuid_ffi"\npath="main.rs"\n[features]\nthreaded=[]\n[dependencies]\nuuid={version=${JSON.stringify(dependency.version)},features=${JSON.stringify(dependency.features)}}\n`);
+    if (!threaded) run(`fetch-${mode}`, ['exec', '-w', remote(dir), 'core-api-cli-1', 'cargo', 'fetch']);
     const native = run(`native-${mode}`, ['exec', '-w', remote(dir), '-e', 'CARGO_BUILD_JOBS=1', '-e', 'CARGO_PROFILE_DEV_DEBUG=0',
       '-e', 'CARGO_INCREMENTAL=0', 'core-api-cli-1', 'cargo', 'run', '--offline', '--quiet', ...(threaded ? ['--features', 'threaded'] : [])]);
     assert.equal(native.stderr, '', 'handled exceptions must not emit Rust panic diagnostics');

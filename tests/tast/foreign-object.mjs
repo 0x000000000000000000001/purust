@@ -33,35 +33,23 @@ function run(command, args, expected = 0) {
   assert.equal(result.status, expected, `${command}: ${result.error ?? ''}\n${result.stdout}\n${result.stderr}`);
   return result;
 }
-const implemented = ['empty', '_copyST', 'runST', '_lookup'];
 const marker = 'PURUST_OBJECT_FALLBACK_REACHED:';
+// Every Object entry point is native now. Keep the scan so a re-introduced
+// residual stub fails with its symbol name instead of a silent fallback.
 function guardObject(code, foreign) {
   const guards = [];
-  for (const name of foreign.filter(name => !implemented.includes(name))) {
+  for (const name of foreign) {
     const symbol = `Foreign_Object_${name}`;
+    assert.ok(new RegExp(`^pub fn ${symbol}\\(`, 'm').test(code), `Missing Object FFI entry point: ${symbol}`);
     const pattern = new RegExp(`^pub fn ${symbol}\\((.*)\\) -> (.+) \\{ (unimplemented!\\(\\)|false|0) \\}$`, 'm');
-    const match = code.match(pattern); assert.ok(match, `Unknown fallback shape: ${symbol}`);
-    const types = match[1] === '' ? [] : match[1].split(/, (?=mut a[0-9]+: )/).map((argument, index) => {
-      const type = argument.match(new RegExp(`^mut a${index}: (.+)$`)); assert.ok(type); return type[1];
-    });
-    const args = types.map(type => {
-      if (type === 'crate::UnknownType') return 'purust_core::Value::Unit';
-      if (/^std::(rc::Rc|sync::Arc)<crate::Object>$/.test(type)) return 'Purs_Foreign_Object::Foreign_Object_empty()';
-      const arity = type.match(/^purust_core::Func([1-9])</)?.[1];
-      assert.ok(arity, `Unsupported probe argument: ${type}`);
-      return `purust_core::Func${arity}::Static(|${Array(Number(arity)).fill('_').join(', ')}| panic!("probe callback must not run"))`;
-    });
-    const guarded = `pub fn ${symbol}(${match[1]}) -> ${match[2]} { use std::io::Write; let _ = writeln!(std::io::stderr().lock(), "${marker}${symbol}"); std::process::exit(86) }`;
-    code = code.replace(match[0], () => guarded);
-    guards.push({ symbol, original: match[0], guarded, arguments: args });
+    const match = code.match(pattern);
+    if (match) guards.push({ symbol, original: match[0] });
   }
-  assert.equal(guards.length, 9);
   return { code, guards };
 }
 let succeeded = false;
 try {
-  const purs = process.env.PURS ?? 'purs';
-  const graph = JSON.parse(run(purs, ['graph', join(fixture, 'ObjectProbe.purs'),
+  const purs = process.env.PURS ?? 'purs';  const graph = JSON.parse(run(purs, ['graph', join(fixture, 'ObjectProbe.purs'),
     ...roots.flatMap(path => globSync('**/*.purs', { cwd: path }).map(file => join(path, file)))]).stdout);
   const modules = new Map();
   function visit(name) {
@@ -90,33 +78,19 @@ try {
     }
     const file = join(rust, 'Purs_Foreign_Object/src/lib.rs');
     const original = readFileSync(file, 'utf8');
-    implemented.forEach(name => assert.equal([...original.matchAll(new RegExp(`pub fn Foreign_Object_${name}\\(`, 'g'))].length, 1));
     const { code, guards } = guardObject(original, input.foreign);
+    assert.equal(guards.length, 0, `Residual Object stubs: ${guards.map(guard => guard.symbol).join(', ')}`);
+    writeFileSync(join(directory, `${mode}-guards.json`), JSON.stringify(guards, null, 2) + '\n');
     writeFileSync(file, code);
-    const examples = join(rust, 'Purs_ObjectProbe/examples'); mkdirSync(examples);
-    writeFileSync(join(examples, 'object-fallbacks.rs'), `fn main() {
-    let _ = std::panic::catch_unwind(|| match std::env::args().nth(1).as_deref() {
-${guards.map(guard => `        Some("${guard.symbol}") => { let _ = Purs_Foreign_Object::${guard.symbol}(${guard.arguments.join(', ')}); },`).join('\n')}
-        _ => panic!("unknown probe symbol"),
-    });
-    std::process::exit(87);
-}
-`);
     const tests = join(rust, 'Purs_ObjectProbe/tests'); mkdirSync(tests);
     const checks = readFileSync(join(fixture, 'checks.rs'), 'utf8');
     writeFileSync(join(tests, 'foreign_object.rs'), threaded ? threadedRust(checks) : checks);
     const manifest = join(rust, 'Cargo.toml');
     run('cargo', ['check', '--offline', '--manifest-path', manifest, '-p', 'Purs_ObjectProbe']);
-    run('cargo', ['build', '--offline', '--manifest-path', manifest, '-p', 'Purs_ObjectProbe', '--example', 'object-fallbacks']);
-    for (const guard of guards) {
-      const checked = run(join(rust, 'target/debug/examples/object-fallbacks'), [guard.symbol], 86);
-      assert.equal(checked.stdout, ''); assert.equal(checked.stderr, `${marker}${guard.symbol}\n`);
-    }
-    writeFileSync(join(directory, `${mode}-guards.json`), JSON.stringify(guards, null, 2) + '\n');
     const tested = run('cargo', ['test', '--offline', '--manifest-path', manifest, '-p', 'Purs_ObjectProbe',
       '--test', 'foreign_object', '--', '--test-threads=1']);
     assert.match(tested.stdout, /11 passed; 0 failed/); assert.ok(!tested.stderr.includes(marker));
-    console.log(`${mode}: ${modules.size} fresh TAST modules, 11 native tests and 9 fatal guard self-checks passed`);
+    console.log(`${mode}: ${modules.size} fresh TAST modules, 11 native tests and no residual Object fallbacks`);
   }
   assert.equal(hash(join(root, 'bin/purust.js')), provenance.bundleSha256);
   [...provenance.sources, ...provenance.ffi].forEach(source => assert.equal(hash(source.path), source.sha256));
