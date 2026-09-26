@@ -804,6 +804,14 @@ codegenPreludeWithRenames renames shapes =
   "    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" <>
   "        if let Value::Array(v) = self.resolve() { v.clone() } else { panic!(\"Expected Array\"); }\n" <>
   "    }\n" <>
+  -- Borrowing accessors: a length or element read must not clone the backing
+  -- buffer reference, which would touch the refcount on every access.
+  "    pub fn array_len(&self) -> usize {\n" <>
+  "        if let Value::Array(v) = self.resolve() { v.len() } else { panic!(\"Expected Array\"); }\n" <>
+  "    }\n" <>
+  "    pub fn array_get(&self, index: usize) -> UnknownType {\n" <>
+  "        if let Value::Array(v) = self.resolve() { v[index].clone() } else { panic!(\"Expected Array\"); }\n" <>
+  "    }\n" <>
   funcUnwraps <>
   "    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" <>
   "        if let Value::Class(v) = self.resolve() { v.downcast_ref::<T>().unwrap() } else { panic!(\"Expected Class\"); }\n" <>
@@ -1496,6 +1504,16 @@ literalPowerOfTwoMask expr = case stripCodegenWrappers expr of
     | n `mod` 2 /= 0 = Nothing
     | otherwise = go (n `div` 2) (mask * 2 + 1)
 
+-- A `Data.Function.Uncurried` FnN type is a boxed function value: one
+-- `unwrap_funcN` reaches its native arity instead of one unwrap per argument.
+uncurriedFnArity :: Array String -> Array ExprType -> Maybe Int
+uncurriedFnArity fqn args = case fqn of
+  [ "Data", "Function", "Uncurried", name ]
+    | String.indexOf (Pattern "Fn") name == Just 0
+    , Array.length args >= 2
+    , Array.length args - 1 <= maxNativeFunctionArity -> Just (Array.length args - 1)
+  _ -> Nothing
+
 -- Strip the erasure wrappers used to inspect a callee or producer expression.
 stripCodegenWrappers :: NeutralExpr -> NeutralExpr
 stripCodegenWrappers (NeutralExpr (Typed _ inner)) = stripCodegenWrappers inner
@@ -1852,6 +1870,21 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                          argTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound argExpr
                          boxedArg = boxUnbox renames valueEnums globalClassFields modNameStr Any argTy argCode
                      in buildCall Any ("(" <> accCode <> ").unwrap_func1()(" <> boxedArg <> ")") (idx + 1)
+              ADT _ fqn typeArgs
+                | Just fnArity <- uncurriedFnArity fqn typeArgs
+                , Array.length argsCodeArray - idx >= fnArity ->
+                    -- A Value::FuncN always stores Value parameters and a
+                    -- Value result, so every argument is boxed and the call
+                    -- yields a boxed value.
+                    let passedArgs = Array.slice idx (idx + fnArity) argsCodeArray
+                        passedArgsTys = Array.slice idx (idx + fnArity) argsArray
+                        boxedArgs = Array.mapWithIndex (\i argCode ->
+                            let argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index passedArgsTys i)
+                                argTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound argExpr
+                            in boxUnbox renames valueEnums globalClassFields modNameStr Any argTy argCode
+                          ) passedArgs
+                        nextCode = "(" <> accCode <> ").unwrap_func" <> show fnArity <> "()(" <> String.joinWith ", " boxedArgs <> ")"
+                    in buildCall Any nextCode (idx + fnArity)
               _ ->
                 let argCode = fromMaybe "" (Array.index argsCodeArray idx)
                     argExpr = fromMaybe (NeutralExpr (Var (Qualified Nothing (Ident "")))) (Array.index argsArray idx)
@@ -2767,7 +2800,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                 let countCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables valueArg)) false countArg
                     valueCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false valueArg
                 in "{ let _purust_replicated = " <> valueCode <> "; (" <> countCode <> ").max(0) }"
-          _ -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
+          _ -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").array_len() as i64)"
       OpIsTag (Qualified mbMod (Ident ctorName)) ->
         let ctorModule = case mbMod of
               Just (ModuleName name) -> String.replaceAll (Pattern ".") (Replacement "_") name
@@ -2868,7 +2901,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
       OpArrayIndex -> 
         let aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw
-        in "(" <> aStr <> ").unwrap_array()[(" <> bStrInt <> ") as usize].clone()"
+        in "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
       OpNumberNum OpAdd -> "(" <> aStrNum <> " + " <> bStrNum <> ")"
       OpNumberNum OpSubtract -> "(" <> aStrNum <> " - " <> bStrNum <> ")"
       OpNumberNum OpMultiply -> "(" <> aStrNum <> " * " <> bStrNum <> ")"
@@ -2880,7 +2913,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   Accessor base (GetIndex index) ->
     let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
-    in "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").unwrap_array()[" <> show index <> "].clone()"
+    in "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get(" <> show index <> ")"
   Accessor base (GetProp k) -> 
     let baseStr = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
