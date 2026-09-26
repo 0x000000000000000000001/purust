@@ -16,6 +16,7 @@ import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
 import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
+import Purust.BackendDeps (backendModuleDeps)
 import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
 import Purust.DataLayout (opaqueForeignTypeKey, valueEnumsForModules)
@@ -273,7 +274,10 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
             source <- FS.readTextFile UTF8 coreFnMod.path
             pure $ foreignTypeForwards source (rsFile <> "\n" <> ffiContent)
             else pure ""
-          let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
+          -- Dependencies come from the optimized backend module plus the
+          -- emitted text, not from the pre-codegen AST: optimisation removes
+          -- references, and a spurious edge can make the crate graph cyclic.
+          let rawModules = Set.toUnfoldable (backendModuleDeps globalValueEnums backendMod) :: Array String
           let extractModules s = Array.mapMaybe (\part -> 
                 case String.indexOf (Pattern "::") part of
                   Just i -> 
