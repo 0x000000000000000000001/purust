@@ -851,6 +851,7 @@ codegenPreludeWithRenames renames shapes =
   "    String(String),\n" <>
   "    Char(char),\n" <>
   "    Array(std::rc::Rc<Vec<UnknownType>>),\n" <>
+  "    IntArray(std::rc::Rc<Vec<i64>>),\n" <>
   funcVariants <>
   "    Class(std::rc::Rc<dyn std::any::Any>),\n" <>
   "    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" <>
@@ -885,22 +886,40 @@ codegenPreludeWithRenames renames shapes =
   "    pub fn unwrap_char(&self) -> char {\n" <>
   "        if let Value::Char(v) = self.resolve() { *v } else { panic!(\"Expected Char\"); }\n" <>
   "    }\n" <>
+  -- An `Array Int` may keep its elements unboxed. Consumers that accept both
+  -- representations go through the accessors and iterators below; the rest
+  -- keep working through the boxed conversion in `unwrap_array`.
   "    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" <>
-  "        if let Value::Array(v) = self.resolve() { v.clone() } else { panic!(\"Expected Array\"); }\n" <>
+  "        match self.resolve() {\n" <>
+  "            Value::Array(v) => v.clone(),\n" <>
+  "            Value::IntArray(v) => std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect()),\n" <>
+  "            _ => panic!(\"Expected Array\"),\n" <>
+  "        }\n" <>
+  "    }\n" <>
+  "    pub fn is_array(&self) -> bool {\n" <>
+  "        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_))\n" <>
+  "    }\n" <>
+  "    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
+  "        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" <>
   "    }\n" <>
   -- Borrowing accessors: a length or element read must not clone the backing
   -- buffer reference, which would touch the refcount on every access.
   "    pub fn array_len(&self) -> usize {\n" <>
-  "        if let Value::Array(v) = self.resolve() { v.len() } else { panic!(\"Expected Array\"); }\n" <>
+  "        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), _ => panic!(\"Expected Array\") }\n" <>
   "    }\n" <>
   "    pub fn array_get(&self, index: usize) -> UnknownType {\n" <>
-  "        if let Value::Array(v) = self.resolve() { v[index].clone() } else { panic!(\"Expected Array\"); }\n" <>
+  "        match self.resolve() {\n" <>
+  "            Value::Array(v) => v[index].clone(),\n" <>
+  "            Value::IntArray(v) => Value::Int(v[index]),\n" <>
+  "            _ => panic!(\"Expected Array\"),\n" <>
+  "        }\n" <>
   "    }\n" <>
   -- An `Array Int` read that already knows its element representation copies
   -- the integer instead of cloning the boxed element.
   "    pub fn array_get_int(&self, index: usize) -> i64 {\n" <>
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!(\"Expected Int element\"); },\n" <>
+  "            Value::IntArray(v) => v[index],\n" <>
   "            _ => panic!(\"Expected Array\"),\n" <>
   "        }\n" <>
   "    }\n" <>
@@ -929,6 +948,8 @@ codegenPreludeWithRenames renames shapes =
   "pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" <>
   "pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" <>
   "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" <>
+  "pub fn mk_int_array(val: Vec<i64>) -> UnknownType { Value::IntArray(std::rc::Rc::new(val)) }\n\n" <>
+  reprItemsSource <>
   "#[derive(Clone, Default)]\npub struct Thunk {\n" <>
   "    pub value: std::sync::OnceLock<Value>,\n" <>
   "}\n\n" <>
