@@ -30,6 +30,7 @@ import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpda
 import Purust.ClassFields (superclassFields)
 import Purust.DataLayout (ValueEnums, isValueEnum, isOpaqueForeignType)
 import Purust.ThunkFusion (optimizeThunkProducers)
+import Purust.ListFusion (optimizeListPipelines)
 import Purust.RecordScalarization (optimizeRecordLoops)
 import Purust.FunctionFusion (countedFunctionProducers)
 import Purust.Utf16 (runtimeHelpers, rustStringLiteral, rustCharLiteral)
@@ -514,7 +515,8 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
     reservedGlobals = Set.fromFoldable (Array.mapMaybe (map sanitizeIdent <<< String.stripPrefix (Pattern (modNameStr <> "_"))) (Array.fromFoldable (Map.keys globalAritiesMap)))
     scalarized = optimizeRecordLoops sanitizeIdent reservedGlobals backendMod.name backendMod.bindings
     fused = optimizeThunkProducers sanitizeIdent reservedGlobals backendMod.name scalarized.bindings
-    namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) fused.bindings
+    listFused = optimizeListPipelines backendMod.name fused.bindings
+    namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) listFused
     -- The global signature map also contains local foreign declarations,
     -- which have no binding body here but still reserve their Rust names.
     bindingNames = Set.union
