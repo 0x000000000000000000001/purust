@@ -880,6 +880,7 @@ codegenPreludeWithRenames renames shapes =
   recordVariants <>
   "}\n\n" <>
   "impl Value {\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn resolve(&self) -> &Self {\n" <>
   "        let mut value = self;\n" <>
   "        while let Value::Thunk(thunk) = value {\n" <>
@@ -890,13 +891,16 @@ codegenPreludeWithRenames renames shapes =
   "    pub fn unwrap_unit(&self) {\n" <>
   "        if !matches!(self.resolve(), Value::Unit) { panic!(\"Expected Unit\"); }\n" <>
   "    }\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn unwrap_int(&self) -> i64 {\n" <>
   "        if let Value::Int(v) = self.resolve() { *v } else { panic!(\"Expected Int\"); }\n" <>
   "    }\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn unwrap_number(&self) -> f64 {\n" <>
   "        // Foreign numbers can originate from a native PureScript Int.\n" <>
   "        match self.resolve() { Value::Number(v) => *v, Value::Int(v) => *v as f64, _ => panic!(\"Expected Number\") }\n" <>
   "    }\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn unwrap_bool(&self) -> bool {\n" <>
   "        if let Value::Bool(v) = self.resolve() { *v } else { panic!(\"Expected Bool\"); }\n" <>
   "    }\n" <>
@@ -916,14 +920,17 @@ codegenPreludeWithRenames renames shapes =
   "            _ => panic!(\"Expected Array\"),\n" <>
   "        }\n" <>
   "    }\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn is_array(&self) -> bool {\n" <>
   "        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_))\n" <>
   "    }\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
   "        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" <>
   "    }\n" <>
   -- The same view without walking thunks: a dispatch must not force a value
   -- the program would not otherwise have forced.
+  "    #[inline(always)]\n" <>
   "    pub fn int_array_now(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
   "        match self { Value::IntArray(v) => Some(v.clone()), _ => None }\n" <>
   "    }\n" <>
@@ -939,9 +946,11 @@ codegenPreludeWithRenames renames shapes =
   "    }\n" <>
   -- Borrowing accessors: a length or element read must not clone the backing
   -- buffer reference, which would touch the refcount on every access.
+  "    #[inline(always)]\n" <>
   "    pub fn array_len(&self) -> usize {\n" <>
   "        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), _ => panic!(\"Expected Array\") }\n" <>
   "    }\n" <>
+  "    #[inline(always)]\n" <>
   "    pub fn array_get(&self, index: usize) -> UnknownType {\n" <>
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => v[index].clone(),\n" <>
@@ -951,6 +960,7 @@ codegenPreludeWithRenames renames shapes =
   "    }\n" <>
   -- An `Array Int` read that already knows its element representation copies
   -- the integer instead of cloning the boxed element.
+  "    #[inline(always)]\n" <>
   "    pub fn array_get_int(&self, index: usize) -> i64 {\n" <>
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!(\"Expected Int element\"); },\n" <>
@@ -977,12 +987,17 @@ codegenPreludeWithRenames renames shapes =
   "pub type UnknownType = Value;\n\n" <>
   runtimeHelpers <> ModuleValues.runtime <> RecordFields.runtime <>
   "pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" <>
+  "    #[inline(always)]\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
+  "    #[inline(always)]\n" <>
   "pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" <>
+  "    #[inline(always)]\n" <>
   "pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" <>
   "pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" <>
   "pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" <>
+  "    #[inline(always)]\n" <>
   "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" <>
+  "    #[inline(always)]\n" <>
   "pub fn mk_int_array(val: Vec<i64>) -> UnknownType { Value::IntArray(std::rc::Rc::new(val)) }\n\n" <>
   reprItemsSource <>
   "#[derive(Clone, Default)]\npub struct Thunk {\n" <>
@@ -2115,7 +2130,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext mbLoo
   unsafeIndexTraversal xsArg idxArg = case viewSliceOf mbLoop xsArg of
     Just slice -> do
       let idxCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false idxArg
-      pure (Tuple Any ("crate::mk_int(" <> slice <> "[(" <> idxCode <> ") as usize])"))
+      pure (Tuple Int (slice <> "[(" <> idxCode <> ") as usize]"))
     Nothing ->
       if unwrapType (infer xsArg) == Array Int
         then do
@@ -2123,7 +2138,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext mbLoo
           -- cloning the buffer reference on every read.
           let xsCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars xsArg)) false xsArg
               idxCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false idxArg
-          pure (Tuple Any ("crate::mk_int((" <> xsCode <> ").array_get_int((" <> idxCode <> ") as usize))"))
+          pure (Tuple Int ("(" <> xsCode <> ").array_get_int((" <> idxCode <> ") as usize)"))
         else Nothing
 
   -- Predicate scans over a known array or range stop at the first witness.
@@ -3275,13 +3290,13 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpBooleanAnd -> "(" <> aStrBool <> " && " <> bStrBool <> ")"
       OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
       OpArrayIndex -> case viewSliceOf mbLoop a of
-        Just slice -> "crate::mk_int(" <> slice <> "[(" <> bStrInt <> ") as usize])"
+        Just slice -> slice <> "[(" <> bStrInt <> ") as usize]"
         Nothing ->
           let aStrRawBorrowed = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound (Set.difference aliveForA (borrowedReadVars a)) false a
               aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRawBorrowed
               indexed = "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
           in case unwrapType aTy of
-            Array Int -> "crate::mk_int((" <> aStr <> ").array_get_int((" <> bStrInt <> ") as usize))"
+            Array Int -> "(" <> aStr <> ").array_get_int((" <> bStrInt <> ") as usize)"
             _ -> indexed
       OpNumberNum OpAdd -> "(" <> aStrNum <> " + " <> bStrNum <> ")"
       OpNumberNum OpSubtract -> "(" <> aStrNum <> " - " <> bStrNum <> ")"
@@ -3292,12 +3307,12 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpStringAppend -> "format!(\"{}{}\", " <> aStrStr <> ", " <> bStrStr <> ")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
   Accessor base (GetIndex index) -> case viewSliceOf mbLoop base of
-    Just slice -> "crate::mk_int(" <> slice <> "[" <> show index <> "])"
+    Just slice -> slice <> "[" <> show index <> "]"
     Nothing ->
       let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars base)) false base
           baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
       in case unwrapType baseTy of
-        Array Int -> "crate::mk_int((" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get_int(" <> show index <> "))"
+        Array Int -> "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get_int(" <> show index <> ")"
         _ -> "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get(" <> show index <> ")"
   Accessor base (GetProp k) -> 
     let baseStr = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound alive false base
@@ -3913,10 +3928,14 @@ inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr expr) =
     (inferTypeExpr currentMod aritiesMap globalClassFields bound fn)
 
 
-  UncurriedApp fn _args -> 
-    case unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) of
-      Func _ retTy -> retTy
-      _ -> Any
+  UncurriedApp fn uncurriedArgs -> case stripCodegenWrappers fn, uncurriedArgs of
+    NeutralExpr (Var q@(Qualified _ (Ident name))), [ xs, _ ]
+      | (getTyPrefix currentMod q <> sanitizeIdent name) == "Data_Array_unsafeIndexImpl"
+      , unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound xs) == Array Int -> Int
+    _, _ ->
+      case unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) of
+        Func _ retTy -> retTy
+        _ -> Any
   UncurriedEffectApp fn args -> 
     case unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) of
       Func _ retTy -> retTy
@@ -3995,6 +4014,10 @@ inferTypeExpr currentMod aritiesMap globalClassFields bound (NeutralExpr expr) =
   Let (Just (Ident i)) _ val body -> inferTypeExpr currentMod aritiesMap globalClassFields (Map.insert (sanitizeIdent i) (inferTypeExpr currentMod aritiesMap globalClassFields bound val) bound) body
   Let Nothing _ _ inner -> inferTypeExpr currentMod aritiesMap globalClassFields bound inner
 
+  PrimOp (Op2 OpArrayIndex xs _) ->
+    if unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound xs) == Array Int then Int else Any
+  Accessor base (GetIndex _) ->
+    if unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound base) == Array Int then Int else Any
   PrimOp (Op1 op _) -> case op of
     OpBooleanNot -> Boolean
     OpIntBitNot -> Int
