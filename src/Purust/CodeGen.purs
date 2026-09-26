@@ -896,6 +896,14 @@ codegenPreludeWithRenames renames shapes =
   "    pub fn array_get(&self, index: usize) -> UnknownType {\n" <>
   "        if let Value::Array(v) = self.resolve() { v[index].clone() } else { panic!(\"Expected Array\"); }\n" <>
   "    }\n" <>
+  -- An `Array Int` read that already knows its element representation copies
+  -- the integer instead of cloning the boxed element.
+  "    pub fn array_get_int(&self, index: usize) -> i64 {\n" <>
+  "        match self.resolve() {\n" <>
+  "            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!(\"Expected Int element\"); },\n" <>
+  "            _ => panic!(\"Expected Array\"),\n" <>
+  "        }\n" <>
+  "    }\n" <>
   funcUnwraps <>
   "    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" <>
   "        if let Value::Class(v) = self.resolve() { v.downcast_ref::<T>().unwrap() } else { panic!(\"Expected Class\"); }\n" <>
@@ -1649,6 +1657,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
     [ predArg, xsArg ] | callee == "Data_Array_filterImpl" -> filterTraversal predArg xsArg
     [ predArg, xsArg ] | callee == "Data_Array_anyImpl" -> anyAllTraversal "any" predArg xsArg
     [ predArg, xsArg ] | callee == "Data_Array_allImpl" -> anyAllTraversal "all" predArg xsArg
+    [ xsArg, idxArg ] | callee == "Data_Array_unsafeIndexImpl" -> unsafeIndexTraversal xsArg idxArg
     _ -> Nothing
   Nothing -> Nothing
   where
@@ -1930,6 +1939,15 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
         let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
             call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
         pure (Tuple (Array elTy) call)
+
+  -- An `Array Int` read copies the integer instead of the boxed element.
+  unsafeIndexTraversal xsArg idxArg =
+    if unwrapType (infer xsArg) == Array Int
+      then do
+        let xsCode = fromMaybe "" (Array.index argsCodeArray 0)
+            idxCode = fromMaybe "" (Array.index argsCodeArray 1)
+        pure (Tuple Any ("crate::mk_int((" <> xsCode <> ").array_get_int((" <> idxCode <> ") as usize))"))
+      else Nothing
 
   -- Predicate scans over a known array or range stop at the first witness.
   anyAllTraversal helperName predArg xsArg = case rangePipeline xsArg of
@@ -3081,7 +3099,10 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
       OpArrayIndex -> 
         let aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw
-        in "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
+            indexed = "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
+        in case unwrapType aTy of
+          Array Int -> "crate::mk_int((" <> aStr <> ").array_get_int((" <> bStrInt <> ") as usize))"
+          _ -> indexed
       OpNumberNum OpAdd -> "(" <> aStrNum <> " + " <> bStrNum <> ")"
       OpNumberNum OpSubtract -> "(" <> aStrNum <> " - " <> bStrNum <> ")"
       OpNumberNum OpMultiply -> "(" <> aStrNum <> " * " <> bStrNum <> ")"
@@ -3093,7 +3114,9 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   Accessor base (GetIndex index) ->
     let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
-    in "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get(" <> show index <> ")"
+    in case unwrapType baseTy of
+      Array Int -> "crate::mk_int((" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get_int(" <> show index <> "))"
+      _ -> "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get(" <> show index <> ")"
   Accessor base (GetProp k) -> 
     let baseStr = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
