@@ -2306,15 +2306,6 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
         
 
         
-        _mapTrace = case (case getInner fn of
-            NeutralExpr (Local (Just (Ident name)) _) -> Just name
-            _ -> Nothing) of
-          Just name | name == "purs_local_1_rec_0" -> Debug.trace ("genApp-call ctx=" <> (case mbLoop of
-            Just loop -> loop.name <> " tco=" <> show loop.tco <> " impl=" <> (case loop.impl of
-              Just _ -> "yes"
-              Nothing -> "no")
-            Nothing -> "none")) \_ -> unit
-          _ -> unit
         mbFnName = case getInner fn of
           NeutralExpr (Var (Qualified mbMod (Ident name))) ->
             let prefix = case mbMod of
@@ -2328,13 +2319,6 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
         -- worker `fn` directly. Tail positions still use the loop jump above;
         -- this covers argument positions, where the bridge closure would
         -- otherwise be allocated once per evaluation.
-
-        directMissMessage n loop =
-          "direct-miss n=" <> n <> " loop=" <> loop.name <> " tco=" <> show loop.tco
-            <> " m=" <> show m <> " params=" <> show (Array.length loop.params)
-            <> " impl=" <> case loop.impl of
-                 Just _ -> "yes"
-                 Nothing -> "no"
 
         directLocalCall = case mbLoop, mbFnName of
           Just loop, Just n | n == loop.name && m == Array.length loop.params && not loop.tco, Just implName <- loop.impl ->
@@ -2351,7 +2335,6 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
               capturedArgs = map (\c -> c <> ".clone()") loop.captures
               callArgs = capturedArgs <> Array.mapWithIndex (\i _ -> convertArg i) argsCodeArray
             in Just (Tuple resultTy (implName <> "(" <> String.joinWith ", " callArgs <> ")"))
-          Just loop, Just n -> Debug.trace (directMissMessage n loop) \_ -> Nothing
           _, _ -> Nothing
         resultCode = case typedCall of
           Just (Tuple actualTy typedCode) -> boxUnbox renames valueEnums globalClassFields modNameStr appTy actualTy typedCode

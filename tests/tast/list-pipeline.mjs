@@ -35,8 +35,13 @@ try {
     assert.doesNotMatch(bodies.get(name), /ListPipeline_foldl\(/,
       `${name} must not call the generic fold`);
   }
+  assert.ok(bodies.has('filterRev'), 'filterRev');
+  assert.doesNotMatch(bodies.get('filterRev'), /ListPipeline_reverseList\(/,
+    'filterRev must not build and reverse an intermediate list');
+  assert.equal((bodies.get('filterRev').match(/Rc::new\(crate::List::Cons/g) || []).length, 1,
+    'filterRev keeps a single construction site');
   assert.ok(bodies.has('mapDouble'), 'mapDouble');
-  assert.doesNotMatch(bodies.get('mapDouble'), /Func1::Shared\(std::rc::Rc::new/,
+  assert.match(bodies.get('mapDouble'), /List::Cons\([\s\S]*_impl\(purs_local_\d+_rec_0\.clone\(\)/,
     'non-tail self-calls must use the worker fn directly');
   for (const name of ['sumAll', 'diffEvens']) {
     assert.ok(bodies.has(name), name);

@@ -5,9 +5,9 @@ import Prelude
 import Control.Alternative (guard)
 import Data.Array as Array
 import Data.Array.NonEmpty as NEA
-import Data.Foldable (foldl)
+import Data.Foldable (foldl, foldr)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..))
 import PureScript.Backend.Optimizer.Convert (BackendBindingGroup)
 import PureScript.Backend.Optimizer.CoreFn (ExprType(..), Ident(..), Literal(..), ModuleName(..), Qualified(..))
@@ -57,11 +57,17 @@ data Commutative = Add | Multiply
 -- the list in ascending order while a descending loop visits it in the
 -- opposite one. Bounds, seed and predicate must be pure stable terms.
 -- Anything else keeps the original generic code path.
+type Context =
+  { moduleName :: ModuleName
+  , folds :: Map.Map Ident FoldInfo
+  }
+
 optimizeListPipelines :: ModuleName -> BindingGroups -> BindingGroups
 optimizeListPipelines moduleName groups =
-  let folds = Map.fromFoldable (Array.mapMaybe foldEntry groups)
-  in if Map.isEmpty folds then groups
-     else map (rewriteGroup moduleName folds) groups
+  let
+    folds = Map.fromFoldable (Array.mapMaybe foldEntry groups)
+    context = { moduleName, folds }
+  in map (rewriteGroup context) groups
 
 foldEntry :: BackendBindingGroup Ident NeutralExpr -> Maybe (Tuple Ident FoldInfo)
 foldEntry group = case group.bindings of
@@ -70,26 +76,28 @@ foldEntry group = case group.bindings of
     pure (Tuple ident info)
   _ -> Nothing
 
-rewriteGroup :: ModuleName -> Map.Map Ident FoldInfo -> BackendBindingGroup Ident NeutralExpr -> BackendBindingGroup Ident NeutralExpr
-rewriteGroup moduleName folds group =
-  group { bindings = map (\(Tuple ident expr) -> Tuple ident (rewriteExpr moduleName folds (maxLevel expr) expr)) group.bindings }
+rewriteGroup :: Context -> BackendBindingGroup Ident NeutralExpr -> BackendBindingGroup Ident NeutralExpr
+rewriteGroup context group =
+  group { bindings = map (\(Tuple ident expr) -> Tuple ident (rewriteExpr context (maxLevel expr) expr)) group.bindings }
 
 -- `baseLevel` is the maximum local level of the whole binding, so the levels
--- introduced by the fused worker never collide with another binder of the
+-- introduced by the fused workers never collide with another binder of the
 -- enclosing function (nested scopes reuse lower levels freely).
-rewriteExpr :: ModuleName -> Map.Map Ident FoldInfo -> Int -> NeutralExpr -> NeutralExpr
-rewriteExpr moduleName folds baseLevel expr =
-  let children = NeutralExpr (map (rewriteExpr moduleName folds baseLevel) syn)
-  in case fuseApplication moduleName folds baseLevel children of
-       Just fused -> fused
-       Nothing -> children
+rewriteExpr :: Context -> Int -> NeutralExpr -> NeutralExpr
+rewriteExpr context baseLevel expr =
+  let children = NeutralExpr (map (rewriteExpr context baseLevel) syn)
+  in case rewriteFilterReverse baseLevel children of
+       Just rewritten -> rewritten
+       Nothing -> case fuseApplication context baseLevel children of
+         Just fused -> fused
+         Nothing -> children
   where
   syn = case expr of NeutralExpr s -> s
 
-fuseApplication :: ModuleName -> Map.Map Ident FoldInfo -> Int -> NeutralExpr -> Maybe NeutralExpr
-fuseApplication moduleName folds baseLevel expr = do
+fuseApplication :: Context -> Int -> NeutralExpr -> Maybe NeutralExpr
+fuseApplication context baseLevel expr = do
   let applied = spine expr
-  info <- calleeFold moduleName folds applied.head
+  info <- calleeFold context.moduleName context.folds applied.head
   guard (Array.length applied.args == 3)
   fArg <- Array.index applied.args 0
   initArg <- Array.index applied.args 1
@@ -506,3 +514,223 @@ maxLevel (NeutralExpr syn) = max own child
     UncurriedEffectAbs params _ -> foldl max 0 (map (\(Tuple _ (Level lvl)) -> lvl) params)
     _ -> 0
   child = foldl (\acc (NeutralExpr childSyn) -> max acc (maxLevel (NeutralExpr childSyn))) 0 syn
+
+-- | A local `filter` whose base branch calls the standard `reverse` on its
+-- | accumulator. Rewriting it as a non-tail recursive filter keeps the
+-- | element order without materializing the reversed list, so a filtered
+-- | list costs one allocation per retained element and a single traversal.
+-- | The recursive call lowers to a direct worker `fn` call.
+type FilterReverse =
+  { level :: Level
+  , ident :: Ident
+  , xs :: Level
+  , acc :: Level
+  , listType :: ExprType
+  , nilCtor :: Qualified Ident
+  , consNode :: NeutralExpr
+  , predicate :: NeutralExpr
+  , elementAccessor :: NeutralExpr
+  , tailAccessor :: NeutralExpr
+  }
+
+rewriteFilterReverse :: Int -> NeutralExpr -> Maybe NeutralExpr
+rewriteFilterReverse baseLevel expr = case strip expr of
+  LetRec lvl bindings body -> do
+    Tuple ident worker <- singleBinding (NEA.toArray bindings)
+    recognized <- matchFilterReverse lvl ident worker
+    let uses = usesOfWorker lvl ident body
+    guard (uses.full > 0 && uses.other == 0)
+    nilTemplate <- firstNilSeed lvl ident body
+    pure (NeutralExpr (LetRec lvl (NEA.singleton (Tuple ident (buildOrderedFilter baseLevel recognized nilTemplate))) body))
+  _ -> Nothing
+
+matchFilterReverse :: Level -> Ident -> NeutralExpr -> Maybe FilterReverse
+matchFilterReverse lvl ident worker = do
+  signature <- functionSignature worker
+  listType <- Array.index signature.args 0
+  let params = abstractions worker
+  guard (Array.length params.args == 2)
+  xs <- argLevel params.args 0
+  acc <- argLevel params.args 1
+  outer <- case strip params.body of
+    Branch pairs fallback -> do
+      guard (isFail fallback)
+      pure (NEA.toArray pairs)
+    _ -> Nothing
+  guard (Array.length outer == 2)
+  nilPair <- pairAt outer 0
+  consPair <- pairAt outer 1
+  nilCtor <- opIsTagTarget xs (pairFst nilPair)
+  _ <- matchReverseBase lvl ident xs acc (pairSnd nilPair)
+  consCtor <- opIsTagTarget xs (pairFst consPair)
+  inner <- case strip (pairSnd consPair) of
+    Branch pairs _ -> Just (NEA.toArray pairs)
+    _ -> Nothing
+  guard (Array.length inner == 1)
+  retained <- pairAt inner 0
+  fields <- case strip (pairSnd retained) of
+    App selfHead selfArgs | NEA.length selfArgs == 2 -> do
+      guard (isLocalOf lvl ident selfHead)
+      rest <- Array.index (NEA.toArray selfArgs) 0
+      cons <- Array.index (NEA.toArray selfArgs) 1
+      guard (isFieldAccessor xs 1 rest)
+      case strip cons of
+        CtorSaturated ctor _ _ _ [ Tuple "value0" value0, Tuple "value1" value1 ] -> do
+          guard (ctor == consCtor)
+          guard (isFieldAccessor xs 0 value0)
+          guard (isLocal acc value1)
+          pure { elementAccessor: value0, tailAccessor: rest, consNode: cons }
+        _ -> Nothing
+    _ -> Nothing
+  pure { level: lvl
+       , ident
+       , xs
+       , acc
+       , listType
+       , nilCtor
+       , consNode: fields.consNode
+       , predicate: pairFst retained
+       , elementAccessor: fields.elementAccessor
+       , tailAccessor: fields.tailAccessor
+       }
+
+-- | The base branch calls a local standard `reverse` on the accumulator; the
+-- | reverse's seed is `Nil`. Only the inlined local form is accepted.
+matchReverseBase :: Level -> Ident -> Level -> Level -> NeutralExpr -> Maybe Unit
+matchReverseBase _ _ _ filterAcc expr = case strip expr of
+  LetRec revLevel revBindings revBody -> do
+    Tuple revIdent revExpr <- singleBinding (NEA.toArray revBindings)
+    guard (isReverseWorker revLevel revIdent revExpr)
+    applied <- case strip revBody of
+      App head args -> Just { head, args: NEA.toArray args }
+      _ -> Nothing
+    guard (isLocalOf revLevel revIdent applied.head)
+    accArg <- Array.index applied.args 0
+    seed <- Array.index applied.args 1
+    guard (isLocal filterAcc accArg)
+    guard (isJust (nilSeedCtor seed))
+    pure unit
+  _ -> Nothing
+
+isReverseWorker :: Level -> Ident -> NeutralExpr -> Boolean
+isReverseWorker lvl ident expr = case abstractions expr of
+  { args, body } -> case Array.index args 0, Array.index args 1 of
+    Just (Tuple _ xs), Just (Tuple _ acc) -> case strip body of
+      Branch pairs fallback -> case NEA.toArray pairs of
+        [ nilPair, consPair ] ->
+          isFail fallback
+            && isJust (opIsTagTarget xs (pairFst nilPair))
+            && isLocal acc (pairSnd nilPair)
+            && isJust (opIsTagTarget xs (pairFst consPair))
+            && case strip (pairSnd consPair) of
+              App selfHead selfArgs | NEA.length selfArgs == 2 -> case Array.index (NEA.toArray selfArgs) 0, Array.index (NEA.toArray selfArgs) 1 of
+                Just rest, Just cons ->
+                  isLocalOf lvl ident selfHead
+                    && isFieldAccessor xs 1 rest
+                    && case strip cons of
+                      CtorSaturated _ _ _ _ [ Tuple "value0" value0, Tuple "value1" value1 ] ->
+                        isFieldAccessor xs 0 value0 && isLocal acc value1
+                      _ -> false
+                _, _ -> false
+              _ -> false
+        _ -> false
+      _ -> false
+    _, _ -> false
+
+usesOfWorker :: Level -> Ident -> NeutralExpr -> { full :: Int, other :: Int }
+usesOfWorker lvl ident expr = case strip expr of
+  App head args ->
+    let
+      headIsSelf = isLocalOf lvl ident head
+      argsArray = NEA.toArray args
+      applied = if headIsSelf then case argsArray of
+        [ _, seed ] -> if isJust (nilSeedCtor seed)
+          then { full: 1, other: 0 }
+          else { full: 0, other: 1 }
+        _ -> { full: 0, other: 1 }
+        else { full: 0, other: 0 }
+      headCount = if headIsSelf then { full: 0, other: 0 } else usesOfWorker lvl ident head
+      argCounts = map (usesOfWorker lvl ident) argsArray
+    in foldl mergeCounts applied (Array.cons headCount argCounts)
+  Local _ l -> if l == lvl then { full: 0, other: 1 } else { full: 0, other: 0 }
+  syn -> foldl mergeCounts { full: 0, other: 0 } (map (usesOfWorker lvl ident) (childrenArray syn))
+
+mergeCounts :: { full :: Int, other :: Int } -> { full :: Int, other :: Int } -> { full :: Int, other :: Int }
+mergeCounts a b = { full: a.full + b.full, other: a.other + b.other }
+
+firstNilSeed :: Level -> Ident -> NeutralExpr -> Maybe NeutralExpr
+firstNilSeed lvl ident expr = case strip expr of
+  App head args | isLocalOf lvl ident head -> case NEA.toArray args of
+    [ _, seed ] -> nilSeedCtor seed *> Just seed
+    _ -> Nothing
+  syn -> Array.findMap (firstNilSeed lvl ident) (childrenArray syn)
+
+buildOrderedFilter :: Int -> FilterReverse -> NeutralExpr -> NeutralExpr
+buildOrderedFilter baseLevel recognized nilTemplate =
+  let
+    innerLevel = Level (baseLevel + 1)
+    xsLevel = Level (baseLevel + 2)
+    innerIdent = Ident "list_filter_ordered"
+    listTy = recognized.listType
+    innerTy = Func [ listTy ] listTy
+    outerTy = Func [ listTy, listTy ] listTy
+    xs = typed listTy (NeutralExpr (Local Nothing recognized.xs))
+    xs1 = typed listTy (NeutralExpr (Local Nothing xsLevel))
+    innerHead = typed innerTy (NeutralExpr (Local (Just innerIdent) innerLevel))
+    predicate = replaceLocal recognized.xs xsLevel recognized.predicate
+    element = replaceLocal recognized.xs xsLevel recognized.elementAccessor
+    tailExpr = replaceLocal recognized.xs xsLevel recognized.tailAccessor
+    recursiveCall = typed listTy (NeutralExpr (App innerHead (NEA.singleton tailExpr)))
+    cons = case strip recognized.consNode of
+      CtorSaturated ctor cty tyName consIdent _ ->
+        typed listTy (NeutralExpr (CtorSaturated ctor cty tyName consIdent
+          [ Tuple "value0" element, Tuple "value1" recursiveCall ]))
+      _ -> recursiveCall
+    step = typed listTy (NeutralExpr (Branch
+      (NEA.singleton (Pair (typed Boolean predicate) cons))
+      recursiveCall))
+    body = typed listTy (NeutralExpr (Branch
+      (NEA.singleton (Pair (typed Boolean (nilTestExpr recognized.nilCtor xs1)) nilTemplate))
+      step))
+    innerBinding = typed innerTy (NeutralExpr (Abs (NEA.singleton (Tuple Nothing xsLevel)) body))
+    outerBody = typed listTy (NeutralExpr (LetRec innerLevel (NEA.singleton (Tuple innerIdent innerBinding))
+      (typed listTy (NeutralExpr (App innerHead (NEA.singleton xs))))))
+  in typed outerTy (NeutralExpr (Abs (NEA.singleton (Tuple Nothing recognized.xs))
+       (typed (Func [ listTy ] listTy) (NeutralExpr (Abs (NEA.singleton (Tuple Nothing recognized.acc)) outerBody)))))
+
+nilTestExpr :: Qualified Ident -> NeutralExpr -> NeutralExpr
+nilTestExpr ctor target = NeutralExpr (PrimOp (Op1 (OpIsTag ctor) target))
+
+opIsTagTarget :: Level -> NeutralExpr -> Maybe (Qualified Ident)
+opIsTagTarget target expr = case strip expr of
+  PrimOp (Op1 (OpIsTag ctor) value) -> do
+    guard (isLocal target value)
+    pure ctor
+  _ -> Nothing
+
+nilSeedCtor :: NeutralExpr -> Maybe (Qualified Ident)
+nilSeedCtor expr = case strip expr of
+  CtorSaturated ctor _ _ _ [] -> Just ctor
+  _ -> Nothing
+
+isLocalOf :: Level -> Ident -> NeutralExpr -> Boolean
+isLocalOf lvl ident expr = case strip expr of
+  Local mb other -> other == lvl && (case mb of
+    Just name -> name == ident
+    Nothing -> true)
+  _ -> false
+
+replaceLocal :: Level -> Level -> NeutralExpr -> NeutralExpr
+replaceLocal from to = go
+  where
+  go expr = case strip expr of
+    Local mb lvl | lvl == from -> NeutralExpr (Typed (fromMaybe Any (annotation expr)) (NeutralExpr (Local mb to)))
+    syn -> NeutralExpr (map go syn)
+
+childrenArray :: forall a. Syn.BackendSyntax a -> Array a
+childrenArray = foldr Array.cons []
+
+singleBinding :: Array (Tuple Ident NeutralExpr) -> Maybe (Tuple Ident NeutralExpr)
+singleBinding bindings = case bindings of
+  [ binding ] -> Just binding
+  _ -> Nothing
