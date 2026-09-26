@@ -273,6 +273,28 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        }\n" <>
   "        (a0 * a1) * (a2 * a3)\n" <>
   "    }\n" <>
+  -- Counting a predicate never materializes the filtered array.
+  "    #[inline(always)]\n" <>
+  "    pub fn count_filter_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> i64 {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let mut count = 0i64;\n" <>
+  "        for item in arr.iter() { if p(A::from_value(item)) { count += 1; } }\n" <>
+  "        count\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn count_filter_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> i64 {\n" <>
+  "        let mut count = 0i64;\n" <>
+  "        if start <= end {\n" <>
+  "            let mut i = start;\n" <>
+  "            while i < end { if p(A::from_int(i)) { count += 1; } i += 1; }\n" <>
+  "            if p(A::from_int(end)) { count += 1; }\n" <>
+  "        } else {\n" <>
+  "            let mut i = start;\n" <>
+  "            while i > end { if p(A::from_int(i)) { count += 1; } i -= 1; }\n" <>
+  "            if p(A::from_int(end)) { count += 1; }\n" <>
+  "        }\n" <>
+  "        count\n" <>
+  "    }\n" <>
   -- Associative reductions over a boxed array. Integer elements are unboxed
   -- once and kept in independent accumulators.
   "    #[inline(always)]\n" <>
@@ -1576,6 +1598,23 @@ uncurriedFnArity fqn args = case fqn of
     , Array.length args - 1 <= maxNativeFunctionArity -> Just (Array.length args - 1)
   _ -> Nothing
 
+-- Collect the parameter names of a (possibly curried) lambda, with its
+-- innermost body. Uncurried binder groups flatten the same way.
+flattenLambda :: NeutralExpr -> Maybe (Tuple (Array String) NeutralExpr)
+flattenLambda expr = case stripCodegenWrappers expr of
+  NeutralExpr (Abs params inner) -> case flattenLambda inner of
+    Just (Tuple names body) -> Just (Tuple (map paramName (NonEmptyArray.toArray params) <> names) body)
+    Nothing -> Nothing
+  NeutralExpr (UncurriedAbs params inner) -> case flattenLambda inner of
+    Just (Tuple names body) -> Just (Tuple (map paramName params <> names) body)
+    Nothing -> Nothing
+  other -> Just (Tuple [] other)
+
+paramName :: Tuple (Maybe Ident) Level -> String
+paramName (Tuple mbId _) = case mbId of
+  Just (Ident n) -> sanitizeIdent n
+  Nothing -> ""
+
 -- Strip the erasure wrappers used to inspect a callee or producer expression.
 stripCodegenWrappers :: NeutralExpr -> NeutralExpr
 stripCodegenWrappers (NeutralExpr (Typed _ inner)) = stripCodegenWrappers inner
@@ -1740,21 +1779,6 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
                  _ -> Nothing
         _ -> Nothing
     _ -> Nothing
-
-  -- Collect the parameter names of a (possibly curried) lambda, with its
-  -- innermost body. Uncurried binder groups flatten the same way.
-  flattenLambda expr = case stripExpr expr of
-    NeutralExpr (Abs params inner) -> case flattenLambda inner of
-      Just (Tuple names body) -> Just (Tuple (map paramName (NonEmptyArray.toArray params) <> names) body)
-      Nothing -> Nothing
-    NeutralExpr (UncurriedAbs params inner) -> case flattenLambda inner of
-      Just (Tuple names body) -> Just (Tuple (map paramName params <> names) body)
-      Nothing -> Nothing
-    other -> Just (Tuple [] other)
-
-  paramName (Tuple mbId _) = case mbId of
-    Just (Ident n) -> sanitizeIdent n
-    Nothing -> ""
 
   uncurriedAppArgs name expr = case stripExpr expr of
     NeutralExpr (UncurriedApp producer args) | Just name' <- calleeName producer, name' == name -> Just args
@@ -2889,6 +2913,48 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
             | isBorrowableLocal operandType a -> Set.difference alive (freeVariables a)
           _, _ -> alive
         aStrRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForA false a
+        -- `length (filter p xs)` counts matches without building the array.
+        filterCount = case stripCodegenWrappers a of
+          NeutralExpr (UncurriedApp producer filterArgs)
+            | Just "Data_Array_filterImpl" <- directCallName currentMod producer
+            , [ predArg, innerXs ] <- filterArgs ->
+                let
+                  elementTy = case unwrapType (inferTypeExpr currentMod aritiesMap globalClassFields bound innerXs) of
+                    Array el -> Just el
+                    _ -> Nothing
+                  predAt ty = case stripCodegenWrappers predArg of
+                    NeutralExpr (Abs _ _) -> case flattenLambda predArg of
+                      Just (Tuple [ name ] body) | not (String.null name) ->
+                        let bound' = Map.insert name ty bound
+                            bodyCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound' alive false body
+                            bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields bound' body
+                        in if bodyTy == Boolean
+                             then Just ("move |" <> name <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty <> "| " <> boxUnbox renames valueEnums globalClassFields currentMod Boolean bodyTy bodyCode)
+                             else Nothing
+                      _ -> Nothing
+                    _ -> Nothing
+                in case rangeApplication currentMod innerXs of
+                  Just (Tuple startArg endArg) -> case predAt Int of
+                    Just predC ->
+                      let startCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables endArg)) false startArg
+                          endCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false endArg
+                      in Just ("purust_core::typed::count_filter_range::<i64, _>(" <> startCode <> ", " <> endCode <> ", " <> predC <> ")")
+                    Nothing -> Nothing
+                  Nothing -> case elementTy of
+                    Just elTy ->
+                      let rustEl = codegenExprTypeWithValueEnums valueEnums currentMod false elTy
+                          -- Only the primitive representations have a Repr impl;
+                          -- anything else counts through the boxed Value.
+                          representable = Array.elem rustEl [ "i64", "f64", "bool", "char", "crate::UnknownType" ]
+                          argTy = if representable then elTy else Any
+                          argRust = if representable then rustEl else "crate::UnknownType"
+                      in case predAt argTy of
+                        Just predC ->
+                          let xsCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false innerXs
+                          in Just ("purust_core::typed::count_filter_array::<" <> argRust <> ", _>(" <> xsCode <> ", " <> predC <> ")")
+                        Nothing -> Nothing
+                    Nothing -> Nothing
+          _ -> Nothing
     in case op of
       OpBooleanNot -> "!(" <> scalarOperand Boolean a aTy aStrRaw <> " /* aTy: " <> codegenExprTypeWithValueEnums valueEnums currentMod true aTy <> ", a is " <> printAST a <> ", fn ty is " <> (case a of
         NeutralExpr (App fn _) -> printType (inferTypeExpr currentMod aritiesMap globalClassFields bound fn) <> ", lvl_3 in bound: " <> (case Map.lookup "lvl_3" bound of
@@ -2905,14 +2971,16 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           let startCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables endArg)) false startArg
               endCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false endArg
           in "purust_core::typed::length_range(" <> startCode <> ", " <> endCode <> ")"
-        Nothing -> case stripCodegenWrappers a of
-          NeutralExpr (UncurriedApp producer args)
-            | Just "Data_Array_replicateImpl" <- directCallName currentMod producer
-            , [ countArg, valueArg ] <- args ->
-                let countCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables valueArg)) false countArg
-                    valueCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false valueArg
-                in "{ let _purust_replicated = " <> valueCode <> "; (" <> countCode <> ").max(0) }"
-          _ -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").array_len() as i64)"
+        Nothing -> case filterCount of
+          Just code -> code
+          Nothing -> case stripCodegenWrappers a of
+            NeutralExpr (UncurriedApp producer args)
+              | Just "Data_Array_replicateImpl" <- directCallName currentMod producer
+              , [ countArg, valueArg ] <- args ->
+                  let countCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables valueArg)) false countArg
+                      valueCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false valueArg
+                  in "{ let _purust_replicated = " <> valueCode <> "; (" <> countCode <> ").max(0) }"
+            _ -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").array_len() as i64)"
       OpIsTag (Qualified mbMod (Ident ctorName)) ->
         let ctorModule = case mbMod of
               Just (ModuleName name) -> String.replaceAll (Pattern ".") (Replacement "_") name
