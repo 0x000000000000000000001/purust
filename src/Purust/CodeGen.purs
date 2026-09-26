@@ -151,9 +151,11 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    pub fn filter_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> Value {\n" <>
   "        let mut result: Vec<UnknownType> = Vec::new();\n" <>
   "        if start <= end {\n" <>
-  "            for i in start..=end { if p(A::from_int(i)) { result.push(Value::Int(i)); } }\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { if p(A::from_int(i)) { result.push(Value::Int(i)); } if i == end { break; } i += 1; }\n" <>
   "        } else {\n" <>
-  "            for i in (end..=start).rev() { if p(A::from_int(i)) { result.push(Value::Int(i)); } }\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { if p(A::from_int(i)) { result.push(Value::Int(i)); } if i == end { break; } i -= 1; }\n" <>
   "        }\n" <>
   "        mk_array(result)\n" <>
   "    }\n" <>
@@ -161,9 +163,11 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    pub fn foldl_range<A: Repr, B: Repr, F: FnMut(B, A) -> B>(start: i64, end: i64, init: B, mut f: F) -> B {\n" <>
   "        let mut acc = init;\n" <>
   "        if start <= end {\n" <>
-  "            for i in start..=end { acc = f(acc, A::from_int(i)); }\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { acc = f(acc, A::from_int(i)); if i == end { break; } i += 1; }\n" <>
   "        } else {\n" <>
-  "            for i in (end..=start).rev() { acc = f(acc, A::from_int(i)); }\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { acc = f(acc, A::from_int(i)); if i == end { break; } i -= 1; }\n" <>
   "        }\n" <>
   "        acc\n" <>
   "    }\n" <>
@@ -181,11 +185,59 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    pub fn foldl_filter_range<A: Repr, B: Repr, P: FnMut(A) -> bool, F: FnMut(B, A) -> B>(start: i64, end: i64, init: B, mut p: P, mut f: F) -> B {\n" <>
   "        let mut acc = init;\n" <>
   "        if start <= end {\n" <>
-  "            for i in start..=end { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } }\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } if i == end { break; } i += 1; }\n" <>
   "        } else {\n" <>
-  "            for i in (end..=start).rev() { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } }\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } if i == end { break; } i -= 1; }\n" <>
   "        }\n" <>
   "        acc\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn any_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> bool {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        for item in arr.iter() { if p(A::from_value(item)) { return true; } }\n" <>
+  "        false\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn all_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> bool {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        for item in arr.iter() { if !p(A::from_value(item)) { return false; } }\n" <>
+  "        true\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn any_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> bool {\n" <>
+  "        if start <= end {\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { if p(A::from_int(i)) { return true; } if i == end { break; } i += 1; }\n" <>
+  "        } else {\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { if p(A::from_int(i)) { return true; } if i == end { break; } i -= 1; }\n" <>
+  "        }\n" <>
+  "        false\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn all_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> bool {\n" <>
+  "        if start <= end {\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { if !p(A::from_int(i)) { return false; } if i == end { break; } i += 1; }\n" <>
+  "        } else {\n" <>
+  "            let mut i = start;\n" <>
+  "            loop { if !p(A::from_int(i)) { return false; } if i == end { break; } i -= 1; }\n" <>
+  "        }\n" <>
+  "        true\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn foldl_replicate<A: Repr, B: Repr, F: FnMut(B, A) -> B>(count: i64, value: Value, init: B, mut f: F) -> B {\n" <>
+  "        let item = A::from_value(&value);\n" <>
+  "        let mut acc = init;\n" <>
+  "        let mut i = 0i64;\n" <>
+  "        while i < count { acc = f(acc, item.clone()); i += 1; }\n" <>
+  "        acc\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn filter_replicate<A: Repr, P: FnMut(A) -> bool>(count: i64, value: Value, mut p: P) -> Value {\n" <>
+  "        if count > 0 && p(A::from_value(&value)) { mk_array(vec![value; count as usize]) } else { mk_array(Vec::new()) }\n" <>
   "    }\n" <>
   "}\n"
 
@@ -1350,6 +1402,18 @@ alignDiscardedCallbackArgs expected actual expr =
     NeutralExpr (UncurriedAbs params body) -> align params body
     _ -> expr
 
+-- A literal positive power of two divides like a low-bit mask.
+literalPowerOfTwoMask :: NeutralExpr -> Maybe Int
+literalPowerOfTwoMask expr = case stripCodegenWrappers expr of
+  NeutralExpr (Lit (LitInt k)) -> go k 0
+  _ -> Nothing
+  where
+  go n mask
+    | n == 1 = Just mask
+    | n <= 0 = Nothing
+    | n `mod` 2 /= 0 = Nothing
+    | otherwise = go (n `div` 2) (mask * 2 + 1)
+
 -- Strip the erasure wrappers used to inspect a callee or producer expression.
 stripCodegenWrappers :: NeutralExpr -> NeutralExpr
 stripCodegenWrappers (NeutralExpr (Typed _ inner)) = stripCodegenWrappers inner
@@ -1382,6 +1446,8 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
     [ cbArg, initArg, xsArg ] | callee == "Data_Foldable_foldlArray" -> foldTraversal "foldl" true cbArg initArg xsArg
     [ cbArg, initArg, xsArg ] | callee == "Data_Foldable_foldrArray" -> foldTraversal "foldr" false cbArg initArg xsArg
     [ predArg, xsArg ] | callee == "Data_Array_filterImpl" -> filterTraversal predArg xsArg
+    [ predArg, xsArg ] | callee == "Data_Array_anyImpl" -> anyAllTraversal "any" predArg xsArg
+    [ predArg, xsArg ] | callee == "Data_Array_allImpl" -> anyAllTraversal "all" predArg xsArg
     _ -> Nothing
   Nothing -> Nothing
   where
@@ -1395,6 +1461,11 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
     "bool" -> Just ty
     "char" -> Just ty
     _ -> Nothing
+
+  -- A boxed Value is a valid callback representation too: the generic
+  -- callbacks are compiled that way, so a virtual producer can be consumed
+  -- without materializing it.
+  representableTy ty = isJust (primitiveTy ty) || rustTy ty == "crate::UnknownType"
 
   stripExpr = stripCodegenWrappers
   calleeName = directCallName currentMod
@@ -1438,8 +1509,8 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
           | Array.length declArgs == Array.length argTys
           , Array.all identity (Array.zipWith sameRust declArgs argTys)
           , sameRust declRet retTy
-          , Array.all identity (map (isJust <<< primitiveTy) argTys)
-          , isJust (primitiveTy retTy) ->
+          , Array.all representableTy argTys
+          , representableTy retTy ->
               let names = Array.mapWithIndex (\i _ -> "__purust_cb_" <> show i) argTys
                   params = String.joinWith ", " (Array.zipWith (\n ty -> n <> ": " <> rustTy ty) names argTys)
                   callArgs = String.joinWith ", " names
@@ -1456,7 +1527,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
           bound' = Map.union (Map.fromFoldable (Array.zip names argTys)) bound
       in if Array.length names /= Array.length argTys
            then Nothing
-           else if not (Array.all identity (map (isJust <<< primitiveTy) argTys)) || not (isJust (primitiveTy retTy))
+           else if not (Array.all representableTy argTys) || not (representableTy retTy)
              then Nothing
              else
                let bodyVars = freeVariables body
@@ -1473,11 +1544,16 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
 
   rangeArgs = rangeApplication currentMod
 
-  filterApp expr = case stripExpr expr of
-    NeutralExpr (UncurriedApp producer args)
-      | Just "Data_Array_filterImpl" <- calleeName producer -> case args of
-          [ predArg, innerXs ] -> Just (Tuple predArg innerXs)
-          _ -> Nothing
+  uncurriedAppArgs name expr = case stripExpr expr of
+    NeutralExpr (UncurriedApp producer args) | Just name' <- calleeName producer, name' == name -> Just args
+    _ -> Nothing
+
+  filterApp expr = case uncurriedAppArgs "Data_Array_filterImpl" expr of
+    Just [ predArg, innerXs ] -> Just (Tuple predArg innerXs)
+    _ -> Nothing
+
+  replicateApp expr = case uncurriedAppArgs "Data_Array_replicateImpl" expr of
+    Just [ countArg, valueArg ] -> Just (Tuple countArg valueArg)
     _ -> Nothing
 
   -- A range producer (possibly filtered) can stay virtual: its bounds are
@@ -1506,30 +1582,49 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
         let first = fromMaybe Any (Array.index cbArgs 0)
             second = fromMaybe Any (Array.index cbArgs 1)
             initCode = fromMaybe "" (Array.index argsCodeArray 1)
-        case rangePipeline xsArg of
-          Just pipeline | leftToRight && first == accTy && second == Int -> do
-            foldC <- callableFor [ accTy, Int ] accTy cbArg
-            let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
-            case pipeline.pred of
-              Just predArg -> do
-                predC <- callableFor [ Int ] Boolean predArg
-                pure (Tuple accTy ("purust_core::typed::foldl_filter_range::<i64, " <> rustTy accTy <> ", _, _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
-              Nothing ->
-                pure (Tuple accTy ("purust_core::typed::foldl_range::<i64, " <> rustTy accTy <> ", _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> foldC <> ")"))
-          _ -> case filterApp xsArg of
-            -- A filtered array can also stay virtual: one loop tests the
-            -- predicate and folds the retained elements.
-            Just (Tuple predArg innerXs) | leftToRight -> do
-              elTy <- arrayElementFromExpr innerXs
-              _ <- primitiveTy elTy
-              if not (first == accTy && second == elTy)
+
+            -- A range producer (optionally filtered) stays virtual.
+            rangeFold = case rangePipeline xsArg of
+              Just pipeline | leftToRight && first == accTy && second == Int -> do
+                foldC <- callableFor [ accTy, Int ] accTy cbArg
+                let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
+                case pipeline.pred of
+                  Just predArg -> do
+                    predC <- callableFor [ Int ] Boolean predArg
+                    pure (Tuple accTy ("purust_core::typed::foldl_filter_range::<i64, " <> rustTy accTy <> ", _, _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
+                  Nothing ->
+                    pure (Tuple accTy ("purust_core::typed::foldl_range::<i64, " <> rustTy accTy <> ", _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> foldC <> ")"))
+              _ -> Nothing
+
+            -- A replicated element folds without materializing the array.
+            -- An erased element type keeps the boxed representation, which is
+            -- exactly what the generic callback expects.
+            replicatedFold = do
+              Tuple countArg valueArg <- replicateApp xsArg
+              if not (leftToRight && first == accTy)
                 then Nothing
                 else do
-                  predC <- callableFor [ elTy ] Boolean predArg
-                  foldC <- callableFor [ accTy, elTy ] accTy cbArg
-                  let xsCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) innerXs
-                  pure (Tuple accTy ("purust_core::typed::foldl_filter::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _, _>(" <> xsCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
-            _ -> do
+                  closure <- callableFor [ accTy, second ] accTy cbArg
+                  let countCode = argCodeFor valueArg countArg
+                      valueCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) valueArg
+                  pure (Tuple accTy ("purust_core::typed::foldl_replicate::<" <> rustTy second <> ", " <> rustTy accTy <> ", _>(" <> countCode <> ", " <> valueCode <> ", " <> initCode <> ", " <> closure <> ")"))
+
+            -- A filtered array can also stay virtual: one loop tests the
+            -- predicate and folds the retained elements.
+            filteredFold = do
+              Tuple predArg innerXs <- filterApp xsArg
+              if not leftToRight then Nothing else do
+                elTy <- arrayElementFromExpr innerXs
+                _ <- primitiveTy elTy
+                if not (first == accTy && second == elTy)
+                  then Nothing
+                  else do
+                    predC <- callableFor [ elTy ] Boolean predArg
+                    foldC <- callableFor [ accTy, elTy ] accTy cbArg
+                    let xsCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) innerXs
+                    pure (Tuple accTy ("purust_core::typed::foldl_filter::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _, _>(" <> xsCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
+
+            arrayFold = do
               elTy <- arrayElementFromExpr xsArg
               _ <- primitiveTy elTy
               if not ((if leftToRight then first == accTy && second == elTy else first == elTy && second == accTy))
@@ -1540,19 +1635,50 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
                   let xsCode = fromMaybe "" (Array.index argsCodeArray 2)
                       call = "purust_core::typed::" <> helperName <> "::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _>(" <> xsCode <> ", " <> initCode <> ", " <> closure <> ")"
                   pure (Tuple accTy call)
+        case rangeFold of
+          Just result -> Just result
+          Nothing -> case replicatedFold of
+            Just result -> Just result
+            Nothing -> case filteredFold of
+              Just result -> Just result
+              Nothing -> arrayFold
 
   filterTraversal predArg xsArg = case rangePipeline xsArg of
     Just pipeline | isNothing pipeline.pred -> do
       predC <- callableFor [ Int ] Boolean predArg
       let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
       pure (Tuple (Array Int) ("purust_core::typed::filter_range::<i64, _>(" <> startCode <> ", " <> endCode <> ", " <> predC <> ")"))
+    _ -> case replicateApp xsArg of
+      Just (Tuple countArg valueArg) -> do
+        -- An erased element type keeps the boxed representation, which is
+        -- exactly what the generic predicate expects.
+        let elTy = case arrayElementFromExpr xsArg of
+              Just el | isJust (primitiveTy el) -> el
+              _ -> Any
+        closure <- callableFor [ elTy ] Boolean predArg
+        let countCode = argCodeFor valueArg countArg
+            valueCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) valueArg
+        pure (Tuple (Array elTy) ("purust_core::typed::filter_replicate::<" <> rustTy elTy <> ", _>(" <> countCode <> ", " <> valueCode <> ", " <> closure <> ")"))
+      _ -> do
+        elTy <- arrayElementFromExpr xsArg
+        _ <- primitiveTy elTy
+        closure <- callableFor [ elTy ] Boolean predArg
+        let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
+            call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
+        pure (Tuple (Array elTy) call)
+
+  -- Predicate scans over a known array or range stop at the first witness.
+  anyAllTraversal helperName predArg xsArg = case rangePipeline xsArg of
+    Just pipeline | isNothing pipeline.pred -> do
+      predC <- callableFor [ Int ] Boolean predArg
+      let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
+      pure (Tuple Boolean ("purust_core::typed::" <> helperName <> "_range::<i64, _>(" <> startCode <> ", " <> endCode <> ", " <> predC <> ")"))
     _ -> do
       elTy <- arrayElementFromExpr xsArg
       _ <- primitiveTy elTy
-      closure <- callableFor [ elTy ] Boolean predArg
+      predC <- callableFor [ elTy ] Boolean predArg
       let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
-          call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
-      pure (Tuple (Array elTy) call)
+      pure (Tuple Boolean ("purust_core::typed::" <> helperName <> "_array::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> predC <> ")"))
 
 genApp :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
 genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive appTy fn originalArgs =
@@ -2524,7 +2650,14 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           let startCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables endArg)) false startArg
               endCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false endArg
           in "purust_core::typed::length_range(" <> startCode <> ", " <> endCode <> ")"
-        Nothing -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
+        Nothing -> case stripCodegenWrappers a of
+          NeutralExpr (UncurriedApp producer args)
+            | Just "Data_Array_replicateImpl" <- directCallName currentMod producer
+            , [ countArg, valueArg ] <- args ->
+                let countCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables valueArg)) false countArg
+                    valueCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false valueArg
+                in "{ let _purust_replicated = " <> valueCode <> "; (" <> countCode <> ").max(0) }"
+          _ -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
       OpIsTag (Qualified mbMod (Ident ctorName)) ->
         let ctorModule = case mbMod of
               Just (ModuleName name) -> String.replaceAll (Pattern ".") (Replacement "_") name
@@ -2580,8 +2713,11 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpIntNum OpSubtract -> "(" <> aStrInt <> " - " <> bStrInt <> ")"
       OpIntNum OpMultiply -> "(" <> aStrInt <> " * " <> bStrInt <> ")"
       OpIntNum OpDivide -> "(" <> aStrInt <> " / " <> bStrInt <> ")"
-      OpIntNum OpMod ->
-        "{ let _mod_l: i64 = " <> aStrInt <> "; let _mod_r: i64 = " <> bStrInt <> "; _mod_l.checked_rem_euclid(_mod_r).unwrap_or(0_i64) }"
+      OpIntNum OpMod -> case literalPowerOfTwoMask b of
+        -- Euclidean remainder of a positive power of two is the low-bit mask,
+        -- which keeps the surrounding loops vectorizable.
+        Just mask -> "((" <> aStrInt <> ") & " <> show mask <> ")"
+        Nothing -> "{ let _mod_l: i64 = " <> aStrInt <> "; let _mod_r: i64 = " <> bStrInt <> "; _mod_l.checked_rem_euclid(_mod_r).unwrap_or(0_i64) }"
       OpIntBitAnd -> "(" <> aStrInt <> " & " <> bStrInt <> ")"
       OpIntBitOr -> "(" <> aStrInt <> " | " <> bStrInt <> ")"
       OpIntBitXor -> "(" <> aStrInt <> " ^ " <> bStrInt <> ")"
