@@ -273,6 +273,68 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        }\n" <>
   "        (a0 * a1) * (a2 * a3)\n" <>
   "    }\n" <>
+  -- Associative reductions over a boxed array. Integer elements are unboxed
+  -- once and kept in independent accumulators.
+  "    #[inline(always)]\n" <>
+  "    pub fn sum_array(xs: Value, init: i64) -> i64 {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = arr.as_slice();\n" <>
+  "        let mut a0 = init; let mut a1 = 0i64; let mut a2 = 0i64; let mut a3 = 0i64;\n" <>
+  "        let mut i = 0usize;\n" <>
+  "        while i + 4 <= items.len() {\n" <>
+  "            a0 += items[i].unwrap_int(); a1 += items[i + 1].unwrap_int();\n" <>
+  "            a2 += items[i + 2].unwrap_int(); a3 += items[i + 3].unwrap_int();\n" <>
+  "            i += 4;\n" <>
+  "        }\n" <>
+  "        while i < items.len() { a0 += items[i].unwrap_int(); i += 1; }\n" <>
+  "        (a0 + a1) + (a2 + a3)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn product_array(xs: Value, init: i64) -> i64 {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = arr.as_slice();\n" <>
+  "        let mut a0 = init; let mut a1 = 1i64; let mut a2 = 1i64; let mut a3 = 1i64;\n" <>
+  "        let mut i = 0usize;\n" <>
+  "        while i + 4 <= items.len() {\n" <>
+  "            a0 *= items[i].unwrap_int(); a1 *= items[i + 1].unwrap_int();\n" <>
+  "            a2 *= items[i + 2].unwrap_int(); a3 *= items[i + 3].unwrap_int();\n" <>
+  "            i += 4;\n" <>
+  "        }\n" <>
+  "        while i < items.len() { a0 *= items[i].unwrap_int(); i += 1; }\n" <>
+  "        (a0 * a1) * (a2 * a3)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn sum_filter_array<P: FnMut(i64) -> bool>(xs: Value, init: i64, mut p: P) -> i64 {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = arr.as_slice();\n" <>
+  "        let mut a0 = init; let mut a1 = 0i64; let mut a2 = 0i64; let mut a3 = 0i64;\n" <>
+  "        let mut i = 0usize;\n" <>
+  "        while i + 4 <= items.len() {\n" <>
+  "            let v0 = items[i].unwrap_int(); if p(v0) { a0 += v0; }\n" <>
+  "            let v1 = items[i + 1].unwrap_int(); if p(v1) { a1 += v1; }\n" <>
+  "            let v2 = items[i + 2].unwrap_int(); if p(v2) { a2 += v2; }\n" <>
+  "            let v3 = items[i + 3].unwrap_int(); if p(v3) { a3 += v3; }\n" <>
+  "            i += 4;\n" <>
+  "        }\n" <>
+  "        while i < items.len() { let v = items[i].unwrap_int(); if p(v) { a0 += v; } i += 1; }\n" <>
+  "        (a0 + a1) + (a2 + a3)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn product_filter_array<P: FnMut(i64) -> bool>(xs: Value, init: i64, mut p: P) -> i64 {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = arr.as_slice();\n" <>
+  "        let mut a0 = init; let mut a1 = 1i64; let mut a2 = 1i64; let mut a3 = 1i64;\n" <>
+  "        let mut i = 0usize;\n" <>
+  "        while i + 4 <= items.len() {\n" <>
+  "            let v0 = items[i].unwrap_int(); if p(v0) { a0 *= v0; }\n" <>
+  "            let v1 = items[i + 1].unwrap_int(); if p(v1) { a1 *= v1; }\n" <>
+  "            let v2 = items[i + 2].unwrap_int(); if p(v2) { a2 *= v2; }\n" <>
+  "            let v3 = items[i + 3].unwrap_int(); if p(v3) { a3 *= v3; }\n" <>
+  "            i += 4;\n" <>
+  "        }\n" <>
+  "        while i < items.len() { let v = items[i].unwrap_int(); if p(v) { a0 *= v; } i += 1; }\n" <>
+  "        (a0 * a1) * (a2 * a3)\n" <>
+  "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn any_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> bool {\n" <>
   "        let arr = xs.unwrap_array();\n" <>
@@ -1596,6 +1658,10 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
     Func argTys retTy -> Just (Tuple argTys retTy)
     _ -> Nothing
 
+  -- An erased callback signature still matches a concrete instantiation: the
+  -- call's well-typedness fixes the element and accumulator types.
+  matchesAny left right = left == right || left == Any || right == Any
+
   -- Emit the callback as a concrete Rust closure. A global native function is
   -- called directly once its declared signature matches the instantiated one;
   -- a capture-free lambda has its body emitted with the parameters bound.
@@ -1616,15 +1682,12 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
                   callArgs = String.joinWith ", " names
               in Just ("move |" <> params <> "| " <> fullName <> "(" <> callArgs <> ")")
         _ -> Nothing
-    NeutralExpr (Abs params body) -> inlineLambda (NonEmptyArray.toArray params) body
-    NeutralExpr (UncurriedAbs params body) -> inlineLambda params body
+    NeutralExpr (Abs _ _) -> flattenLambda arg >>= \(Tuple names body) -> inlineLambda (map (\n -> if String.null n then "_" else n) names) body
+    NeutralExpr (UncurriedAbs _ _) -> flattenLambda arg >>= \(Tuple names body) -> inlineLambda (map (\n -> if String.null n then "_" else n) names) body
     _ -> Nothing
     where
-    inlineLambda params body =
-      let names = map (\(Tuple mbId _) -> case mbId of
-            Just (Ident name) -> sanitizeIdent name
-            Nothing -> "_") params
-          bound' = Map.union (Map.fromFoldable (Array.zip names argTys)) bound
+    inlineLambda names body =
+      let bound' = Map.union (Map.fromFoldable (Array.zip names argTys)) bound
       in if Array.length names /= Array.length argTys
            then Nothing
            else if not (Array.all representableTy argTys) || not (representableTy retTy)
@@ -1656,7 +1719,42 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
             "Data_Semiring_intMul" -> Just "product"
             _ -> Nothing
         _ -> Nothing
+    -- `\a b -> a + b` (either order, curried or not) is the same reduction.
+    NeutralExpr (Abs _ _) ->
+      let isLocal name e = case stripExpr e of
+            NeutralExpr (Local (Just (Ident n)) _) -> sanitizeIdent n == name
+            _ -> false
+      in case flattenLambda arg of
+        Just (Tuple [ p0, p1 ] body) | not (String.null p0) && not (String.null p1) ->
+          let used = freeVariables body
+              paramsOnly = Set.fromFoldable [ p0, p1 ]
+          in if not (Set.isEmpty (Set.difference used paramsOnly))
+               then Nothing
+               else case stripExpr body of
+                 NeutralExpr (PrimOp (Op2 op a b)) ->
+                   let kind = case op of
+                         OpIntNum OpAdd -> Just "sum"
+                         OpIntNum OpMultiply -> Just "product"
+                         _ -> Nothing
+                   in if (isLocal p0 a && isLocal p1 b) || (isLocal p1 a && isLocal p0 b) then kind else Nothing
+                 _ -> Nothing
+        _ -> Nothing
     _ -> Nothing
+
+  -- Collect the parameter names of a (possibly curried) lambda, with its
+  -- innermost body. Uncurried binder groups flatten the same way.
+  flattenLambda expr = case stripExpr expr of
+    NeutralExpr (Abs params inner) -> case flattenLambda inner of
+      Just (Tuple names body) -> Just (Tuple (map paramName (NonEmptyArray.toArray params) <> names) body)
+      Nothing -> Nothing
+    NeutralExpr (UncurriedAbs params inner) -> case flattenLambda inner of
+      Just (Tuple names body) -> Just (Tuple (map paramName params <> names) body)
+      Nothing -> Nothing
+    other -> Just (Tuple [] other)
+
+  paramName (Tuple mbId _) = case mbId of
+    Just (Ident n) -> sanitizeIdent n
+    Nothing -> ""
 
   uncurriedAppArgs name expr = case stripExpr expr of
     NeutralExpr (UncurriedApp producer args) | Just name' <- calleeName producer, name' == name -> Just args
@@ -1690,7 +1788,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
   foldTraversal helperName leftToRight cbArg initArg xsArg = do
     accTy <- primitiveTy (infer initArg)
     Tuple cbArgs cbRet <- functionParts (infer cbArg)
-    if Array.length cbArgs /= 2 || not (cbRet == accTy)
+    if Array.length cbArgs /= 2 || not (matchesAny cbRet accTy)
       then Nothing
       else do
         let first = fromMaybe Any (Array.index cbArgs 0)
@@ -1699,7 +1797,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
 
             -- A range producer (optionally filtered) stays virtual.
             rangeFold = case rangePipeline xsArg of
-              Just pipeline | leftToRight && first == accTy && second == Int -> do
+              Just pipeline | leftToRight && matchesAny first accTy && matchesAny second Int -> do
                 let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
                 case associativeFold cbArg, accTy == Int of
                   Just "sum", true -> case pipeline.pred of
@@ -1729,7 +1827,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
             -- exactly what the generic callback expects.
             replicatedFold = do
               Tuple countArg valueArg <- replicateApp xsArg
-              if not (leftToRight && first == accTy)
+              if not (leftToRight && matchesAny first accTy)
                 then Nothing
                 else do
                   closure <- callableFor [ accTy, second ] accTy cbArg
@@ -1744,25 +1842,39 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
               if not leftToRight then Nothing else do
                 elTy <- arrayElementFromExpr innerXs
                 _ <- primitiveTy elTy
-                if not (first == accTy && second == elTy)
+                if not (matchesAny first accTy && matchesAny second elTy)
                   then Nothing
                   else do
-                    predC <- callableFor [ elTy ] Boolean predArg
-                    foldC <- callableFor [ accTy, elTy ] accTy cbArg
                     let xsCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) innerXs
-                    pure (Tuple accTy ("purust_core::typed::foldl_filter::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _, _>(" <> xsCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
+                    predC <- callableFor [ elTy ] Boolean predArg
+                    -- A known associative integer operation accumulates
+                    -- without the per-element callback.
+                    if isJust (associativeFold cbArg) && accTy == Int && elTy == Int
+                      then do
+                        let helper = if associativeFold cbArg == Just "product" then "product_filter_array" else "sum_filter_array"
+                        pure (Tuple accTy ("purust_core::typed::" <> helper <> "(" <> xsCode <> ", " <> initCode <> ", " <> predC <> ")"))
+                      else do
+                        foldC <- callableFor [ accTy, elTy ] accTy cbArg
+                        pure (Tuple accTy ("purust_core::typed::foldl_filter::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _, _>(" <> xsCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
 
             arrayFold = do
               elTy <- arrayElementFromExpr xsArg
               _ <- primitiveTy elTy
-              if not ((if leftToRight then first == accTy && second == elTy else first == elTy && second == accTy))
+              if not ((if leftToRight then matchesAny first accTy && matchesAny second elTy else matchesAny first elTy && matchesAny second accTy))
                 then Nothing
                 else do
-                  let ordered = if leftToRight then [ accTy, elTy ] else [ elTy, accTy ]
-                  closure <- callableFor ordered accTy cbArg
                   let xsCode = fromMaybe "" (Array.index argsCodeArray 2)
-                      call = "purust_core::typed::" <> helperName <> "::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _>(" <> xsCode <> ", " <> initCode <> ", " <> closure <> ")"
-                  pure (Tuple accTy call)
+                  -- A known associative integer operation accumulates
+                  -- without the per-element callback.
+                  if leftToRight && isJust (associativeFold cbArg) && accTy == Int && elTy == Int
+                    then do
+                      let helper = if associativeFold cbArg == Just "product" then "product_array" else "sum_array"
+                      pure (Tuple accTy ("purust_core::typed::" <> helper <> "(" <> xsCode <> ", " <> initCode <> ")"))
+                    else do
+                      let ordered = if leftToRight then [ accTy, elTy ] else [ elTy, accTy ]
+                      closure <- callableFor ordered accTy cbArg
+                      let call = "purust_core::typed::" <> helperName <> "::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _>(" <> xsCode <> ", " <> initCode <> ", " <> closure <> ")"
+                      pure (Tuple accTy call)
         case rangeFold of
           Just result -> Just result
           Nothing -> case replicatedFold of
