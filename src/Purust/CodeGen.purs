@@ -50,7 +50,7 @@ import Data.Set as Set
 import Data.Map (Map)
 import Data.Map as Map
 import Data.String.Pattern (Pattern(..), Replacement(..))
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
 import Partial.Unsafe (unsafeCrashWith)
 import Effect.Ref as Ref
 import Effect.Console (log)
@@ -67,13 +67,16 @@ maxNativeFunctionArity = 12
 typedTraversalsSource :: String
 typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    use crate::*;\n" <>
-  "    pub trait Repr: Sized {\n" <>
+  "    pub trait Repr: Sized + Clone {\n" <>
   "        fn from_value(value: &Value) -> Self;\n" <>
+  "        fn from_int(value: i64) -> Self;\n" <>
   "        fn into_value(self) -> Value;\n" <>
   "    }\n" <>
   "    impl Repr for Value {\n" <>
   "        #[inline(always)]\n" <>
   "        fn from_value(value: &Value) -> Value { value.clone() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_int(value: i64) -> Value { Value::Int(value) }\n" <>
   "        #[inline(always)]\n" <>
   "        fn into_value(self) -> Value { self }\n" <>
   "    }\n" <>
@@ -81,11 +84,15 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        #[inline(always)]\n" <>
   "        fn from_value(value: &Value) -> i64 { value.unwrap_int() }\n" <>
   "        #[inline(always)]\n" <>
+  "        fn from_int(value: i64) -> i64 { value }\n" <>
+  "        #[inline(always)]\n" <>
   "        fn into_value(self) -> Value { mk_int(self) }\n" <>
   "    }\n" <>
   "    impl Repr for f64 {\n" <>
   "        #[inline(always)]\n" <>
   "        fn from_value(value: &Value) -> f64 { value.unwrap_number() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_int(value: i64) -> f64 { value as f64 }\n" <>
   "        #[inline(always)]\n" <>
   "        fn into_value(self) -> Value { mk_number(self) }\n" <>
   "    }\n" <>
@@ -93,11 +100,15 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        #[inline(always)]\n" <>
   "        fn from_value(value: &Value) -> bool { value.unwrap_bool() }\n" <>
   "        #[inline(always)]\n" <>
+  "        fn from_int(value: i64) -> bool { value != 0 }\n" <>
+  "        #[inline(always)]\n" <>
   "        fn into_value(self) -> Value { mk_bool(self) }\n" <>
   "    }\n" <>
   "    impl Repr for char {\n" <>
   "        #[inline(always)]\n" <>
   "        fn from_value(value: &Value) -> char { value.unwrap_char() }\n" <>
+  "        #[inline(always)]\n" <>
+  "        fn from_int(value: i64) -> char { std::char::from_u32(value as u32).unwrap_or('\\0') }\n" <>
   "        #[inline(always)]\n" <>
   "        fn into_value(self) -> Value { mk_char(self) }\n" <>
   "    }\n" <>
@@ -129,6 +140,52 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "            }\n" <>
   "        }\n" <>
   "        mk_array(result)\n" <>
+  "    }\n" <>
+  -- Fused pipelines: a range producer can stay virtual, so the traversals
+  -- below never materialize the intermediate arrays at all.
+  "    #[inline(always)]\n" <>
+  "    pub fn length_range(start: i64, end: i64) -> i64 {\n" <>
+  "        if start <= end { end.wrapping_sub(start).wrapping_add(1) } else { start.wrapping_sub(end).wrapping_add(1) }\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn filter_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> Value {\n" <>
+  "        let mut result: Vec<UnknownType> = Vec::new();\n" <>
+  "        if start <= end {\n" <>
+  "            for i in start..=end { if p(A::from_int(i)) { result.push(Value::Int(i)); } }\n" <>
+  "        } else {\n" <>
+  "            for i in (end..=start).rev() { if p(A::from_int(i)) { result.push(Value::Int(i)); } }\n" <>
+  "        }\n" <>
+  "        mk_array(result)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn foldl_range<A: Repr, B: Repr, F: FnMut(B, A) -> B>(start: i64, end: i64, init: B, mut f: F) -> B {\n" <>
+  "        let mut acc = init;\n" <>
+  "        if start <= end {\n" <>
+  "            for i in start..=end { acc = f(acc, A::from_int(i)); }\n" <>
+  "        } else {\n" <>
+  "            for i in (end..=start).rev() { acc = f(acc, A::from_int(i)); }\n" <>
+  "        }\n" <>
+  "        acc\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn foldl_filter<A: Repr, B: Repr, P: FnMut(A) -> bool, F: FnMut(B, A) -> B>(xs: Value, init: B, mut p: P, mut f: F) -> B {\n" <>
+  "        let arr = xs.unwrap_array();\n" <>
+  "        let mut acc = init;\n" <>
+  "        for item in arr.iter() {\n" <>
+  "            let value = A::from_value(item);\n" <>
+  "            if p(value.clone()) { acc = f(acc, value); }\n" <>
+  "        }\n" <>
+  "        acc\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn foldl_filter_range<A: Repr, B: Repr, P: FnMut(A) -> bool, F: FnMut(B, A) -> B>(start: i64, end: i64, init: B, mut p: P, mut f: F) -> B {\n" <>
+  "        let mut acc = init;\n" <>
+  "        if start <= end {\n" <>
+  "            for i in start..=end { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } }\n" <>
+  "        } else {\n" <>
+  "            for i in (end..=start).rev() { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } }\n" <>
+  "        }\n" <>
+  "        acc\n" <>
   "    }\n" <>
   "}\n"
 
@@ -1293,10 +1350,32 @@ alignDiscardedCallbackArgs expected actual expr =
     NeutralExpr (UncurriedAbs params body) -> align params body
     _ -> expr
 
+-- Strip the erasure wrappers used to inspect a callee or producer expression.
+stripCodegenWrappers :: NeutralExpr -> NeutralExpr
+stripCodegenWrappers (NeutralExpr (Typed _ inner)) = stripCodegenWrappers inner
+stripCodegenWrappers (NeutralExpr (Syn.TypeApp inner _)) = stripCodegenWrappers inner
+stripCodegenWrappers e = e
+
+-- Rust spelling of a direct global call target.
+directCallName :: String -> NeutralExpr -> Maybe String
+directCallName currentMod e = case stripCodegenWrappers e of
+  NeutralExpr (Var q@(Qualified _ (Ident name))) -> Just (getTyPrefix currentMod q <> sanitizeIdent name)
+  _ -> Nothing
+
+-- Bounds of a direct rangeImpl application.
+rangeApplication :: String -> NeutralExpr -> Maybe (Tuple NeutralExpr NeutralExpr)
+rangeApplication currentMod e = case stripCodegenWrappers e of
+  NeutralExpr (UncurriedApp producer args)
+    | Just "Data_Array_rangeImpl" <- directCallName currentMod producer -> case args of
+        [ startArg, endArg ] -> Just (Tuple startArg endArg)
+        _ -> Nothing
+  _ -> Nothing
+
 -- A known foreign array helper applied to a statically known callback runs as
 -- a monomorphic loop. The callback is emitted inside the caller's crate, so
 -- neither the per-element dispatch nor the boxed accumulator survives, while
--- the array representation itself stays unchanged.
+-- the array representation itself stays unchanged. A range producer stays
+-- virtual, so a fused pipeline never materializes an intermediate array.
 typedTraversalCall :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array NeutralExpr -> Array String -> NeutralExpr -> Maybe (Tuple ExprType String)
 typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext aritiesMap globalClassFields bound alive argsArray argsCodeArray fn = case calleeName fn of
   Just callee -> case argsArray of
@@ -1317,13 +1396,8 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
     "char" -> Just ty
     _ -> Nothing
 
-  stripExpr (NeutralExpr (Typed _ inner)) = stripExpr inner
-  stripExpr (NeutralExpr (Syn.TypeApp inner _)) = stripExpr inner
-  stripExpr e = e
-
-  calleeName e = case stripExpr e of
-    NeutralExpr (Var q@(Qualified _ (Ident name))) -> Just (getTyPrefix currentMod q <> sanitizeIdent name)
-    _ -> Nothing
+  stripExpr = stripCodegenWrappers
+  calleeName = directCallName currentMod
 
   arrayElement ty = case unwrapType ty of
     Array el -> Just el
@@ -1397,9 +1471,33 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
                              paramsCode = String.joinWith ", " (Array.zipWith (\n ty -> n <> ": " <> rustTy ty) names argTys)
                          in Just ("move |" <> paramsCode <> "| " <> converted)
 
+  rangeArgs = rangeApplication currentMod
+
+  filterApp expr = case stripExpr expr of
+    NeutralExpr (UncurriedApp producer args)
+      | Just "Data_Array_filterImpl" <- calleeName producer -> case args of
+          [ predArg, innerXs ] -> Just (Tuple predArg innerXs)
+          _ -> Nothing
+    _ -> Nothing
+
+  -- A range producer (possibly filtered) can stay virtual: its bounds are
+  -- evaluated in argument order and the consumers below iterate it directly.
+  rangePipeline expr = case filterApp expr of
+    Just (Tuple predArg innerXs) -> case rangeArgs innerXs of
+      Just (Tuple startArg endArg) -> Just { startArg, endArg, pred: Just predArg }
+      Nothing -> Nothing
+    Nothing -> case rangeArgs expr of
+      Just (Tuple startArg endArg) -> Just { startArg, endArg, pred: Nothing }
+      Nothing -> Nothing
+
+  argCodeFor later expr = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables later)) false expr
+
+  rangeCodes startArg endArg =
+    let startCode = argCodeFor endArg startArg
+        endCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) endArg
+    in Tuple startCode endCode
+
   foldTraversal helperName leftToRight cbArg initArg xsArg = do
-    elTy <- arrayElementFromExpr xsArg
-    _ <- primitiveTy elTy
     accTy <- primitiveTy (infer initArg)
     Tuple cbArgs cbRet <- functionParts (infer cbArg)
     if Array.length cbArgs /= 2 || not (cbRet == accTy)
@@ -1407,23 +1505,54 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
       else do
         let first = fromMaybe Any (Array.index cbArgs 0)
             second = fromMaybe Any (Array.index cbArgs 1)
-            ordered = if leftToRight then [ first, second ] else [ second, first ]
-        if not (first == accTy && second == elTy)
-          then Nothing
-          else do
-            closure <- callableFor ordered accTy cbArg
-            let xsCode = fromMaybe "" (Array.index argsCodeArray 2)
-                initCode = fromMaybe "" (Array.index argsCodeArray 1)
-                call = "purust_core::typed::" <> helperName <> "::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _>(" <> xsCode <> ", " <> initCode <> ", " <> closure <> ")"
-            pure (Tuple accTy call)
+            initCode = fromMaybe "" (Array.index argsCodeArray 1)
+        case rangePipeline xsArg of
+          Just pipeline | leftToRight && first == accTy && second == Int -> do
+            foldC <- callableFor [ accTy, Int ] accTy cbArg
+            let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
+            case pipeline.pred of
+              Just predArg -> do
+                predC <- callableFor [ Int ] Boolean predArg
+                pure (Tuple accTy ("purust_core::typed::foldl_filter_range::<i64, " <> rustTy accTy <> ", _, _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
+              Nothing ->
+                pure (Tuple accTy ("purust_core::typed::foldl_range::<i64, " <> rustTy accTy <> ", _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> foldC <> ")"))
+          _ -> case filterApp xsArg of
+            -- A filtered array can also stay virtual: one loop tests the
+            -- predicate and folds the retained elements.
+            Just (Tuple predArg innerXs) | leftToRight -> do
+              elTy <- arrayElementFromExpr innerXs
+              _ <- primitiveTy elTy
+              if not (first == accTy && second == elTy)
+                then Nothing
+                else do
+                  predC <- callableFor [ elTy ] Boolean predArg
+                  foldC <- callableFor [ accTy, elTy ] accTy cbArg
+                  let xsCode = argCodeFor (NeutralExpr (Lit (LitInt 0))) innerXs
+                  pure (Tuple accTy ("purust_core::typed::foldl_filter::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _, _>(" <> xsCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
+            _ -> do
+              elTy <- arrayElementFromExpr xsArg
+              _ <- primitiveTy elTy
+              if not ((if leftToRight then first == accTy && second == elTy else first == elTy && second == accTy))
+                then Nothing
+                else do
+                  let ordered = if leftToRight then [ accTy, elTy ] else [ elTy, accTy ]
+                  closure <- callableFor ordered accTy cbArg
+                  let xsCode = fromMaybe "" (Array.index argsCodeArray 2)
+                      call = "purust_core::typed::" <> helperName <> "::<" <> rustTy elTy <> ", " <> rustTy accTy <> ", _>(" <> xsCode <> ", " <> initCode <> ", " <> closure <> ")"
+                  pure (Tuple accTy call)
 
-  filterTraversal predArg xsArg = do
-    elTy <- arrayElementFromExpr xsArg
-    _ <- primitiveTy elTy
-    closure <- callableFor [ elTy ] Boolean predArg
-    let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
-        call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
-    pure (Tuple (Array elTy) call)
+  filterTraversal predArg xsArg = case rangePipeline xsArg of
+    Just pipeline | isNothing pipeline.pred -> do
+      predC <- callableFor [ Int ] Boolean predArg
+      let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
+      pure (Tuple (Array Int) ("purust_core::typed::filter_range::<i64, _>(" <> startCode <> ", " <> endCode <> ", " <> predC <> ")"))
+    _ -> do
+      elTy <- arrayElementFromExpr xsArg
+      _ <- primitiveTy elTy
+      closure <- callableFor [ elTy ] Boolean predArg
+      let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
+          call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
+      pure (Tuple (Array elTy) call)
 
 genApp :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
 genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive appTy fn originalArgs =
@@ -2390,7 +2519,12 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpIntBitNot -> "!(" <> scalarOperand Int a aTy aStrRaw <> ")"
       OpIntNegate -> "-(" <> scalarOperand Int a aTy aStrRaw <> ")"
       OpNumberNegate -> "-(" <> scalarOperand Number a aTy aStrRaw <> ")"
-      OpArrayLength -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
+      OpArrayLength -> case rangeApplication currentMod a of
+        Just (Tuple startArg endArg) ->
+          let startCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.union alive (freeVariables endArg)) false startArg
+              endCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false endArg
+          in "purust_core::typed::length_range(" <> startCode <> ", " <> endCode <> ")"
+        Nothing -> "((" <> boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw <> ").unwrap_array().len() as i64)"
       OpIsTag (Qualified mbMod (Ident ctorName)) ->
         let ctorModule = case mbMod of
               Just (ModuleName name) -> String.replaceAll (Pattern ".") (Replacement "_") name
