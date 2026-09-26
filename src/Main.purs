@@ -20,6 +20,7 @@ import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
 import Purust.DataLayout (opaqueForeignTypeKey, valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
+import Purust.Monomorphization (buildGlobalTypes, monomorphizeModules)
 import Purust.Threading (threadedRust, threadedPrelude)
 import Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource)
 import Purust.FfiCargo (loadFfiCargo)
@@ -51,6 +52,7 @@ main :: Effect Unit
 main = launchAff_ $ Metrics.measure "backend total" \_ -> do
   args <- liftEffect Process.argv
   let threaded = Array.elem "--threaded" args
+  let monomorphize = Array.elem "--monomorphize" args
   let tracePhases = Array.elem "--trace-phases" args
   let ffiDir = case Array.findIndex (_ == "--ffi-dir") args of
         Just idx -> Array.index args (idx + 1)
@@ -67,7 +69,10 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
                                    Just s -> s
                                    Nothing -> "output"
                      Nothing -> "output"
-  finalModules <- Metrics.measure "load TAST + sort" \_ -> coreFnModulesFromOutput sourceDir
+  loadedModules <- Metrics.measure "load TAST + sort" \_ -> coreFnModulesFromOutput sourceDir
+  let finalModules = if monomorphize
+        then monomorphizeModules (buildGlobalTypes (Array.fromFoldable loadedModules)) loadedModules
+        else loadedModules
 
   -- Field spellings are resolved once for the whole compilation: record rows
   -- and class dictionaries must agree everywhere, including purust_core.
@@ -421,10 +426,18 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
       when (not modExists) do
         FS.mkdir modDir
         FS.mkdir (modDir <> "/src")
-      let modDeps = "purust_core = { path = \"../purust_core\" }\n" <> runtimeDependency threaded "../perceus_ptr" <> "fancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") (fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))))
+      -- A crate never depends on itself: specialization can introduce
+      -- same-module references that the import collector reports as imports.
+      -- A crate never depends on itself: specialization can introduce
+      -- same-module references that the import collector reports as imports.
+      -- The rest of the collected set stays untouched; glob imports make a
+      -- narrower filter unsound, since symbols arrive unqualified.
+      let modDepSet = Set.delete k (fromMaybe Set.empty (Map.lookup k finalTcMap))
+          modDepList = Set.toUnfoldable modDepSet :: Array String
+          modDeps = "purust_core = { path = \"../purust_core\" }\n" <> runtimeDependency threaded "../perceus_ptr" <> "fancy-regex = \"0.13\"\n" <> String.joinWith "\n" (map (\i -> "Purs_" <> i <> " = { path = \"../Purs_" <> i <> "\" }") modDepList)
       let modCargoToml = "[package]\nname = \"Purs_" <> k <> "\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n" <> modDeps
       FS.writeTextFile UTF8 (modDir <> "/Cargo.toml") (configureThreading threaded (modCargoToml <> (if cargo == "" then "" else "\n" <> cargo)))
-      let transImps = fromMaybe [] (map (\s -> Set.toUnfoldable s :: Array String) (Map.lookup k finalTcMap))
+      let transImps = modDepList
       let newImportsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") transImps)
       let finalCode = String.replace (Pattern "use purust_core::*;\n") (Replacement ("use purust_core::*;\n" <> newImportsRust <> "\n")) v
       FS.writeTextFile UTF8 (modDir <> "/src/lib.rs") ((if threaded then threadedRust else identity) finalCode)
