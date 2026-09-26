@@ -208,6 +208,70 @@ Keep the package set and required library overrides from your application config
 
 Threaded code uses atomic ownership and requires shared callbacks to satisfy Rust's `Send + Sync` constraints. FFI captured by those callbacks must meet the same requirements. Tokio can execute work across multiple threads; throughput and scaling depend on the workload and are not guaranteed to be linear.
 
+## Trying it on arrays
+
+Array-heavy code is the first workload this backend was tuned for. Add the
+`arrays` port to the hello-world project above and try:
+
+```purescript
+module Main where
+
+import Prelude
+import Effect (Effect)
+import Effect.Console (log)
+import Data.Array as Array
+
+sumEvens :: Int -> Int
+sumEvens n = Array.foldl (+) 0 (Array.filter (\x -> mod x 2 == 0) (Array.range 1 n))
+
+main :: Effect Unit
+main = log (show (sumEvens 900))
+```
+
+`spago.yaml` gains the `arrays` dependency and its local port:
+
+```yaml
+package:
+  name: hello-rust
+  dependencies:
+    - arrays
+    - console
+    - effect
+    - prelude
+workspace:
+  extraPackages:
+    arrays:
+      path: ../purust-arrays
+    # prelude, effect, console as in the hello-world configuration
+```
+
+Build and run it as before. `Array.range`, `Array.filter` and `Array.foldl`
+compose into a single native loop: the range stays virtual, the predicate and
+the accumulator are monomorphized at the call site, the loop vectorizes, and
+no intermediate array is allocated. `Array.any`, `Array.all`,
+`Array.replicate` and `Array.length` join the same typed paths when their
+arguments are statically known. Indexed or random access still goes through
+reference-counted `Value` arrays, so those sites remain the slower ones.
+
+## Running the benchmark column
+
+The [altbak.pub](https://github.com/0x000000000000000000001/altbak.pub) Rust
+column drives the generated Cargo project, so it expects the same checkout
+layout: clone it next to this `purust` directory, with `spago` on `PATH` and a
+working Cargo toolchain. From `altbak.pub`:
+
+```bash
+./bin/rust/run                # spago build + purust + cargo build --release + one measured run
+./bin/rust/run --build-only   # stop after the build
+./bin/rust/run --run-only     # re-run the existing binary; three runs give a median
+```
+
+Each run prints one line per benchmark and validates the expected outputs.
+`Array Processing` is `src/Test/ArrayOps.purs` (`range` → `filter` → `foldl`);
+`List Processing` and `Prime Sieve` exercise the backend on strict lists, and
+`Array Indexing` (excluded from the published table) stresses width-based
+array access.
+
 ## Development and testing
 
 Build the compiler first. From this repository:
