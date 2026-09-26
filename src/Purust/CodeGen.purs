@@ -922,6 +922,11 @@ codegenPreludeWithRenames renames shapes =
   "    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
   "        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" <>
   "    }\n" <>
+  -- The same view without walking thunks: a dispatch must not force a value
+  -- the program would not otherwise have forced.
+  "    pub fn int_array_now(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
+  "        match self { Value::IntArray(v) => Some(v.clone()), _ => None }\n" <>
+  "    }\n" <>
   -- Libraries that inspect the raw element vector convert an IntArray on
   -- demand; the boxed buffer is a fresh copy because those callers index or
   -- mutate it directly.
@@ -1088,7 +1093,7 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
 
 -- A tail-call jump has no value to box. Detect it from the expression rather
 -- than the emitted Rust suffix: moving constructor fields can add outer blocks.
-continuesLoop :: String -> Maybe { name :: String, params :: Array String } -> NeutralExpr -> Boolean
+continuesLoop :: String -> Maybe LoopContext -> NeutralExpr -> Boolean
 continuesLoop currentMod mbLoop = go
   where
   callee (NeutralExpr (Typed _ inner)) = callee inner
@@ -1425,7 +1430,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                 Just (Tuple p _) -> p
                 Nothing -> Array.mapWithIndex (\i _ -> "a" <> show i) argTypes
               deduped = dedupArgs paramsArr
-              mbLoop = if isSelfRecursive then Just { name: identName, params: deduped } else Nothing
+              mbLoop = if isSelfRecursive then Just { name: identName, params: deduped, view: Nothing, tco: true } else Nothing
               paramPairs = Array.zip deduped argTypes
               pCode = String.joinWith ", " $ map (\(Tuple pName ty) ->
                 let p = sanitizeIdent pName in
@@ -1455,7 +1460,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                         workerType = Func workerTypes workerReturn
                         workerArities = Map.insert identName workerType mergedArities
                         workerBound = Map.fromFoldable (Array.zip workerParams workerTypes)
-                        workerLoop = Just { name: identName, params: workerParams }
+                        workerLoop = Just { name: identName, params: workerParams, view: Nothing, tco: true }
                         workerBody = codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext workerLoop workerArities globalClassFields workerBound Set.empty false body
                         workerBodyType = inferTypeExpr modNameStr workerArities globalClassFields workerBound body
                         workerCode = if continuesLoop modNameStr workerLoop body then workerBody
@@ -1553,7 +1558,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                   Just (Ident n) -> n
                   _ -> "_") (NonEmptyArray.toArray params)
                 deduped = dedupArgs paramsArr
-                mbLoop = if isSelfRecursive then Just { name: identName, params: deduped } else Nothing
+                mbLoop = if isSelfRecursive then Just { name: identName, params: deduped, view: Nothing, tco: true } else Nothing
                 argTys = extractAllArgTypes inferredType
                 pCode = String.joinWith ", " $ Array.mapWithIndex (\i pName ->
                   let p = sanitizeIdent pName 
@@ -1674,6 +1679,112 @@ paramName (Tuple mbId _) = case mbId of
   Just (Ident n) -> sanitizeIdent n
   Nothing -> ""
 
+-- A self-recursive loop under tail-call compilation. `view` records a captured
+-- `Array Int` that the body reads by index: the loop is then also generated
+-- over a borrowed slice, so the runtime representation is dispatched once per
+-- call instead of on every read.
+type LoopContext =
+  { name :: String
+  , params :: Array String
+  , view :: Maybe ArrayView
+  -- False while rendering a tail-call argument or a let-bound value: those are
+  -- evaluated before the jump, so they must not emit `continue`.
+  , tco :: Boolean
+  }
+
+-- The same loop context with the tail-call rewrite disabled. Index reads still
+-- see the borrowed array view.
+argLoopContext :: Maybe LoopContext -> Maybe LoopContext
+argLoopContext = map \loop -> loop { tco = false }
+
+-- `arg` is the Rust parameter holding `&[i64]` for `source`.
+type ArrayView = { source :: String, arg :: String }
+
+-- Direct subexpressions, used by the conservative scans below. Unlisted
+-- constructors have no expression children.
+exprChildren :: NeutralExpr -> Array NeutralExpr
+exprChildren (NeutralExpr expr) = case expr of
+  Syn.TypeApp a _ -> [ a ]
+  App fn args -> Array.cons fn (NonEmptyArray.toArray args)
+  Abs _ body -> [ body ]
+  UncurriedApp fn args -> Array.cons fn args
+  UncurriedAbs _ body -> [ body ]
+  UncurriedEffectApp fn args -> Array.cons fn args
+  UncurriedEffectAbs _ body -> [ body ]
+  Accessor base _ -> [ base ]
+  Update base props -> Array.cons base (map (\(Prop _ v) -> v) props)
+  CtorSaturated _ _ _ _ fields -> map (\(Tuple _ v) -> v) fields
+  LetRec _ binds body -> Array.cons body (map (\(Tuple _ v) -> v) (NonEmptyArray.toArray binds))
+  Let _ _ value body -> [ value, body ]
+  EffectBind _ _ value body -> [ value, body ]
+  EffectPure value -> [ value ]
+  EffectDefer inner -> [ inner ]
+  Branch branches def -> Array.snoc (Array.concatMap (\(Pair cond body) -> [ cond, body ]) (NonEmptyArray.toArray branches)) def
+  PrimOp op -> case op of
+    Op1 _ a -> [ a ]
+    Op2 _ a b -> [ a, b ]
+  PrimEffect operation -> Array.fromFoldable operation
+  Typed _ inner -> [ inner ]
+  Lit (LitArray values) -> values
+  Lit (LitRecord props) -> map (\(Prop _ v) -> v) props
+  _ -> []
+
+-- Identifiers bound anywhere inside an expression. A view is rejected when the
+-- loop body could shadow the captured array.
+boundNames :: NeutralExpr -> Set.Set String
+boundNames expr@(NeutralExpr syn) = ownBinders syn <> foldMap boundNames (exprChildren expr)
+  where
+  identName (Ident n) = sanitizeIdent n
+  binderSet = Set.fromFoldable <<< Array.mapMaybe (\(Tuple mbId _) -> identName <$> mbId)
+  ownBinders = case _ of
+    Abs params _ -> binderSet (NonEmptyArray.toArray params)
+    UncurriedAbs params _ -> binderSet params
+    UncurriedEffectAbs params _ -> binderSet params
+    Let mbId _ _ _ -> Set.fromFoldable (identName <$> mbId)
+    LetRec _ binds _ -> Set.fromFoldable (map (\(Tuple ident _) -> identName ident) (NonEmptyArray.toArray binds))
+    EffectBind mbId _ _ _ -> Set.fromFoldable (identName <$> mbId)
+    _ -> Set.empty
+
+-- Array operands of direct index reads, in no particular order.
+indexReadArrays :: String -> NeutralExpr -> Array NeutralExpr
+indexReadArrays currentMod = go
+  where
+  go expr@(NeutralExpr syn) = own syn <> foldMap go (exprChildren expr)
+  own syn = case syn of
+    UncurriedApp producer args -> case directCallName currentMod producer, args of
+      Just "Data_Array_unsafeIndexImpl", [ xs, _ ] -> [ xs ]
+      _, _ -> []
+    PrimOp (Op2 OpArrayIndex xs _) -> [ xs ]
+    Accessor xs (GetIndex _) -> [ xs ]
+    _ -> []
+
+-- A captured `Array Int` that the loop reads by index. The candidate stays
+-- conservative: the body must not rebind the name, and the variable's declared
+-- type must be exactly `Array Int`.
+intViewCandidate :: String -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Array String -> NeutralExpr -> Maybe String
+intViewCandidate currentMod aritiesMap globalClassFields bound capturedArr body =
+  Array.findMap tryVar capturedArr
+  where
+  reads = indexReadArrays currentMod body
+  shadowed = boundNames body
+  isLocal name e = case stripCodegenWrappers e of
+    NeutralExpr (Local (Just (Ident n)) _) -> sanitizeIdent n == name
+    _ -> false
+  tryVar name =
+    if Set.member name shadowed then Nothing
+    else case Array.find (isLocal name) reads of
+      Nothing -> Nothing
+      Just _ -> case Map.lookup name bound of
+        Just ty | unwrapType ty == Array Int -> Just name
+        _ -> Nothing
+
+-- The borrowed slice backing a loop's captured `Array Int`, when an index read
+-- targets exactly that variable.
+viewSliceOf :: Maybe LoopContext -> NeutralExpr -> Maybe String
+viewSliceOf mbLoop e = case mbLoop >>= _.view, stripCodegenWrappers e of
+  Just view, NeutralExpr (Local (Just (Ident name)) _) | sanitizeIdent name == view.source -> Just view.arg
+  _, _ -> Nothing
+
 -- Variables only borrowed by an index read: the accessor takes `&self`, so
 -- the receiver must not be cloned. Only a plain variable reference qualifies;
 -- a computed receiver is a temporary with nothing to keep alive.
@@ -1708,8 +1819,8 @@ rangeApplication currentMod e = case stripCodegenWrappers e of
 -- neither the per-element dispatch nor the boxed accumulator survives, while
 -- the array representation itself stays unchanged. A range producer stays
 -- virtual, so a fused pipeline never materializes an intermediate array.
-typedTraversalCall :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array NeutralExpr -> Array String -> NeutralExpr -> Maybe (Tuple ExprType String)
-typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext aritiesMap globalClassFields bound alive argsArray argsCodeArray fn = case calleeName fn of
+typedTraversalCall :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array NeutralExpr -> Array String -> NeutralExpr -> Maybe (Tuple ExprType String)
+typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive argsArray argsCodeArray fn = case calleeName fn of
   Just callee -> case argsArray of
     [ cbArg, initArg, xsArg ] | callee == "Data_Foldable_foldlArray" -> foldTraversal "foldl" true cbArg initArg xsArg
     [ cbArg, initArg, xsArg ] | callee == "Data_Foldable_foldrArray" -> foldTraversal "foldr" false cbArg initArg xsArg
@@ -1999,16 +2110,21 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
             call = "purust_core::typed::filter::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> closure <> ")"
         pure (Tuple (Array elTy) call)
 
-  -- An `Array Int` read copies the integer instead of the boxed element.
-  unsafeIndexTraversal xsArg idxArg =
-    if unwrapType (infer xsArg) == Array Int
-      then do
-        -- The accessor borrows the receiver: keep the variable alive without
-        -- cloning the buffer reference on every read.
-        let xsCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars xsArg)) false xsArg
-            idxCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false idxArg
-        pure (Tuple Any ("crate::mk_int((" <> xsCode <> ").array_get_int((" <> idxCode <> ") as usize))"))
-      else Nothing
+  -- An `Array Int` read copies the integer instead of the boxed element, and a
+  -- loop view reads the borrowed slice directly.
+  unsafeIndexTraversal xsArg idxArg = case viewSliceOf mbLoop xsArg of
+    Just slice -> do
+      let idxCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false idxArg
+      pure (Tuple Any ("crate::mk_int(" <> slice <> "[(" <> idxCode <> ") as usize])"))
+    Nothing ->
+      if unwrapType (infer xsArg) == Array Int
+        then do
+          -- The accessor borrows the receiver: keep the variable alive without
+          -- cloning the buffer reference on every read.
+          let xsCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars xsArg)) false xsArg
+              idxCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false idxArg
+          pure (Tuple Any ("crate::mk_int((" <> xsCode <> ").array_get_int((" <> idxCode <> ") as usize))"))
+        else Nothing
 
   -- Predicate scans over a known array or range stop at the first witness.
   anyAllTraversal helperName predArg xsArg = case rangePipeline xsArg of
@@ -2023,7 +2139,7 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
       let xsCode = fromMaybe "" (Array.index argsCodeArray 1)
       pure (Tuple Boolean ("purust_core::typed::" <> helperName <> "_array::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> predC <> ")"))
 
-genApp :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
+genApp :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
 genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive appTy fn originalArgs =
     let
         expectedArgs = extractAllArgTypes (inferTypeExpr modNameStr aritiesMap globalClassFields bound fn)
@@ -2151,7 +2267,7 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                 -- An argument may itself pass or capture the callee. Keep its
                 -- owned value alive for the duration of the receiver borrow.
                 aliveForArg = Set.union borrowedFnVars (Set.union alive (Array.foldl Set.union Set.empty subsequentArgsFree))
-            in codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForArg false arg
+            in codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForArg false arg
           ) argsArray
         tcoTemps params = Array.mapWithIndex (\i argCode ->
           let argTy = case Array.index argsArray i of
@@ -2168,7 +2284,7 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
         
 
         
-        typedCall = typedTraversalCall renames valueEnums modNameStr allZeroArity reuseContext aritiesMap globalClassFields bound alive argsArray argsCodeArray fn
+        typedCall = typedTraversalCall renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive argsArray argsCodeArray fn
         resultCode = case typedCall of
           Just (Tuple actualTy typedCode) -> boxUnbox renames valueEnums globalClassFields modNameStr appTy actualTy typedCode
           Nothing -> plainResult
@@ -2182,7 +2298,7 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                   NeutralExpr (Local (Just (Ident name)) _) -> Just (sanitizeIdent name)
                   _ -> Nothing
                 isTco = case mbLoop, mbFnName of
-                  Just { name: ln, params: lp }, Just n -> n == ln && m == Array.length lp
+                  Just { name: ln, params: lp, tco: true }, Just n -> n == ln && m == Array.length lp
                   _, _ -> false
             in case dictionaryResult, Array.head argsArray, Array.head argsCodeArray of
                Just result, Just argument, Just code ->
@@ -2190,7 +2306,7 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                    (inferTypeExpr modNameStr aritiesMap globalClassFields bound argument) code
                _, _, _ -> if isTco then
                  case mbLoop of
-                   Just { name: ln, params: lp } ->
+                   Just { name: ln, params: lp, tco: true } ->
                        let tempsCode = tcoTemps lp
                            assignsCode = Array.mapWithIndex (\i pName -> "        " <> sanitizeIdent pName <> " = _tco_temp_" <> show i <> ";\n") lp
                        in "{\n" <> String.joinWith "" tempsCode <> String.joinWith "" assignsCode <> "        continue;\n    }"
@@ -2216,10 +2332,10 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                            else if fullName == "Data_Ord_greaterThanInt" && m == 2 then
                              "purust_core::mk_bool((" <> fromMaybe "" (Array.index argsCodeArray 0) <> ").init_int.unwrap() > (" <> fromMaybe "" (Array.index argsCodeArray 1) <> ").init_int.unwrap())"
                            else if (case mbLoop of
-                                 Just { name: ln, params: lp } -> fullName == ln && m == Array.length lp
+                                 Just { name: ln, params: lp, tco: true } -> fullName == ln && m == Array.length lp
                                  _ -> false) then
                              case mbLoop of
-                               Just { name: ln, params: lp } ->
+                               Just { name: ln, params: lp, tco: true } ->
                                      let tempsCode = tcoTemps lp
                                          assignsCode = Array.mapWithIndex (\i pName -> "        " <> sanitizeIdent pName <> " = _tco_temp_" <> show i <> ";\n") lp
                                          _dbg = unsafePerformEffect (log ("GENERATED CONTINUE FOR: " <> ln))
@@ -2279,13 +2395,13 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                    
     in resultCode
 
-genAbs :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
+genAbs :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
 genAbs renames valueEnums = genAbsWithEffect renames false valueEnums
 
-genEffectAbs :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
+genEffectAbs :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
 genEffectAbs renames valueEnums = genAbsWithEffect renames true valueEnums
 
-genAbsWithEffect :: Map.Map String String -> Boolean -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
+genAbsWithEffect :: Map.Map String String -> Boolean -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
 genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive paramsArr fnTy body =
     let
       capturedVars = Set.difference (freeVariables body) (Set.fromFoldable paramsArr)
@@ -2405,7 +2521,7 @@ genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseC
           else finalState.code
       in wrappedCode
 
-codegenExpr :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
+codegenExpr :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> NeutralExpr -> String
 codegenExpr renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive expr =
   codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive false expr
 
@@ -2528,7 +2644,7 @@ annotateScopedResult ty expr@(NeutralExpr syn) = case syn of
   Syn.TypeApp inner argument -> NeutralExpr (Syn.TypeApp (annotateScopedResult ty inner) argument)
   _ -> NeutralExpr (Typed ty expr)
 
-codegenExpr_ :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe { name :: String, params :: Array String } -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
+codegenExpr_ :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Boolean -> NeutralExpr -> String
 codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock expr@(NeutralExpr syn) =
   let
     borrowedRecordScalar :: ExprType -> NeutralExpr -> Maybe String
@@ -2928,7 +3044,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           RecordChild child -> stagedValues (depth + 1) child) replacements)
       staged = stagedValues 0 plan
       boxedValue aliveForValue v =
-        let valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForValue false v
+        let valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForValue false v
             valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
         in boxUnbox renames valueEnums globalClassFields currentMod Any valTy valCode
       propsCode = if moveAfterProps then Array.mapWithIndex (\i (Tuple name v) ->
@@ -2939,7 +3055,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           let laterVars = Array.foldl (\acc (Prop _ sv) -> Set.union acc (freeVariables sv)) alive (Array.drop (i + 1) propsArr)
           in "_base.set_" <> fieldBase renames k <> "(" <> boxedValue laterVars v <> ");") propsArr
       aliveForBase = if moveAfterProps then alive else Set.union alive propVars
-      baseCode = "    let mut _base = " <> codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForBase false base <> ";\n"
+      baseCode = "    let mut _base = " <> codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForBase false base <> ";\n"
       valuesCode = "    " <> String.joinWith "\n    " propsCode <> "\n"
       -- One child per level makes depth-based temporary names unambiguous.
       -- Detach outside-in, restore inside-out; make_mut copies shared versions.
@@ -2976,7 +3092,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
             subsequentBranches = Array.drop (i + 1) branchesArr
             varsSubsequent = Array.foldl (\acc (Pair c b) -> Set.union acc (Set.union (freeVariables c) (freeVariables b))) (freeVariables def) subsequentBranches
             aliveForCond = Set.union alive (Set.union (freeVariables body) varsSubsequent)
-            condCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForCond false cond
+            condCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForCond false cond
             condTy = inferTypeExpr currentMod aritiesMap globalClassFields bound cond
             condFinal = scalarOperand Boolean cond condTy condCode
         in "if " <> condFinal <> " {\n        " <> genBranchBody body <> "\n    }") branchesArr
@@ -2991,7 +3107,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           OpIsTag _, ADT _ _ _
             | isBorrowableLocal operandType a -> Set.difference alive (freeVariables a)
           _, _ -> alive
-        aStrRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForA false a
+        aStrRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForA false a
         -- `length (filter p xs)` counts matches without building the array.
         filterCount = case stripCodegenWrappers a of
           NeutralExpr (UncurriedApp producer filterArgs)
@@ -3091,14 +3207,14 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
     let aliveForA = Set.union alive (freeVariables b)
         aTy = inferTypeExpr currentMod aritiesMap globalClassFields bound a
         bTy = inferTypeExpr currentMod aritiesMap globalClassFields bound b
-        aStrRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForA false a
+        aStrRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForA false a
         -- The right operand of `&&`/`||` is the value of the whole expression
         -- when it is evaluated, so a tail-recursive call there is still a loop
         -- continuation. Everywhere else, an operand is not a tail position.
         bLoop = case op of
           OpBooleanAnd -> mbLoop
           OpBooleanOr -> mbLoop
-          _ -> Nothing
+          _ -> argLoopContext mbLoop
         bStrRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext bLoop aritiesMap globalClassFields bound alive false b
         aStrInt = scalarOperand Int a aTy aStrRaw
         bStrInt = scalarOperand Int b bTy bStrRaw
@@ -3158,13 +3274,15 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpBooleanOrd OpLte -> "(" <> aStrBool <> " <= " <> bStrBool <> ")"
       OpBooleanAnd -> "(" <> aStrBool <> " && " <> bStrBool <> ")"
       OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
-      OpArrayIndex -> 
-        let aStrRawBorrowed = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference aliveForA (borrowedReadVars a)) false a
-            aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRawBorrowed
-            indexed = "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
-        in case unwrapType aTy of
-          Array Int -> "crate::mk_int((" <> aStr <> ").array_get_int((" <> bStrInt <> ") as usize))"
-          _ -> indexed
+      OpArrayIndex -> case viewSliceOf mbLoop a of
+        Just slice -> "crate::mk_int(" <> slice <> "[(" <> bStrInt <> ") as usize])"
+        Nothing ->
+          let aStrRawBorrowed = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound (Set.difference aliveForA (borrowedReadVars a)) false a
+              aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRawBorrowed
+              indexed = "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
+          in case unwrapType aTy of
+            Array Int -> "crate::mk_int((" <> aStr <> ").array_get_int((" <> bStrInt <> ") as usize))"
+            _ -> indexed
       OpNumberNum OpAdd -> "(" <> aStrNum <> " + " <> bStrNum <> ")"
       OpNumberNum OpSubtract -> "(" <> aStrNum <> " - " <> bStrNum <> ")"
       OpNumberNum OpMultiply -> "(" <> aStrNum <> " * " <> bStrNum <> ")"
@@ -3173,14 +3291,16 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpNumberNum OpMod -> "{ let _ = " <> aStrNum <> "; let _ = " <> bStrNum <> "; 0.0_f64 }"
       OpStringAppend -> "format!(\"{}{}\", " <> aStrStr <> ", " <> bStrStr <> ")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
-  Accessor base (GetIndex index) ->
-    let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars base)) false base
-        baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
-    in case unwrapType baseTy of
-      Array Int -> "crate::mk_int((" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get_int(" <> show index <> "))"
-      _ -> "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get(" <> show index <> ")"
+  Accessor base (GetIndex index) -> case viewSliceOf mbLoop base of
+    Just slice -> "crate::mk_int(" <> slice <> "[" <> show index <> "])"
+    Nothing ->
+      let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars base)) false base
+          baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
+      in case unwrapType baseTy of
+        Array Int -> "crate::mk_int((" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get_int(" <> show index <> "))"
+        _ -> "(" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get(" <> show index <> ")"
   Accessor base (GetProp k) -> 
-    let baseStr = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
+    let baseStr = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound alive false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
         -- Opaque ADTs lowered to Value use dynamic fields even when their
         -- TAST annotation is nominal. Both access and unboxing must agree.
@@ -3242,7 +3362,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
         Nothing -> "lvl_" <> show (unwrap lvl)
       bodyVars = freeVariables body
       aliveForVal = Set.union alive bodyVars
-      valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForVal false val
+      valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForVal false val
       valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
       newBound = Map.insert name valTy bound
       -- if name is not in bodyVars, it's dead immediately
@@ -3593,6 +3713,11 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                    capturedSet = Set.difference (freeVariables val) (Set.fromFoldable dedupedParams)
                    capturedArr = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable capturedSet)
                    
+                   -- A captured Int array read by index: the loop is also
+                   -- generated once over a borrowed slice of that buffer.
+                   viewCandidate = intViewCandidate currentMod aritiesMap globalClassFields bound capturedArr innerExpr
+                   viewContext = map (\source -> { source, arg: "__purust_view" }) viewCandidate
+
                    -- Inner function definition
                    fnName = sanitizeIdent n <> "_impl"
                    capturedArgs = map (\c -> "mut " <> sanitizeIdent c <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false (fromMaybe Any (Map.lookup c bound))) capturedArr
@@ -3600,14 +3725,25 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                    funcArgs = map (\(Tuple p ty) -> "mut " <> sanitizeIdent p <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs
                    allArgsCode = String.joinWith ", " (capturedArgs <> funcArgs)
                    
-                   mbLoop = Just { name: sanitizeIdent n, params: dedupedParams }
+                   mbLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: Nothing, tco: true }
+                   viewLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: viewContext, tco: true }
                    innerBound = Array.foldl (\b (Tuple p ty) -> Map.insert (sanitizeIdent p) ty b) bound paramPairs
                    bodyRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields innerBound (freeVariables innerExpr) false innerExpr
                    bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields innerBound innerExpr
                    boxedBody = if continuesLoop currentMod mbLoop innerExpr then bodyRaw
                      else boxUnbox renames valueEnums globalClassFields currentMod retType bodyTy bodyRaw
                    
-                   fnCode = "fn " <> fnName <> "(" <> allArgsCode <> ") -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> " {\n        loop {\n            break " <> boxedBody <> ";\n        }\n    }"
+                   retTyStr = codegenExprTypeWithValueEnums valueEnums currentMod true retType
+                   fnCode = "fn " <> fnName <> "(" <> allArgsCode <> ") -> " <> retTyStr <> " {\n        loop {\n            break " <> boxedBody <> ";\n        }\n    }"
+                   -- The slice variant is only called when the capture is an
+                   -- unboxed Int array, so its index reads need no dispatch.
+                   viewFnCode = case viewCandidate of
+                     Just _ ->
+                       let viewBodyRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext viewLoop aritiesMap globalClassFields innerBound (freeVariables innerExpr) false innerExpr
+                           boxedViewBody = if continuesLoop currentMod viewLoop innerExpr then viewBodyRaw
+                             else boxUnbox renames valueEnums globalClassFields currentMod retType (inferTypeExpr currentMod aritiesMap globalClassFields innerBound innerExpr) viewBodyRaw
+                       in "fn " <> fnName <> "_view(__purust_view: &[i64], " <> allArgsCode <> ") -> " <> retTyStr <> " {\n        loop {\n            break " <> boxedViewBody <> ";\n        }\n    }"
+                     Nothing -> ""
                    
                    -- Bridge closure
                    arity = Array.length paramPairs
@@ -3616,7 +3752,10 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                            argsDecl = String.joinWith ", " (map (\(Tuple p ty) -> "mut " <> sanitizeIdent p <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs)
                            clones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)
                            innerArgs = String.joinWith ", " (map sanitizeIdent capturedArr <> map sanitizeIdent dedupedParams)
-                           innerCall = fnName <> "(" <> innerArgs <> ")"
+                           innerCallGeneric = fnName <> "(" <> innerArgs <> ")"
+                           innerCall = case viewCandidate of
+                             Just source -> "if let std::option::Option::Some(__purust_items) = " <> sanitizeIdent source <> ".int_array_now() { " <> fnName <> "_view(__purust_items.as_slice(), " <> innerArgs <> ") } else { " <> innerCallGeneric <> " }"
+                             Nothing -> innerCallGeneric
                        in if Array.length capturedArr == 0 then
                             "purust_core::Func" <> show arity <> "::Static(|" <> argsDecl <> "| -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> " {\n        " <> innerCall <> "\n    } as fn(" <> String.joinWith ", " (map (\(Tuple _ ty) -> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs) <> ") -> " <> codegenExprTypeWithValueEnums valueEnums currentMod true retType <> ")"
                           else
@@ -3625,7 +3764,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                      
                    finalBridgeCode = boxUnbox renames valueEnums globalClassFields currentMod Any valTy bridgeCode
                    capturedClones = String.joinWith "\n        " (map (\c -> "let mut " <> sanitizeIdent c <> " = " <> sanitizeIdent c <> ".clone();") capturedArr)
-               in "let val_" <> sanitizeIdent n <> " = {\n        " <> clonesCode <> "\n        " <> capturedClones <> "\n        " <> fnCode <> "\n        " <> finalBridgeCode <> "\n    };"
+               in "let val_" <> sanitizeIdent n <> " = {\n        " <> clonesCode <> "\n        " <> capturedClones <> "\n        " <> fnCode <> "\n        " <> viewFnCode <> "\n        " <> finalBridgeCode <> "\n    };"
              else
                let valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForVal false val
                    boxedValCode = boxUnbox renames valueEnums globalClassFields currentMod Any valTy valCode
