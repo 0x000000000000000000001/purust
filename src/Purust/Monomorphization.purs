@@ -25,10 +25,11 @@ import Data.Newtype (unwrap)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String as String
+import Data.String.Pattern (Pattern(..))
 import Data.Tuple (Tuple(..))
 import PureScript.Backend.Optimizer.CoreFn (Ann(..), Bind(..), Binding(..), Expr(..), ExprType(..), Ident(..), Module(..), Qualified(..))
 import PureScript.Backend.Optimizer.CoreFn.Usage (invalidateSourceUsageModule)
-import PureScript.Backend.Optimizer.Monomorphize (InstantiationMap, collectInstantiations, getExprAnn, monomorphize, transitiveCollect)
+import PureScript.Backend.Optimizer.Monomorphize (Instantiation, InstantiationMap, collectInstantiations, getExprAnn, monomorphize, transitiveCollect)
 
 type GlobalAstMap = Map String (Binding Ann)
 
@@ -103,12 +104,32 @@ monomorphizeModules globalTypes inputModules =
     rawInstantiations = foldl (collectInstantiations globalAstMap) Map.empty modules
     foreignGlobals = Set.union intrinsicGlobals (collectForeignGlobals modules)
     transitiveInstantiations = transitiveCollect globalAstMap rawInstantiations
-    instantiations = Map.filterKeys
-      (\name -> not (Set.member name foreignForwarders) && shouldMonomorphize globalTypes foreignGlobals name)
-      transitiveInstantiations
+    -- Only instantiate at call sites that live in the module defining the
+    -- global. A cross-module specialisation duplicates code and adds
+    -- references that can make the single-crate-per-module layout cyclic,
+    -- which cargo rejects.
+    instantiations = Map.mapMaybeWithKey keepGlobal
+      (Map.filterKeys
+        (\name -> not (Set.member name foreignForwarders) && shouldMonomorphize globalTypes foreignGlobals name)
+        transitiveInstantiations)
   in
     if Map.isEmpty instantiations then modules
     else map (monomorphize globalAstMap instantiations) modules
+
+definingModule :: String -> String
+definingModule qualifiedName =
+  String.joinWith "." (Array.dropEnd 1 (String.split (Pattern ".") qualifiedName))
+
+sameModuleInstantiation :: String -> Instantiation -> Boolean
+sameModuleInstantiation qualifiedName info =
+  Set.size info.callers <= 1 && Set.member (definingModule qualifiedName) info.callers
+
+-- The outer key is the qualified global; inner keys mangle the instantiated
+-- type, so the module test must use the outer one.
+keepGlobal :: String -> Map String Instantiation -> Maybe (Map String Instantiation)
+keepGlobal qualifiedName typeMap =
+  let kept = Map.filterWithKey (\_ info -> sameModuleInstantiation qualifiedName info) typeMap
+  in if Map.isEmpty kept then Nothing else Just kept
 
 buildGlobalAstMap :: List (Module Ann) -> GlobalAstMap
 buildGlobalAstMap = foldl addModuleBindings Map.empty

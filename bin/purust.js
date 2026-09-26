@@ -51184,7 +51184,7 @@ var hasTypeVariables2 = function(v) {
         return hasTypeVariables2(v.value1.value0);
       }
       ;
-      throw new Error("Failed pattern match at Purust.Monomorphization (line 235, column 17 - line 237, column 37): " + [v.value1.constructor.name]);
+      throw new Error("Failed pattern match at Purust.Monomorphization (line 256, column 17 - line 258, column 37): " + [v.value1.constructor.name]);
     })();
     return any2(function(v1) {
       return hasTypeVariables2(v1.value1);
@@ -51241,7 +51241,7 @@ var hasTypeVariables2 = function(v) {
     return false;
   }
   ;
-  throw new Error("Failed pattern match at Purust.Monomorphization (line 228, column 1 - line 228, column 40): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Purust.Monomorphization (line 249, column 1 - line 249, column 40): " + [v.constructor.name]);
 };
 var shouldMonomorphize = function(globalTypes) {
   return function(foreignGlobals) {
@@ -51256,7 +51256,7 @@ var shouldMonomorphize = function(globalTypes) {
           return false;
         }
         ;
-        throw new Error("Failed pattern match at Purust.Monomorphization (line 146, column 43 - line 148, column 21): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at Purust.Monomorphization (line 167, column 43 - line 169, column 21): " + [v.constructor.name]);
       })();
     };
   };
@@ -51306,7 +51306,7 @@ var inferExprType3 = function(v) {
       return Nothing.value;
     }
     ;
-    throw new Error("Failed pattern match at Purust.Monomorphization (line 78, column 8 - line 80, column 23): " + [v2.constructor.name]);
+    throw new Error("Failed pattern match at Purust.Monomorphization (line 79, column 8 - line 81, column 23): " + [v2.constructor.name]);
   }
   ;
   if (v instanceof ExprTypeApp) {
@@ -51314,6 +51314,29 @@ var inferExprType3 = function(v) {
   }
   ;
   return Nothing.value;
+};
+var definingModule = function(qualifiedName) {
+  return joinWith(".")(dropEnd(1)(split(".")(qualifiedName)));
+};
+var sameModuleInstantiation = function(qualifiedName) {
+  return function(info2) {
+    return size2(info2.callers) <= 1 && member2(ordString)(definingModule(qualifiedName))(info2.callers);
+  };
+};
+var keepGlobal = function(qualifiedName) {
+  return function(typeMap) {
+    var kept = filterWithKey(ordString)(function(v) {
+      return function(info2) {
+        return sameModuleInstantiation(qualifiedName)(info2);
+      };
+    })(typeMap);
+    var $118 = isEmpty(kept);
+    if ($118) {
+      return Nothing.value;
+    }
+    ;
+    return new Just(kept);
+  };
 };
 var collectLambdaParams = function(v) {
   if (v instanceof ExprAbs) {
@@ -51341,7 +51364,7 @@ var isForeignForwarder = function(moduleName2) {
           return true;
         }
         ;
-        throw new Error("Failed pattern match at Purust.Monomorphization (line 190, column 16 - line 192, column 20): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at Purust.Monomorphization (line 211, column 16 - line 213, column 20): " + [v2.constructor.name]);
       };
       var v = collectLambdaParams(body);
       return !$$null(v.params) && (size2(fromFoldable4(foldableArray)(ordIdent)(v.params)) === length(v.params) && (function() {
@@ -51369,14 +51392,14 @@ var bindingType = function(v) {
     return inferExprType3(v.value2);
   }
   ;
-  throw new Error("Failed pattern match at Purust.Monomorphization (line 64, column 49 - line 68, column 28): " + [v.value0.type.constructor.name]);
+  throw new Error("Failed pattern match at Purust.Monomorphization (line 65, column 49 - line 69, column 28): " + [v.value0.type.constructor.name]);
 };
 var addForwarder = function(moduleName2) {
   return function(foreignIdents) {
     return function(acc) {
       return function(v) {
-        var $147 = isForeignForwarder(moduleName2)(foreignIdents)(v.value2);
-        if ($147) {
+        var $149 = isForeignForwarder(moduleName2)(foreignIdents)(v.value2);
+        if ($149) {
           return insert2(ordString)(moduleName2 + ("." + v.value1))(acc);
         }
         ;
@@ -51397,7 +51420,7 @@ var addForwardingBind = function(moduleName2) {
           return foldl2(addForwarder(moduleName2)(foreignIdents))(acc)(v.value0);
         }
         ;
-        throw new Error("Failed pattern match at Purust.Monomorphization (line 166, column 50 - line 168, column 77): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at Purust.Monomorphization (line 187, column 50 - line 189, column 77): " + [v.constructor.name]);
       };
     };
   };
@@ -51423,7 +51446,7 @@ var addForeignType = function(moduleName2) {
         return types;
       }
       ;
-      throw new Error("Failed pattern match at Purust.Monomorphization (line 71, column 63 - line 73, column 19): " + [v.value1.constructor.name]);
+      throw new Error("Failed pattern match at Purust.Monomorphization (line 72, column 63 - line 74, column 19): " + [v.value1.constructor.name]);
     };
   };
 };
@@ -51453,7 +51476,7 @@ var addBindingType = function(moduleName2) {
         return types;
       }
       ;
-      throw new Error("Failed pattern match at Purust.Monomorphization (line 57, column 3 - line 59, column 21): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at Purust.Monomorphization (line 58, column 3 - line 60, column 21): " + [v1.constructor.name]);
     };
   };
 };
@@ -51475,7 +51498,7 @@ var addBindTypes = function(moduleName2) {
         return foldl2(addBindingType(moduleName2))(types)(v.value0);
       }
       ;
-      throw new Error("Failed pattern match at Purust.Monomorphization (line 51, column 33 - line 53, column 73): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Purust.Monomorphization (line 52, column 33 - line 54, column 73): " + [v.constructor.name]);
     };
   };
 };
@@ -51499,7 +51522,7 @@ var addBind = function(moduleName2) {
         return foldl2(addBinding(moduleName2))(bindings3)(v.value0);
       }
       ;
-      throw new Error("Failed pattern match at Purust.Monomorphization (line 121, column 31 - line 123, column 66): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Purust.Monomorphization (line 142, column 31 - line 144, column 66): " + [v.constructor.name]);
     };
   };
 };
@@ -51514,20 +51537,20 @@ var monomorphizeModules = function(globalTypes) {
     var modules = map(functorList)(invalidateSourceUsageModule)(inputModules);
     var intrinsicGlobals = singleton5("Data.Ring.negate");
     var globalAstMap = filterKeys(ordString)((function() {
-      var $198 = flip(member5)(intrinsicGlobals);
-      return function($199) {
-        return !$198($199);
+      var $200 = flip(member5)(intrinsicGlobals);
+      return function($201) {
+        return !$200($201);
       };
     })())(buildGlobalAstMap(modules));
     var rawInstantiations = foldl(foldableList)(collectInstantiations(globalAstMap))(empty2)(modules);
     var transitiveInstantiations = transitiveCollect(globalAstMap)(rawInstantiations);
     var foreignGlobals = union2(ordString)(intrinsicGlobals)(collectForeignGlobals(modules));
     var foreignForwarders = collectForeignForwarders(modules);
-    var instantiations = filterKeys(ordString)(function(name2) {
+    var instantiations = mapMaybeWithKey(ordString)(keepGlobal)(filterKeys(ordString)(function(name2) {
       return !member2(ordString)(name2)(foreignForwarders) && shouldMonomorphize(globalTypes)(foreignGlobals)(name2);
-    })(transitiveInstantiations);
-    var $197 = isEmpty(instantiations);
-    if ($197) {
+    })(transitiveInstantiations));
+    var $199 = isEmpty(instantiations);
+    if ($199) {
       return modules;
     }
     ;
