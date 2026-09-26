@@ -148,14 +148,19 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        if start <= end { end.wrapping_sub(start).wrapping_add(1) } else { start.wrapping_sub(end).wrapping_add(1) }\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
+  -- A canonical `while i < end` loop with a trailing element keeps the
+  -- induction variable countable (so LLVM vectorizes it) and never steps the
+  -- counter past its bound.
   "    pub fn filter_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> Value {\n" <>
   "        let mut result: Vec<UnknownType> = Vec::new();\n" <>
   "        if start <= end {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { if p(A::from_int(i)) { result.push(Value::Int(i)); } if i == end { break; } i += 1; }\n" <>
+  "            while i < end { if p(A::from_int(i)) { result.push(Value::Int(i)); } i += 1; }\n" <>
+  "            if p(A::from_int(end)) { result.push(Value::Int(end)); }\n" <>
   "        } else {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { if p(A::from_int(i)) { result.push(Value::Int(i)); } if i == end { break; } i -= 1; }\n" <>
+  "            while i > end { if p(A::from_int(i)) { result.push(Value::Int(i)); } i -= 1; }\n" <>
+  "            if p(A::from_int(end)) { result.push(Value::Int(end)); }\n" <>
   "        }\n" <>
   "        mk_array(result)\n" <>
   "    }\n" <>
@@ -164,12 +169,13 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        let mut acc = init;\n" <>
   "        if start <= end {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { acc = f(acc, A::from_int(i)); if i == end { break; } i += 1; }\n" <>
+  "            while i < end { acc = f(acc, A::from_int(i)); i += 1; }\n" <>
+  "            f(acc, A::from_int(end))\n" <>
   "        } else {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { acc = f(acc, A::from_int(i)); if i == end { break; } i -= 1; }\n" <>
+  "            while i > end { acc = f(acc, A::from_int(i)); i -= 1; }\n" <>
+  "            f(acc, A::from_int(end))\n" <>
   "        }\n" <>
-  "        acc\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn foldl_filter<A: Repr, B: Repr, P: FnMut(A) -> bool, F: FnMut(B, A) -> B>(xs: Value, init: B, mut p: P, mut f: F) -> B {\n" <>
@@ -186,12 +192,86 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "        let mut acc = init;\n" <>
   "        if start <= end {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } if i == end { break; } i += 1; }\n" <>
+  "            while i < end { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } i += 1; }\n" <>
+  "            let value = A::from_int(end); if p(value.clone()) { acc = f(acc, value); }\n" <>
+  "            acc\n" <>
   "        } else {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } if i == end { break; } i -= 1; }\n" <>
+  "            while i > end { let value = A::from_int(i); if p(value.clone()) { acc = f(acc, value); } i -= 1; }\n" <>
+  "            let value = A::from_int(end); if p(value.clone()) { acc = f(acc, value); }\n" <>
+  "            acc\n" <>
   "        }\n" <>
-  "        acc\n" <>
+  "    }\n" <>
+  -- Integer addition and multiplication are associative and commutative, so a
+  -- known integer reduction can keep four independent accumulators. The body
+  -- unrolls into vector work instead of a single dependency chain.
+  "    #[inline(always)]\n" <>
+  "    pub fn sum_range(start: i64, end: i64, init: i64) -> i64 {\n" <>
+  "        let mut a0 = init; let mut a1 = 0i64; let mut a2 = 0i64; let mut a3 = 0i64;\n" <>
+  "        let mut i = start;\n" <>
+  "        if start <= end {\n" <>
+  "            while i + 3 <= end { a0 += i; a1 += i + 1; a2 += i + 2; a3 += i + 3; i += 4; }\n" <>
+  "            while i <= end { a0 += i; i += 1; }\n" <>
+  "        } else {\n" <>
+  "            while i - 3 >= end { a0 += i; a1 += i - 1; a2 += i - 2; a3 += i - 3; i -= 4; }\n" <>
+  "            while i >= end { a0 += i; i -= 1; }\n" <>
+  "        }\n" <>
+  "        (a0 + a1) + (a2 + a3)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn sum_filter_range<P: FnMut(i64) -> bool>(start: i64, end: i64, init: i64, mut p: P) -> i64 {\n" <>
+  "        let mut a0 = init; let mut a1 = 0i64; let mut a2 = 0i64; let mut a3 = 0i64;\n" <>
+  "        let mut i = start;\n" <>
+  "        if start <= end {\n" <>
+  "            while i + 3 <= end {\n" <>
+  "                if p(i) { a0 += i; } if p(i + 1) { a1 += i + 1; }\n" <>
+  "                if p(i + 2) { a2 += i + 2; } if p(i + 3) { a3 += i + 3; }\n" <>
+  "                i += 4;\n" <>
+  "            }\n" <>
+  "            while i <= end { if p(i) { a0 += i; } i += 1; }\n" <>
+  "        } else {\n" <>
+  "            while i - 3 >= end {\n" <>
+  "                if p(i) { a0 += i; } if p(i - 1) { a1 += i - 1; }\n" <>
+  "                if p(i - 2) { a2 += i - 2; } if p(i - 3) { a3 += i - 3; }\n" <>
+  "                i -= 4;\n" <>
+  "            }\n" <>
+  "            while i >= end { if p(i) { a0 += i; } i -= 1; }\n" <>
+  "        }\n" <>
+  "        (a0 + a1) + (a2 + a3)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn product_range(start: i64, end: i64, init: i64) -> i64 {\n" <>
+  "        let mut a0 = init; let mut a1 = 1i64; let mut a2 = 1i64; let mut a3 = 1i64;\n" <>
+  "        let mut i = start;\n" <>
+  "        if start <= end {\n" <>
+  "            while i + 3 <= end { a0 *= i; a1 *= i + 1; a2 *= i + 2; a3 *= i + 3; i += 4; }\n" <>
+  "            while i <= end { a0 *= i; i += 1; }\n" <>
+  "        } else {\n" <>
+  "            while i - 3 >= end { a0 *= i; a1 *= i - 1; a2 *= i - 2; a3 *= i - 3; i -= 4; }\n" <>
+  "            while i >= end { a0 *= i; i -= 1; }\n" <>
+  "        }\n" <>
+  "        (a0 * a1) * (a2 * a3)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn product_filter_range<P: FnMut(i64) -> bool>(start: i64, end: i64, init: i64, mut p: P) -> i64 {\n" <>
+  "        let mut a0 = init; let mut a1 = 1i64; let mut a2 = 1i64; let mut a3 = 1i64;\n" <>
+  "        let mut i = start;\n" <>
+  "        if start <= end {\n" <>
+  "            while i + 3 <= end {\n" <>
+  "                if p(i) { a0 *= i; } if p(i + 1) { a1 *= i + 1; }\n" <>
+  "                if p(i + 2) { a2 *= i + 2; } if p(i + 3) { a3 *= i + 3; }\n" <>
+  "                i += 4;\n" <>
+  "            }\n" <>
+  "            while i <= end { if p(i) { a0 *= i; } i += 1; }\n" <>
+  "        } else {\n" <>
+  "            while i - 3 >= end {\n" <>
+  "                if p(i) { a0 *= i; } if p(i - 1) { a1 *= i - 1; }\n" <>
+  "                if p(i - 2) { a2 *= i - 2; } if p(i - 3) { a3 *= i - 3; }\n" <>
+  "                i -= 4;\n" <>
+  "            }\n" <>
+  "            while i >= end { if p(i) { a0 *= i; } i -= 1; }\n" <>
+  "        }\n" <>
+  "        (a0 * a1) * (a2 * a3)\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn any_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> bool {\n" <>
@@ -209,23 +289,25 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    pub fn any_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> bool {\n" <>
   "        if start <= end {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { if p(A::from_int(i)) { return true; } if i == end { break; } i += 1; }\n" <>
+  "            while i < end { if p(A::from_int(i)) { return true; } i += 1; }\n" <>
+  "            p(A::from_int(end))\n" <>
   "        } else {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { if p(A::from_int(i)) { return true; } if i == end { break; } i -= 1; }\n" <>
+  "            while i > end { if p(A::from_int(i)) { return true; } i -= 1; }\n" <>
+  "            p(A::from_int(end))\n" <>
   "        }\n" <>
-  "        false\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn all_range<A: Repr, P: FnMut(A) -> bool>(start: i64, end: i64, mut p: P) -> bool {\n" <>
   "        if start <= end {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { if !p(A::from_int(i)) { return false; } if i == end { break; } i += 1; }\n" <>
+  "            while i < end { if !p(A::from_int(i)) { return false; } i += 1; }\n" <>
+  "            p(A::from_int(end))\n" <>
   "        } else {\n" <>
   "            let mut i = start;\n" <>
-  "            loop { if !p(A::from_int(i)) { return false; } if i == end { break; } i -= 1; }\n" <>
+  "            while i > end { if !p(A::from_int(i)) { return false; } i -= 1; }\n" <>
+  "            p(A::from_int(end))\n" <>
   "        }\n" <>
-  "        true\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn foldl_replicate<A: Repr, B: Repr, F: FnMut(B, A) -> B>(count: i64, value: Value, init: B, mut f: F) -> B {\n" <>
@@ -1544,6 +1626,20 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
 
   rangeArgs = rangeApplication currentMod
 
+  -- Split a known associative integer operation so its reduction can use
+  -- independent accumulators. The declared signature must be exactly Int.
+  associativeFold arg = case stripExpr arg of
+    NeutralExpr (Var q@(Qualified _ (Ident name))) ->
+      let fullName = getTyPrefix currentMod q <> sanitizeIdent name
+      in case Map.lookup fullName aritiesMap >>= functionParts of
+        Just (Tuple [ a, b ] ret) | a == Int && b == Int && ret == Int ->
+          case fullName of
+            "Data_Semiring_intAdd" -> Just "sum"
+            "Data_Semiring_intMul" -> Just "product"
+            _ -> Nothing
+        _ -> Nothing
+    _ -> Nothing
+
   uncurriedAppArgs name expr = case stripExpr expr of
     NeutralExpr (UncurriedApp producer args) | Just name' <- calleeName producer, name' == name -> Just args
     _ -> Nothing
@@ -1586,14 +1682,28 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
             -- A range producer (optionally filtered) stays virtual.
             rangeFold = case rangePipeline xsArg of
               Just pipeline | leftToRight && first == accTy && second == Int -> do
-                foldC <- callableFor [ accTy, Int ] accTy cbArg
                 let Tuple startCode endCode = rangeCodes pipeline.startArg pipeline.endArg
-                case pipeline.pred of
-                  Just predArg -> do
-                    predC <- callableFor [ Int ] Boolean predArg
-                    pure (Tuple accTy ("purust_core::typed::foldl_filter_range::<i64, " <> rustTy accTy <> ", _, _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
-                  Nothing ->
-                    pure (Tuple accTy ("purust_core::typed::foldl_range::<i64, " <> rustTy accTy <> ", _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> foldC <> ")"))
+                case associativeFold cbArg, accTy == Int of
+                  Just "sum", true -> case pipeline.pred of
+                    Just predArg -> do
+                      predC <- callableFor [ Int ] Boolean predArg
+                      pure (Tuple accTy ("purust_core::typed::sum_filter_range(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ")"))
+                    Nothing ->
+                      pure (Tuple accTy ("purust_core::typed::sum_range(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ")"))
+                  Just "product", true -> case pipeline.pred of
+                    Just predArg -> do
+                      predC <- callableFor [ Int ] Boolean predArg
+                      pure (Tuple accTy ("purust_core::typed::product_filter_range(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ")"))
+                    Nothing ->
+                      pure (Tuple accTy ("purust_core::typed::product_range(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ")"))
+                  _, _ -> do
+                    foldC <- callableFor [ accTy, Int ] accTy cbArg
+                    case pipeline.pred of
+                      Just predArg -> do
+                        predC <- callableFor [ Int ] Boolean predArg
+                        pure (Tuple accTy ("purust_core::typed::foldl_filter_range::<i64, " <> rustTy accTy <> ", _, _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> predC <> ", " <> foldC <> ")"))
+                      Nothing ->
+                        pure (Tuple accTy ("purust_core::typed::foldl_range::<i64, " <> rustTy accTy <> ", _>(" <> startCode <> ", " <> endCode <> ", " <> initCode <> ", " <> foldC <> ")"))
               _ -> Nothing
 
             -- A replicated element folds without materializing the array.
