@@ -64,80 +64,104 @@ maxNativeFunctionArity = 12
 -- representation are statically known. The caller instantiates the generic
 -- helper with a concrete closure, so the boxed callback layer and the boxed
 -- accumulator disappear once the loop is inlined.
+-- Element representations and the two-representation array view. These live
+-- at the crate root so generated modules and FFI files can name them.
+reprItemsSource :: String
+reprItemsSource = "pub trait Repr: Sized + Clone {\n" <>
+  "    fn from_value(value: &Value) -> Self;\n" <>
+  "    fn from_int(value: i64) -> Self;\n" <>
+  "    fn into_value(self) -> Value;\n" <>
+  "}\n" <>
+  "impl Repr for Value {\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_value(value: &Value) -> Value { value.clone() }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_int(value: i64) -> Value { Value::Int(value) }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn into_value(self) -> Value { self }\n" <>
+  "}\n" <>
+  "impl Repr for i64 {\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_value(value: &Value) -> i64 { value.unwrap_int() }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_int(value: i64) -> i64 { value }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn into_value(self) -> Value { mk_int(self) }\n" <>
+  "}\n" <>
+  "impl Repr for f64 {\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_value(value: &Value) -> f64 { value.unwrap_number() }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_int(value: i64) -> f64 { value as f64 }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn into_value(self) -> Value { mk_number(self) }\n" <>
+  "}\n" <>
+  "impl Repr for bool {\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_value(value: &Value) -> bool { value.unwrap_bool() }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_int(value: i64) -> bool { value != 0 }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn into_value(self) -> Value { mk_bool(self) }\n" <>
+  "}\n" <>
+  "impl Repr for char {\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_value(value: &Value) -> char { value.unwrap_char() }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn from_int(value: i64) -> char { std::char::from_u32(value as u32).unwrap_or('\\0') }\n" <>
+  "    #[inline(always)]\n" <>
+  "    fn into_value(self) -> Value { mk_char(self) }\n" <>
+  "}\n\n" <>
+  "pub enum IntItems {\n" <>
+  "    Boxed(std::rc::Rc<Vec<UnknownType>>),\n" <>
+  "    Ints(std::rc::Rc<Vec<i64>>),\n" <>
+  "}\n" <>
+  "impl IntItems {\n" <>
+  "    pub fn from(xs: &Value) -> IntItems {\n" <>
+  "        match xs.resolve() {\n" <>
+  "            Value::Array(v) => IntItems::Boxed(v.clone()),\n" <>
+  "            Value::IntArray(v) => IntItems::Ints(v.clone()),\n" <>
+  "            _ => panic!(\"Expected Array\"),\n" <>
+  "        }\n" <>
+  "    }\n" <>
+  "    pub fn len(&self) -> usize {\n" <>
+  "        match self { IntItems::Boxed(v) => v.len(), IntItems::Ints(v) => v.len() }\n" <>
+  "    }\n" <>
+  "    pub fn raw(&self, index: usize) -> UnknownType {\n" <>
+  "        match self { IntItems::Boxed(v) => v[index].clone(), IntItems::Ints(v) => Value::Int(v[index]) }\n" <>
+  "    }\n" <>
+  "    pub fn item<A: Repr>(&self, index: usize) -> A {\n" <>
+  "        match self { IntItems::Boxed(v) => A::from_value(&v[index]), IntItems::Ints(v) => A::from_int(v[index]) }\n" <>
+  "    }\n" <>
+  "    pub fn int_at(&self, index: usize) -> i64 {\n" <>
+  "        match self { IntItems::Boxed(v) => v[index].unwrap_int(), IntItems::Ints(v) => v[index] }\n" <>
+  "    }\n" <>
+  "}\n\n"
+
 typedTraversalsSource :: String
 typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    use crate::*;\n" <>
-  "    pub trait Repr: Sized + Clone {\n" <>
-  "        fn from_value(value: &Value) -> Self;\n" <>
-  "        fn from_int(value: i64) -> Self;\n" <>
-  "        fn into_value(self) -> Value;\n" <>
-  "    }\n" <>
-  "    impl Repr for Value {\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_value(value: &Value) -> Value { value.clone() }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_int(value: i64) -> Value { Value::Int(value) }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn into_value(self) -> Value { self }\n" <>
-  "    }\n" <>
-  "    impl Repr for i64 {\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_value(value: &Value) -> i64 { value.unwrap_int() }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_int(value: i64) -> i64 { value }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn into_value(self) -> Value { mk_int(self) }\n" <>
-  "    }\n" <>
-  "    impl Repr for f64 {\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_value(value: &Value) -> f64 { value.unwrap_number() }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_int(value: i64) -> f64 { value as f64 }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn into_value(self) -> Value { mk_number(self) }\n" <>
-  "    }\n" <>
-  "    impl Repr for bool {\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_value(value: &Value) -> bool { value.unwrap_bool() }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_int(value: i64) -> bool { value != 0 }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn into_value(self) -> Value { mk_bool(self) }\n" <>
-  "    }\n" <>
-  "    impl Repr for char {\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_value(value: &Value) -> char { value.unwrap_char() }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn from_int(value: i64) -> char { std::char::from_u32(value as u32).unwrap_or('\\0') }\n" <>
-  "        #[inline(always)]\n" <>
-  "        fn into_value(self) -> Value { mk_char(self) }\n" <>
-  "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn foldl<A: Repr, B: Repr, F: FnMut(B, A) -> B>(xs: Value, init: B, mut f: F) -> B {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut acc = init;\n" <>
-  "        for item in arr.iter() {\n" <>
-  "            acc = f(acc, A::from_value(item));\n" <>
-  "        }\n" <>
+  "        for i in 0..items.len() { acc = f(acc, items.item::<A>(i)); }\n" <>
   "        acc\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn foldr<A: Repr, B: Repr, F: FnMut(A, B) -> B>(xs: Value, init: B, mut f: F) -> B {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut acc = init;\n" <>
-  "        for item in arr.iter().rev() {\n" <>
-  "            acc = f(A::from_value(item), acc);\n" <>
-  "        }\n" <>
+  "        for i in (0..items.len()).rev() { acc = f(items.item::<A>(i), acc); }\n" <>
   "        acc\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn filter<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> Value {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        let mut result = Vec::with_capacity(arr.len());\n" <>
-  "        for item in arr.iter() {\n" <>
-  "            if p(A::from_value(item)) {\n" <>
-  "                result.push(item.clone());\n" <>
-  "            }\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
+  "        let mut result = Vec::with_capacity(items.len());\n" <>
+  "        for i in 0..items.len() {\n" <>
+  "            let value = items.item::<A>(i);\n" <>
+  "            if p(value.clone()) { result.push(items.raw(i)); }\n" <>
   "        }\n" <>
   "        mk_array(result)\n" <>
   "    }\n" <>
@@ -179,10 +203,10 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn foldl_filter<A: Repr, B: Repr, P: FnMut(A) -> bool, F: FnMut(B, A) -> B>(xs: Value, init: B, mut p: P, mut f: F) -> B {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut acc = init;\n" <>
-  "        for item in arr.iter() {\n" <>
-  "            let value = A::from_value(item);\n" <>
+  "        for i in 0..items.len() {\n" <>
+  "            let value = items.item::<A>(i);\n" <>
   "            if p(value.clone()) { acc = f(acc, value); }\n" <>
   "        }\n" <>
   "        acc\n" <>
@@ -276,9 +300,9 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   -- Counting a predicate never materializes the filtered array.
   "    #[inline(always)]\n" <>
   "    pub fn count_filter_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> i64 {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut count = 0i64;\n" <>
-  "        for item in arr.iter() { if p(A::from_value(item)) { count += 1; } }\n" <>
+  "        for i in 0..items.len() { if p(items.item::<A>(i)) { count += 1; } }\n" <>
   "        count\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
@@ -299,74 +323,70 @@ typedTraversalsSource = "\n\npub mod typed {\n" <>
   -- once and kept in independent accumulators.
   "    #[inline(always)]\n" <>
   "    pub fn sum_array(xs: Value, init: i64) -> i64 {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        let items = arr.as_slice();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut a0 = init; let mut a1 = 0i64; let mut a2 = 0i64; let mut a3 = 0i64;\n" <>
   "        let mut i = 0usize;\n" <>
   "        while i + 4 <= items.len() {\n" <>
-  "            a0 += items[i].unwrap_int(); a1 += items[i + 1].unwrap_int();\n" <>
-  "            a2 += items[i + 2].unwrap_int(); a3 += items[i + 3].unwrap_int();\n" <>
+  "            a0 += items.int_at(i); a1 += items.int_at(i + 1);\n" <>
+  "            a2 += items.int_at(i + 2); a3 += items.int_at(i + 3);\n" <>
   "            i += 4;\n" <>
   "        }\n" <>
-  "        while i < items.len() { a0 += items[i].unwrap_int(); i += 1; }\n" <>
+  "        while i < items.len() { a0 += items.int_at(i); i += 1; }\n" <>
   "        (a0 + a1) + (a2 + a3)\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn product_array(xs: Value, init: i64) -> i64 {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        let items = arr.as_slice();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut a0 = init; let mut a1 = 1i64; let mut a2 = 1i64; let mut a3 = 1i64;\n" <>
   "        let mut i = 0usize;\n" <>
   "        while i + 4 <= items.len() {\n" <>
-  "            a0 *= items[i].unwrap_int(); a1 *= items[i + 1].unwrap_int();\n" <>
-  "            a2 *= items[i + 2].unwrap_int(); a3 *= items[i + 3].unwrap_int();\n" <>
+  "            a0 *= items.int_at(i); a1 *= items.int_at(i + 1);\n" <>
+  "            a2 *= items.int_at(i + 2); a3 *= items.int_at(i + 3);\n" <>
   "            i += 4;\n" <>
   "        }\n" <>
-  "        while i < items.len() { a0 *= items[i].unwrap_int(); i += 1; }\n" <>
+  "        while i < items.len() { a0 *= items.int_at(i); i += 1; }\n" <>
   "        (a0 * a1) * (a2 * a3)\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn sum_filter_array<P: FnMut(i64) -> bool>(xs: Value, init: i64, mut p: P) -> i64 {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        let items = arr.as_slice();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut a0 = init; let mut a1 = 0i64; let mut a2 = 0i64; let mut a3 = 0i64;\n" <>
   "        let mut i = 0usize;\n" <>
   "        while i + 4 <= items.len() {\n" <>
-  "            let v0 = items[i].unwrap_int(); if p(v0) { a0 += v0; }\n" <>
-  "            let v1 = items[i + 1].unwrap_int(); if p(v1) { a1 += v1; }\n" <>
-  "            let v2 = items[i + 2].unwrap_int(); if p(v2) { a2 += v2; }\n" <>
-  "            let v3 = items[i + 3].unwrap_int(); if p(v3) { a3 += v3; }\n" <>
+  "            let v0 = items.int_at(i); if p(v0) { a0 += v0; }\n" <>
+  "            let v1 = items.int_at(i + 1); if p(v1) { a1 += v1; }\n" <>
+  "            let v2 = items.int_at(i + 2); if p(v2) { a2 += v2; }\n" <>
+  "            let v3 = items.int_at(i + 3); if p(v3) { a3 += v3; }\n" <>
   "            i += 4;\n" <>
   "        }\n" <>
-  "        while i < items.len() { let v = items[i].unwrap_int(); if p(v) { a0 += v; } i += 1; }\n" <>
+  "        while i < items.len() { let v = items.int_at(i); if p(v) { a0 += v; } i += 1; }\n" <>
   "        (a0 + a1) + (a2 + a3)\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn product_filter_array<P: FnMut(i64) -> bool>(xs: Value, init: i64, mut p: P) -> i64 {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        let items = arr.as_slice();\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
   "        let mut a0 = init; let mut a1 = 1i64; let mut a2 = 1i64; let mut a3 = 1i64;\n" <>
   "        let mut i = 0usize;\n" <>
   "        while i + 4 <= items.len() {\n" <>
-  "            let v0 = items[i].unwrap_int(); if p(v0) { a0 *= v0; }\n" <>
-  "            let v1 = items[i + 1].unwrap_int(); if p(v1) { a1 *= v1; }\n" <>
-  "            let v2 = items[i + 2].unwrap_int(); if p(v2) { a2 *= v2; }\n" <>
-  "            let v3 = items[i + 3].unwrap_int(); if p(v3) { a3 *= v3; }\n" <>
+  "            let v0 = items.int_at(i); if p(v0) { a0 *= v0; }\n" <>
+  "            let v1 = items.int_at(i + 1); if p(v1) { a1 *= v1; }\n" <>
+  "            let v2 = items.int_at(i + 2); if p(v2) { a2 *= v2; }\n" <>
+  "            let v3 = items.int_at(i + 3); if p(v3) { a3 *= v3; }\n" <>
   "            i += 4;\n" <>
   "        }\n" <>
-  "        while i < items.len() { let v = items[i].unwrap_int(); if p(v) { a0 *= v; } i += 1; }\n" <>
+  "        while i < items.len() { let v = items.int_at(i); if p(v) { a0 *= v; } i += 1; }\n" <>
   "        (a0 * a1) * (a2 * a3)\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn any_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> bool {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        for item in arr.iter() { if p(A::from_value(item)) { return true; } }\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
+  "        for i in 0..items.len() { if p(items.item::<A>(i)) { return true; } }\n" <>
   "        false\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn all_array<A: Repr, P: FnMut(A) -> bool>(xs: Value, mut p: P) -> bool {\n" <>
-  "        let arr = xs.unwrap_array();\n" <>
-  "        for item in arr.iter() { if !p(A::from_value(item)) { return false; } }\n" <>
+  "        let items = IntItems::from(&xs);\n" <>
+  "        for i in 0..items.len() { if !p(items.item::<A>(i)) { return false; } }\n" <>
   "        true\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
@@ -901,6 +921,16 @@ codegenPreludeWithRenames renames shapes =
   "    }\n" <>
   "    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
   "        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" <>
+  "    }\n" <>
+  -- Libraries that inspect the raw element vector convert an IntArray on
+  -- demand; the boxed buffer is a fresh copy because those callers index or
+  -- mutate it directly.
+  "    pub fn boxed_array_view(&self) -> Option<std::rc::Rc<Vec<UnknownType>>> {\n" <>
+  "        match self.resolve() {\n" <>
+  "            Value::Array(v) => Some(v.clone()),\n" <>
+  "            Value::IntArray(v) => Some(std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect())),\n" <>
+  "            _ => None,\n" <>
+  "        }\n" <>
   "    }\n" <>
   -- Borrowing accessors: a length or element read must not clone the backing
   -- buffer reference, which would touch the refcount on every access.
@@ -1644,6 +1674,14 @@ paramName (Tuple mbId _) = case mbId of
   Just (Ident n) -> sanitizeIdent n
   Nothing -> ""
 
+-- Variables only borrowed by an index read: the accessor takes `&self`, so
+-- the receiver must not be cloned. Only a plain variable reference qualifies;
+-- a computed receiver is a temporary with nothing to keep alive.
+borrowedReadVars :: NeutralExpr -> Set.Set String
+borrowedReadVars e = case stripCodegenWrappers e of
+  NeutralExpr (Local _ _) -> freeVariables e
+  _ -> Set.empty
+
 -- Strip the erasure wrappers used to inspect a callee or producer expression.
 stripCodegenWrappers :: NeutralExpr -> NeutralExpr
 stripCodegenWrappers (NeutralExpr (Typed _ inner)) = stripCodegenWrappers inner
@@ -1965,8 +2003,10 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext ariti
   unsafeIndexTraversal xsArg idxArg =
     if unwrapType (infer xsArg) == Array Int
       then do
-        let xsCode = fromMaybe "" (Array.index argsCodeArray 0)
-            idxCode = fromMaybe "" (Array.index argsCodeArray 1)
+        -- The accessor borrows the receiver: keep the variable alive without
+        -- cloning the buffer reference on every read.
+        let xsCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars xsArg)) false xsArg
+            idxCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false idxArg
         pure (Tuple Any ("crate::mk_int((" <> xsCode <> ").array_get_int((" <> idxCode <> ") as usize))"))
       else Nothing
 
@@ -3119,7 +3159,8 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpBooleanAnd -> "(" <> aStrBool <> " && " <> bStrBool <> ")"
       OpBooleanOr -> "(" <> aStrBool <> " || " <> bStrBool <> ")"
       OpArrayIndex -> 
-        let aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRaw
+        let aStrRawBorrowed = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference aliveForA (borrowedReadVars a)) false a
+            aStr = boxUnbox renames valueEnums globalClassFields currentMod Any aTy aStrRawBorrowed
             indexed = "(" <> aStr <> ").array_get((" <> bStrInt <> ") as usize)"
         in case unwrapType aTy of
           Array Int -> "crate::mk_int((" <> aStr <> ").array_get_int((" <> bStrInt <> ") as usize))"
@@ -3133,7 +3174,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpStringAppend -> "format!(\"{}{}\", " <> aStrStr <> ", " <> bStrStr <> ")"
       _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Op2 */"
   Accessor base (GetIndex index) ->
-    let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false base
+    let baseCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound (Set.difference alive (borrowedReadVars base)) false base
         baseTy = inferTypeExpr currentMod aritiesMap globalClassFields bound base
     in case unwrapType baseTy of
       Array Int -> "crate::mk_int((" <> boxUnbox renames valueEnums globalClassFields currentMod Any baseTy baseCode <> ").array_get_int(" <> show index <> "))"
