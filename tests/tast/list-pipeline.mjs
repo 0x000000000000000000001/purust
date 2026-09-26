@@ -35,6 +35,9 @@ try {
     assert.doesNotMatch(bodies.get(name), /ListPipeline_foldl\(/,
       `${name} must not call the generic fold`);
   }
+  assert.ok(bodies.has('mapDouble'), 'mapDouble');
+  assert.doesNotMatch(bodies.get('mapDouble'), /Func1::Shared\(std::rc::Rc::new/,
+    'non-tail self-calls must use the worker fn directly');
   for (const name of ['sumAll', 'diffEvens']) {
     assert.ok(bodies.has(name), name);
     assert.match(bodies.get(name), /ListPipeline_foldl\(/,

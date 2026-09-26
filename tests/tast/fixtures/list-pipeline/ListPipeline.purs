@@ -47,3 +47,24 @@ sumAll n = foldl (+) 0 (filterAll (range 1 n))
 
 diffEvens :: Int -> Int
 diffEvens n = foldl (-) 0 (filterEvens (range 1 n))
+
+reverseList :: List Int -> List Int
+reverseList lst = go lst Nil
+  where
+  go Nil acc = acc
+  go (Cons x xs) acc = go xs (Cons x acc)
+
+filterRev :: (Int -> Boolean) -> List Int -> List Int
+filterRev p lst = go lst Nil
+  where
+  go Nil acc = reverseList acc
+  go (Cons x xs) acc = if p x then go xs (Cons x acc) else go xs acc
+
+filteredOdds :: Int -> List Int
+filteredOdds n = filterRev (\x -> x `mod` 2 == 1) (range 1 n)
+
+mapDouble :: List Int -> List Int
+mapDouble lst = go lst
+  where
+  go Nil = Nil
+  go (Cons x xs) = Cons (x * 2) (go xs)

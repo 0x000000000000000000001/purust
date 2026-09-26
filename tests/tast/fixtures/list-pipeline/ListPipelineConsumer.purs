@@ -1,6 +1,6 @@
 module ListPipelineConsumer where
 
-import ListPipeline (sumEvens, sumEvensFrom, productEvens, sumAll, diffEvens)
+import ListPipeline (List, sumEvens, sumEvensFrom, productEvens, sumAll, diffEvens, filteredOdds, mapDouble)
 
 runEvens :: Int -> Int
 runEvens = sumEvens
@@ -16,3 +16,9 @@ runAll = sumAll
 
 runDiff :: Int -> Int
 runDiff = diffEvens
+
+runFilteredOdds :: Int -> List Int
+runFilteredOdds = filteredOdds
+
+runMapDouble :: List Int -> List Int
+runMapDouble = mapDouble

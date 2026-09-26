@@ -1447,7 +1447,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                 Just (Tuple p _) -> p
                 Nothing -> Array.mapWithIndex (\i _ -> "a" <> show i) argTypes
               deduped = dedupArgs paramsArr
-              mbLoop = if isSelfRecursive then Just { name: identName, params: deduped, view: Nothing, tco: true } else Nothing
+              mbLoop = if isSelfRecursive then Just { name: identName, params: deduped, view: Nothing, tco: true, impl: Nothing, captures: [] } else Nothing
               paramPairs = Array.zip deduped argTypes
               pCode = String.joinWith ", " $ map (\(Tuple pName ty) ->
                 let p = sanitizeIdent pName in
@@ -1477,7 +1477,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                         workerType = Func workerTypes workerReturn
                         workerArities = Map.insert identName workerType mergedArities
                         workerBound = Map.fromFoldable (Array.zip workerParams workerTypes)
-                        workerLoop = Just { name: identName, params: workerParams, view: Nothing, tco: true }
+                        workerLoop = Just { name: identName, params: workerParams, view: Nothing, tco: true, impl: Nothing, captures: [] }
                         workerBody = codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext workerLoop workerArities globalClassFields workerBound Set.empty false body
                         workerBodyType = inferTypeExpr modNameStr workerArities globalClassFields workerBound body
                         workerCode = if continuesLoop modNameStr workerLoop body then workerBody
@@ -1575,7 +1575,7 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                   Just (Ident n) -> n
                   _ -> "_") (NonEmptyArray.toArray params)
                 deduped = dedupArgs paramsArr
-                mbLoop = if isSelfRecursive then Just { name: identName, params: deduped, view: Nothing, tco: true } else Nothing
+                mbLoop = if isSelfRecursive then Just { name: identName, params: deduped, view: Nothing, tco: true, impl: Nothing, captures: [] } else Nothing
                 argTys = extractAllArgTypes inferredType
                 pCode = String.joinWith ", " $ Array.mapWithIndex (\i pName ->
                   let p = sanitizeIdent pName 
@@ -1707,6 +1707,11 @@ type LoopContext =
   -- False while rendering a tail-call argument or a let-bound value: those are
   -- evaluated before the jump, so they must not emit `continue`.
   , tco :: Boolean
+  -- Rust worker `fn` emitted for a local recursive binding, with its leading
+  -- captured arguments. A non-tail self-call then lowers to a direct call
+  -- instead of allocating a closure for every element.
+  , impl :: Maybe String
+  , captures :: Array String
   }
 
 -- The same loop context with the tail-call rewrite disabled. Index reads still
@@ -2301,20 +2306,60 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
         
 
         
+        _mapTrace = case (case getInner fn of
+            NeutralExpr (Local (Just (Ident name)) _) -> Just name
+            _ -> Nothing) of
+          Just name | name == "purs_local_1_rec_0" -> Debug.trace ("genApp-call ctx=" <> (case mbLoop of
+            Just loop -> loop.name <> " tco=" <> show loop.tco <> " impl=" <> (case loop.impl of
+              Just _ -> "yes"
+              Nothing -> "no")
+            Nothing -> "none")) \_ -> unit
+          _ -> unit
+        mbFnName = case getInner fn of
+          NeutralExpr (Var (Qualified mbMod (Ident name))) ->
+            let prefix = case mbMod of
+                  Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn
+                  Nothing -> modNameStr
+            in Just (prefix <> "_" <> sanitizeIdent name)
+          NeutralExpr (Local (Just (Ident name)) _) -> Just (sanitizeIdent name)
+          _ -> Nothing
         typedCall = typedTraversalCall renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive argsArray argsCodeArray fn
+        -- A saturated self-call of the enclosing local worker lowers to the
+        -- worker `fn` directly. Tail positions still use the loop jump above;
+        -- this covers argument positions, where the bridge closure would
+        -- otherwise be allocated once per evaluation.
+
+        directMissMessage n loop =
+          "direct-miss n=" <> n <> " loop=" <> loop.name <> " tco=" <> show loop.tco
+            <> " m=" <> show m <> " params=" <> show (Array.length loop.params)
+            <> " impl=" <> case loop.impl of
+                 Just _ -> "yes"
+                 Nothing -> "no"
+
+        directLocalCall = case mbLoop, mbFnName of
+          Just loop, Just n | n == loop.name && m == Array.length loop.params && not loop.tco, Just implName <- loop.impl ->
+            let
+              calleeTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound fn
+              resultTy = extractFinalRetType calleeTy
+              convertArg i =
+                let argExpr = fromMaybe (NeutralExpr (Fail "missing argument")) (Array.index argsArray i)
+                    argTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound argExpr
+                    paramTy = case Array.index loop.params i of
+                      Just name -> fromMaybe argTy (Map.lookup (sanitizeIdent name) bound)
+                      Nothing -> argTy
+                in boxUnbox renames valueEnums globalClassFields modNameStr paramTy argTy (fromMaybe "" (Array.index argsCodeArray i))
+              capturedArgs = map (\c -> c <> ".clone()") loop.captures
+              callArgs = capturedArgs <> Array.mapWithIndex (\i _ -> convertArg i) argsCodeArray
+            in Just (Tuple resultTy (implName <> "(" <> String.joinWith ", " callArgs <> ")"))
+          Just loop, Just n -> Debug.trace (directMissMessage n loop) \_ -> Nothing
+          _, _ -> Nothing
         resultCode = case typedCall of
           Just (Tuple actualTy typedCode) -> boxUnbox renames valueEnums globalClassFields modNameStr appTy actualTy typedCode
-          Nothing -> plainResult
+          Nothing -> case directLocalCall of
+            Just (Tuple actualTy directCode) -> boxUnbox renames valueEnums globalClassFields modNameStr appTy actualTy directCode
+            Nothing -> plainResult
         plainResult = 
-            let mbFnName = case getInner fn of
-                  NeutralExpr (Var (Qualified mbMod (Ident name))) ->
-                    let prefix = case mbMod of
-                          Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn
-                          Nothing -> modNameStr
-                    in Just (prefix <> "_" <> sanitizeIdent name)
-                  NeutralExpr (Local (Just (Ident name)) _) -> Just (sanitizeIdent name)
-                  _ -> Nothing
-                isTco = case mbLoop, mbFnName of
+            let isTco = case mbLoop, mbFnName of
                   Just { name: ln, params: lp, tco: true }, Just n -> n == ln && m == Array.length lp
                   _, _ -> false
             in case dictionaryResult, Array.head argsArray, Array.head argsCodeArray of
@@ -3591,7 +3636,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                 let (Tuple fieldName expectedTy) = fromMaybe (Tuple ("field" <> show i) Any) (Array.index classFields i)
                     subsequent = Array.drop (i + 1) fields
                     aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Tuple _ sv) -> freeVariables sv) subsequent))
-                    valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForV false val
+                    valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForV false val
                     valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
                     resCode = boxUnbox renames valueEnums globalClassFields currentMod expectedTy valTy valCode
                     _ = if structName == "Purs_Data_Show::Show" then Debug.trace ("SHOW CtorSaturated field=" <> fieldName <> " expectedTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true expectedTy <> " valTy=" <> codegenExprTypeWithValueEnums valueEnums currentMod true valTy <> " valCode=" <> valCode <> " resCode=" <> resCode) \_ -> unit else unit
@@ -3629,7 +3674,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                    "(" <> String.joinWith ", " (Array.mapWithIndex (\i val ->
                      let subsequent = Array.drop (i + 1) fieldValues
                          aliveForV = Set.union fieldAlive (Array.foldl Set.union Set.empty (map freeVariables subsequent))
-                         valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields fieldBound aliveForV false val
+                         valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields fieldBound aliveForV false val
                          valTy = inferTypeExpr currentMod aritiesMap globalClassFields fieldBound val
                          ctorFqn = (case mbMod of
                            Just (ModuleName mn) -> String.replaceAll (Pattern ".") (Replacement "_") mn <> "_"
@@ -3742,8 +3787,8 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                    funcArgs = map (\(Tuple p ty) -> "mut " <> sanitizeIdent p <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs
                    allArgsCode = String.joinWith ", " (capturedArgs <> funcArgs)
                    
-                   mbLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: Nothing, tco: true }
-                   viewLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: viewContext, tco: true }
+                   mbLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: Nothing, tco: true, impl: Just fnName, captures: map sanitizeIdent capturedArr }
+                   viewLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: viewContext, tco: true, impl: Just fnName, captures: map sanitizeIdent capturedArr }
                    innerBound = Array.foldl (\b (Tuple p ty) -> Map.insert (sanitizeIdent p) ty b) bound paramPairs
                    bodyRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields innerBound (freeVariables innerExpr) false innerExpr
                    bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields innerBound innerExpr
