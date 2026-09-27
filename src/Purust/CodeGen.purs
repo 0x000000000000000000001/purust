@@ -3540,9 +3540,9 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
         valCode = if isUncurriedApp realVal then rawValCode else 
           "{\n" <>
           "        let _val_eval = " <> rawValCode <> ";\n" <>
-          "        if let purust_core::Value::Func1(f) = &_val_eval {\n" <>
+          "        if let purust_core::Value::Func1(f) = _val_eval.resolve() {\n" <>
           "            f(purust_core::Value::Unit)\n" <>
-          "        } else if let purust_core::Value::Record_a(r) = &_val_eval {\n" <>
+          "        } else if let purust_core::Value::Record_a(r) = _val_eval.resolve() {\n" <>
           "            if r.call.is_some() {\n" <>
           "                r.call.clone().unwrap()(purust_core::Value::Unit)\n" <>
           "            } else {\n" <>
@@ -3554,7 +3554,6 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           "    }"
         
         bodyVars = freeVariables body
-        deadCode = if Set.member name bodyVars then "" else "    drop(" <> name <> ");\n"
         valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
         boundTy = case unwrapType valTy of
           ADT _ _ [t] -> t
@@ -3567,9 +3566,9 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
         bodyCode = if isEffectNode body then rawBodyCode else
           "{\n" <>
           "        let _val_eval = " <> rawBodyCode <> ";\n" <>
-          "        if let purust_core::Value::Func1(f) = &_val_eval {\n" <>
+          "        if let purust_core::Value::Func1(f) = _val_eval.resolve() {\n" <>
           "            f(purust_core::Value::Unit)\n" <>
-          "        } else if let purust_core::Value::Record_a(r) = &_val_eval {\n" <>
+          "        } else if let purust_core::Value::Record_a(r) = _val_eval.resolve() {\n" <>
           "            if r.call.is_some() {\n" <>
           "                r.call.clone().unwrap()(purust_core::Value::Unit)\n" <>
           "            } else {\n" <>
@@ -3581,8 +3580,13 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           "    }"
     in
     "{\n" <>
-    "    let mut " <> name <> " = " <> boxUnbox renames valueEnums globalClassFields currentMod boundTy Any valCode <> ";\n" <>
-    deadCode <>
+    -- A binder the continuation discards must not be converted to its declared
+    -- type: the annotation can be an effect-shape approximation (a `Unit` where
+    -- the run yields a `Step`), and `unwrap_unit` would panic inside the fiber
+    -- (silently swallowed, stalling the runtime). Drop the raw value instead.
+    (if Set.member name bodyVars
+       then "    let mut " <> name <> " = " <> boxUnbox renames valueEnums globalClassFields currentMod boundTy Any valCode <> ";\n"
+       else "    drop(" <> valCode <> ");\n") <>
     "    " <> bodyCode <> "\n" <>
     "}"
   EffectPure val ->
