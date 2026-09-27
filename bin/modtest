@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+exec node "$ROOT_DIR/tools/modtest-runner.mjs" "$@"

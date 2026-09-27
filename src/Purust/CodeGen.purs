@@ -3168,8 +3168,21 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                         let bound' = Map.insert name ty bound
                             bodyCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound' alive false body
                             bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields bound' body
+                            -- The closure is emitted inline: `move` captures would
+                            -- consume outer locals that the surrounding expression
+                            -- still uses. Capture clones instead and rewrite the
+                            -- body to reference them.
+                            captured = Array.fromFoldable (Set.difference
+                              (Set.intersection (freeVariables body) (Set.fromFoldable (Map.keys bound)))
+                              (Set.singleton name))
+                            captureName capturedName = "__purust_cap_" <> capturedName
+                            capturePrelude = Array.foldl (\acc capturedName ->
+                              acc <> "let mut " <> captureName capturedName <> " = " <> capturedName <> ".clone(); ")
+                              "" captured
+                            substitutedBody = Array.foldl (\acc capturedName ->
+                              replaceIdentifier capturedName (captureName capturedName) acc) bodyCode captured
                         in if bodyTy == Boolean
-                             then Just ("move |" <> name <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty <> "| " <> boxUnbox renames valueEnums globalClassFields currentMod Boolean bodyTy bodyCode)
+                             then Just ("{ " <> capturePrelude <> "move |" <> name <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty <> "| " <> boxUnbox renames valueEnums globalClassFields currentMod Boolean bodyTy substitutedBody <> " }")
                              else Nothing
                       _ -> Nothing
                     _ -> Nothing
@@ -3407,7 +3420,6 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
         Nothing -> "lvl_" <> show (unwrap lvl)
       bodyVars = freeVariables body
       aliveForVal = Set.union alive bodyVars
-      valCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForVal false val
       valTy = inferTypeExpr currentMod aritiesMap globalClassFields bound val
       newBound = Map.insert name valTy bound
       -- if name is not in bodyVars, it's dead immediately
@@ -3415,11 +3427,44 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       newMbLoop = case mbLoop of
         Just l | l.name == name -> Nothing
         _ -> mbLoop
-      normal = "{\n" <>
-        "    let mut " <> name <> " = " <> valCode <> ";\n" <>
-        deadCode <>
-        "    " <> codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext newMbLoop aritiesMap globalClassFields newBound alive inEffectBlock body <> "\n" <>
-        "}"
+      -- Deep chains of plain lets (effect sequences, dictionary cascades) used
+      -- to nest one Rust block per binding, so rustc's parser recursed once per
+      -- binding and overflowed its stack on large modules. Emit consecutive
+      -- plain lets as a single block of `let` statements instead. The chain is
+      -- generated lazily from the shape analysis: both the flat and the plain
+      -- branch generate the body, so building them eagerly would duplicate
+      -- every continuation and blow up exponentially.
+      collectLetChain acc e = case stripCodegenWrappers e of
+        NeutralExpr (Let chainIdent chainLevel chainValue chainBody)
+          | Array.null (projectionChain chainValue) ->
+              let entry = { ident: chainIdent, level: chainLevel, value: chainValue, body: chainBody } in
+              case stripCodegenWrappers chainBody of
+                NeutralExpr (Let _ _ _ _) -> collectLetChain (Array.snoc acc entry) chainBody
+                _ -> Just { lets: Array.snoc acc entry, body: chainBody }
+        _ -> Nothing
+      chainInfo = collectLetChain [] expr
+      genFlatChain chain =
+          let
+            step st chainLet =
+              let
+                chainName = case chainLet.ident of
+                  Just (Ident nameRaw) -> sanitizeIdent nameRaw
+                  Nothing -> "lvl_" <> show (unwrap chainLet.level)
+                chainBodyVars = freeVariables chainLet.body
+                chainAliveForVal = Set.union alive chainBodyVars
+                chainValCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext st.mbLoop) aritiesMap globalClassFields st.bound chainAliveForVal false chainLet.value
+                chainValTy = inferTypeExpr currentMod aritiesMap globalClassFields st.bound chainLet.value
+                chainDead = if Set.member chainName chainBodyVars then "" else "    drop(" <> chainName <> ");\n"
+                chainMbLoop = case st.mbLoop of
+                  Just l | l.name == chainName -> Nothing
+                  _ -> st.mbLoop
+              in { code: st.code <> "    let mut " <> chainName <> " = " <> chainValCode <> ";\n" <> chainDead
+                 , bound: Map.insert chainName chainValTy st.bound
+                 , mbLoop: chainMbLoop
+                 }
+            folded = Array.foldl step { code: "", bound, mbLoop } chain.lets
+            chainBodyCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext folded.mbLoop aritiesMap globalClassFields folded.bound alive inEffectBlock chain.body
+          in "{\n" <> folded.code <> "    " <> chainBodyCode <> "\n}"
       helperFor qualified@(Qualified _ (Ident ctor)) (ProperName typeName) = do
         helper <- Map.lookup (getTyPrefix currentMod qualified <> ctor) reuseContext.constructors
         if helper.typeName == typeName then Just { name: helper.name, resultType: helper.resultType } else Nothing
@@ -3431,7 +3476,14 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
         reused <- reuseNestedConstructor representation helperFor isBuilder ("std::rc::Rc<" <> fields.nativeType <> ">") fields.source rewritten
         pure { fields, reused }
     in case Array.head (Array.mapMaybe transfer candidates) of
-      Nothing -> normal
+      Nothing -> case chainInfo of
+        Just chain | Array.length chain.lets >= 2 -> genFlatChain chain
+        _ ->
+          "{\n" <>
+          "    let mut " <> name <> " = " <> codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext (argLoopContext mbLoop) aritiesMap globalClassFields bound aliveForVal false val <> ";\n" <>
+          deadCode <>
+          "    " <> codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext newMbLoop aritiesMap globalClassFields newBound alive inEffectBlock body <> "\n" <>
+          "}"
       Just { fields, reused } ->
         "{ let mut " <> fields.source <> " = " <> fields.source <> "; " <>
         "let _taken = std::rc::Rc::get_mut(&mut " <> fields.source <> ").and_then(|node| node.__purust_take()); " <>
@@ -3831,6 +3883,31 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   EffectDefer inner -> codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive inEffectBlock inner
   Fail _ -> "unimplemented!() /* Unsupported Expr: Fail */"
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
+
+
+-- | Replace whole identifiers only: `purs_local_6` must not match inside
+-- | `purs_local_6_rec_0`. Used when a rewritten closure body must reference a
+-- | pre-cloned capture binding.
+replaceIdentifier :: String -> String -> String -> String
+replaceIdentifier needle replacement = go
+  where
+  go input = case String.indexOf (Pattern needle) input of
+    Nothing -> input
+    Just index ->
+      let
+        before = String.take index input
+        after = String.drop (index + String.length needle) input
+        beforeChar = SCU.charAt (String.length before - 1) before
+        afterChar = SCU.charAt 0 after
+        isIdentChar c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
+        boundaryOk = (case beforeChar of
+          Just c -> not (isIdentChar c)
+          Nothing -> true) && (case afterChar of
+          Just c -> not (isIdentChar c)
+          Nothing -> true)
+      in if boundaryOk
+           then before <> replacement <> go after
+           else before <> needle <> go after
 
 printAST :: NeutralExpr -> String
 printAST (NeutralExpr expr) = case expr of
