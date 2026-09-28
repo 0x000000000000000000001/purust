@@ -1,16 +1,13 @@
 module Main where
 
+import Prelude
+import Test.Assert
 import Effect.Console (log)
 
-data Proxy a = Proxy
+mkValue :: Number -> Number
+mkValue id = id
 
-data X a = X (Y a => Proxy a)
-
-class Z (X a) <= Y a
-
-class Z a
-
-test1 = X (Proxy :: _ Int)
-test2 = X (Proxy :: _ "foo")
-
-main = log "Done"
+main = do
+  let value = mkValue 1.0
+  assert $ value == 1.0
+  log "Done"
