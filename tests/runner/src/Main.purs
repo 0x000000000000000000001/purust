@@ -1,15 +1,12 @@
 module Main where
 
+import Prelude
 import Effect.Console (log)
 
-foreign import data R :: forall k. Row k -> Type
-foreign import data X :: forall r. R (x :: Type | r)
-foreign import data Y :: forall r. R (y :: Type | r)
+f1 :: (_ -> _) -> _
+f1 g = g 1
 
-data P :: R (x :: Type, y :: Type) -> Type
-data P a = P
+f2 :: _ -> _
+f2 _ = "Done"
 
-type Test1 = P X
-type Test2 = P Y
-
-main = log "Done"
+main = log $ f1 f2
