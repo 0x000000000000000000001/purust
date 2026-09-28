@@ -2815,10 +2815,37 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
             Just (Tuple p b) -> Tuple p b
             Nothing -> 
               -- Fallback if we couldn't extract all expected params
-              let p1 = map (\(Tuple mbId lvl) -> case mbId of
-                         Just (Ident name) -> sanitizeIdent name
-                         Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
-              in Tuple p1 body
+              let
+                p1 = map (\(Tuple mbId lvl) -> case mbId of
+                           Just (Ident name) -> sanitizeIdent name
+                           Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
+                -- A lambda whose body patterns on its own binder (a Branch) is
+                -- a data function: when its type carries extra leading class
+                -- dictionaries, those are implicit and the binders own the
+                -- trailing value types. Keep the dictionary slots in place
+                -- (callers pass them) but leave them unbound so the pattern
+                -- matches the value. Dictionaries read through an accessor
+                -- (a different, already-correct case) are left untouched.
+                stripTy (NeutralExpr (Typed _ e)) = stripTy e
+                stripTy e = e
+                bodyIsBranch = case stripTy body of
+                  NeutralExpr (Branch _ _) -> true
+                  _ -> false
+                isClassDictTy ty = case unwrapType ty of
+                  CF.ADT _ fqn _ ->
+                    let
+                      dictMod = String.replaceAll (Pattern ".") (Replacement "_") (String.joinWith "_" (Array.dropEnd 1 fqn))
+                      dictName = sanitizeIdent (fromMaybe "" (Array.last fqn))
+                    in case Map.lookup (dictMod <> "_" <> dictName) globalClassFields of
+                         Just _ -> true
+                         _ -> false
+                  _ -> false
+                leadingDicts = Array.length (Array.takeWhile isClassDictTy argTys)
+                implicitParams =
+                  if bodyIsBranch && leadingDicts > 0 && not (Array.null p1) && Array.length p1 == Array.length argTys - leadingDicts
+                    then Array.replicate leadingDicts "_"
+                    else []
+              in Tuple (implicitParams <> p1) body
               
           actualTy = 
                 let retTy = extractFinalRetType effectiveTy
