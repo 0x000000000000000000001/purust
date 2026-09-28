@@ -1,13 +1,15 @@
 module Main where
 
-import Prelude
-import Test.Assert
 import Effect.Console (log)
 
-mkValue :: Number -> Number
-mkValue id = id
+foreign import data R :: forall k. Row k -> Type
+foreign import data X :: forall r. R (x :: Type | r)
+foreign import data Y :: forall r. R (y :: Type | r)
 
-main = do
-  let value = mkValue 1.0
-  assert $ value == 1.0
-  log "Done"
+data P :: R (x :: Type, y :: Type) -> Type
+data P a = P
+
+type Test1 = P X
+type Test2 = P Y
+
+main = log "Done"
