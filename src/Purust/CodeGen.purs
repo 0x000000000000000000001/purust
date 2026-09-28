@@ -38,6 +38,7 @@ import PureScript.Backend.Optimizer.CoreFn (Ann, ClassDecl, Expr(..), ExprType(.
 import PureScript.Backend.Optimizer.CoreFn as CoreFn
 import Debug as Debug
 import Data.String as String
+import Data.Char (toCharCode)
 import Data.String.CodeUnits as SCU
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
@@ -1315,6 +1316,8 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
         else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "bool" then "crate::mk_bool(" <> code <> ")"
         else if expStr == "f64" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_number()"
         else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "f64" then "crate::mk_number(" <> code <> ")"
+        else if expStr == "f64" && actStr == "i64" then "(" <> code <> " as f64)"
+        else if expStr == "i64" && actStr == "f64" then "(" <> code <> " as i64)"
         else if expStr == "char" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_char()"
         else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "char" then "crate::mk_char(" <> code <> ")"
         else if expStr == "String" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_string()"
@@ -4271,21 +4274,26 @@ sanitizeIdent s =
       -- Anonymous instance dictionaries can contain quoted Symbol literals.
       s4 = String.replaceAll (Pattern "\"") (Replacement "_quote_")
         (String.replaceAll (Pattern ".") (Replacement "_dot_") s3)
-  in if s4 == "type" then "type_kw" 
-     else if s4 == "fn" then "fn_kw" 
-     else if s4 == "break" then "break_kw"
-     else if s4 == "mod" then "mod_kw"
-     else if s4 == "as" then "as_kw"
-     else if s4 == "gen" then "gen_kw"
-     else if s4 == "use" then "use_kw"
-     else if s4 == "pub" then "pub_kw"
-     else if s4 == "ref" then "ref_kw"
-     else if s4 == "mut" then "mut_kw"
-     else if s4 == "move" then "move_kw"
-     else if s4 == "let" then "let_kw"
-     else if s4 == "if" then "if_kw"
-     else if s4 == "loop" then "loop_kw"
-     else s4
+      isIdentChar c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
+      escapeChar c = if isIdentChar c then SCU.singleton c else "_u" <> show (toCharCode c) <> "_"
+      -- Non-ASCII labels (a record field named with a Unicode symbol, for
+      -- instance) are not Rust identifiers; escape every invalid character.
+      s5 = String.joinWith "" (map escapeChar (SCU.toCharArray s4))
+  in if s5 == "type" then "type_kw" 
+     else if s5 == "fn" then "fn_kw" 
+     else if s5 == "break" then "break_kw"
+     else if s5 == "mod" then "mod_kw"
+     else if s5 == "as" then "as_kw"
+     else if s5 == "gen" then "gen_kw"
+     else if s5 == "use" then "use_kw"
+     else if s5 == "pub" then "pub_kw"
+     else if s5 == "ref" then "ref_kw"
+     else if s5 == "mut" then "mut_kw"
+     else if s5 == "move" then "move_kw"
+     else if s5 == "let" then "let_kw"
+     else if s5 == "if" then "if_kw"
+     else if s5 == "loop" then "loop_kw"
+     else s5
 
 dedupArgs :: Array String -> Array String
 dedupArgs arr =

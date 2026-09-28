@@ -78,7 +78,13 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
   -- and class dictionaries must agree everywhere, including purust_core.
   let shapeOccurrences = Array.concatMap (\mod -> Purust.ASTCollector.collectRecordShapesModule mod)
         (List.toUnfoldable finalModules :: Array (Module Ann))
-  let allShapes = chooseRecordShapes shapeOccurrences
+  -- Class dictionaries are records too: their label sets need native carriers
+  -- so a dynamically typed dictionary can be boxed, read and unboxed.
+  let classShapeOccurrences = Array.concatMap (\(Module mod) -> Array.concatMap (\classDecl ->
+        let labels = map (\(Tuple n _) -> n) (Array.concat [ superclassFields classDecl, classDecl.methods ])
+        in if Array.null labels then [] else [ { literal: false, shape: String.joinWith "," labels } ])
+        mod.classDecls) (List.toUnfoldable finalModules :: Array (Module Ann))
+  let allShapes = chooseRecordShapes (shapeOccurrences <> classShapeOccurrences)
   let shapeLabels = Set.fromFoldable (Array.filter (not <<< String.null)
         (Array.concatMap (\shape -> String.split (Pattern ",") shape) allShapes))
   let classLabels = foldl (\acc (Module mod) -> foldl (\a classDecl ->
