@@ -1247,7 +1247,31 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
             isExpADT = case unwrapType expected of
               ADT _ _ _ -> true
               _ -> false
-        in if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && isActADT then "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
+            -- A class dictionary is a native struct; box it as the record shape so
+            -- the dynamic field accessors (get_/__purust_get_field) and the
+            -- record-to-class unboxing can read it. Class-boxing it hides the
+            -- fields (`Value::Class` has no projection arm).
+            classDictShape = case unwrapType actual of
+              ADT _ fqn _ ->
+                let
+                  modName = String.replaceAll (Pattern ".") (Replacement "_") (String.joinWith "_" (Array.dropEnd 1 fqn))
+                  name = sanitizeIdent (fromMaybe "" (Array.last fqn))
+                in case Map.lookup (modName <> "_" <> name) globalClassFields of
+                     Just fields | not (Array.null fields) ->
+                       Just (Tuple (recordStructName renames (map (\(Tuple field _) -> field) fields)) fields)
+                     _ -> Nothing
+              _ -> Nothing
+        in if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && isActADT then
+             case classDictShape of
+               Just (Tuple shape fields) ->
+                 let
+                   fieldInits = String.joinWith ", " (map (\(Tuple field fieldType) ->
+                         recordFieldIdent renames field <> ": Some(" <>
+                           boxUnbox renames valueEnums globalClassFields currentMod Any fieldType
+                             ("(__purust_boxed)." <> recordFieldIdent renames field <> ".clone()") <> ")") fields)
+                 in "{ let __purust_boxed = " <> code <> "; purust_core::Value::" <> shape <>
+                    "(perceus_ptr::PerceusPtr::new(purust_core::" <> shape <> " { " <> fieldInits <> " })) }"
+               Nothing -> "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
         else if (actStr == "crate::UnknownType" || actStr == "purust_core::Value") && isExpADT then
           let downcast value = "(" <> value <> ").unwrap_class::<" <> expStr <> ">().clone()"
           in case unwrapType expected of
