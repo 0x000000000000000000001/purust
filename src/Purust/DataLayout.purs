@@ -1,4 +1,4 @@
-module Purust.DataLayout (ValueEnums, isNullaryEnum, valueEnumsForModule, valueEnumsForModules, isValueEnum, isOpaqueForeignType, opaqueForeignTypeKey) where
+module Purust.DataLayout (ValueEnums, isNullaryEnum, valueEnumsForModule, valueEnumsForModules, opaqueEmptyTypesForModules, isValueEnum, isOpaqueForeignType, opaqueForeignTypeKey) where
 
 import Prelude
 
@@ -39,6 +39,18 @@ opaqueForeignTypeKey modName typeName = Tuple (moduleKey modName) (opaqueForeign
 
 isOpaqueForeignType :: ValueEnums -> String -> String -> Boolean
 isOpaqueForeignType enums modName typeName = Set.member (opaqueForeignTypeKey modName typeName) enums
+
+-- Data types declared without constructors have no native layout: no value can
+-- be built, so any value present must have crossed unsafeCoerce or FFI and is a
+-- boxed runtime Value. Foreign imports never appear in dataDecls, so their own
+-- scan keeps deciding whether a native FFI layout exists.
+opaqueEmptyTypesForModule :: forall a. Module a -> ValueEnums
+opaqueEmptyTypesForModule (Module mod) =
+  Set.fromFoldable $ map (\decl -> opaqueForeignTypeKey (unwrap mod.name) decl.name)
+    (Array.filter (Array.null <<< _.constructors) mod.dataDecls)
+
+opaqueEmptyTypesForModules :: forall f a. Foldable f => f (Module a) -> ValueEnums
+opaqueEmptyTypesForModules = foldl (\acc mod -> Set.union acc (opaqueEmptyTypesForModule mod)) Set.empty
 
 opaqueForeignTypeMarker :: String
 opaqueForeignTypeMarker = "$opaque$"

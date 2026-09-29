@@ -18,7 +18,7 @@ import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, wr
 import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
 import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
-import Purust.DataLayout (opaqueForeignTypeKey, valueEnumsForModules)
+import Purust.DataLayout (opaqueEmptyTypesForModules, opaqueForeignTypeKey, valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Monomorphization (buildGlobalTypes, monomorphizeModules)
 import Purust.Threading (threadedRust, threadedPrelude)
@@ -200,7 +200,11 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     opaqueForeignTypes <- liftEffect do
       perModule <- traverse gatherOpaque (List.toUnfoldable finalModules :: Array (Module Ann))
       pure $ Set.fromFoldable (Array.concat perModule)
-    let globalValueEnums = Set.union (valueEnumsForModules finalModules) opaqueForeignTypes
+    let globalValueEnums = Set.unions
+          [ valueEnumsForModules finalModules
+          , opaqueForeignTypes
+          , opaqueEmptyTypesForModules finalModules
+          ]
 
     directives <- loadDirectives
 
