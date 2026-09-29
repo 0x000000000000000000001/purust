@@ -8347,6 +8347,9 @@ var round2 = function($27) {
 };
 
 // output/Data.String.CodeUnits/foreign.js
+var fromCharArray = function(a) {
+  return a.join("");
+};
 var toCharArray = function(s) {
   return s.split("");
 };
@@ -12696,15 +12699,15 @@ var getFieldOptional$prime = function(decode) {
       }
       ;
       if (v instanceof Just) {
-        var $26 = isNull2(v.value0);
-        if ($26) {
+        var $29 = isNull2(v.value0);
+        if ($29) {
           return new Right(Nothing.value);
         }
         ;
         return map(functorEither)(Just.create)(decode(v.value0));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 52, column 3 - line 54, column 77): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 71, column 3 - line 73, column 77): " + [v.constructor.name]);
     };
   };
 };
@@ -12726,17 +12729,17 @@ var getField = function(decode) {
           return new Left(new AtKey(prop, v1.value0));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 46, column 18 - line 48, column 36): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 65, column 18 - line 67, column 36): " + [v1.constructor.name]);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 44, column 3 - line 48, column 36): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 63, column 3 - line 67, column 36): " + [v.constructor.name]);
     };
   };
 };
 var fail = function(v) {
   return new Left(new TypeMismatch("Failed decode"));
 };
-var decodeString = /* @__PURE__ */ (function() {
+var decodePlainString = /* @__PURE__ */ (function() {
   return caseJson(fail)(fail)(fail)(Right.create)(fail)(fail);
 })();
 var decodeNumber = /* @__PURE__ */ (function() {
@@ -12753,16 +12756,18 @@ var decodeInt = function(json) {
     return note(new TypeMismatch("Int"))(fromNumber(num));
   });
 };
-var decodeFieldRef = function(j) {
-  return bind(bindEither)(decodeJObject(j))(function(o) {
-    return bind(bindEither)(getField(decodeString)(o)("label"))(function(label2) {
-      return bind(bindEither)(getField(decodeInt)(o)("type"))(function(typeId) {
-        return pure(applicativeEither)({
-          label: label2,
-          typeId
-        });
-      });
-    });
+var decodeCodeUnit = function(json) {
+  return bind(bindEither)(decodeInt(json))(function(code) {
+    var v = toEnum(boundedEnumChar)(code);
+    if (v instanceof Just) {
+      return new Right(v.value0);
+    }
+    ;
+    if (v instanceof Nothing) {
+      return new Left(new TypeMismatch("Failed decode"));
+    }
+    ;
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 43, column 3 - line 45, column 51): " + [v.constructor.name]);
   });
 };
 var decodeArray = function(decoder) {
@@ -12776,8 +12781,29 @@ var decodeArray = function(decoder) {
       return traverse(traversableArray)(applicativeEither)(decoder)(v.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 57, column 28 - line 59, column 36): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 76, column 28 - line 78, column 36): " + [v.constructor.name]);
   };
+};
+var decodeString = function(json) {
+  var v = decodePlainString(json);
+  if (v instanceof Right) {
+    return new Right(v.value0);
+  }
+  ;
+  if (v instanceof Left) {
+    var v1 = decodeArray(decodeCodeUnit)(json);
+    if (v1 instanceof Right) {
+      return new Right(fromCharArray(v1.value0));
+    }
+    ;
+    if (v1 instanceof Left) {
+      return new Left(new TypeMismatch("Failed decode"));
+    }
+    ;
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 33, column 15 - line 35, column 52): " + [v1.constructor.name]);
+  }
+  ;
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 31, column 3 - line 35, column 52): " + [v.constructor.name]);
 };
 var decodeConstraintRef = function(j) {
   return bind(bindEither)(decodeJObject(j))(function(o) {
@@ -12786,6 +12812,18 @@ var decodeConstraintRef = function(j) {
         return pure(applicativeEither)({
           fqn,
           args
+        });
+      });
+    });
+  });
+};
+var decodeFieldRef = function(j) {
+  return bind(bindEither)(decodeJObject(j))(function(o) {
+    return bind(bindEither)(getField(decodeString)(o)("label"))(function(label2) {
+      return bind(bindEither)(getField(decodeInt)(o)("type"))(function(typeId) {
+        return pure(applicativeEither)({
+          label: label2,
+          typeId
         });
       });
     });
@@ -12836,8 +12874,8 @@ var decodeTypeRef = function(j) {
       if (v2 instanceof Left) {
         var v3 = lookup3("TypeVar")(v1.value0);
         if (v3 instanceof Just) {
-          return map(functorEither)(function($179) {
-            return StaticRef.create(TypeVar.create($179));
+          return map(functorEither)(function($190) {
+            return StaticRef.create(TypeVar.create($190));
           })(decodeString(v3.value0));
         }
         ;
@@ -12845,7 +12883,7 @@ var decodeTypeRef = function(j) {
           return new Left(v2.value0);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 106, column 19 - line 108, column 28): " + [v3.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 125, column 19 - line 127, column 28): " + [v3.constructor.name]);
       }
       ;
       if (v2 instanceof Right && v2.value0 === "Adt") {
@@ -12875,8 +12913,8 @@ var decodeTypeRef = function(j) {
       }
       ;
       if (v2 instanceof Right && v2.value0 === "TypeVar") {
-        return map(functorEither)(function($180) {
-          return StaticRef.create(TypeVar.create($180));
+        return map(functorEither)(function($191) {
+          return StaticRef.create(TypeVar.create($191));
         })(getField(decodeString)(v1.value0)("name"));
       }
       ;
@@ -12905,8 +12943,8 @@ var decodeTypeRef = function(j) {
       }
       ;
       if (v2 instanceof Right && v2.value0 === "TypeLevelString") {
-        return map(functorEither)(function($181) {
-          return StaticRef.create(TypeLevelString.create($181));
+        return map(functorEither)(function($192) {
+          return StaticRef.create(TypeLevelString.create($192));
         })(getField(decodeString)(v1.value0)("value"));
       }
       ;
@@ -12941,10 +12979,10 @@ var decodeTypeRef = function(j) {
       return new Left(new TypeMismatch("ExprType"));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 103, column 13 - line 141, column 42): " + [v1.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 122, column 13 - line 160, column 42): " + [v1.constructor.name]);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 94, column 19 - line 141, column 42): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 113, column 19 - line 160, column 42): " + [v.constructor.name]);
 };
 var decodeTypeTableST = function(typeTableJson) {
   return function __do() {
@@ -12991,7 +13029,7 @@ var decodeTypeTableST = function(typeTableJson) {
                     return unit;
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 175, column 13 - line 179, column 34): " + [previous.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 194, column 13 - line 198, column 34): " + [previous.constructor.name]);
                 }
                 ;
                 if (resolved instanceof Just && resolved.value0 instanceof Right) {
@@ -12999,7 +13037,7 @@ var decodeTypeTableST = function(typeTableJson) {
                   return unit;
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 169, column 9 - line 182, column 22): " + [resolved.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 188, column 9 - line 201, column 22): " + [resolved.constructor.name]);
               };
             });
           })();
@@ -13018,7 +13056,7 @@ var decodeTypeTableST = function(typeTableJson) {
             return apply(pure4)(new Just(new Right(result)))();
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 189, column 9 - line 193, column 39): " + [error3.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 208, column 9 - line 212, column 39): " + [error3.constructor.name]);
         };
       };
     };
@@ -13060,10 +13098,10 @@ var decodeTypeTableST = function(typeTableJson) {
                 return apply(pure1)(map(functorMaybe)(map(functorEither)(TypeApp.create(mbC.value0.value0)))(mbArgs))();
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 206, column 29 - line 210, column 50): " + [ref.value0.value1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 225, column 29 - line 229, column 50): " + [ref.value0.value1.constructor.name]);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 203, column 9 - line 210, column 50): " + [mbC.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 222, column 9 - line 229, column 50): " + [mbC.constructor.name]);
           };
         }
         ;
@@ -13118,7 +13156,7 @@ var decodeTypeTableST = function(typeTableJson) {
                   return apply(pure22)(new Just(new Right(new Tuple(v2.label, mbT.value0.value0))))();
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 228, column 11 - line 231, column 66): " + [mbT.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 247, column 11 - line 250, column 66): " + [mbT.constructor.name]);
               };
             })(ref.value0.value0))();
             if (mbFields instanceof Nothing) {
@@ -13154,16 +13192,16 @@ var decodeTypeTableST = function(typeTableJson) {
                     return apply(pure1)(new Just(new Right(new Row(v.value0, new Just(mbTail.value0.value0)))))();
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 242, column 17 - line 245, column 86): " + [mbTail.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 261, column 17 - line 264, column 86): " + [mbTail.constructor.name]);
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 237, column 29 - line 245, column 86): " + [ref.value0.value1.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 256, column 29 - line 264, column 86): " + [ref.value0.value1.constructor.name]);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 235, column 24 - line 245, column 86): " + [v.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 254, column 24 - line 264, column 86): " + [v.constructor.name]);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 233, column 9 - line 245, column 86): " + [mbFields.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 252, column 9 - line 264, column 86): " + [mbFields.constructor.name]);
           };
         }
         ;
@@ -13191,7 +13229,7 @@ var decodeTypeTableST = function(typeTableJson) {
                   return apply(pure32)(new Just(new Right(new Tuple(v2.fqn, mbArgs.value0.value0))))();
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 252, column 11 - line 255, column 64): " + [mbArgs.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 271, column 11 - line 274, column 64): " + [mbArgs.constructor.name]);
               };
             })(ref.value0.value0))();
             if (mbConsts instanceof Nothing) {
@@ -13214,17 +13252,17 @@ var decodeTypeTableST = function(typeTableJson) {
                   return apply(pure1)(map(functorMaybe)(map(functorEither)(ConstrainedType.create(v.value0)))(mbBody))();
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 261, column 29 - line 265, column 65): " + [ref.value0.value1.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 280, column 29 - line 284, column 65): " + [ref.value0.value1.constructor.name]);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 259, column 24 - line 265, column 65): " + [v.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 278, column 24 - line 284, column 65): " + [v.constructor.name]);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 257, column 9 - line 265, column 65): " + [mbConsts.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 276, column 9 - line 284, column 65): " + [mbConsts.constructor.name]);
           };
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 195, column 29 - line 265, column 65): " + [ref.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 214, column 29 - line 284, column 65): " + [ref.constructor.name]);
       };
     };
     var typeRefs = map(functorArray)(decodeTypeRef)(typeTableJson);
@@ -13252,7 +13290,7 @@ var decodeTypeTableST = function(typeTableJson) {
                 return unit;
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 283, column 11 - line 289, column 24): " + [mbVal.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 302, column 11 - line 308, column 24): " + [mbVal.constructor.name]);
             };
           })();
           var remaining = unsafeFreeze(next2)();
@@ -13266,8 +13304,8 @@ var decodeTypeTableST = function(typeTableJson) {
     };
     settle();
     (function() {
-      while (map(functorST)(function($182) {
-        return !$$null($182);
+      while (map(functorST)(function($193) {
+        return !$$null($193);
       })(read2(pending))()) {
         (function __do2() {
           var indices = read2(pending)();
@@ -13283,7 +13321,7 @@ var decodeTypeTableST = function(typeTableJson) {
             return settle();
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 298, column 5 - line 306, column 15): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 317, column 5 - line 325, column 15): " + [v.constructor.name]);
         })();
       }
       ;
@@ -13299,7 +13337,7 @@ var decodeTypeTableST = function(typeTableJson) {
         return new Left(new TypeMismatch("Unresolved Type (Cycle Deadlock)"));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 310, column 15 - line 312, column 72): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 329, column 15 - line 331, column 72): " + [v.constructor.name]);
     };
     return traverse(traversableArray)(applicativeEither)(extract2)(finalRes);
   };
@@ -13314,7 +13352,7 @@ var decodeTypeTablePS = function(typeTableJson) {
     return new Right(v.value0);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 148, column 3 - line 150, column 27): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.CoreFn.TypeTable (line 167, column 3 - line 169, column 27): " + [v.constructor.name]);
 };
 
 // output/PureScript.Backend.Optimizer.CoreFn.Json/foreign.js
