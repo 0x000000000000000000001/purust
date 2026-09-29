@@ -2815,10 +2815,42 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
             Just (Tuple p b) -> Tuple p b
             Nothing -> 
               -- Fallback if we couldn't extract all expected params
-              let p1 = map (\(Tuple mbId lvl) -> case mbId of
-                         Just (Ident name) -> sanitizeIdent name
-                         Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
-              in Tuple p1 body
+              let
+                p1 = map (\(Tuple mbId lvl) -> case mbId of
+                           Just (Ident name) -> sanitizeIdent name
+                           Nothing -> "lvl_" <> show (unwrap lvl)) (NonEmptyArray.toArray params)
+                -- Two shapes have fewer binders than the type has arguments:
+                -- a curried lambda whose body computes a function (binders own
+                -- the leading arguments) and a data lambda whose implicit
+                -- leading class dictionaries were dropped (binders own the
+                -- trailing value types, the pattern must match the value).
+                -- Only the latter shifts: its body patterns on the binder and
+                -- is not itself a function.
+                stripTy (NeutralExpr (Typed _ e)) = stripTy e
+                stripTy e = e
+                bodyIsBranch = case stripTy body of
+                  NeutralExpr (Branch _ _) -> true
+                  _ -> false
+                tentativeBound = Array.foldl (\b (Tuple i name) -> if name == "_" then b else Map.insert name (fromMaybe Any (Array.index argTys i)) b) bound (Array.mapWithIndex Tuple p1)
+                tentativeBodyTy = inferTypeExpr currentMod aritiesMap globalClassFields tentativeBound body
+                bodyReturnsFunction = case unwrapType tentativeBodyTy of
+                  Func _ _ -> true
+                  _ -> false
+                isClassDictTy ty = case unwrapType ty of
+                  CF.ADT _ fqn _ ->
+                    let
+                      dictMod = String.replaceAll (Pattern ".") (Replacement "_") (String.joinWith "_" (Array.dropEnd 1 fqn))
+                      dictName = sanitizeIdent (fromMaybe "" (Array.last fqn))
+                    in case Map.lookup (dictMod <> "_" <> dictName) globalClassFields of
+                         Just _ -> true
+                         _ -> false
+                  _ -> false
+                leadingDicts = Array.length (Array.takeWhile isClassDictTy argTys)
+                implicitParams =
+                  if bodyIsBranch && not bodyReturnsFunction && leadingDicts > 0 && not (Array.null p1) && Array.length p1 == Array.length argTys - leadingDicts
+                    then Array.replicate leadingDicts "_"
+                    else []
+              in Tuple (implicitParams <> p1) body
               
           actualTy = 
                 let retTy = extractFinalRetType effectiveTy
