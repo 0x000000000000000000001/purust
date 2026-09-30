@@ -96,13 +96,16 @@ harness complète, `t -c` b8x après tout changement de runtime.
    sur 135 k : 119 allocations par événement minimal (« view »), 158 sans
    items, 182 avec un item. Les appels d'interface sont rares (3 `getField`,
    1 copie d'objet, 1 tableau) et sortir les défauts d'erreur en valeurs de
-   module est **neutre** : purust partage déjà les valeurs closes. Le coût
-   restant est donc le **boxage dynamique de valeurs déjà partagées** et les
-   **closures d'enveloppe aux frontières** (`FuncN::Shared(Rc::new(...))`
-   par évaluation pour les applications partielles/projections), plus les
-   enveloppes `Either`/`Maybe`. Prochaine tentative ciblée : cache par site
-   de la forme *boxée* des valeurs/dictionnaires partagés, sinon phase 2
-   (représentation).
+   module est **neutre** : purust partage déjà les valeurs closes. Une
+   seconde tentative, le hoisting des **arbres de constructeurs fermés**
+   (constantes d'erreur, seuil abaissé à 3 nœuds), est également **neutre**
+   (135 054 allocations, identique). Constat : **aucune transformation de
+   partage au niveau AST ne change les comptes d'allocations** ; le coût est
+   structurel (boxage dynamique et closures d'enveloppe aux frontières).
+   La phase 1 est close : aller directement en **phase 2
+   (représentation/ABI)** — sommes non boxées et chaînes partagées — en
+   traitant les contrats d'allocation TAST comme un point à réviser
+   explicitement.
 2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
    type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
    Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
