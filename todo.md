@@ -1,157 +1,146 @@
-# Purust — réduire les ratios /C de la table Rust
+# Purust — rapprocher JSON Decoding du Go/C (workers natifs + ABI)
 
-Plan du 26 septembre 2026. Remplace le plan de couverture des tests
-(conservé à l'historique git, dernier état `093559e`).
+Plan du 30 septembre 2026. Remplace le plan de réduction des ratios /C du
+26 septembre (conservé à l'historique git).
 
 ## Objectif
 
-Améliorer la colonne **Hand-written PureScript → purust** de la table Rust
-d'`altbak.pub/README.md` en priorisant les tests dont le ratio au C est le plus
-défavorable : **List Processing (371×)**, **Prime Sieve (137×)**, puis
-**State Monad** et **Church** (ratio non calculable sur l'affichage arrondi du
-C). **RBTree** reste le levier principal du total purust (95,1 %).
+Amener la cellule **JSON Decoding** de la table Rust d'`altbak.pub` au niveau du
+Go publié, puis s'en rapprocher du C, et publier ensuite la cellule
+**JSON to Typed AST**. Le levier n'est plus algorithmique : la mesure montre que
+le coût restant est la représentation par valeur et l'ABI de décodage. Le
+programme s'attaque donc aux deux, par étapes mesurables et validées par
+l'oracle.
 
-Les ratios `/C` comparent des algorithmes différents : le C de List Processing
-est une boucle directe et son crible teste la divisibilité jusqu'à √n. Ils
-servent d'indicateur de marge, pas de preuve que le backend peut récupérer tout
-le facteur. Pour une comparaison de forme équivalente (mêmes structures
-fonctionnelles), utiliser les colonnes **Rust FFI** de la même table.
+## État au 30/09/2026 (déjà en place)
 
-## État mesuré (26/09/2026, Apple M4 Pro, médianes de 3 process)
-
-| Test | purust | C | ratio purust/C | Rust FP FFI | écart vs FP FFI |
-|---|---:|---:|---:|---:|---:|
-| List Processing | 18,57 µs | 0,05 µs | ≈ 371× | 11,05 µs | 1,68× |
-| Prime Sieve | 146,47 µs | 1,07 µs | ≈ 137× | 78,88 µs | 1,86× |
-| State Monad | 46,91 µs | ~0 µs | non calculable | 27,36 µs | 1,71× |
-| Church Numerals | 169,57 µs | ~0 µs | non calculable | 1 033,78 µs (FP)<br>0,01 µs (impératif) | OCaml 140,38 µs<br>Haskell 143,90 µs |
-| RBTree | 8 449,35 µs | 9 788 µs | 0,86× | 28 737,38 µs | purust devant |
-| TCO / Records / Ackermann / Array | — | — | 0,90× / 0,96× / 0,96× / 0,80× | — | purust devant le C |
-
-Total purust : **8,88 ms**. RBTree pèse 8 449,35 µs, soit **95,1 % du total** :
-−10 % sur RBTree ≈ **−845 µs**, alors que List + Primes + State + Church
-réunis pèsent 382 µs.
-
-## Priorité 1 — List Processing (`src/Test/ListOps.purs`)
-
-`sumEvens n = foldl (+) 0 (filterEvens (range 1 n))`. Le Rust généré
-(`output/purust_output/Purs_Test_ListOps/src/lib.rs`) montre :
-
-- des nœuds `Rc<List>` dont les éléments restent en `UnknownType`/`Value` ;
-- un `foldl` générique appelé par adaptateurs `Func2`/closures ;
-- des listes intermédiaires matérialisées entre `range`, `filterEvens` et
-  `foldl` ;
-- un échafaudage `Thunk`/`Func2::Shared` autour des fonctions récursives
-  locales.
-
-Pistes :
-
-- [ ] Spécialiser `filterEvens`/`foldl` sur `List Int` : éléments `i64` non
-  boxés, prédicat et addition en appels directs.
-- [ ] Fusionner `range` + `filterEvens` + `foldl` en un seul parcours, ordre
-  et total préservés, sans matérialiser la liste intermédiaire.
-- [ ] Émettre des appels directs pour les fonctions locales connues (éviter
-  les adaptateurs `FuncN` et les closures par itération).
-- [ ] Éliminer les clones de `Rc` inutiles dans les reconstructions
-  (`Cons` construit avec `purs_local_3.clone()` alors que le nœud est local).
-- [ ] Vérifier avec le harnais complet : oracle `202950` inchangé, puis mesure
-  isolée de la colonne.
-
-## Priorité 2 — Prime Sieve (`src/Test/Primes.purs`)
-
-Le crible enchaîne `filter` + `reverse`, une récursion non terminale et une
-somme finale. Le code généré reconstruit massivement des nœuds et clone les
-listes partagées (`Rc::unwrap_or_clone`).
-
-Pistes :
-
-- [ ] Réutiliser les cellules consommées quand l'unicité est établie :
-  `__purust_take`/`__purust_rebuild_Cons` existent déjà dans le code généré ;
-  vérifier et étendre leur émission.
-- [ ] Spécialiser les parcours sur `Int` et le prédicat `\x -> x mod p /= 0`
-  (capture de `p` résolue une fois par filtre).
-- [ ] Fusionner `filter` + `reverse` (le filtre produit l'accumulateur dans le
-  bon ordre) et la somme finale.
-- [ ] Éviter les clones de nœuds partagés restants dans `sieve`.
-
-Référence intermédiaire : la colonne Rust FP FFI est à 78,88 µs (1,86× plus
-vite) avec les mêmes structures.
-
-## Priorité 3 — State Monad (`src/Test/StateMonad.purs`)
-
-Les chaînes `State` sont immédiatement exécutées
-(`runManyTimes n acc = ... runState (chainModifications 60) 0`), mais le Rust
-généré alloue closures et records `{ val, state }` à chaque bind.
-
-Pistes :
-
-- [ ] Spécialiser `bindState`/`chainModifications` quand la composition est
-  connue et immédiatement appliquée (analogue des fusions `FunctionFusion` et
-  `ThunkFusion` existantes).
-- [ ] Éliminer les records `Record_state_val` intermédiaires et les closures
-  par étape ; transmettre l'état directement.
-- [ ] Référence de forme équivalente : `StateMonadFFI.rs` (27,36 µs), puis le
-  C (~0 µs affiché).
-
-## Priorité 4 — Church Numerals (`src/Test/Church.purs`)
-
-`fromInt` est déjà émis en boucle. Les compositions `mulC`/`c100k` construisent
-encore des `Func1/Func2::Shared` et des applications partielles par étape.
-
-Pistes :
-
-- [ ] Spécialiser les compositions `mulC (c10 n) (c10 n)` jusqu'à l'application
-  finale quand les fonctions sont privées et connues.
-- [ ] Réutiliser les applications partielles préparées hors de la boucle
-  (précédent : `PartialBindings` côté phpurs).
-- [ ] Objectif réaliste : rester devant OCaml (140,38 µs) et Haskell
-  (143,90 µs) tout en réduisant l'écart avec la colonne impérative.
-
-## Levier total — RBTree (`src/Test/RBTree.purs`)
-
-RBTree = 95,1 % du total purust malgré un ratio 0,86× face au C. Même une
-petite amélioration relative rapporte plus que toutes les priorités ci-dessus
-réunies.
-
-Pistes déjà identifiées dans `optimization-audit.md` :
-
-- [ ] Étendre les permutations de champs au-delà du premier embranchement et à
-  d'autres topologies que trois cellules / même direction.
-- [ ] Poursuivre l'inspection des coûts de traversée empruntée et d'accès aux
-  champs de records.
-- [ ] Mesurer par paires alternées sur le runner complet, comme les
-  rapports `scratch/rust-*-20260909/REPORT.md`, sans mélanger les campagnes.
-
-## Annexe — anomalies sharpurs → Fable (hors purust)
-
-Colonne 2 de la table Rust (`sharpurs → Fable patché → Rust`, thin LTO) :
-
-| Test | Fable | C | ratio |
+| phase | C | Go publié | purust |
 |---|---:|---:|---:|
-| TCO | 23 547,50 µs | 33,78 µs | ≈ 697× |
-| Records | 8 728,98 µs | 3,41 µs | ≈ 2 560× |
-| RBTree | 659 207,04 µs | 9 788 µs | ≈ 67× |
-| Polymorphism | 1 588 595,46 µs | ~0 µs | 64,7 % du total 2 455,35 ms |
+| parse | 385 | 2 282 | 2 116 |
+| decode | 276 | 762 | 4 475 |
+| combined | 678 | 2 397 | **6 818** |
 
-Ces écarts sont apparus avec l'activation de thin LTO (11 lignes s'améliorent
-de 7–18 %, trois explosent). Avant d'attribuer la régression à LTO :
+Harness officiel : purust 6 097, JS 8 835, Go générique 11 001. Depuis le début
+du cycle : parse −40 %, decode −89 %, combined −84 %. Les 17 empreintes de
+l'oracle (cas d'erreur compris) sont exactes ; tests 80/80 codegen et 41/42 TAST
+(l'échec restant est l'environnement `js-bigints`).
 
-- [ ] Reconstruire le même Rust généré avec et sans `lto = "thin"`, sur les
-  seuls tests concernés, et comparer les binaires et les temps.
-- [ ] Si LTO est confirmé, inspecter l'inlining des fonctions récursives du
-  runtime Fable concernées (TCO, arbres, thunks paresseux).
-- [ ] Documenter la décision dans `altbak.pub` (profils, SHAs, campagnes).
+Déjà livré : plans natifs (`FieldSpec`/`RecordPlan`), `Record_a` sparse, clés
+`Rc<str>`, parser octet-à-octet, instances natives `Maybe`/`Array`/`Object`,
+accesseurs `.:`/`.:?` natifs.
 
-## Protocole de mesure et clôture
+Mesures qui cadrent la suite :
 
-- Build : `python3 tmp/run_purust_benchmark.py --build-only` ; une exécution
-  simple de contrôle : `./bin/rust/run`, `./bin/rust/run --run-only`.
-- Publication : `python3 tmp/run_purust_benchmark.py --update-readme` (met à
-  jour la seule colonne purust et la référence C, jamais les autres).
-- Chaque mesure publiée = 3 process indépendants, médiane par ligne ; ne pas
-  mélanger des campagnes de profils ou de sources différentes.
-- Après chaque transformation : `npm run test:codegen` et
-  `PURS=/chemin/vers/tast-purs npm run test:tast` dans `purust/`, plus le
-  runner complet des 14 noyaux (oracles validés).
-- Une cellule n'est publiée que si la sortie attendue est validée ; les
-  hypothèses non mesurées restent listées ici, pas dans le tableau.
+- Le hoisting des dictionnaires (passe CAF, 233 sites) **n'apporte rien** :
+  la construction des dictionnaires est déjà amortie par les plans. Passe
+  retirée. Ne pas la refaire.
+- Le decode restant = **133 054 allocations ≤ 127 octets par payload**
+  (~6 par valeur JSON) : closures d'arguments créées par appel, `Rc<Either>` par
+  appel de décodeur, `Rc<Maybe>` ×2 par `Just`, une copie de chaîne par valeur,
+  un `Mutex` par lookup d'objet.
+
+## Jalons (cibles, protocole appairé, mêmes binaires Go/C préservés)
+
+| jalon | decode | combined | comparaison |
+|---|---:|---:|---|
+| M1 — allocations de la phase 1 | ≤ 3 200 µs | ≤ 5 500 µs | ≤ 2,3× Go publié |
+| M2 — représentation (phase 2) | ≤ 2 000 µs | ≤ 4 000 µs | ≤ 1,7× Go |
+| M3 — workers par schéma (phase 3) | ≤ 900 µs | ≤ 2 500 µs | ≈ Go publié |
+| stretch texte→schéma | ≤ 500 µs | ≤ 1 800 µs | vers le C (276/678) |
+
+Aucun jalon ne se publie avant : oracle bit-exact sur les 17 modules, campagne
+harness complète, `t -c` b8x après tout changement de runtime.
+
+## Phase 0 — outillage et hygiène (1-2 jours)
+
+1. **Pousser les deux ports** : créer les remotes GitHub `purust-argonaut-core`
+   et `purust-argonaut-codecs` (commits locaux `0af0f61`/`468e8ad`,
+   `e92885f`/`83d1b11`/`61fc4fb`/`58b07c9`/`9c80c06`).
+2. **Committer l'outillage de mesure** dans `purust/bench/` : compteur global
+   d'allocations (par passe, histogramme de tailles, compteurs d'appels FFI) et
+   script `paired.py` (6 permutations, médianes), pour que chaque jalon soit
+   reproductible sans patch jetable du workspace.
+3. **Revalider b8x** (`t -c`) avec le runtime courant (`Record_a` sparse,
+   `Rc<str>`, `Mutex` conservé).
+
+## Phase 1 — supprimer les allocations par appel (3-5 jours)
+
+1. **Lambda lifting des fermetures closes en position d'argument.** Le profil
+   montre des `Value::FuncN::Shared(Rc::new(...))` recréés à chaque appel
+   (lambdas de repli des combinateurs, décodeurs partiels). Étendre l'idée CAF
+   aux `Abs` **closes** : les hisser en valeurs/fonctions top-level avec leur
+   type inféré, sans toucher aux arbres contextuels (records/littéraux), qui
+   restent sur place (leçon du CAF : seules les spines d'appel et les closures
+   closes sont déplaçables).
+   Validation : compteurs d'allocations par cas + oracle.
+2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
+   type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
+   Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
+   ne construire `Rc<Either>` qu'à la frontière publique. Les erreurs continuent
+   de venir du `step` générique (identiques à l'oracle).
+3. **Objets sans verrou.** Mesurer un chemin de lecture sans `Mutex` pour les
+   objets immuables (parser/Json) tout en gardant la variante `Sync` pour le
+   mode threaded et `Object.ST` (évaluer `RwLock` lecture ou carrier dédié).
+4. **Nombres/entiers** : vérifier que le décodage primitif ne fait plus de
+   travail inutile (conversion, boxing) ; tests de non-régression d'oracle.
+
+## Phase 2 — représentation et ABI (1-2 semaines)
+
+Le gain structurel restant. Chaque point est un changement large : une PR par
+point, campagne complète, publication seulement après.
+
+1. **Sommes non boxées pour les ADT non récursifs** en position typée
+   (`Maybe`, `Either`, `JsonDecodeError`, énumérations utilisateur), avec
+   boxage uniquement aux frontières `UnknownType`. C'est le facteur ×2 à ×3
+   attendu sur decode. Touche `DataLayout`, `CodeGen`, les ports et leurs
+   conversions.
+2. **`Value::String` partagé** (`Rc<str>`) pour supprimer la copie par valeur
+   décodée ; mettre à jour codegen, runtime et ports (helpers `mk_string`/
+   `unwrap_string` d'abord, matches directs ensuite).
+3. **Clés et listes** : généraliser le partage `Rc<str>` aux objets construits
+   par le parser et aux enregistrements reconstruits ; mesurer la suppression du
+   `Vec` intermédiaire dans `nativeObject`.
+4. **Protocole d'acceptation** : à chaque point, M2 et oracle exact ; sinon
+   revert.
+
+## Phase 3 — workers natifs par schéma (2-4 semaines)
+
+L'équivalent purust des « schema workers » gopurs (`schemaDecoderABI1`), qui ont
+fait passer Go de 7,6 ms à 0,67 ms.
+
+1. **Reconnaissance compilateur du schéma.** Pour chaque composition concrète
+   `DecodeJson (Record row)` résolue à la compilation, émettre un worker natif :
+   table statique des champs, décodage primitif en ligne, récursion sur les
+   schémas imbriqués, appels aux seuls décodeurs custom nécessaires. Plus de
+   plan, plus de `step`, plus de dictionnaire au runtime ; l'ABI reste
+   `Either` à la frontière.
+2. **Texte → schéma.** Pour `decodeJsonString*` (phase combined), décoder
+   directement depuis le texte validé : un des deux backends de worker (DOM ou
+   texte), comme gopurs. Objectif : combined ≤ 1,8 ms.
+3. **Handshake de version** entre les ports et le compilateur pour garder la
+   compatibilité (ABI `schemaDecoderABI`), avec repli automatique sur le chemin
+   générique actuel.
+
+## Phase 4 — JSON to Typed AST (1 semaine, parallélisable)
+
+- Port du driver `src/Test/JsonTypedAst.rs` (même protocole que `JsonDecoding`),
+  compilation du PBO par purust, `parseModuleTextImpl` délégué au repli PS comme
+  en JS.
+- Validation oracle (`fingerprints`), campagne appairée, publication de la
+  cellule (Go 19 977,96 / C 10 823,13).
+- Bénéficie de toutes les phases précédentes (mêmes décodeurs de records).
+
+## Garde-fous
+
+- L'oracle (`fingerprints` + `json_fingerprints`, 17 modules) est la référence
+  absolue à chaque mesure ; toute divergence est un bug du chemin mesuré.
+- Ne pas casser l'état vert : les cellules publiées ne changent qu'après
+  campagne complète et tests verts.
+- Chaque changement de runtime passe par `t -c` b8x (le runtime est partagé).
+- Le codejet reste limité au besoin identifié (cf. `AGENTS.md`).
+
+## Première semaine, concrètement
+
+1. Phase 0 complète (remotes, outillage committé, b8x).
+2. Phase 1.1 (lambda lifting) : implémentation, compteurs, oracle, campagne.
+3. Phase 1.2 (ABI interne) : prototype sur le port argonaut-codecs, mesure.
