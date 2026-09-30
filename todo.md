@@ -106,6 +106,18 @@ harness complète, `t -c` b8x après tout changement de runtime.
    (représentation/ABI)** — sommes non boxées et chaînes partagées — en
    traitant les contrats d'allocation TAST comme un point à réviser
    explicitement.
+
+   **Attribution par backtraces (30/09, tentative).** Le gabarit
+   `bench/backtrace-main.rs` (capture bornée dans l'allocateur) deadlocke :
+   la symbolisation alloue et prend des verrous depuis `GlobalAlloc`. Piste
+   propre si besoin : allocateur système + Instruments/MallocStackLogging,
+   ou `#[global_allocator]` sans mimalloc. Preuve indirecte suffisante :
+   les allocations restantes naissent dans la **plomberie émise par le
+   codegen** (enveloppes `FuncN::Shared(Rc::new(...))` et boxages
+   `Value::Class(Rc::new(...))` par évaluation), invisibles aux passes AST.
+   Prochaine tentative ciblée : **cache par site de la matérialisation**
+   (box enveloppe / closure d'enveloppe) dans `CodeGen`, avec identité de
+   site et cellules thread-local, sans déplacer les lambdas.
 2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
    type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
    Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
