@@ -75,17 +75,21 @@ harness complète, `t -c` b8x après tout changement de runtime.
    Validation : compteurs d'allocations par cas + oracle.
 
    **État au 30/09 : implémenté sur la branche `edge-caf`, non fusionné.**
+   **État au 30/09 : implémenté sur `edge-caf`, REJETÉ après mesure.**
    `Purust.Caf` hoiste les appels top-level clos et les lambdas closes
    (identité des locaux `(nom, niveau)`, refus des cycles, littéraux
-   contextuels laissés en place). Tests codegen 80/80, empreintes oracle
-   exactes, mais les fixtures TAST échouent : elles encodent des **contrats
-   d'allocation exacts** (ex. `seeded` doit allouer 1 fois, mêmes pointeurs)
-   et l'initialisation paresseuse des nouvelles valeurs de module s'ajoute
-   dans la fenêtre mesurée (7 au lieu de 1). Ce n'est pas une rupture
-   sémantique mais un conflit avec les garanties du compilateur : avant
-   fusion, il faut soit restreindre le hoisting pour ne pas introduire de
-   valeur de module dans ces contrats, soit réviser explicitement les
-   contrats TAST. Reprendre sur `edge-caf` avec `bench/instrument.py`.
+   contextuels laissés en place). Tests codegen 80/80 et empreintes oracle
+   exactes, mais :
+   - les fixtures TAST échouent (contrats d'allocation exacts : `seeded` doit
+     allouer 1 fois et conserver les pointeurs ; l'initialisation paresseuse
+     des valeurs de module s'ajoute dans la fenêtre mesurée, 7 au lieu de 1) ;
+   - **mesure appairée : régression** — decode 5 968 µs et combined 8 687 µs
+     contre 4 475/6 818 sur `edge` (Go 2 202 et C 681 dans la même session,
+     donc machine comparable). Le hoisting casse visiblement les fusions du
+     codegen (`FunctionFusion`/`ListFusion`) et ajoute de l'indirection.
+   Conclusion : ne pas refaire le lambda lifting générique. La phase 1 doit
+   viser les allocations SANS déplacer de lambdas (ABI interne, conteneurs,
+   primitives).
 2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
    type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
    Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
