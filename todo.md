@@ -117,7 +117,19 @@ harness complète, `t -c` b8x après tout changement de runtime.
    `Value::Class(Rc::new(...))` par évaluation), invisibles aux passes AST.
    Prochaine tentative ciblée : **cache par site de la matérialisation**
    (box enveloppe / closure d'enveloppe) dans `CodeGen`, avec identité de
-   site et cellules thread-local, sans déplacer les lambdas.
+   site et cellules thread-local, sans déplacer les lambdas. Contrainte
+   découverte : `boxUnbox` ne reçoit que le texte Rust, pas l'AST ; la
+   fermeture doit être prouvée close, ce qui demande de faire descendre
+   l'AST jusqu'aux sites d'émission (refactor à faire en une passe).
+
+   **Chaînes partagées (branche `edge-rcstr`).** Cœur runtime
+   (`Value::String(Rc<str>)`, `mk_string`, `unwrap_str`) + migration
+   mécanique des ports (`bench/migrate-rcstr.py`). Mesuré sur le benchmark
+   JSON : decode 4 410 → **4 180 µs** (−5,2 %), combined 6 929 → **6 832**
+   (−1,4 %), oracle exact. Coût : ~15 dépôts de ports supplémentaires pour
+   la clôture b8x (node-*, js-*, yoga-json…). **Verdict : marginal, branche
+   non fusionnée** ; le gros levier reste le cache de matérialisation ou les
+   sommes non boxées.
 2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
    type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
    Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
