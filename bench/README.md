@@ -20,3 +20,8 @@ python3 bench/instrument.py --workspace ../altbak.pub/var/benchmark/json-decodin
   --purust bin/purust --corpus ../altbak.pub/test/fixtures/json-decoding/corpus.json \
   --single-cases /tmp/json-single
 ```
+
+- `backtrace-main.rs` + `aggregate-bt.py` — échantillonnage borné des
+  backtraces d'allocation : remplacer l'allocateur généré par le gabarit,
+  compiler avec `CARGO_PROFILE_RELEASE_DEBUG=true`, lancer avec
+  `DIAG_BT_START`/`DIAG_BT_COUNT`/`DIAG_BT_OUT`, puis agréger les sites.
