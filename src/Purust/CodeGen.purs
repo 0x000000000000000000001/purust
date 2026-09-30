@@ -874,7 +874,7 @@ codegenPreludeWithRenames renames shapes =
   "    Int(i64),\n" <>
   "    Number(f64),\n" <>
   "    Bool(bool),\n" <>
-  "    String(String),\n" <>
+  "    String(std::rc::Rc<str>),\n" <>
   "    Char(char),\n" <>
   "    Array(std::rc::Rc<Vec<UnknownType>>),\n" <>
   "    IntArray(std::rc::Rc<Vec<i64>>),\n" <>
@@ -911,7 +911,10 @@ codegenPreludeWithRenames renames shapes =
   "        if let Value::Bool(v) = self.resolve() { *v } else { panic!(\"Expected Bool\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_string(&self) -> String {\n" <>
-  "        if let Value::String(v) = self.resolve() { v.clone() } else { panic!(\"Expected String\"); }\n" <>
+  "        if let Value::String(v) = self.resolve() { v.to_string() } else { panic!(\"Expected String\"); }\n" <>
+  "    }\n" <>
+  "    pub fn unwrap_str(&self) -> &str {\n" <>
+  "        if let Value::String(v) = self.resolve() { v } else { panic!(\"Expected String\"); }\n" <>
   "    }\n" <>
   "    pub fn unwrap_char(&self) -> char {\n" <>
   "        if let Value::Char(v) = self.resolve() { *v } else { panic!(\"Expected Char\"); }\n" <>
@@ -999,7 +1002,7 @@ codegenPreludeWithRenames renames shapes =
   "pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" <>
   "    #[inline(always)]\n" <>
   "pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" <>
-  "pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" <>
+  "pub fn mk_string(val: &str) -> UnknownType { Value::String(std::rc::Rc::from(val)) }\n" <>
   "pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" <>
   "    #[inline(always)]\n" <>
   "pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" <>
@@ -1351,7 +1354,7 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
         else if expStr == "String" && (actStr == "crate::UnknownType" || actStr == "purust_core::Value") then "(" <> code <> ").unwrap_string()"
         -- An owned String gives a diverging expression a sized expected type.
         -- Borrowing it as &str first makes Rust infer an unsized `str` for !.
-        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "String" then "purust_core::Value::String(" <> code <> ")"
+        else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "String" then "purust_core::Value::String((" <> code <> ").into())"
         else code
 
 extractAllArgTypes :: ExprType -> Array ExprType
