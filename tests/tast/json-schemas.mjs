@@ -43,7 +43,7 @@ for (const extension of ['purs', 'rs', 'js'])
   writeFileSync(join(directory, `src/SchemaProbe.${extension}`), readFileSync(join(fixture, `SchemaProbe.${extension}`)));
 run('purs', 'spago', ['build']);
 let oracle;
-for (const [mode, flags] of [['ordinary', ['--no-json-schemas']], ['boxed', ['--no-json-layouts']], ['native', []], ['threaded', ['--threaded']]]) {
+for (const [mode, flags] of [['ordinary', ['--no-json-schemas']], ['boxed', ['--no-json-layouts', '--no-json-arrays']], ['records', ['--no-json-arrays']], ['native', []], ['threaded', ['--threaded']]]) {
   const rust = join(directory, mode);
   run(`generate-${mode}`, process.execPath, ['--stack-size=65536', compiler,
     '--source', join(directory, 'output'), '--out', rust, '--main', 'SchemaProbe', ...flags]);
@@ -54,6 +54,10 @@ for (const [mode, flags] of [['ordinary', ['--no-json-schemas']], ['boxed', ['--
     assert.match(generated, /_construct\(/, 'the actual custom method must be specialized');
     assert.match(generated, /SchemaText::parse/, 'combined must use the generated text path');
     if (mode !== 'boxed') assert.match(generated, /impl purust_core::NativeRecord/);
+    if (mode === 'native' || mode === 'threaded') {
+      assert.match(generated, /purust_core::NativeRecords\(out\)/);
+      assert.match(generated, /purust_core::NativeClasses\(out\)/);
+    }
   }
   const tests = join(rust, 'Purs_SchemaProbe/tests'); mkdirSync(tests);
   const checks = readFileSync(join(fixture, 'checks.rs'), 'utf8');

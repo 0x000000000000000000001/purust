@@ -227,7 +227,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
         let modNameStr = unwrap backendMod.name
         when tracePhases $ liftEffect $ log ("[purust] codegen " <> modNameStr)
-        let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod), fieldRenames: fieldRenameMap, jsonSchemas: not (Array.elem "--no-json-schemas" args), jsonLayouts: not (Array.elem "--no-json-layouts" args) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
+        let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod), fieldRenames: fieldRenameMap, jsonSchemas: not (Array.elem "--no-json-schemas" args), jsonLayouts: not (Array.elem "--no-json-layouts" args), jsonArrays: not (Array.elem "--no-json-arrays" args) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
         
         liftEffect do
           when tracePhases $ log ("[purust] generated " <> modNameStr)

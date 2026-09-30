@@ -16,6 +16,7 @@ import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, Ct
 import Purust.LocalNames (renameLocals)
 import Purust.ModuleValues as ModuleValues
 import Purust.RecordFields as RecordFields
+import Purust.NativeArrays as NativeArrays
 import Purust.ShareNullaries (shareNullaries, reuseNullaries)
 import Purust.ReturnCells (rewriteReturns, reuseNestedConstructor)
 import Purust.OwnedFields (OwnedFields, fieldSources, projectionChain, rewriteFields)
@@ -73,12 +74,14 @@ maxNativeFunctionArity = 12
 reprItemsSource :: String
 reprItemsSource = "pub trait Repr: Sized + Clone {\n" <>
   "    fn from_value(value: &Value) -> Self;\n" <>
+  "    fn from_owned(value: Value) -> Self { Self::from_value(&value) }\n" <>
   "    fn from_int(value: i64) -> Self;\n" <>
   "    fn into_value(self) -> Value;\n" <>
   "}\n" <>
   "impl Repr for Value {\n" <>
   "    #[inline(always)]\n" <>
   "    fn from_value(value: &Value) -> Value { value.clone() }\n" <>
+  "    fn from_owned(value: Value) -> Value { value }\n" <>
   "    #[inline(always)]\n" <>
   "    fn from_int(value: i64) -> Value { Value::Int(value) }\n" <>
   "    #[inline(always)]\n" <>
@@ -119,26 +122,31 @@ reprItemsSource = "pub trait Repr: Sized + Clone {\n" <>
   "pub enum IntItems {\n" <>
   "    Boxed(std::rc::Rc<Vec<UnknownType>>),\n" <>
   "    Ints(std::rc::Rc<Vec<i64>>),\n" <>
+  "    Native(std::rc::Rc<dyn NativeArray>),\n" <>
   "}\n" <>
   "impl IntItems {\n" <>
+  "    #[inline]\n" <>
   "    pub fn from(xs: &Value) -> IntItems {\n" <>
   "        match xs.resolve() {\n" <>
   "            Value::Array(v) => IntItems::Boxed(v.clone()),\n" <>
   "            Value::IntArray(v) => IntItems::Ints(v.clone()),\n" <>
+  "            Value::NativeArray(v) => IntItems::Native(v.clone()),\n" <>
   "            _ => panic!(\"Expected Array\"),\n" <>
   "        }\n" <>
   "    }\n" <>
+  "    #[inline]\n" <>
   "    pub fn len(&self) -> usize {\n" <>
-  "        match self { IntItems::Boxed(v) => v.len(), IntItems::Ints(v) => v.len() }\n" <>
+  "        match self { IntItems::Boxed(v) => v.len(), IntItems::Ints(v) => v.len(), IntItems::Native(v) => v.len() }\n" <>
   "    }\n" <>
+  "    #[inline]\n" <>
   "    pub fn raw(&self, index: usize) -> UnknownType {\n" <>
-  "        match self { IntItems::Boxed(v) => v[index].clone(), IntItems::Ints(v) => Value::Int(v[index]) }\n" <>
+  "        match self { IntItems::Boxed(v) => v[index].clone(), IntItems::Ints(v) => Value::Int(v[index]), IntItems::Native(v) => native_array_item(v, index) }\n" <>
   "    }\n" <>
   "    pub fn item<A: Repr>(&self, index: usize) -> A {\n" <>
-  "        match self { IntItems::Boxed(v) => A::from_value(&v[index]), IntItems::Ints(v) => A::from_int(v[index]) }\n" <>
+  "        match self { IntItems::Boxed(v) => A::from_value(&v[index]), IntItems::Ints(v) => A::from_int(v[index]), IntItems::Native(v) => A::from_owned(native_array_item(v, index)) }\n" <>
   "    }\n" <>
   "    pub fn int_at(&self, index: usize) -> i64 {\n" <>
-  "        match self { IntItems::Boxed(v) => v[index].unwrap_int(), IntItems::Ints(v) => v[index] }\n" <>
+  "        match self { IntItems::Boxed(v) => v[index].unwrap_int(), IntItems::Ints(v) => v[index], IntItems::Native(v) => native_array_item(v, index).unwrap_int() }\n" <>
   "    }\n" <>
   "}\n\n"
 
@@ -462,20 +470,20 @@ codegenModule :: Map.Map String ExprType -> Map.Map String (Array (Tuple String 
 codegenModule = codegenModuleWithValueEnums Set.empty
 
 codegenModuleWithValueEnums :: ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
-codegenModuleWithValueEnums = codegenModuleWithOptions { threaded: false, moduleValues: Set.empty, fieldRenames: Map.empty, jsonSchemas: true, jsonLayouts: true }
+codegenModuleWithValueEnums = codegenModuleWithOptions { threaded: false, moduleValues: Set.empty, fieldRenames: Map.empty, jsonSchemas: true, jsonLayouts: true, jsonArrays: true }
 
 -- Source usage facts stop at the CoreFn boundary. Rust clone/move decisions
 -- use liveness from the transformed backend tree and runtime Rc uniqueness.
 -- Callers with original TAST declarations opt into bounded module sharing.
 -- The ownership mode is explicit, independent of the Rc/Arc text transform.
-codegenModuleWithOptions :: { threaded :: Boolean, moduleValues :: Set Ident, fieldRenames :: Map.Map String String, jsonSchemas :: Boolean, jsonLayouts :: Boolean } -> ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
+codegenModuleWithOptions :: { threaded :: Boolean, moduleValues :: Set Ident, fieldRenames :: Map.Map String String, jsonSchemas :: Boolean, jsonLayouts :: Boolean, jsonArrays :: Boolean } -> ValueEnums -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Module Ann -> BackendModule -> String
 codegenModuleWithOptions options valueEnums inputArities globalClassFields (Module coreFnMod) inputMod =
   let
-    schemas = if options.jsonSchemas then specializeDecoderSchemas options.jsonLayouts sanitizeIdent inputArities (Module coreFnMod) inputMod
+    schemas = if options.jsonSchemas then specializeDecoderSchemas options.jsonLayouts options.jsonArrays (codegenExprTypeWithValueEnums valueEnums modNameStr false) sanitizeIdent inputArities (Module coreFnMod) inputMod
       else { module: inputMod, arities: inputArities, code: "" }
     backendMod = schemas.module
     globalAritiesMap = schemas.arities
-    modNameStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap backendMod.name)
+    modNameStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap inputMod.name)
     renames = options.fieldRenames
     
     -- Traduction des Enums (ADTs)
@@ -722,6 +730,7 @@ codegenPreludeWithRenames renames shapes =
          genericFieldArm f ("            Value::Record_a(r) => r.get_field(" <> show f <> ").cloned().unwrap(),\n") <>
           "            Value::DynamicRecord(r) => r.get(" <> show f <> ").cloned().expect(\"Missing record field\"),\n" <>
           "            Value::NativeRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\").into_owned(),\n" <>
+          "            Value::NativeElement(r, index) => r.record(*index).expect(\"Expected record\").get(" <> show f <> ").expect(\"Missing record field\").into_owned(),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
          "    }\n"
@@ -738,6 +747,7 @@ codegenPreludeWithRenames renames shapes =
       "            Value::Record_a(r) => r.get_field(name).cloned(),\n" <>
        "            Value::DynamicRecord(r) => r.get(name).cloned(),\n" <>
        "            Value::NativeRecord(r) => r.get(name).map(|value| value.into_owned()),\n" <>
+       "            Value::NativeElement(r, index) => r.record(*index).and_then(|record| record.get(name).map(|value| value.into_owned())),\n" <>
       "            _ => panic!(\"Expected record\"),\n" <>
       "        }\n    }\n"
 
@@ -764,6 +774,7 @@ codegenPreludeWithRenames renames shapes =
       "            Value::Record_a(r) => " <> setSparseFields genericFields <> ",\n" <>
        "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(name.to_owned(), value); return self; },\n" <>
        "            Value::NativeRecord(r) => { let mut fields = r.fields(); fields.insert(name.to_owned(), value); return Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields)); },\n" <>
+       "            Value::NativeElement(r, index) => { let mut fields = r.record(*index).expect(\"Expected record\").fields(); fields.insert(name.to_owned(), value); return Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields)); },\n" <>
       "            _ => panic!(\"Expected record\"),\n        }\n" <>
       "        let mut fields = RecordFields::new();\n" <>
       "        match &self {\n" <>
@@ -782,6 +793,7 @@ codegenPreludeWithRenames renames shapes =
       "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n" <>
        "            Value::DynamicRecord(r) => return Some((**r).clone()),\n" <>
        "            Value::NativeRecord(r) => return Some(r.fields()),\n" <>
+       "            Value::NativeElement(r, index) => return r.record(*index).map(|record| record.fields()),\n" <>
       "            _ => return None,\n        }\n        Some(fields)\n    }\n"
 
     -- Keep the ordinary owned getters for escaping values. Scalar consumers
@@ -800,6 +812,7 @@ codegenPreludeWithRenames renames shapes =
           genericFieldArm f ("            Value::Record_a(r) => r.get_field(" <> show f <> ").unwrap(),\n") <>
           "            Value::DynamicRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
           "            Value::NativeRecord(r) => return r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
+          "            Value::NativeElement(r, index) => return r.record(*index).expect(\"Expected record\").get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
           "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
           "        })\n" <>
          "    }\n"
@@ -824,7 +837,7 @@ codegenPreludeWithRenames renames shapes =
          "                perceus_ptr::PerceusPtr::make_mut(r).set_field(" <> show f <> ", val);\n" <>
          "            },\n") <>
           "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" <> show f <> ".to_owned(), val); },\n" <>
-          "            Value::NativeRecord(_) => { *self = self.clone().__purust_set_field(" <> show f <> ", val); },\n" <>
+          "            Value::NativeRecord(_) | Value::NativeElement(_, _) => { *self = self.clone().__purust_set_field(" <> show f <> ", val); },\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
          "    }\n"
@@ -895,6 +908,8 @@ codegenPreludeWithRenames renames shapes =
   "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
   "    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" <>
   "    NativeRecord(std::rc::Rc<dyn NativeRecord>),\n" <>
+  "    NativeArray(std::rc::Rc<dyn NativeArray>),\n" <>
+  "    NativeElement(std::rc::Rc<dyn NativeArray>, usize),\n" <>
   recordVariants <>
   "}\n\n" <>
   "impl Value {\n" <>
@@ -935,12 +950,13 @@ codegenPreludeWithRenames renames shapes =
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => v.clone(),\n" <>
   "            Value::IntArray(v) => std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect()),\n" <>
+  "            Value::NativeArray(v) => std::rc::Rc::new((0..v.len()).map(|index| native_array_item(v, index)).collect()),\n" <>
   "            _ => panic!(\"Expected Array\"),\n" <>
   "        }\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn is_array(&self) -> bool {\n" <>
-  "        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_))\n" <>
+  "        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_) | Value::NativeArray(_))\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" <>
@@ -959,6 +975,7 @@ codegenPreludeWithRenames renames shapes =
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => Some(v.clone()),\n" <>
   "            Value::IntArray(v) => Some(std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect())),\n" <>
+  "            Value::NativeArray(_) => Some(self.unwrap_array()),\n" <>
   "            _ => None,\n" <>
   "        }\n" <>
   "    }\n" <>
@@ -966,13 +983,14 @@ codegenPreludeWithRenames renames shapes =
   -- buffer reference, which would touch the refcount on every access.
   "    #[inline(always)]\n" <>
   "    pub fn array_len(&self) -> usize {\n" <>
-  "        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), _ => panic!(\"Expected Array\") }\n" <>
+  "        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), Value::NativeArray(v) => v.len(), _ => panic!(\"Expected Array\") }\n" <>
   "    }\n" <>
   "    #[inline(always)]\n" <>
   "    pub fn array_get(&self, index: usize) -> UnknownType {\n" <>
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => v[index].clone(),\n" <>
   "            Value::IntArray(v) => Value::Int(v[index]),\n" <>
+  "            Value::NativeArray(v) => native_array_item(v, index),\n" <>
   "            _ => panic!(\"Expected Array\"),\n" <>
   "        }\n" <>
   "    }\n" <>
@@ -983,12 +1001,13 @@ codegenPreludeWithRenames renames shapes =
   "        match self.resolve() {\n" <>
   "            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!(\"Expected Int element\"); },\n" <>
   "            Value::IntArray(v) => v[index],\n" <>
+  "            Value::NativeArray(v) => native_array_item(v, index).unwrap_int(),\n" <>
   "            _ => panic!(\"Expected Array\"),\n" <>
   "        }\n" <>
   "    }\n" <>
   funcUnwraps <>
   "    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" <>
-  "        if let Value::Class(v) = self.resolve() { v.downcast_ref::<T>().unwrap() } else { panic!(\"Expected Class\"); }\n" <>
+  "        match self.resolve() { Value::Class(v) => v.downcast_ref::<T>().unwrap(), Value::NativeElement(v, index) => v.class(*index).downcast_ref::<T>().unwrap(), _ => panic!(\"Expected Class\") }\n" <>
   "    }\n" <>
   "    pub fn drop_explicit(self) {\n" <>
   "    }\n" <>
@@ -1003,7 +1022,7 @@ codegenPreludeWithRenames renames shapes =
   setMethods <>
   "}\n\n" <>
   "pub type UnknownType = Value;\n\n" <>
-  runtimeHelpers <> ModuleValues.runtime <> RecordFields.runtime <>
+  runtimeHelpers <> ModuleValues.runtime <> RecordFields.runtime <> NativeArrays.runtime <>
   "pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" <>
   "    #[inline(always)]\n" <>
   "pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" <>
@@ -1471,7 +1490,7 @@ shapeFunctionType modNameStr aritiesMap globalClassFields bound = go
       in Func paramTys (go bodyExpectedTy body)
     _ -> currentTy
 
-codegenBindingGroup :: { threaded :: Boolean, moduleValues :: Set Ident, fieldRenames :: Map.Map String String, jsonSchemas :: Boolean, jsonLayouts :: Boolean } -> ValueEnums -> ModuleName -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
+codegenBindingGroup :: { threaded :: Boolean, moduleValues :: Set Ident, fieldRenames :: Map.Map String String, jsonSchemas :: Boolean, jsonLayouts :: Boolean, jsonArrays :: Boolean } -> ValueEnums -> ModuleName -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
 codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseContext aritiesMap globalClassFields group = unsafePerformEffect do
   let renames = options.fieldRenames
   Ref.write Set.empty globalConsumed

@@ -3,8 +3,8 @@
 
 Patches the workspace copy of the driver and of the generated binary so each
 timed pass reports its allocation count and bytes, then runs the corpus (or
-one single-case corpus per module) and prints the results. The workspace is
-rebuilt from scratch afterwards by the harness, so patching is safe.
+one single-case corpus per module). Use a dedicated profiling workspace: this
+script leaves it instrumented. build-json.py can restore canonical sources.
 
 usage:
   python3 bench/instrument.py --workspace var/json-decoding-rs \
@@ -12,8 +12,10 @@ usage:
 """
 import argparse
 import json
+import os
 import re
 import subprocess
+import statistics
 import sys
 from pathlib import Path
 
@@ -94,18 +96,23 @@ def build(workspace, purust):
     subprocess.run([str(purust), '--main', 'Test.JsonDecoding', '--source', 'output',
                     '--out', 'rust-project'], cwd=workspace / 'rust', check=True)
     patch_main(workspace / MAIN)
-    subprocess.run(['cargo', 'build', '--release'], cwd=workspace / 'rust/rust-project', check=True)
+    env = dict(os.environ, CARGO_PROFILE_RELEASE_OPT_LEVEL='3', CARGO_PROFILE_RELEASE_DEBUG='false')
+    subprocess.run(['cargo', 'build', '--release'], cwd=workspace / 'rust/rust-project', env=env, check=True)
 
 
-def run_case(workspace, corpus, label):
-    env = {'DIAG_CORPUS': str(corpus), 'DIAG_PHASES': 'decode'}
+def run_case(workspace, corpus, label, phases):
+    env = dict(os.environ, DIAG_CORPUS=str(corpus), DIAG_PHASES=phases)
     result = subprocess.run([str(workspace / BINARY)], env=env, capture_output=True, text=True)
     if result.returncode != 0:
         raise SystemExit(f'{label}: {result.stderr[-800:]}')
-    match = re.search(r'DIAG phase=decode pass=0 allocs=(\d+) bytes=(\d+) us=([\d.]+)', result.stderr)
-    if not match:
+    counters = [{'phase': phase, 'pass': int(sample), 'allocs': int(allocs), 'bytes': int(size)}
+                for phase, sample, allocs, size in re.findall(r'DIAG phase=(\w+) pass=(\d+) allocs=(\d+) bytes=(\d+)', result.stderr)]
+    if len(counters) != 7 * len(phases.split(',')):
         raise SystemExit(f'{label}: no counters')
-    print(f'{label}: allocs={match.group(1)} bytes={match.group(2)} us={match.group(3)}')
+    summary = {phase: {key: statistics.median(c[key] for c in counters if c['phase'] == phase and c['pass'] >= 2)
+                       for key in ['allocs', 'bytes']} for phase in phases.split(',')}
+    print(label, json.dumps(summary))
+    return {'summary': summary, 'counters': counters, 'report': json.loads(result.stdout.splitlines()[-1])}
 
 
 def main():
@@ -114,6 +121,8 @@ def main():
     parser.add_argument('--purust', required=True)
     parser.add_argument('--corpus', required=True)
     parser.add_argument('--single-cases', default=None)
+    parser.add_argument('--phases', default='parse,decode,combined')
+    parser.add_argument('--output')
     args = parser.parse_args()
 
     workspace = Path(args.workspace).resolve()
@@ -121,6 +130,7 @@ def main():
     build(workspace, Path(args.purust).resolve())
 
     corpus = json.loads(Path(args.corpus).read_text())
+    reports = {}
     if args.single_cases:
         out = Path(args.single_cases)
         out.mkdir(parents=True, exist_ok=True)
@@ -129,9 +139,11 @@ def main():
                 continue
             single = out / f"{case['name']}.json"
             single.write_text(json.dumps([dict(case, benchmark=True)]))
-            run_case(workspace, single, case['name'])
+            reports[case['name']] = run_case(workspace, single, case['name'], args.phases)
     else:
-        run_case(workspace, args.corpus, 'corpus')
+        reports['corpus'] = run_case(workspace, args.corpus, 'corpus', args.phases)
+    if args.output:
+        Path(args.output).write_text(json.dumps(reports, indent=2) + '\n')
 
 
 if __name__ == '__main__':

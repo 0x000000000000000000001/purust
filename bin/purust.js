@@ -34451,9 +34451,9 @@ var $runtime_lazy19 = function(name2, moduleName2, init4) {
   };
 };
 var identity17 = /* @__PURE__ */ identity(categoryFn);
+var ordQualified6 = /* @__PURE__ */ ordQualified(ordIdent);
 var identity18 = /* @__PURE__ */ identity(categoryFn);
 var eqQualified7 = /* @__PURE__ */ eqQualified(eqIdent);
-var ordQualified6 = /* @__PURE__ */ ordQualified(ordIdent);
 var bindStateT3 = /* @__PURE__ */ bindStateT(monadIdentity);
 var get3 = /* @__PURE__ */ get(/* @__PURE__ */ monadStateStateT(monadIdentity));
 var applyStateT2 = /* @__PURE__ */ applyStateT(monadIdentity);
@@ -34563,12 +34563,15 @@ var ObjectSchema = /* @__PURE__ */ (function() {
   return ObjectSchema2;
 })();
 var Derived = /* @__PURE__ */ (function() {
-  function Derived2(value0) {
+  function Derived2(value0, value1) {
     this.value0 = value0;
+    this.value1 = value1;
   }
   ;
   Derived2.create = function(value0) {
-    return new Derived2(value0);
+    return function(value1) {
+      return new Derived2(value0, value1);
+    };
   };
   return Derived2;
 })();
@@ -34677,7 +34680,7 @@ var Constructor = /* @__PURE__ */ (function() {
 var $lazy_weight = /* @__PURE__ */ $runtime_lazy19("weight", "Purust.DecoderSchemas", function() {
   var programWeight = function(v) {
     if (v instanceof ReadField) {
-      return (1 + $lazy_weight(328)(v.value4) | 0) + programWeight(v.value5) | 0;
+      return (1 + $lazy_weight(357)(v.value4) | 0) + programWeight(v.value5) | 0;
     }
     ;
     if (v instanceof Choice) {
@@ -34692,33 +34695,33 @@ var $lazy_weight = /* @__PURE__ */ $runtime_lazy19("weight", "Purust.DecoderSche
     }
     ;
     if (v instanceof Sequence) {
-      return 1 + $lazy_weight(322)(v.value0) | 0;
+      return 1 + $lazy_weight(351)(v.value0) | 0;
     }
     ;
     if (v instanceof Optional) {
-      return 1 + $lazy_weight(323)(v.value0) | 0;
+      return 1 + $lazy_weight(352)(v.value0) | 0;
     }
     ;
     if (v instanceof ObjectSchema) {
       return 1 + foldl(foldableArray)(function(n) {
         return function(v1) {
-          return n + $lazy_weight(324)(v1.value1) | 0;
+          return n + $lazy_weight(353)(v1.value1) | 0;
         };
       })(0)(v.value0) | 0;
     }
     ;
     if (v instanceof Derived) {
-      return programWeight(v.value0);
+      return programWeight(v.value1);
     }
     ;
-    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 320, column 10 - line 325, column 43): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 349, column 10 - line 354, column 45): " + [v.constructor.name]);
   };
 });
-var weight = /* @__PURE__ */ $lazy_weight(319);
+var weight = /* @__PURE__ */ $lazy_weight(348);
 var $lazy_textComplete = /* @__PURE__ */ $runtime_lazy19("textComplete", "Purust.DecoderSchemas", function() {
   var complete = function(v) {
     if (v instanceof ReadField) {
-      return $lazy_textComplete(342)(v.value4) && complete(v.value5);
+      return $lazy_textComplete(371)(v.value4) && complete(v.value5);
     }
     ;
     if (v instanceof Choice) {
@@ -34733,27 +34736,27 @@ var $lazy_textComplete = /* @__PURE__ */ $runtime_lazy19("textComplete", "Purust
     }
     ;
     if (v instanceof Sequence) {
-      return $lazy_textComplete(335)(v.value0);
+      return $lazy_textComplete(364)(v.value0);
     }
     ;
     if (v instanceof Optional) {
-      return $lazy_textComplete(336)(v.value0);
+      return $lazy_textComplete(365)(v.value0);
     }
     ;
     if (v instanceof ObjectSchema) {
       return all(foldableArray)(heytingAlgebraBoolean)(function(v1) {
-        return $lazy_textComplete(337)(v1.value1);
+        return $lazy_textComplete(366)(v1.value1);
       })(v.value0);
     }
     ;
     if (v instanceof Derived) {
-      return complete(v.value0);
+      return complete(v.value1);
     }
     ;
     return true;
   };
 });
-var textComplete = /* @__PURE__ */ $lazy_textComplete(332);
+var textComplete = /* @__PURE__ */ $lazy_textComplete(361);
 var strip = function($copy_v) {
   var $tco_done = false;
   var $tco_result;
@@ -34884,7 +34887,7 @@ var resolve = function(ctx) {
             return new Just(new Tuple(expr, []));
           }
           ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 58, column 65 - line 60, column 40): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 63, column 65 - line 65, column 40): " + [v1.constructor.name]);
         }
         ;
         if (v instanceof App2) {
@@ -34896,7 +34899,7 @@ var resolve = function(ctx) {
         return new Just(new Tuple(expr, []));
       }
       ;
-      throw new Error("Failed pattern match at Purust.DecoderSchemas (line 54, column 1 - line 54, column 90): " + [ctx.constructor.name, fuel.constructor.name, expr.constructor.name]);
+      throw new Error("Failed pattern match at Purust.DecoderSchemas (line 59, column 1 - line 59, column 90): " + [ctx.constructor.name, fuel.constructor.name, expr.constructor.name]);
     };
   };
 };
@@ -34928,6 +34931,60 @@ var slots = function(names) {
       return "mut input" + show(showInt)(i);
     };
   })(names)) + ("] = raw.fields([" + (joinWith(",")(map(functorArray)(quote2)(names)) + "])?;\n")));
+};
+var programResult = function(ctx) {
+  var result = function(value) {
+    var v = strip(value);
+    if (v instanceof CtorSaturated) {
+      return lookup2(ordQualified6)(v.value0)(ctx.constructorResults);
+    }
+    ;
+    if (v instanceof App2) {
+      var v1 = strip(v.value0);
+      if (v1 instanceof Var) {
+        return lookup2(ordQualified6)(v1.value0)(ctx.constructorResults);
+      }
+      ;
+      return Nothing.value;
+    }
+    ;
+    return Nothing.value;
+  };
+  return function(v) {
+    if (v instanceof ReadField) {
+      return programResult(ctx)(v.value5);
+    }
+    ;
+    if (v instanceof Choice) {
+      return bind(bindMaybe)(programResult(ctx)(v.value2))(function(a) {
+        return bind(bindMaybe)(programResult(ctx)(v.value3))(function(b) {
+          if (a instanceof Nothing) {
+            return pure(applicativeMaybe)(b);
+          }
+          ;
+          if (b instanceof Nothing) {
+            return pure(applicativeMaybe)(a);
+          }
+          ;
+          if (a instanceof Just && (b instanceof Just && eq(eqExprType)(a.value0)(b.value0))) {
+            return pure(applicativeMaybe)(a);
+          }
+          ;
+          return Nothing.value;
+        });
+      });
+    }
+    ;
+    if (v instanceof Reject) {
+      return new Just(Nothing.value);
+    }
+    ;
+    if (v instanceof ReturnValue) {
+      return map(functorMaybe)(Just.create)(result(v.value0));
+    }
+    ;
+    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 328, column 21 - line 339, column 45): " + [v.constructor.name]);
+  };
 };
 var passive = function(expr) {
   var v = strip(expr);
@@ -34976,9 +35033,9 @@ var parameters = /* @__PURE__ */ (function() {
       };
     })(empty2)(v);
   };
-  var $645 = toUnfoldable3(unfoldableArray);
-  return function($646) {
-    return $645(collect2($646));
+  var $704 = toUnfoldable3(unfoldableArray);
+  return function($705) {
+    return $704(collect2($705));
   };
 })();
 var one2 = function(v) {
@@ -35003,9 +35060,9 @@ var keys4 = /* @__PURE__ */ (function() {
     ;
     return [];
   };
-  var $647 = nub(ordString);
-  return function($648) {
-    return $647(go($648));
+  var $706 = nub(ordString);
+  return function($707) {
+    return $706(go($707));
   };
 })();
 var global2 = function(owner) {
@@ -35040,7 +35097,7 @@ var primitiveMethod = function(tag) {
       return false;
     }
     ;
-    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 190, column 1 - line 190, column 52): " + [tag.constructor.name, expr.constructor.name]);
+    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 195, column 1 - line 195, column 52): " + [tag.constructor.name, expr.constructor.name]);
   };
 };
 var reader = function(fn) {
@@ -35060,7 +35117,7 @@ var reader = function(fn) {
     return Nothing.value;
   }
   ;
-  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 215, column 1 - line 215, column 55): " + [fn.constructor.name]);
+  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 220, column 1 - line 220, column 55): " + [fn.constructor.name]);
 };
 var standard = /* @__PURE__ */ global2("Data.Argonaut.Decode.Class");
 var objectMethod = function(ctx) {
@@ -35110,6 +35167,18 @@ var fieldScalar = function(v) {
   ;
   return Nothing.value;
 };
+var isScalar = function(schema) {
+  var v = fieldScalar(schema);
+  if (v instanceof Just) {
+    return true;
+  }
+  ;
+  if (v instanceof Nothing) {
+    return false;
+  }
+  ;
+  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 466, column 19 - line 468, column 19): " + [v.constructor.name]);
+};
 var recordLayout = function(name2) {
   return function(fields) {
     return "struct " + (name2 + ("_Record {\n" + (foldMap(foldableArray)(monoidString)(identity18)(mapWithIndex2(function(i) {
@@ -35124,7 +35193,7 @@ var recordLayout = function(name2) {
             return "purust_core::Value";
           }
           ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 437, column 9 - line 439, column 38): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 490, column 9 - line 492, column 38): " + [v1.constructor.name]);
         })() + ",\n")));
       };
     })(fields)) + ("}\nimpl purust_core::NativeRecord for " + (name2 + ("_Record {\n" + ("fn keys(&self) -> &'static [&'static str] { &[" + (joinWith(",")(map(functorArray)(function(v) {
@@ -35135,8 +35204,8 @@ var recordLayout = function(name2) {
           var v1 = fieldScalar(v.value1);
           if (v1 instanceof Just) {
             return "std::borrow::Cow::Owned(purust_core::Value::" + (v1.value0.value1 + ("(self.field" + (show(showInt)(i) + ((function() {
-              var $288 = v1.value0.value1 === "String";
-              if ($288) {
+              var $325 = v1.value0.value1 === "String";
+              if ($325) {
                 return ".clone()";
               }
               ;
@@ -35148,7 +35217,7 @@ var recordLayout = function(name2) {
             return "std::borrow::Cow::Borrowed(&self.field" + (show(showInt)(i) + ")");
           }
           ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 444, column 9 - line 447, column 75): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 497, column 9 - line 500, column 75): " + [v1.constructor.name]);
         })() + "),\n"));
       };
     })(fields)) + "_ => None } }\n}\n")))))))))));
@@ -35165,7 +35234,7 @@ var unboxField = function(schema) {
       return value;
     }
     ;
-    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 429, column 27 - line 431, column 19): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 482, column 27 - line 484, column 19): " + [v.constructor.name]);
   };
 };
 var moveArgument = function(ty) {
@@ -35194,8 +35263,8 @@ var programCode = function(names) {
     return function(v) {
       if (v instanceof ReadField) {
         return "let " + (local2(v.value0) + (" = match input" + (show(showInt)(fromMaybe(0)(elemIndex(eqString)(v.value1)(names))) + ((function() {
-          var $300 = elem2(eqString)(v.value1)(keys4(v.value5));
-          if ($300) {
+          var $337 = elem2(eqString)(v.value1)(keys4(v.value5));
+          if ($337) {
             return ".clone()";
           }
           ;
@@ -35241,7 +35310,7 @@ var programCode = function(names) {
         return "None";
       }
       ;
-      throw new Error("Failed pattern match at Purust.DecoderSchemas (line 469, column 26 - line 480, column 19): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Purust.DecoderSchemas (line 522, column 26 - line 533, column 19): " + [v.constructor.name]);
     };
   };
 };
@@ -35308,125 +35377,184 @@ var children = function(name2) {
     }
     ;
     if (v instanceof Derived) {
-      return reads(name2)(v.value0);
+      return reads(name2)(v.value1);
     }
     ;
     return [];
   };
 };
-var constructors = function(name2) {
-  var sources = function(path3) {
-    return function(v) {
-      if (v instanceof ReadField) {
-        return append(semigroupArray)(constructors(path3 + "_read")(v.value4))(sources(path3 + "_next")(v.value5));
-      }
-      ;
-      if (v instanceof Choice) {
-        return append(semigroupArray)(sources(path3 + "_yes")(v.value2))(sources(path3 + "_no")(v.value3));
-      }
-      ;
-      if (v instanceof ReturnValue) {
-        var params = parameters(v.value0);
-        var refs = map(functorArray)(function(v1) {
-          return new Tuple(Nothing.value, v1.value0);
-        })(params);
-        var expr = new Typed(Any.value, v.value0);
-        var body = (function() {
-          var v1 = fromArray2(refs);
-          if (v1 instanceof Nothing) {
-            return expr;
+var constructors = function(arrays) {
+  return function(name2) {
+    var sources = function(result) {
+      return function(path3) {
+        return function(v) {
+          if (v instanceof ReadField) {
+            return append(semigroupArray)(constructors(arrays)(path3 + "_read")(v.value4))(sources(result)(path3 + "_next")(v.value5));
           }
           ;
-          if (v1 instanceof Just) {
-            return new Typed(new Func(map(functorArray)(function(v2) {
-              return v2.value1;
-            })(params), Any.value), new Abs(v1.value0, expr));
+          if (v instanceof Choice) {
+            return append(semigroupArray)(sources(result)(path3 + "_yes")(v.value2))(sources(result)(path3 + "_no")(v.value3));
           }
           ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 507, column 18 - line 509, column 135): " + [v1.constructor.name]);
-        })();
-        return [new Tuple(path3 + "_construct", body)];
-      }
-      ;
-      return [];
+          if (v instanceof ReturnValue) {
+            var params = parameters(v.value0);
+            var refs = map(functorArray)(function(v1) {
+              return new Tuple(Nothing.value, v1.value0);
+            })(params);
+            var expr = new Typed(result, v.value0);
+            var body = (function() {
+              var v1 = fromArray2(refs);
+              if (v1 instanceof Nothing) {
+                return expr;
+              }
+              ;
+              if (v1 instanceof Just) {
+                return new Typed(new Func(map(functorArray)(function(v2) {
+                  return v2.value1;
+                })(params), result), new Abs(v1.value0, expr));
+              }
+              ;
+              throw new Error("Failed pattern match at Purust.DecoderSchemas (line 560, column 18 - line 562, column 135): " + [v1.constructor.name]);
+            })();
+            return [new Tuple(path3 + "_construct", body)];
+          }
+          ;
+          return [];
+        };
+      };
     };
-  };
-  return function(v) {
-    if (v instanceof Derived) {
-      return sources(name2)(v.value0);
-    }
-    ;
-    return concatMap(function(v1) {
-      return constructors(v1.value0)(v1.value1);
-    })(children(name2)(v));
+    return function(v) {
+      if (v instanceof Derived) {
+        return sources((function() {
+          if (arrays) {
+            return fromMaybe(Any.value)(v.value0);
+          }
+          ;
+          return Any.value;
+        })())(name2)(v.value1);
+      }
+      ;
+      return concatMap(function(v1) {
+        return constructors(arrays)(v1.value0)(v1.value1);
+      })(children(name2)(v));
+    };
   };
 };
 var emit = function(layouts) {
-  return function(name2) {
-    return function(schema) {
-      var success = function(value) {
-        return "Some(" + (value + ")");
-      };
-      var body = function(v) {
-        if (v instanceof Scalar) {
-          return "raw.scalar(" + (quote2(v.value0) + ")");
-        }
-        ;
-        if (v instanceof Optional) {
-          return "if raw.is_null() { " + (success(runtime + "purust_maybe_nothing()") + (" } else { Some(" + (runtime + ("purust_maybe_just(" + (name2 + "_item(raw)?)) }")))));
-        }
-        ;
-        if (v instanceof Sequence) {
-          return "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" + (name2 + "_item(item)?); }\nSome(purust_core::Value::Array(std::rc::Rc::new(out)))");
-        }
-        ;
-        if (v instanceof ObjectSchema) {
-          return slots(map(functorArray)(function(v1) {
-            return v1.value0;
-          })(v.value0)) + (joinWith("\n")(mapWithIndex2(function(i) {
-            return function(v1) {
-              return "let value" + (show(showInt)(i) + (" = match input" + (show(showInt)(i) + (" { Some(raw) => " + (name2 + ("_field" + (show(showInt)(i) + ("(raw)?, None => " + ((function() {
-                if (v1.value1 instanceof Optional) {
-                  return runtime + "purust_maybe_nothing()";
-                }
-                ;
-                return "return None";
-              })() + " };")))))))));
+  return function(arrays) {
+    return function(representation) {
+      return function(name2) {
+        return function(schema) {
+          var success = function(value) {
+            return "Some(" + (value + ")");
+          };
+          var $$function = function(label2) {
+            return function(ty) {
+              return function(code) {
+                return "fn " + (label2 + ("<I: " + (runtime + ("SchemaInput>(raw: I) -> Option<" + (ty + ("> {\n" + (code + "\n}\n")))))));
+              };
             };
-          })(v.value0)) + (function() {
-            if (layouts) {
-              return "\nSome(purust_core::Value::NativeRecord(std::rc::Rc::new(" + (name2 + ("_Record {" + (joinWith(",")(mapWithIndex2(function(i) {
-                return function(v1) {
-                  return "field" + (show(showInt)(i) + (": " + unboxField(v1.value1)("value" + show(showInt)(i))));
-                };
-              })(v.value0)) + "})))")));
+          };
+          var body = function(v) {
+            if (v instanceof Scalar) {
+              return "raw.scalar(" + (quote2(v.value0) + ")");
             }
             ;
-            return "\nstd::thread_local! { static KEYS: [std::rc::Rc<str>; " + (show(showInt)(length(v.value0)) + ("] = [" + (joinWith(",")(map(functorArray)(function(v1) {
-              return "std::rc::Rc::from(" + (quote2(v1.value0) + ")");
-            })(v.value0)) + ("]; }\n" + ("KEYS.with(|keys| { let mut fields = purust_core::RecordFields::with_capacity(" + (show(showInt)(length(v.value0)) + (");\n" + (joinWith("\n")(mapWithIndex2(function(i) {
-              return function(v1) {
-                return "fields.push(keys[" + (show(showInt)(i) + ("].clone(), value" + (show(showInt)(i) + ");")));
-              };
-            })(v.value0)) + "\nSome(purust_core::Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))) })"))))))));
-          })());
-        }
-        ;
-        if (v instanceof Derived) {
-          return slots(keys4(v.value0)) + programCode(keys4(v.value0))(name2)(v.value0);
-        }
-        ;
-        throw new Error("Failed pattern match at Purust.DecoderSchemas (line 395, column 10 - line 415, column 87): " + [v.constructor.name]);
+            if (v instanceof Optional) {
+              return "if raw.is_null() { " + (success(runtime + "purust_maybe_nothing()") + (" } else { Some(" + (runtime + ("purust_maybe_just(" + (name2 + "_item(raw)?)) }")))));
+            }
+            ;
+            if (v instanceof Sequence) {
+              var packed = (function() {
+                if (v.value0 instanceof ObjectSchema && (layouts && arrays)) {
+                  return new Just(new Tuple("NativeRecords", name2 + "_item_value(item)?"));
+                }
+                ;
+                if (v.value0 instanceof Derived && (v.value0.value0 instanceof Just && arrays)) {
+                  return new Just(new Tuple("NativeClasses", name2 + "_item_value(item)?"));
+                }
+                ;
+                if (v.value0 instanceof Scalar && (v.value0.value0 === "Int" && arrays)) {
+                  return new Just(new Tuple("IntArray", unboxField(v.value0)(name2 + "_item(item)?")));
+                }
+                ;
+                if (arrays && isScalar(v.value0)) {
+                  return new Just(new Tuple("NativeScalars", unboxField(v.value0)(name2 + "_item(item)?")));
+                }
+                ;
+                return Nothing.value;
+              })();
+              var v1 = fromMaybe(new Tuple("Array", name2 + "_item(item)?"))(packed);
+              var wrap2 = (function() {
+                var $419 = v1.value0 === "Array" || v1.value0 === "IntArray";
+                if ($419) {
+                  return "purust_core::Value::" + (v1.value0 + "(std::rc::Rc::new(out))");
+                }
+                ;
+                return "purust_core::Value::NativeArray(std::rc::Rc::new(purust_core::" + (v1.value0 + "(out)))");
+              })();
+              return "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" + (v1.value1 + ("); }\nSome(" + (wrap2 + ")")));
+            }
+            ;
+            if (v instanceof ObjectSchema) {
+              return slots(map(functorArray)(function(v12) {
+                return v12.value0;
+              })(v.value0)) + (joinWith("\n")(mapWithIndex2(function(i) {
+                return function(v12) {
+                  return "let value" + (show(showInt)(i) + (" = match input" + (show(showInt)(i) + (" { Some(raw) => " + (name2 + ("_field" + (show(showInt)(i) + ("(raw)?, None => " + ((function() {
+                    if (v12.value1 instanceof Optional) {
+                      return runtime + "purust_maybe_nothing()";
+                    }
+                    ;
+                    return "return None";
+                  })() + " };")))))))));
+                };
+              })(v.value0)) + (function() {
+                if (layouts) {
+                  return "\nSome(" + (name2 + ("_Record {" + (joinWith(",")(mapWithIndex2(function(i) {
+                    return function(v12) {
+                      return "field" + (show(showInt)(i) + (": " + unboxField(v12.value1)("value" + show(showInt)(i))));
+                    };
+                  })(v.value0)) + "})")));
+                }
+                ;
+                return "\nstd::thread_local! { static KEYS: [std::rc::Rc<str>; " + (show(showInt)(length(v.value0)) + ("] = [" + (joinWith(",")(map(functorArray)(function(v12) {
+                  return "std::rc::Rc::from(" + (quote2(v12.value0) + ")");
+                })(v.value0)) + ("]; }\n" + ("KEYS.with(|keys| { let mut fields = purust_core::RecordFields::with_capacity(" + (show(showInt)(length(v.value0)) + (");\n" + (joinWith("\n")(mapWithIndex2(function(i) {
+                  return function(v12) {
+                    return "fields.push(keys[" + (show(showInt)(i) + ("].clone(), value" + (show(showInt)(i) + ");")));
+                  };
+                })(v.value0)) + "\nSome(purust_core::Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))) })"))))))));
+              })());
+            }
+            ;
+            if (v instanceof Derived) {
+              return slots(keys4(v.value1)) + programCode(keys4(v.value1))(name2)(v.value1);
+            }
+            ;
+            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 432, column 10 - line 463, column 89): " + [v.constructor.name]);
+          };
+          return (function() {
+            if (schema instanceof ObjectSchema && layouts) {
+              return $$function(name2)("purust_core::Value")(name2 + "_value(raw).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))") + $$function(name2 + "_value")(name2 + "_Record")(body(new ObjectSchema(schema.value0)));
+            }
+            ;
+            if (schema instanceof Derived && (schema.value0 instanceof Just && arrays)) {
+              return $$function(name2)("purust_core::Value")(name2 + "_value(raw).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))") + $$function(name2 + "_value")(representation(schema.value0.value0))(slots(keys4(schema.value1)) + programCode(keys4(schema.value1))(name2)(schema.value1));
+            }
+            ;
+            return $$function(name2)("purust_core::Value")(body(schema));
+          })() + ((function() {
+            if (schema instanceof ObjectSchema && layouts) {
+              return recordLayout(name2)(schema.value0);
+            }
+            ;
+            return "";
+          })() + foldMap(foldableArray)(monoidString)(function(v) {
+            return emit(layouts)(arrays)(representation)(v.value0)(v.value1);
+          })(children(name2)(schema)));
+        };
       };
-      return "fn " + (name2 + ("<I: " + (runtime + ("SchemaInput>(raw: I) -> Option<purust_core::Value> {\n" + (body(schema) + ("\n}\n" + ((function() {
-        if (schema instanceof ObjectSchema && layouts) {
-          return recordLayout(name2)(schema.value0);
-        }
-        ;
-        return "";
-      })() + foldMap(foldableArray)(monoidString)(function(v) {
-        return emit(layouts)(v.value0)(v.value1);
-      })(children(name2)(schema)))))))));
     };
   };
 };
@@ -35600,7 +35728,7 @@ var evaluate = function(ctx) {
                     });
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 285, column 24 - line 291, column 19): " + [v3.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 290, column 24 - line 296, column 19): " + [v3.constructor.name]);
                 };
               };
               var v = strip(original);
@@ -35646,7 +35774,7 @@ var evaluate = function(ctx) {
                   return Nothing.value;
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.DecoderSchemas (line 247, column 19 - line 249, column 27): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at Purust.DecoderSchemas (line 252, column 19 - line 254, column 27): " + [v1.constructor.name]);
               }
               ;
               if (v instanceof CtorSaturated && either2("Left")(v.value0)) {
@@ -35706,20 +35834,20 @@ var evaluate = function(ctx) {
                   return function(atoms) {
                     if (atoms.length === 2 && (atoms[0] instanceof ReadValue && (atoms[0].value0 instanceof Scalar && (atoms[0].value0.value0 === "String" && atoms[1] instanceof Value)))) {
                       return bind(bindMaybe)(string2(atoms[1].value0))((function() {
-                        var $649 = k(n);
-                        var $650 = Test2.create(atoms[0].value1);
-                        return function($651) {
-                          return $649($650($651));
+                        var $708 = k(n);
+                        var $709 = Test2.create(atoms[0].value1);
+                        return function($710) {
+                          return $708($709($710));
                         };
                       })());
                     }
                     ;
                     if (atoms.length === 2 && (atoms[0] instanceof Value && (atoms[1] instanceof ReadValue && (atoms[1].value0 instanceof Scalar && atoms[1].value0.value0 === "String")))) {
                       return bind(bindMaybe)(string2(atoms[0].value0))((function() {
-                        var $652 = k(n);
-                        var $653 = Test2.create(atoms[1].value1);
-                        return function($654) {
-                          return $652($653($654));
+                        var $711 = k(n);
+                        var $712 = Test2.create(atoms[1].value1);
+                        return function($713) {
+                          return $711($712($713));
                         };
                       })());
                     }
@@ -35786,7 +35914,7 @@ var evaluate = function(ctx) {
               return Nothing.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 236, column 1 - line 236, column 122): " + [ctx.constructor.name, fuel.constructor.name, env.constructor.name, next2.constructor.name, original.constructor.name, k.constructor.name]);
+            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 241, column 1 - line 241, column 122): " + [ctx.constructor.name, fuel.constructor.name, env.constructor.name, next2.constructor.name, original.constructor.name, k.constructor.name]);
           };
         };
       };
@@ -35816,7 +35944,7 @@ var evalValues = function(ctx) {
               });
             }
             ;
-            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 294, column 39 - line 297, column 77): " + [v.constructor.name]);
+            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 299, column 39 - line 302, column 77): " + [v.constructor.name]);
           };
         };
       };
@@ -35877,7 +36005,7 @@ var decoder = function(ctx) {
                   });
                 };
               }))(function(program) {
-                return pure(applicativeMaybe)(new Derived(program));
+                return pure(applicativeMaybe)(new Derived(join(bindMaybe)(programResult(ctx)(program)), program));
               });
             });
           }
@@ -35910,8 +36038,8 @@ var apply3 = function(ctx) {
                 var v1 = uncons(fn.value1);
                 if (v1 instanceof Just && v instanceof Just) {
                   var env$prime = insert(ordLevel)(v1.value0.head.value1)(v.value0.head)(fn.value0);
-                  var $587 = $$null(v1.value0.tail);
-                  if ($587) {
+                  var $644 = $$null(v1.value0.tail);
+                  if ($644) {
                     return evaluate(ctx)(fuel - 1 | 0)(env$prime)(next2)(fn.value2)(function(n) {
                       return function(result) {
                         return apply3(ctx)(fuel - 1 | 0)(n)(result)(v.value0.tail)(k);
@@ -35928,8 +36056,8 @@ var apply3 = function(ctx) {
               if (fn instanceof Constructor) {
                 var allArgs = append(semigroupArray)(fn.value2)(args);
                 return discard(discardUnit)(bindMaybe)(guard2(alternativeMaybe)(length(allArgs) <= fn.value1))(function() {
-                  var $599 = length(allArgs) < fn.value1;
-                  if ($599) {
+                  var $656 = length(allArgs) < fn.value1;
+                  if ($656) {
                     return k(next2)(new Constructor(fn.value0, fn.value1, allArgs));
                   }
                   ;
@@ -35942,7 +36070,7 @@ var apply3 = function(ctx) {
               return Nothing.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 299, column 1 - line 299, column 104): " + [ctx.constructor.name, fuel.constructor.name, next2.constructor.name, fn.constructor.name, args.constructor.name, k.constructor.name]);
+            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 304, column 1 - line 304, column 104): " + [ctx.constructor.name, fuel.constructor.name, next2.constructor.name, fn.constructor.name, args.constructor.name, k.constructor.name]);
           };
         };
       };
@@ -35950,207 +36078,216 @@ var apply3 = function(ctx) {
   };
 };
 var specializeDecoderSchemas = function(layouts) {
-  return function(sanitize) {
-    return function(arities) {
-      return function(v) {
-        return function(mod2) {
-          if (!member(ordString)("Data_Argonaut_Decode_Internal_Record_schemaDecoderABI2")(arities)) {
-            return {
-              module: mod2,
-              arities,
-              code: ""
-            };
-          }
-          ;
-          if (otherwise) {
-            var prefix = replaceAll(".")("_")(unwrap()(mod2.name)) + "_";
-            var names = fromFoldable4(foldableArray)(ordString)(map(functorArray)(function(v12) {
-              return sanitize(v12.value0);
-            })(concatMap(function(v12) {
-              return v12.bindings;
-            })(mod2.bindings)));
-            var candidate = function(ctx2) {
-              return function(expr) {
-                var v12 = strip(expr);
-                if (v12 instanceof App2 && standard("decodeJson")(v12.value0)) {
-                  return bind(bindMaybe)(one2(toArray3(v12.value1)))(function(dictionary) {
-                    return bind(bindMaybe)(decoder(ctx2)(128)(dictionary))(function(schema) {
-                      return discard(discardUnit)(bindMaybe)(guard2(alternativeMaybe)(weight(schema) > 1 && weight(schema) <= 256))(function() {
-                        return pure(applicativeMaybe)(new Tuple(false, schema));
+  return function(arrays) {
+    return function(representation) {
+      return function(sanitize) {
+        return function(arities) {
+          return function(v) {
+            return function(mod2) {
+              if (!member(ordString)("Data_Argonaut_Decode_Internal_Record_schemaDecoderABI2")(arities)) {
+                return {
+                  module: mod2,
+                  arities,
+                  code: ""
+                };
+              }
+              ;
+              if (otherwise) {
+                var prefix = replaceAll(".")("_")(unwrap()(mod2.name)) + "_";
+                var names = fromFoldable4(foldableArray)(ordString)(map(functorArray)(function(v12) {
+                  return sanitize(v12.value0);
+                })(concatMap(function(v12) {
+                  return v12.bindings;
+                })(mod2.bindings)));
+                var candidate = function(ctx2) {
+                  return function(expr) {
+                    var v12 = strip(expr);
+                    if (v12 instanceof App2 && standard("decodeJson")(v12.value0)) {
+                      return bind(bindMaybe)(one2(toArray3(v12.value1)))(function(dictionary) {
+                        return bind(bindMaybe)(decoder(ctx2)(128)(dictionary))(function(schema) {
+                          return discard(discardUnit)(bindMaybe)(guard2(alternativeMaybe)(weight(schema) > 1 && weight(schema) <= 256))(function() {
+                            return pure(applicativeMaybe)(new Tuple(false, schema));
+                          });
+                        });
                       });
-                    });
-                  });
-                }
-                ;
-                if (v12 instanceof App2 && (global2("Data.Argonaut.Decode.Parser")("decodeJsonStringWith")(v12.value0) && member(ordString)("Data_Argonaut_Decode_Internal_Record_schemaTextDecoderABI2")(arities))) {
-                  return bind(bindMaybe)(one2(toArray3(v12.value1)))(function(method) {
-                    return bind(bindMaybe)(methodSchema(ctx2)(128)(method))(function(schema) {
-                      return discard(discardUnit)(bindMaybe)(guard2(alternativeMaybe)(weight(schema) > 1 && (weight(schema) <= 256 && textComplete(schema))))(function() {
-                        return pure(applicativeMaybe)(new Tuple(true, schema));
-                      });
-                    });
-                  });
-                }
-                ;
-                return Nothing.value;
-              };
-            };
-            var allocate = function(text) {
-              return function(schema) {
-                return function(original) {
-                  return bind(bindStateT3)(get3)(function(state2) {
-                    var ty = (function() {
-                      if (text) {
-                        return textType;
-                      }
-                      ;
-                      return domType;
-                    })();
-                    var next2 = (function() {
-                      var $617 = {};
-                      for (var $618 in state2) {
-                        if ({}.hasOwnProperty.call(state2, $618)) {
-                          $617[$618] = state2[$618];
-                        }
-                        ;
-                      }
-                      ;
-                      $617.next = state2.next + 1 | 0;
-                      return $617;
-                    })();
-                    var name2 = "__purust_json_" + show(showInt)(state2.next);
-                    var source2 = name2 + "_source";
-                    var full = prefix + name2;
-                    var $620 = any2(function(existing) {
-                      return contains(name2)(existing);
-                    })(toUnfoldable4(unfoldableArray)(names)) || any2(contains(full))(fromFoldable(foldableSet)(keys3(arities)));
-                    if ($620) {
-                      return applySecond(applyStateT2)(put(monadStateStateT3)(next2))(allocate(text)(schema)(original));
                     }
                     ;
-                    var worker = name2 + "_worker";
-                    var sourceBindings = append(semigroupArray)([new Tuple(source2, new Typed(ty, original))])(constructors(worker)(schema));
-                    var qualifiedWorker = prefix + worker;
-                    var workerCode = emit(layouts)(qualifiedWorker)(schema);
-                    var input = (function() {
-                      if (text) {
-                        return "String";
-                      }
-                      ;
-                      return "purust_core::Value";
-                    })();
-                    var cursor = (function() {
-                      if (text) {
-                        return runtime + ("SchemaText::parse(&input).map(|doc| " + (qualifiedWorker + "(doc.root())) .flatten()"));
-                      }
-                      ;
-                      return qualifiedWorker + ("(" + (runtime + "SchemaDom(input.clone()))"));
-                    })();
-                    var code = "pub fn " + (full + ("(input: " + (input + (") -> std::rc::Rc<Purs_Data_Either::Either> {\n" + ("match " + (cursor + (" { Some(value) => std::rc::Rc::new(Purs_Data_Either::Either::Right(value)), None => " + (prefix + (source2 + "(input) }\n}\n")))))))));
-                    return discard(discardUnit)(bindStateT3)(put(monadStateStateT1)((function() {
-                      var $623 = {};
-                      for (var $624 in next2) {
-                        if ({}.hasOwnProperty.call(next2, $624)) {
-                          $623[$624] = next2[$624];
+                    if (v12 instanceof App2 && (global2("Data.Argonaut.Decode.Parser")("decodeJsonStringWith")(v12.value0) && member(ordString)("Data_Argonaut_Decode_Internal_Record_schemaTextDecoderABI2")(arities))) {
+                      return bind(bindMaybe)(one2(toArray3(v12.value1)))(function(method) {
+                        return bind(bindMaybe)(methodSchema(ctx2)(128)(method))(function(schema) {
+                          return discard(discardUnit)(bindMaybe)(guard2(alternativeMaybe)(weight(schema) > 1 && (weight(schema) <= 256 && textComplete(schema))))(function() {
+                            return pure(applicativeMaybe)(new Tuple(true, schema));
+                          });
+                        });
+                      });
+                    }
+                    ;
+                    return Nothing.value;
+                  };
+                };
+                var allocate = function(text) {
+                  return function(schema) {
+                    return function(original) {
+                      return bind(bindStateT3)(get3)(function(state2) {
+                        var ty = (function() {
+                          if (text) {
+                            return textType;
+                          }
+                          ;
+                          return domType;
+                        })();
+                        var next2 = (function() {
+                          var $676 = {};
+                          for (var $677 in state2) {
+                            if ({}.hasOwnProperty.call(state2, $677)) {
+                              $676[$677] = state2[$677];
+                            }
+                            ;
+                          }
+                          ;
+                          $676.next = state2.next + 1 | 0;
+                          return $676;
+                        })();
+                        var name2 = "__purust_json_" + show(showInt)(state2.next);
+                        var source2 = name2 + "_source";
+                        var full = prefix + name2;
+                        var $679 = any2(function(existing) {
+                          return contains(name2)(existing);
+                        })(toUnfoldable4(unfoldableArray)(names)) || any2(contains(full))(fromFoldable(foldableSet)(keys3(arities)));
+                        if ($679) {
+                          return applySecond(applyStateT2)(put(monadStateStateT3)(next2))(allocate(text)(schema)(original));
                         }
                         ;
+                        var worker = name2 + "_worker";
+                        var sourceBindings = append(semigroupArray)([new Tuple(source2, new Typed(ty, original))])(constructors(arrays)(worker)(schema));
+                        var qualifiedWorker = prefix + worker;
+                        var workerCode = emit(layouts)(arrays)(representation)(qualifiedWorker)(schema);
+                        var input = (function() {
+                          if (text) {
+                            return "String";
+                          }
+                          ;
+                          return "purust_core::Value";
+                        })();
+                        var cursor = (function() {
+                          if (text) {
+                            return runtime + ("SchemaText::parse(&input).map(|doc| " + (qualifiedWorker + "(doc.root())) .flatten()"));
+                          }
+                          ;
+                          return qualifiedWorker + ("(" + (runtime + "SchemaDom(input.clone()))"));
+                        })();
+                        var code = "pub fn " + (full + ("(input: " + (input + (") -> std::rc::Rc<Purs_Data_Either::Either> {\n" + ("match " + (cursor + (" { Some(value) => std::rc::Rc::new(Purs_Data_Either::Either::Right(value)), None => " + (prefix + (source2 + "(input) }\n}\n")))))))));
+                        return discard(discardUnit)(bindStateT3)(put(monadStateStateT1)((function() {
+                          var $682 = {};
+                          for (var $683 in next2) {
+                            if ({}.hasOwnProperty.call(next2, $683)) {
+                              $682[$683] = next2[$683];
+                            }
+                            ;
+                          }
+                          ;
+                          $682.code = state2.code + (workerCode + code);
+                          $682.sources = append(semigroupArray)(state2.sources)(sourceBindings);
+                          $682.arities = insert(ordString)(full)(ty)(state2.arities);
+                          return $682;
+                        })()))(function() {
+                          return pure(applicativeStateT3)(new Typed(ty, new Var(new Qualified(new Just(mod2.name), name2))));
+                        });
+                      });
+                    };
+                  };
+                };
+                var rewrite = function(ctx2) {
+                  return function(v12) {
+                    var v2 = candidate(ctx2)(v12);
+                    if (v2 instanceof Just) {
+                      return allocate(v2.value0.value0)(v2.value0.value1)(v12);
+                    }
+                    ;
+                    if (v2 instanceof Nothing) {
+                      if (v12 instanceof LetRec) {
+                        return pure(applicativeStateT3)(v12);
                       }
                       ;
-                      $623.code = state2.code + (workerCode + code);
-                      $623.sources = append(semigroupArray)(state2.sources)(sourceBindings);
-                      $623.arities = insert(ordString)(full)(ty)(state2.arities);
-                      return $623;
-                    })()))(function() {
-                      return pure(applicativeStateT3)(new Typed(ty, new Var(new Qualified(new Just(mod2.name), name2))));
-                    });
-                  });
+                      return map(functorStateT3)(NeutralExpr)(traverse(traversableBackendSyntax)(applicativeStateT3)(rewrite(ctx2))(v12));
+                    }
+                    ;
+                    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 604, column 40 - line 608, column 54): " + [v2.constructor.name]);
+                  };
                 };
-              };
+                var rewriteGroup2 = function(ctx2) {
+                  return function(group4) {
+                    if (group4.recursive) {
+                      return pure(applicativeStateT3)(group4);
+                    }
+                    ;
+                    if (otherwise) {
+                      return bind(bindStateT3)(traverse(traversableArray)(applicativeStateT3)(function(v12) {
+                        return map(functorStateT3)(Tuple.create(v12.value0))(rewrite(ctx2)(v12.value1));
+                      })(group4.bindings))(function(bindings3) {
+                        return pure(applicativeStateT3)({
+                          recursive: group4.recursive,
+                          bindings: bindings3
+                        });
+                      });
+                    }
+                    ;
+                    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 599, column 3 - line 603, column 43): " + [ctx2.constructor.name, group4.constructor.name]);
+                  };
+                };
+                var initial = {
+                  next: 0,
+                  code: "",
+                  sources: [],
+                  arities
+                };
+                var ctx = {
+                  owner: mod2.name,
+                  definitions: fromFoldable3(ordIdent)(foldableArray)(concatMap(function(g) {
+                    if (g.recursive) {
+                      return [];
+                    }
+                    ;
+                    return g.bindings;
+                  })(mod2.bindings)),
+                  constructors: fromFoldable3(ordQualified6)(foldableArray)(concatMap(function(decl) {
+                    return map(functorArray)(function(ctor) {
+                      return new Tuple(new Qualified(new Just(mod2.name), ctor.name), length(ctor.fields));
+                    })(decl.constructors);
+                  })(v.dataDecls)),
+                  constructorResults: fromFoldable3(ordQualified6)(foldableArray)(concatMap(function(decl) {
+                    return map(functorArray)(function(ctor) {
+                      return new Tuple(new Qualified(new Just(mod2.name), ctor.name), new ADT(decl.name, snoc(split(".")(unwrap()(mod2.name)))(decl.name), []));
+                    })(decl.constructors);
+                  })(v.dataDecls))
+                };
+                var v1 = runState(traverse(traversableArray)(applicativeStateT3)(rewriteGroup2(ctx))(mod2.bindings))(initial);
+                return {
+                  module: {
+                    name: mod2.name,
+                    comments: mod2.comments,
+                    imports: mod2.imports,
+                    dataTypes: mod2.dataTypes,
+                    exports: mod2.exports,
+                    reExports: mod2.reExports,
+                    dataDecls: mod2.dataDecls,
+                    classDecls: mod2.classDecls,
+                    foreign: mod2.foreign,
+                    implementations: mod2.implementations,
+                    directives: mod2.directives,
+                    bindings: append(semigroupArray)(v1.value0)([{
+                      recursive: false,
+                      bindings: v1.value1.sources
+                    }])
+                  },
+                  arities: v1.value1.arities,
+                  code: v1.value1.code
+                };
+              }
+              ;
+              throw new Error("Failed pattern match at Purust.DecoderSchemas (line 566, column 1 - line 567, column 88): " + [layouts.constructor.name, arrays.constructor.name, representation.constructor.name, sanitize.constructor.name, arities.constructor.name, v.constructor.name, mod2.constructor.name]);
             };
-            var rewrite = function(ctx2) {
-              return function(v12) {
-                var v2 = candidate(ctx2)(v12);
-                if (v2 instanceof Just) {
-                  return allocate(v2.value0.value0)(v2.value0.value1)(v12);
-                }
-                ;
-                if (v2 instanceof Nothing) {
-                  if (v12 instanceof LetRec) {
-                    return pure(applicativeStateT3)(v12);
-                  }
-                  ;
-                  return map(functorStateT3)(NeutralExpr)(traverse(traversableBackendSyntax)(applicativeStateT3)(rewrite(ctx2))(v12));
-                }
-                ;
-                throw new Error("Failed pattern match at Purust.DecoderSchemas (line 548, column 40 - line 552, column 54): " + [v2.constructor.name]);
-              };
-            };
-            var rewriteGroup2 = function(ctx2) {
-              return function(group4) {
-                if (group4.recursive) {
-                  return pure(applicativeStateT3)(group4);
-                }
-                ;
-                if (otherwise) {
-                  return bind(bindStateT3)(traverse(traversableArray)(applicativeStateT3)(function(v12) {
-                    return map(functorStateT3)(Tuple.create(v12.value0))(rewrite(ctx2)(v12.value1));
-                  })(group4.bindings))(function(bindings3) {
-                    return pure(applicativeStateT3)({
-                      recursive: group4.recursive,
-                      bindings: bindings3
-                    });
-                  });
-                }
-                ;
-                throw new Error("Failed pattern match at Purust.DecoderSchemas (line 543, column 3 - line 547, column 43): " + [ctx2.constructor.name, group4.constructor.name]);
-              };
-            };
-            var initial = {
-              next: 0,
-              code: "",
-              sources: [],
-              arities
-            };
-            var ctx = {
-              owner: mod2.name,
-              definitions: fromFoldable3(ordIdent)(foldableArray)(concatMap(function(g) {
-                if (g.recursive) {
-                  return [];
-                }
-                ;
-                return g.bindings;
-              })(mod2.bindings)),
-              constructors: fromFoldable3(ordQualified6)(foldableArray)(concatMap(function(decl) {
-                return map(functorArray)(function(ctor) {
-                  return new Tuple(new Qualified(new Just(mod2.name), ctor.name), length(ctor.fields));
-                })(decl.constructors);
-              })(v.dataDecls))
-            };
-            var v1 = runState(traverse(traversableArray)(applicativeStateT3)(rewriteGroup2(ctx))(mod2.bindings))(initial);
-            return {
-              module: {
-                name: mod2.name,
-                comments: mod2.comments,
-                imports: mod2.imports,
-                dataTypes: mod2.dataTypes,
-                exports: mod2.exports,
-                reExports: mod2.reExports,
-                dataDecls: mod2.dataDecls,
-                classDecls: mod2.classDecls,
-                foreign: mod2.foreign,
-                implementations: mod2.implementations,
-                directives: mod2.directives,
-                bindings: append(semigroupArray)(v1.value0)([{
-                  recursive: false,
-                  bindings: v1.value1.sources
-                }])
-              },
-              arities: v1.value1.arities,
-              code: v1.value1.code
-            };
-          }
-          ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 513, column 1 - line 514, column 88): " + [layouts.constructor.name, sanitize.constructor.name, arities.constructor.name, v.constructor.name, mod2.constructor.name]);
+          };
         };
       };
     };
@@ -38873,6 +39010,96 @@ var eligibleValues = function(v) {
   return fromFoldable4(foldableArray)(ordIdent)(mapMaybe(eligible)(v.decls));
 };
 
+// output/Purust.NativeArrays/foreign.js
+var runtime3 = String.raw`
+// All elements are constructed eagerly in a concrete Vec. Escaping elements
+// carry an owning reference to that Vec and an index, not a borrowed cursor or
+// a deferred decoding closure. Neither indexing nor cloning a record/class
+// element allocates a per-element wrapper.
+pub enum NativeItem<'a> {
+    Scalar(Value),
+    Record(&'a dyn NativeRecord),
+    Class(&'a dyn std::any::Any),
+}
+
+pub trait NativeArray: std::any::Any + 'static {
+    fn len(&self) -> usize;
+    fn item(&self, index: usize) -> NativeItem<'_>;
+    fn record(&self, index: usize) -> Option<&dyn NativeRecord> {
+        match self.item(index) { NativeItem::Record(value) => Some(value), _ => None }
+    }
+    fn class(&self, index: usize) -> &dyn std::any::Any {
+        match self.item(index) { NativeItem::Class(value) => value, _ => panic!("Expected Class element") }
+    }
+}
+
+pub struct NativeRecords<T: NativeRecord>(pub Vec<T>);
+impl<T: NativeRecord> NativeArray for NativeRecords<T> {
+    fn len(&self) -> usize { self.0.len() }
+    fn item(&self, index: usize) -> NativeItem<'_> { NativeItem::Record(&self.0[index]) }
+}
+
+pub struct NativeClasses<T>(pub Vec<T>);
+impl<T: std::any::Any + 'static> NativeArray for NativeClasses<T> {
+    fn len(&self) -> usize { self.0.len() }
+    fn item(&self, index: usize) -> NativeItem<'_> { NativeItem::Class(&self.0[index]) }
+}
+
+pub trait NativeScalar: Clone + 'static { fn value(&self) -> Value; }
+impl NativeScalar for f64 { fn value(&self) -> Value { Value::Number(*self) } }
+impl NativeScalar for bool { fn value(&self) -> Value { Value::Bool(*self) } }
+impl NativeScalar for String { fn value(&self) -> Value { Value::String(self.clone()) } }
+pub struct NativeScalars<T: NativeScalar>(pub Vec<T>);
+impl<T: NativeScalar> NativeArray for NativeScalars<T> {
+    fn len(&self) -> usize { self.0.len() }
+    fn item(&self, index: usize) -> NativeItem<'_> { NativeItem::Scalar(self.0[index].value()) }
+}
+
+#[inline]
+pub fn native_array_item(owner: &std::rc::Rc<dyn NativeArray>, index: usize) -> Value {
+    match owner.item(index) {
+        NativeItem::Scalar(value) => value,
+        _ => Value::NativeElement(owner.clone(), index),
+    }
+}
+
+// The common FFI traversal view preserves the backing representation. Only
+// callers explicitly requesting unwrap_array allocate a Vec of Value views.
+pub struct ArrayItems { value: IntItems, front: usize, back: usize }
+impl std::iter::Iterator for ArrayItems {
+    type Item = Value;
+    #[inline]
+    fn next(&mut self) -> Option<Value> {
+        if self.front == self.back { return None; }
+        let value = self.value.raw(self.front);
+        self.front += 1;
+        Some(value)
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let length = self.back - self.front;
+        (length, Some(length))
+    }
+}
+impl std::iter::DoubleEndedIterator for ArrayItems {
+    #[inline]
+    fn next_back(&mut self) -> Option<Value> {
+        if self.front == self.back { return None; }
+        self.back -= 1;
+        Some(self.value.raw(self.back))
+    }
+}
+impl std::iter::ExactSizeIterator for ArrayItems {}
+impl Value {
+    #[inline]
+    pub fn array_iter(&self) -> ArrayItems {
+        let value = IntItems::from(self);
+        let back = value.len();
+        ArrayItems { value, front: 0, back }
+    }
+}
+`;
+
 // output/Purust.OwnedFields/index.js
 var eqMaybe16 = /* @__PURE__ */ eqMaybe(eqString);
 var rewriteFields = function(operandType) {
@@ -39157,7 +39384,7 @@ var recordProjection = function(inferType) {
 };
 
 // output/Purust.RecordFields/foreign.js
-var runtime3 = String.raw`
+var runtime4 = String.raw`
 // A concrete record owns its complete fields before entering UnknownType.
 // Primitive projections copy scalars; compound values retain ordinary shared
 // carriers. No deferred record/array construction or materialization cache.
@@ -42894,12 +43121,14 @@ var viewSliceOf = function(mbLoop) {
 var reprItemsSource = /* @__PURE__ */ (function() {
   return `pub trait Repr: Sized + Clone {
     fn from_value(value: &Value) -> Self;
+    fn from_owned(value: Value) -> Self { Self::from_value(&value) }
     fn from_int(value: i64) -> Self;
     fn into_value(self) -> Value;
 }
 impl Repr for Value {
     #[inline(always)]
     fn from_value(value: &Value) -> Value { value.clone() }
+    fn from_owned(value: Value) -> Value { value }
     #[inline(always)]
     fn from_int(value: i64) -> Value { Value::Int(value) }
     #[inline(always)]
@@ -42941,26 +43170,31 @@ impl Repr for char {
 pub enum IntItems {
     Boxed(std::rc::Rc<Vec<UnknownType>>),
     Ints(std::rc::Rc<Vec<i64>>),
+    Native(std::rc::Rc<dyn NativeArray>),
 }
 impl IntItems {
+    #[inline]
     pub fn from(xs: &Value) -> IntItems {
         match xs.resolve() {
             Value::Array(v) => IntItems::Boxed(v.clone()),
             Value::IntArray(v) => IntItems::Ints(v.clone()),
+            Value::NativeArray(v) => IntItems::Native(v.clone()),
             _ => panic!("Expected Array"),
         }
     }
+    #[inline]
     pub fn len(&self) -> usize {
-        match self { IntItems::Boxed(v) => v.len(), IntItems::Ints(v) => v.len() }
+        match self { IntItems::Boxed(v) => v.len(), IntItems::Ints(v) => v.len(), IntItems::Native(v) => v.len() }
     }
+    #[inline]
     pub fn raw(&self, index: usize) -> UnknownType {
-        match self { IntItems::Boxed(v) => v[index].clone(), IntItems::Ints(v) => Value::Int(v[index]) }
+        match self { IntItems::Boxed(v) => v[index].clone(), IntItems::Ints(v) => Value::Int(v[index]), IntItems::Native(v) => native_array_item(v, index) }
     }
     pub fn item<A: Repr>(&self, index: usize) -> A {
-        match self { IntItems::Boxed(v) => A::from_value(&v[index]), IntItems::Ints(v) => A::from_int(v[index]) }
+        match self { IntItems::Boxed(v) => A::from_value(&v[index]), IntItems::Ints(v) => A::from_int(v[index]), IntItems::Native(v) => A::from_owned(native_array_item(v, index)) }
     }
     pub fn int_at(&self, index: usize) -> i64 {
-        match self { IntItems::Boxed(v) => v[index].unwrap_int(), IntItems::Ints(v) => v[index] }
+        match self { IntItems::Boxed(v) => v[index].unwrap_int(), IntItems::Ints(v) => v[index], IntItems::Native(v) => native_array_item(v, index).unwrap_int() }
     }
 }
 
@@ -42991,7 +43225,7 @@ var replaceIdentifier = function(needle) {
             return true;
           }
           ;
-          throw new Error("Failed pattern match at Purust.CodeGen (line 4013, column 23 - line 4015, column 26): " + [beforeChar.constructor.name]);
+          throw new Error("Failed pattern match at Purust.CodeGen (line 4032, column 23 - line 4034, column 26): " + [beforeChar.constructor.name]);
         })() && (function() {
           if (afterChar instanceof Just) {
             return !isIdentChar(afterChar.value0);
@@ -43001,7 +43235,7 @@ var replaceIdentifier = function(needle) {
             return true;
           }
           ;
-          throw new Error("Failed pattern match at Purust.CodeGen (line 4015, column 32 - line 4017, column 26): " + [afterChar.constructor.name]);
+          throw new Error("Failed pattern match at Purust.CodeGen (line 4034, column 32 - line 4036, column 26): " + [afterChar.constructor.name]);
         })();
         if (boundaryOk) {
           return before + (replacement + go(after));
@@ -43010,7 +43244,7 @@ var replaceIdentifier = function(needle) {
         return before + (needle + go(after));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 4004, column 14 - line 4020, column 45): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 4023, column 14 - line 4039, column 45): " + [v.constructor.name]);
     };
     return go;
   };
@@ -43152,7 +43386,7 @@ var printAST = function(v) {
     return "Fail(" + (v.value0 + ")");
   }
   ;
-  throw new Error("Failed pattern match at Purust.CodeGen (line 4023, column 31 - line 4048, column 36): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Purust.CodeGen (line 4042, column 31 - line 4067, column 36): " + [v.constructor.name]);
 };
 var paramName = function(v) {
   if (v.value0 instanceof Just) {
@@ -43163,7 +43397,7 @@ var paramName = function(v) {
     return "";
   }
   ;
-  throw new Error("Failed pattern match at Purust.CodeGen (line 1762, column 28 - line 1764, column 16): " + [v.value0.constructor.name]);
+  throw new Error("Failed pattern match at Purust.CodeGen (line 1781, column 28 - line 1783, column 16): " + [v.value0.constructor.name]);
 };
 var ownedFieldsPattern = function(fields) {
   return fields.constructor + ("(" + (joinWith(", ")(map(functorArray)(function(v) {
@@ -43226,7 +43460,7 @@ var literalPowerOfTwoMask = function(expr) {
           return;
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1733, column 3 - line 1737, column 48): " + [n.constructor.name, mask.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1752, column 3 - line 1756, column 48): " + [n.constructor.name, mask.constructor.name]);
       }
       ;
       while (!$tco_done) {
@@ -43309,7 +43543,7 @@ var getTyPrefix = function(modNameStr) {
       return replaceAll(".")("_")(modNameStr) + "_";
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 1693, column 46 - line 1695, column 81): " + [v.value0.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 1712, column 46 - line 1714, column 81): " + [v.value0.constructor.name]);
   };
 };
 var getArity = function(v) {
@@ -43346,7 +43580,7 @@ var freeVariables2 = function(v) {
         return "lvl_" + show(showInt)(unwrap()(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 4055, column 36 - line 4057, column 45): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 4074, column 36 - line 4076, column 45): " + [v.value0.constructor.name]);
     })());
   }
   ;
@@ -43368,7 +43602,7 @@ var freeVariables2 = function(v) {
         return "lvl_" + show(showInt)(unwrap()(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 4061, column 16 - line 4063, column 49): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 4080, column 16 - line 4082, column 49): " + [v.value0.constructor.name]);
     })();
     return union2(ordString)(freeVariables2(v.value2))($$delete2(ordString)(name2)(freeVariables2(v.value3)));
   }
@@ -43420,7 +43654,7 @@ var freeVariables2 = function(v) {
         return "lvl_" + show(showInt)(unwrap()(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 4076, column 16 - line 4078, column 49): " + [v.value0.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 4095, column 16 - line 4097, column 49): " + [v.value0.constructor.name]);
     })();
     var bodyVars = $$delete2(ordString)(name2)(freeVariables2(v.value3));
     return union2(ordString)(freeVariables2(v.value2))(bodyVars);
@@ -43455,7 +43689,7 @@ var freeVariables2 = function(v) {
           return insert2(ordString)("lvl_" + show(showInt)(unwrap()(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 4087, column 60 - line 4089, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 4106, column 60 - line 4108, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(toArray3(v.value0));
     return difference2(ordString)(freeVariables2(v.value1))(paramsVars);
@@ -43472,7 +43706,7 @@ var freeVariables2 = function(v) {
           return insert2(ordString)("lvl_" + show(showInt)(unwrap()(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 4092, column 60 - line 4094, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 4111, column 60 - line 4113, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(v.value0);
     return difference2(ordString)(freeVariables2(v.value1))(paramsVars);
@@ -43489,7 +43723,7 @@ var freeVariables2 = function(v) {
           return insert2(ordString)("lvl_" + show(showInt)(unwrap()(v1.value1)))(acc);
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 4097, column 60 - line 4099, column 66): " + [v1.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 4116, column 60 - line 4118, column 66): " + [v1.value0.constructor.name]);
       };
     })(empty3)(v.value0);
     return difference2(ordString)(freeVariables2(v.value1))(paramsVars);
@@ -43557,7 +43791,7 @@ var flattenLambda = function(expr) {
       return Nothing.value;
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 1753, column 37 - line 1755, column 23): " + [v1.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 1772, column 37 - line 1774, column 23): " + [v1.constructor.name]);
   }
   ;
   if (v instanceof UncurriedAbs) {
@@ -43570,7 +43804,7 @@ var flattenLambda = function(expr) {
       return Nothing.value;
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 1756, column 46 - line 1758, column 23): " + [v1.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 1775, column 46 - line 1777, column 23): " + [v1.constructor.name]);
   }
   ;
   return new Just(new Tuple([], v));
@@ -43591,7 +43825,7 @@ var fieldBasePure = function(field) {
         return false;
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 4339, column 26 - line 4341, column 21): " + [v2.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 4358, column 26 - line 4360, column 21): " + [v2.constructor.name]);
     };
     var v = sanitizeIdent(field);
     if (v === "_") {
@@ -43605,7 +43839,7 @@ var fieldBasePure = function(field) {
     return v;
   }
   ;
-  throw new Error("Failed pattern match at Purust.CodeGen (line 4329, column 1 - line 4329, column 34): " + [field.constructor.name]);
+  throw new Error("Failed pattern match at Purust.CodeGen (line 4348, column 1 - line 4348, column 34): " + [field.constructor.name]);
 };
 var fieldRenames = function(labels) {
   var fresh = function($copy_candidate) {
@@ -43674,7 +43908,7 @@ var recordFieldIdent = function(renames) {
       return fieldBase(renames)(field);
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 4343, column 1 - line 4343, column 62): " + [renames.constructor.name, field.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 4362, column 1 - line 4362, column 62): " + [renames.constructor.name, field.constructor.name]);
   };
 };
 var recordStructName = function(renames) {
@@ -43727,7 +43961,7 @@ var extractAbsParams = function(v) {
           return "lvl_" + show(showInt)(unwrap()(v22.value1));
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1392, column 42 - line 1394, column 56): " + [v22.value0.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1411, column 42 - line 1413, column 56): " + [v22.value0.constructor.name]);
       })(toArray3(v1.value0));
       var len = length(pNames);
       var $710 = v >= len;
@@ -43741,7 +43975,7 @@ var extractAbsParams = function(v) {
           return Nothing.value;
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 1397, column 8 - line 1399, column 28): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 1416, column 8 - line 1418, column 28): " + [v2.constructor.name]);
       }
       ;
       return Nothing.value;
@@ -43757,7 +43991,7 @@ var extractAbsParams = function(v) {
         return Nothing.value;
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 1402, column 3 - line 1404, column 23): " + [v2.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 1421, column 3 - line 1423, column 23): " + [v2.constructor.name]);
     }
     ;
     return Nothing.value;
@@ -43845,7 +44079,7 @@ var exprChildren = function(v) {
       return [v.value0.value1, v.value0.value2];
     }
     ;
-    throw new Error("Failed pattern match at Purust.CodeGen (line 1812, column 16 - line 1814, column 26): " + [v.value0.constructor.name]);
+    throw new Error("Failed pattern match at Purust.CodeGen (line 1831, column 16 - line 1833, column 26): " + [v.value0.constructor.name]);
   }
   ;
   if (v instanceof PrimEffect) {
@@ -43945,7 +44179,7 @@ var dedupArgs = function(arr) {
         };
       }
       ;
-      throw new Error("Failed pattern match at Purust.CodeGen (line 4382, column 10 - line 4387, column 99): " + [count.constructor.name]);
+      throw new Error("Failed pattern match at Purust.CodeGen (line 4401, column 10 - line 4406, column 99): " + [count.constructor.name]);
     };
   };
   return foldl2(step2)({
@@ -43990,7 +44224,7 @@ var copyScalarType = function(enums) {
           return false;
         }
         ;
-        throw new Error("Failed pattern match at Purust.CodeGen (line 2702, column 18 - line 2704, column 21): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at Purust.CodeGen (line 2721, column 18 - line 2723, column 21): " + [v1.constructor.name]);
       }
       ;
       return false;
@@ -44199,7 +44433,7 @@ var codegenPreludeWithRenames = function(renames) {
         ;
         return "";
       })(validShapes);
-      return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").cloned().unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').cloned().expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n')))))))))))));
+      return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").cloned().unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').cloned().expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ('            Value::NativeElement(r, index) => r.record(*index).expect("Expected record").get(' + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))))));
     })(validUniqueFields);
     var setMethods = foldMap2(monoidString)(function(f) {
       var sf = fieldBase(renames)(f);
@@ -44213,7 +44447,7 @@ var codegenPreludeWithRenames = function(renames) {
         ;
         return "";
       })(validShapes);
-      return "    pub fn set_" + (sf + ("(&mut self, val: UnknownType) {\n" + ("        if matches!(self, Value::Thunk(_)) { *self = self.resolve().clone(); }\n" + ("        match self {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => {\n" + ("                perceus_ptr::PerceusPtr::make_mut(r).set_field(" + (show(showString)(f) + ", val);\n            },\n"))) + ("            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" + (show(showString)(f) + (".to_owned(), val); },\n" + ("            Value::NativeRecord(_) => { *self = self.clone().__purust_set_field(" + (show(showString)(f) + (", val); },\n" + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))));
+      return "    pub fn set_" + (sf + ("(&mut self, val: UnknownType) {\n" + ("        if matches!(self, Value::Thunk(_)) { *self = self.resolve().clone(); }\n" + ("        match self {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => {\n" + ("                perceus_ptr::PerceusPtr::make_mut(r).set_field(" + (show(showString)(f) + ", val);\n            },\n"))) + ("            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" + (show(showString)(f) + (".to_owned(), val); },\n" + ("            Value::NativeRecord(_) | Value::NativeElement(_, _) => { *self = self.clone().__purust_set_field(" + (show(showString)(f) + (", val); },\n" + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))));
     })(validUniqueFields);
     var funcWrappers = foldMap2(monoidString)(function(arity) {
       var typeParamsList = map(functorArray)(function(i) {
@@ -44262,7 +44496,7 @@ var codegenPreludeWithRenames = function(renames) {
       return "            Value::" + (shapeToStructName(shape) + ("(r) => match name {\n" + (foldMap2(monoidString)(function(f) {
         return "                " + (show(showString)(f) + (" => r." + (recordFieldIdent(renames)(f) + ".clone(),\n")));
       })(split(",")(shape)) + "                _ => None,\n            },\n")));
-    })(validShapes) + '            Value::Record_a(r) => r.get_field(name).cloned(),\n            Value::DynamicRecord(r) => r.get(name).cloned(),\n            Value::NativeRecord(r) => r.get(name).map(|value| value.into_owned()),\n            _ => panic!("Expected record"),\n        }\n    }\n'));
+    })(validShapes) + '            Value::Record_a(r) => r.get_field(name).cloned(),\n            Value::DynamicRecord(r) => r.get(name).cloned(),\n            Value::NativeRecord(r) => r.get(name).map(|value| value.into_owned()),\n            Value::NativeElement(r, index) => r.record(*index).and_then(|record| record.get(name).map(|value| value.into_owned())),\n            _ => panic!("Expected record"),\n        }\n    }\n'));
     var copyFields = function(names) {
       return foldMap2(monoidString)(function(f) {
         return "                if let Some(value) = &r." + (recordFieldIdent(renames)(f) + (" { fields.insert(" + (show(showString)(f) + ".to_owned(), value.clone()); }\n")));
@@ -44270,12 +44504,12 @@ var codegenPreludeWithRenames = function(renames) {
     };
     var dynamicSetMethod = "    pub fn __purust_set_field(mut self, name: &str, value: Value) -> Value {\n" + ("        if matches!(self, Value::Thunk(_)) { self = self.resolve().clone(); }\n" + ("        match &mut self {\n" + (foldMap2(monoidString)(function(shape) {
       return "            Value::" + (shapeToStructName(shape) + ("(r) => " + (setKnownFields(split(",")(shape)) + ",\n")));
-    })(validShapes) + ("            Value::Record_a(r) => " + (setSparseFields(genericFields) + (",\n" + ("            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(name.to_owned(), value); return self; },\n" + ("            Value::NativeRecord(r) => { let mut fields = r.fields(); fields.insert(name.to_owned(), value); return Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields)); },\n" + ('            _ => panic!("Expected record"),\n        }\n' + ("        let mut fields = RecordFields::new();\n" + ("        match &self {\n" + (foldMap2(monoidString)(function(shape) {
+    })(validShapes) + ("            Value::Record_a(r) => " + (setSparseFields(genericFields) + (",\n" + ("            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(name.to_owned(), value); return self; },\n" + ("            Value::NativeRecord(r) => { let mut fields = r.fields(); fields.insert(name.to_owned(), value); return Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields)); },\n" + ('            Value::NativeElement(r, index) => { let mut fields = r.record(*index).expect("Expected record").fields(); fields.insert(name.to_owned(), value); return Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields)); },\n' + ('            _ => panic!("Expected record"),\n        }\n' + ("        let mut fields = RecordFields::new();\n" + ("        match &self {\n" + (foldMap2(monoidString)(function(shape) {
       return "            Value::" + (shapeToStructName(shape) + ("(r) => {\n" + (copyFields(split(",")(shape)) + "            },\n")));
-    })(validShapes) + "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n            _ => unreachable!(),\n        }\n        fields.insert(name.to_owned(), value);\n        Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))\n    }\n"))))))))))));
+    })(validShapes) + "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n            _ => unreachable!(),\n        }\n        fields.insert(name.to_owned(), value);\n        Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))\n    }\n")))))))))))));
     var recordEntriesMethod = "    pub fn __purust_record_fields(&self) -> Option<RecordFields> {\n" + ("        let mut fields = RecordFields::new();\n        match self.resolve() {\n" + (foldMap2(monoidString)(function(shape) {
       return "            Value::" + (shapeToStructName(shape) + ("(r) => {\n" + (copyFields(split(",")(shape)) + "            },\n")));
-    })(validShapes) + "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n            Value::DynamicRecord(r) => return Some((**r).clone()),\n            Value::NativeRecord(r) => return Some(r.fields()),\n            _ => return None,\n        }\n        Some(fields)\n    }\n"));
+    })(validShapes) + "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n            Value::DynamicRecord(r) => return Some((**r).clone()),\n            Value::NativeRecord(r) => return Some(r.fields()),\n            Value::NativeElement(r, index) => return r.record(*index).map(|record| record.fields()),\n            _ => return None,\n        }\n        Some(fields)\n    }\n"));
     var borrowMethods = foldMap2(monoidString)(function(f) {
       var sf = fieldBase(renames)(f);
       var field = recordFieldIdent(renames)(f);
@@ -44288,9 +44522,9 @@ var codegenPreludeWithRenames = function(renames) {
         ;
         return "";
       })(validShapes);
-      return "    pub fn __purust_borrow_" + (sf + ("(&self) -> std::borrow::Cow<'_, UnknownType> {\n" + ("        std::borrow::Cow::Borrowed(match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => return r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        })\n    }\n')))))))))))));
+      return "    pub fn __purust_borrow_" + (sf + ("(&self) -> std::borrow::Cow<'_, UnknownType> {\n" + ("        std::borrow::Cow::Borrowed(match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => return r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ('            Value::NativeElement(r, index) => return r.record(*index).expect("Expected record").get(' + (show(showString)(f) + (').expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        })\n    }\n'))))))))))))))));
     })(validUniqueFields);
-    return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Unit,\n" + ("    Null,\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + ("    IntArray(std::rc::Rc<Vec<i64>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + ("    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" + ("    NativeRecord(std::rc::Rc<dyn NativeRecord>),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    #[inline(always)]\n" + ("    pub fn resolve(&self) -> &Self {\n" + ("        let mut value = self;\n" + ("        while let Value::Thunk(thunk) = value {\n" + ('            value = thunk.value.get().expect("recursive value used before initialization");\n' + ("        }\n" + ("        value\n" + ("    }\n" + ("    pub fn unwrap_unit(&self) {\n" + ('        if !matches!(self.resolve(), Value::Unit) { panic!("Expected Unit"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self.resolve() { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ("        // Foreign numbers can originate from a native PureScript Int.\n" + ('        match self.resolve() { Value::Number(v) => *v, Value::Int(v) => *v as f64, _ => panic!("Expected Number") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self.resolve() { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self.resolve() { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self.resolve() { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v.clone(),\n" + ("            Value::IntArray(v) => std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect()),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn is_array(&self) -> bool {\n" + ("        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_))\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array_now(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    pub fn boxed_array_view(&self) -> Option<std::rc::Rc<Vec<UnknownType>>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => Some(v.clone()),\n" + ("            Value::IntArray(v) => Some(std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect())),\n" + ("            _ => None,\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_len(&self) -> usize {\n" + ('        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), _ => panic!("Expected Array") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get(&self, index: usize) -> UnknownType {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v[index].clone(),\n" + ("            Value::IntArray(v) => Value::Int(v[index]),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get_int(&self, index: usize) -> i64 {\n" + ("        match self.resolve() {\n" + ('            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!("Expected Int element"); },\n' + ("            Value::IntArray(v) => v[index],\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        if let Value::Class(v) = self.resolve() { v.downcast_ref::<T>().unwrap() } else { panic!("Expected Class"); }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn __purust_ctor_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self.resolve() { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (dynamicGetMethod + (dynamicSetMethod + (recordEntriesMethod + (borrowMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + (runtimeHelpers + (runtime2 + (runtime3 + ("pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" + ("    #[inline(always)]\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("    #[inline(always)]\n" + ("pub fn mk_int_array(val: Vec<i64>) -> UnknownType { Value::IntArray(std::rc::Rc::new(val)) }\n\n" + (reprItemsSource + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub value: std::sync::OnceLock<Value>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + ("    pub fields: Vec<(String, UnknownType)>,\n" + ("}\n\n" + ("impl Record_a {\n" + ("    #[inline(always)]\n" + ("    pub fn get_field(&self, name: &str) -> Option<&UnknownType> {\n" + ("        self.fields.iter().find(|(key, _)| key == name).map(|(_, value)| value)\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn set_field(&mut self, name: &str, value: UnknownType) {\n" + ("        match self.fields.iter_mut().find(|(key, _)| key == name) {\n" + ("            Some(slot) => slot.1 = value,\n" + ("            None => self.fields.push((name.to_owned(), value)),\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn from_fields(fields: Vec<(&str, UnknownType)>) -> Self {\n" + ("        let mut record = Self::default();\n" + ("        for (name, value) in fields {\n" + ("            record.set_field(name, value);\n" + ("        }\n" + ("        record\n" + ("    }\n" + ("}\n\n" + (recordStructs + ("\n\n" + (funcWrappers + typedTraversalsSource)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
+    return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Unit,\n" + ("    Null,\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + ("    IntArray(std::rc::Rc<Vec<i64>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + ("    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" + ("    NativeRecord(std::rc::Rc<dyn NativeRecord>),\n" + ("    NativeArray(std::rc::Rc<dyn NativeArray>),\n" + ("    NativeElement(std::rc::Rc<dyn NativeArray>, usize),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    #[inline(always)]\n" + ("    pub fn resolve(&self) -> &Self {\n" + ("        let mut value = self;\n" + ("        while let Value::Thunk(thunk) = value {\n" + ('            value = thunk.value.get().expect("recursive value used before initialization");\n' + ("        }\n" + ("        value\n" + ("    }\n" + ("    pub fn unwrap_unit(&self) {\n" + ('        if !matches!(self.resolve(), Value::Unit) { panic!("Expected Unit"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self.resolve() { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ("        // Foreign numbers can originate from a native PureScript Int.\n" + ('        match self.resolve() { Value::Number(v) => *v, Value::Int(v) => *v as f64, _ => panic!("Expected Number") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self.resolve() { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self.resolve() { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self.resolve() { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v.clone(),\n" + ("            Value::IntArray(v) => std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect()),\n" + ("            Value::NativeArray(v) => std::rc::Rc::new((0..v.len()).map(|index| native_array_item(v, index)).collect()),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn is_array(&self) -> bool {\n" + ("        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_) | Value::NativeArray(_))\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array_now(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    pub fn boxed_array_view(&self) -> Option<std::rc::Rc<Vec<UnknownType>>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => Some(v.clone()),\n" + ("            Value::IntArray(v) => Some(std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect())),\n" + ("            Value::NativeArray(_) => Some(self.unwrap_array()),\n" + ("            _ => None,\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_len(&self) -> usize {\n" + ('        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), Value::NativeArray(v) => v.len(), _ => panic!("Expected Array") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get(&self, index: usize) -> UnknownType {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v[index].clone(),\n" + ("            Value::IntArray(v) => Value::Int(v[index]),\n" + ("            Value::NativeArray(v) => native_array_item(v, index),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get_int(&self, index: usize) -> i64 {\n" + ("        match self.resolve() {\n" + ('            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!("Expected Int element"); },\n' + ("            Value::IntArray(v) => v[index],\n" + ("            Value::NativeArray(v) => native_array_item(v, index).unwrap_int(),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        match self.resolve() { Value::Class(v) => v.downcast_ref::<T>().unwrap(), Value::NativeElement(v, index) => v.class(*index).downcast_ref::<T>().unwrap(), _ => panic!("Expected Class") }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn __purust_ctor_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self.resolve() { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (dynamicGetMethod + (dynamicSetMethod + (recordEntriesMethod + (borrowMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + (runtimeHelpers + (runtime2 + (runtime4 + (runtime3 + ("pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" + ("    #[inline(always)]\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("    #[inline(always)]\n" + ("pub fn mk_int_array(val: Vec<i64>) -> UnknownType { Value::IntArray(std::rc::Rc::new(val)) }\n\n" + (reprItemsSource + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub value: std::sync::OnceLock<Value>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + ("    pub fields: Vec<(String, UnknownType)>,\n" + ("}\n\n" + ("impl Record_a {\n" + ("    #[inline(always)]\n" + ("    pub fn get_field(&self, name: &str) -> Option<&UnknownType> {\n" + ("        self.fields.iter().find(|(key, _)| key == name).map(|(_, value)| value)\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn set_field(&mut self, name: &str, value: UnknownType) {\n" + ("        match self.fields.iter_mut().find(|(key, _)| key == name) {\n" + ("            Some(slot) => slot.1 = value,\n" + ("            None => self.fields.push((name.to_owned(), value)),\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn from_fields(fields: Vec<(&str, UnknownType)>) -> Self {\n" + ("        let mut record = Self::default();\n" + ("        for (name, value) in fields {\n" + ("            record.set_field(name, value);\n" + ("        }\n" + ("        record\n" + ("    }\n" + ("}\n\n" + (recordStructs + ("\n\n" + (funcWrappers + typedTraversalsSource))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
   };
 };
 var codegenExprTypeWithValueEnums = function(valueEnums) {
@@ -44688,7 +44922,7 @@ var boxUnbox = function(renames) {
                   return "purust_core::Value::Class(std::rc::Rc::new(" + (code + "))");
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 1300, column 14 - line 1315, column 88): " + [classDictShape.constructor.name]);
+                throw new Error("Failed pattern match at Purust.CodeGen (line 1319, column 14 - line 1334, column 88): " + [classDictShape.constructor.name]);
               }
               ;
               var $971 = (actStr === "crate::UnknownType" || actStr === "purust_core::Value") && isExpADT;
@@ -44740,7 +44974,7 @@ var boxUnbox = function(renames) {
                     return "{ let __purust_class_value = " + (code + ("; " + ("if matches!(__purust_class_value.resolve(), purust_core::Value::Class(_)) { " + (downcast("__purust_class_value") + (" } else { std::rc::Rc::new(" + (nativeName + (" { " + (joinWith(", ")(fieldValues) + " }) } }"))))))));
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.CodeGen (line 1326, column 20 - line 1349, column 90): " + [v4.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.CodeGen (line 1345, column 20 - line 1368, column 90): " + [v4.constructor.name]);
                 }
                 ;
                 return downcast(code);
@@ -44981,7 +45215,7 @@ var intViewCandidate = function(currentMod) {
                 return Nothing.value;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 1864, column 10 - line 1868, column 21): " + [v.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 1883, column 10 - line 1887, column 21): " + [v.constructor.name]);
             };
             return findMap2(tryVar)(capturedArr);
           };
@@ -45100,14 +45334,14 @@ var inferTypeExpr = function(currentMod) {
                     return Any.value;
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.CodeGen (line 4123, column 36 - line 4125, column 32): " + [v32.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.CodeGen (line 4142, column 36 - line 4144, column 32): " + [v32.constructor.name]);
                 }
                 ;
                 if (v22 instanceof Nothing) {
                   return Any.value;
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 4122, column 14 - line 4126, column 30): " + [v22.constructor.name]);
+                throw new Error("Failed pattern match at Purust.CodeGen (line 4141, column 14 - line 4145, column 30): " + [v22.constructor.name]);
               }
               ;
               return Any.value;
@@ -45126,7 +45360,7 @@ var inferTypeExpr = function(currentMod) {
                 return currentMod;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 4130, column 18 - line 4132, column 32): " + [v.value1.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 4149, column 18 - line 4151, column 32): " + [v.value1.value0.value0.constructor.name]);
             })();
             var ctorFqn = modStr + ("_" + sanitizeIdent(v.value1.value3));
             var v1 = lookup2(ordString)(ctorFqn)(aritiesMap);
@@ -45143,7 +45377,7 @@ var inferTypeExpr = function(currentMod) {
                 });
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 4137, column 15 - line 4139, column 175): " + [v2.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 4156, column 15 - line 4158, column 175): " + [v2.constructor.name]);
             }
             ;
             if (v1 instanceof Nothing) {
@@ -45152,7 +45386,7 @@ var inferTypeExpr = function(currentMod) {
               });
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 4134, column 8 - line 4140, column 100): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 4153, column 8 - line 4159, column 100): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof App2) {
@@ -45349,7 +45583,7 @@ var inferTypeExpr = function(currentMod) {
                 return currentMod;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 4211, column 18 - line 4213, column 32): " + [v.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 4230, column 18 - line 4232, column 32): " + [v.value0.value0.constructor.name]);
             })();
             return new ADT(modStr, [modStr, v.value2], []);
           }
@@ -45368,7 +45602,7 @@ var inferTypeExpr = function(currentMod) {
                 return replaceAll(".")("_")(currentMod) + "_";
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 4217, column 25 - line 4219, column 93): " + [v.value0.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 4236, column 25 - line 4238, column 93): " + [v.value0.value0.constructor.name]);
             })();
             var fullName = modPrefix + sanitizeIdent(v.value0.value1);
             var v1 = lookup2(ordString)(fullName)(aritiesMap);
@@ -45380,7 +45614,7 @@ var inferTypeExpr = function(currentMod) {
               return Any.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 4221, column 12 - line 4223, column 25): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 4240, column 12 - line 4242, column 25): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Local) {
@@ -45393,7 +45627,7 @@ var inferTypeExpr = function(currentMod) {
                 return "lvl_" + show(showInt)(unwrap()(v.value1));
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 4225, column 16 - line 4227, column 49): " + [v.value0.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 4244, column 16 - line 4246, column 49): " + [v.value0.constructor.name]);
             })();
             var v1 = lookup2(ordString)(name2)(bound2);
             if (v1 instanceof Just) {
@@ -45404,7 +45638,7 @@ var inferTypeExpr = function(currentMod) {
               return Any.value;
             }
             ;
-            throw new Error("Failed pattern match at Purust.CodeGen (line 4228, column 8 - line 4230, column 21): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Purust.CodeGen (line 4247, column 8 - line 4249, column 21): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Let && v.value0 instanceof Just) {
@@ -45720,7 +45954,7 @@ var reuseTestedNullaries = function(valueEnums) {
                 return body;
               }
               ;
-              throw new Error("Failed pattern match at Purust.CodeGen (line 2733, column 3 - line 2737, column 20): " + [v.constructor.name]);
+              throw new Error("Failed pattern match at Purust.CodeGen (line 2752, column 3 - line 2756, column 20): " + [v.constructor.name]);
             };
           };
         };
@@ -45856,7 +46090,7 @@ var alignDiscardedCallbackArgs = function(expected) {
                     return "lvl_" + show(showInt)(unwrap()(v3.value1));
                   }
                   ;
-                  throw new Error("Failed pattern match at Purust.CodeGen (line 1714, column 51 - line 1716, column 57): " + [v3.value0.constructor.name]);
+                  throw new Error("Failed pattern match at Purust.CodeGen (line 1733, column 51 - line 1735, column 57): " + [v3.value0.constructor.name]);
                 })(params);
                 var args = mapWithIndex2(function(i) {
                   return function(name2) {
@@ -45964,7 +46198,7 @@ var typedTraversalCall = function(renames) {
                                 return Nothing.value;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2204, column 39 - line 2216, column 21): " + [v2.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2223, column 39 - line 2235, column 21): " + [v2.constructor.name]);
                             };
                           };
                           var functionParts = function(ty) {
@@ -46023,7 +46257,7 @@ var typedTraversalCall = function(renames) {
                                 return Nothing.value;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2066, column 37 - line 2068, column 25): " + [v1.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2085, column 37 - line 2087, column 25): " + [v1.constructor.name]);
                             }
                             ;
                             if (v2 instanceof Nothing) {
@@ -46040,10 +46274,10 @@ var typedTraversalCall = function(renames) {
                                 return Nothing.value;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2069, column 16 - line 2071, column 25): " + [v1.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2088, column 16 - line 2090, column 25): " + [v1.constructor.name]);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 2065, column 24 - line 2071, column 25): " + [v2.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 2084, column 24 - line 2090, column 25): " + [v2.constructor.name]);
                           };
                           var replicateApp = function(expr) {
                             var v2 = uncurriedAppArgs("Data_Array_replicateImpl")(expr);
@@ -46279,7 +46513,7 @@ var typedTraversalCall = function(renames) {
                                           return Nothing.value;
                                         }
                                         ;
-                                        throw new Error("Failed pattern match at Purust.CodeGen (line 1957, column 79 - line 1959, column 35): " + [v4.constructor.name]);
+                                        throw new Error("Failed pattern match at Purust.CodeGen (line 1976, column 79 - line 1978, column 35): " + [v4.constructor.name]);
                                       }
                                       ;
                                       return Nothing.value;
@@ -46293,7 +46527,7 @@ var typedTraversalCall = function(renames) {
                               return Nothing.value;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 1948, column 31 - line 1962, column 19): " + [v2.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 1967, column 31 - line 1981, column 19): " + [v2.constructor.name]);
                           };
                           var argCodeFor = function(later) {
                             return function(expr) {
@@ -46377,7 +46611,7 @@ var typedTraversalCall = function(renames) {
                                                 return pure(applicativeMaybe)(new Tuple(accTy, "purust_core::typed::sum_range(" + (v22.value0 + (", " + (v22.value1 + (", " + (initCode + ")")))))));
                                               }
                                               ;
-                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2095, column 39 - line 2100, column 135): " + [v1.value0.pred.constructor.name]);
+                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2114, column 39 - line 2119, column 135): " + [v1.value0.pred.constructor.name]);
                                             }
                                             ;
                                             if (v4 instanceof Just && (v4.value0 === "product" && v3)) {
@@ -46391,7 +46625,7 @@ var typedTraversalCall = function(renames) {
                                                 return pure(applicativeMaybe)(new Tuple(accTy, "purust_core::typed::product_range(" + (v22.value0 + (", " + (v22.value1 + (", " + (initCode + ")")))))));
                                               }
                                               ;
-                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2101, column 43 - line 2106, column 139): " + [v1.value0.pred.constructor.name]);
+                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2120, column 43 - line 2125, column 139): " + [v1.value0.pred.constructor.name]);
                                             }
                                             ;
                                             return bind(bindMaybe)(callableFor([accTy, Int.value])(accTy)(cbArg))(function(foldC) {
@@ -46405,7 +46639,7 @@ var typedTraversalCall = function(renames) {
                                                 return pure(applicativeMaybe)(new Tuple(accTy, "purust_core::typed::foldl_range::<i64, " + (rustTy(accTy) + (", _>(" + (v22.value0 + (", " + (v22.value1 + (", " + (initCode + (", " + (foldC + ")")))))))))));
                                               }
                                               ;
-                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2109, column 21 - line 2114, column 190): " + [v1.value0.pred.constructor.name]);
+                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2128, column 21 - line 2133, column 190): " + [v1.value0.pred.constructor.name]);
                                             });
                                           }
                                           ;
@@ -46516,13 +46750,13 @@ var typedTraversalCall = function(renames) {
                                               return arrayFold;
                                             }
                                             ;
-                                            throw new Error("Failed pattern match at Purust.CodeGen (line 2174, column 24 - line 2176, column 35): " + [filteredFold.constructor.name]);
+                                            throw new Error("Failed pattern match at Purust.CodeGen (line 2193, column 24 - line 2195, column 35): " + [filteredFold.constructor.name]);
                                           }
                                           ;
-                                          throw new Error("Failed pattern match at Purust.CodeGen (line 2172, column 22 - line 2176, column 35): " + [replicatedFold.constructor.name]);
+                                          throw new Error("Failed pattern match at Purust.CodeGen (line 2191, column 22 - line 2195, column 35): " + [replicatedFold.constructor.name]);
                                         }
                                         ;
-                                        throw new Error("Failed pattern match at Purust.CodeGen (line 2170, column 9 - line 2176, column 35): " + [rangeFold.constructor.name]);
+                                        throw new Error("Failed pattern match at Purust.CodeGen (line 2189, column 9 - line 2195, column 35): " + [rangeFold.constructor.name]);
                                       });
                                     });
                                   };
@@ -46585,7 +46819,7 @@ var typedTraversalCall = function(renames) {
                             return Nothing.value;
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 1912, column 153 - line 1921, column 21): " + [v.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 1931, column 153 - line 1940, column 21): " + [v.constructor.name]);
                         };
                       };
                     };
@@ -46638,7 +46872,7 @@ var genApp = function(renames) {
                               return 0;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 2350, column 14 - line 2352, column 25): " + [v.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 2369, column 14 - line 2371, column 25): " + [v.constructor.name]);
                           };
                           var getInner = function($copy_v) {
                             var $tco_done = false;
@@ -46676,7 +46910,7 @@ var genApp = function(renames) {
                                   return modNameStr;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 2378, column 26 - line 2380, column 40): " + [v.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 2397, column 26 - line 2399, column 40): " + [v.value0.value0.constructor.name]);
                               })();
                               return new Just(prefix + ("_" + sanitizeIdent(v.value0.value1)));
                             }
@@ -46955,7 +47189,7 @@ var genApp = function(renames) {
                                         return argTy;
                                       }
                                       ;
-                                      throw new Error("Failed pattern match at Purust.CodeGen (line 2398, column 31 - line 2400, column 39): " + [v1.constructor.name]);
+                                      throw new Error("Failed pattern match at Purust.CodeGen (line 2417, column 31 - line 2419, column 39): " + [v1.constructor.name]);
                                     })();
                                     return boxUnbox(renames)(valueEnums)(globalClassFields)(modNameStr)(paramTy)(argTy)(fromMaybe("")(index(argsCodeArray)(i)));
                                   };
@@ -46993,7 +47227,7 @@ var genApp = function(renames) {
                                     return Any.value;
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 2362, column 23 - line 2364, column 31): " + [v.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 2381, column 23 - line 2383, column 31): " + [v.constructor.name]);
                                 })();
                                 var paramTy = (function() {
                                   var v = index(params)(i);
@@ -47005,7 +47239,7 @@ var genApp = function(renames) {
                                     return argTy;
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 2365, column 25 - line 2367, column 33): " + [v.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 2384, column 25 - line 2386, column 33): " + [v.constructor.name]);
                                 })();
                                 var converted = boxUnbox(renames)(valueEnums)(globalClassFields)(modNameStr)(paramTy)(argTy)(argCode);
                                 return "        let _tco_temp_" + (show(showInt)(i) + (" = " + (converted + ";\n")));
@@ -47055,7 +47289,7 @@ var genApp = function(renames) {
                                   return replaceAll(".")("_")(modNameStr) + "_";
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 2430, column 41 - line 2432, column 109): " + [v3.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 2449, column 41 - line 2451, column 109): " + [v3.value0.value0.constructor.name]);
                               })();
                               var fullName = modPrefix + sName;
                               var $1624 = fullName === "Data_Eq_eqInt" && m === 2;
@@ -47248,10 +47482,10 @@ var genApp = function(renames) {
                                 return plainResult;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2408, column 22 - line 2410, column 35): " + [directLocalCall.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2427, column 22 - line 2429, column 35): " + [directLocalCall.constructor.name]);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 2406, column 22 - line 2410, column 35): " + [typedCall.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 2425, column 22 - line 2429, column 35): " + [typedCall.constructor.name]);
                           })();
                           return resultCode;
                         };
@@ -47614,7 +47848,7 @@ var codegenExpr_ = function(renames) {
                                       return "lvl_" + show(showInt)(unwrap()(v12.value1));
                                     }
                                     ;
-                                    throw new Error("Failed pattern match at Purust.CodeGen (line 2785, column 55 - line 2787, column 47): " + [v12.value0.constructor.name]);
+                                    throw new Error("Failed pattern match at Purust.CodeGen (line 2804, column 55 - line 2806, column 47): " + [v12.value0.constructor.name]);
                                   })());
                                 }
                                 ;
@@ -47784,7 +48018,7 @@ var codegenExpr_ = function(renames) {
                                     return "lvl_" + show(showInt)(unwrap()(v32.value1));
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 2857, column 48 - line 2859, column 66): " + [v32.value0.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 2876, column 48 - line 2878, column 66): " + [v32.value0.constructor.name]);
                                 })(toArray3(inner.value0));
                                 var tentativeBound = foldl2(function(b) {
                                   return function(v32) {
@@ -47840,7 +48074,7 @@ var codegenExpr_ = function(renames) {
                                 return new Tuple(append(semigroupArray)(implicitParams)(p1), inner.value1);
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2852, column 39 - line 2891, column 51): " + [v22.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2871, column 39 - line 2910, column 51): " + [v22.constructor.name]);
                             })();
                             var actualTy = (function() {
                               var retTy2 = extractFinalRetType(effectiveTy);
@@ -47873,7 +48107,7 @@ var codegenExpr_ = function(renames) {
                                 return "lvl_" + show(showInt)(unwrap()(v12.value1));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2902, column 49 - line 2904, column 51): " + [v12.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2921, column 49 - line 2923, column 51): " + [v12.value0.constructor.name]);
                             })(inner.value0);
                             var actualTy = (function() {
                               var retTy2 = extractFinalRetType(effectiveTy);
@@ -47907,7 +48141,7 @@ var codegenExpr_ = function(renames) {
                                 return "lvl_" + show(showInt)(unwrap()(v12.value1));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 2915, column 49 - line 2917, column 51): " + [v12.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 2934, column 49 - line 2936, column 51): " + [v12.value0.constructor.name]);
                             })(inner.value0);
                             var actualTy = (function() {
                               var retTy2 = extractFinalRetType(effectiveTy);
@@ -47971,14 +48205,14 @@ var codegenExpr_ = function(renames) {
                                                   return valTy2;
                                                 }
                                                 ;
-                                                throw new Error("Failed pattern match at Purust.CodeGen (line 2947, column 65 - line 2949, column 63): " + [v6.constructor.name]);
+                                                throw new Error("Failed pattern match at Purust.CodeGen (line 2966, column 65 - line 2968, column 63): " + [v6.constructor.name]);
                                               }
                                               ;
                                               if (mbDecl instanceof Nothing) {
                                                 return valTy2;
                                               }
                                               ;
-                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2946, column 43 - line 2950, column 61): " + [mbDecl.constructor.name]);
+                                              throw new Error("Failed pattern match at Purust.CodeGen (line 2965, column 43 - line 2969, column 61): " + [mbDecl.constructor.name]);
                                             }
                                             ;
                                             return valTy2;
@@ -48164,14 +48398,14 @@ var codegenExpr_ = function(renames) {
                                     return false;
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3018, column 40 - line 3025, column 35): " + [v4.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3037, column 40 - line 3044, column 35): " + [v4.constructor.name]);
                                 }
                                 ;
                                 if (v32 instanceof Nothing) {
                                   return false;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3017, column 50 - line 3026, column 33): " + [v32.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3036, column 50 - line 3045, column 33): " + [v32.constructor.name]);
                               }
                               ;
                               return false;
@@ -48294,7 +48528,7 @@ var codegenExpr_ = function(renames) {
                                       return "";
                                     }
                                     ;
-                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3101, column 39 - line 3103, column 40): " + [postChildPlan.value0.permutation.constructor.name]);
+                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3120, column 39 - line 3122, column 40): " + [postChildPlan.value0.permutation.constructor.name]);
                                   })();
                                   var pattern2 = v1.value0.fields.constructor + ("(" + (joinWith(", ")(references4) + ")"));
                                   var copiedScalars2 = joinWith(" ")(mapMaybe(function(v22) {
@@ -48311,7 +48545,7 @@ var codegenExpr_ = function(renames) {
                                   return "{ /* purust child call: post-call fields */ let mut " + (v1.value0.fields.source + (" = " + (v1.value0.fields.source + ("; " + ("if let std::option::Option::Some(_purust_post_slot) = std::rc::Rc::get_mut(&mut " + (v1.value0.fields.source + (") { " + ("let " + (pattern2 + (" = _purust_post_slot else { unreachable!() }; " + (copiedScalars2 + (" " + ("let mut " + (childName2 + (" = std::mem::replace(" + (reference2(postChildPlan.value0.update.index) + (", (*" + (reference2(postChildPlan.value0.update.sibling) + (").clone()); " + ("let _purust_post_child = " + (replacement2 + ("; *" + (reference2(postChildPlan.value0.update.index) + (" = _purust_post_child; " + ("if " + (predicate + (" { " + (v1.value0.fields.source + (" }" + (permutation + (" else { " + ("let std::option::Option::Some(" + (ownedFieldsPattern(v1.value0.fields) + (") = _purust_post_slot.__purust_take() else { unreachable!() }; " + (postChildPlan.value0.afterCall + (" } } else " + (normal + " }")))))))))))))))))))))))))))))))))))));
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3087, column 30 - line 3111, column 71): " + [postChildPlan.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3106, column 30 - line 3130, column 71): " + [postChildPlan.constructor.name]);
                               })();
                               if (childPlan instanceof Nothing) {
                                 return postNormal;
@@ -48348,17 +48582,17 @@ var codegenExpr_ = function(renames) {
                                 return "if " + (joinWith(" && ")(childPlan.value0.guards) + (" { " + (fast + (" } else { " + (postNormal + " }")))));
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 3112, column 16 - line 3132, column 112): " + [childPlan.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 3131, column 16 - line 3151, column 112): " + [childPlan.constructor.name]);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3083, column 12 - line 3132, column 112): " + [workerCall.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3102, column 12 - line 3151, column 112): " + [workerCall.constructor.name]);
                           }
                           ;
                           if (v1 instanceof Nothing) {
                             return genApp(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(appTy)(v.value0)(toArray3(v.value1));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 2991, column 8 - line 3133, column 166): " + [v1.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 3010, column 8 - line 3152, column 166): " + [v1.constructor.name]);
                         }
                         ;
                         if (v instanceof UncurriedApp) {
@@ -48377,7 +48611,7 @@ var codegenExpr_ = function(renames) {
                               return "// Unsupported UncurriedEffectApp without args\n";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3141, column 12 - line 3143, column 75): " + [arg0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3160, column 12 - line 3162, column 75): " + [arg0.constructor.name]);
                           }
                           ;
                           if (v.value0 instanceof Accessor && (v.value0.value1 instanceof GetProp && v.value0.value1.value0 === "logRecord")) {
@@ -48390,7 +48624,7 @@ var codegenExpr_ = function(renames) {
                               return "// Unsupported UncurriedEffectApp without args\n";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3146, column 12 - line 3148, column 75): " + [arg0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3165, column 12 - line 3167, column 75): " + [arg0.constructor.name]);
                           }
                           ;
                           if (v.value0 instanceof Typed && (v.value0.value1 instanceof Var && v.value0.value1.value0.value1 === "logRecord")) {
@@ -48403,7 +48637,7 @@ var codegenExpr_ = function(renames) {
                               return "// Unsupported UncurriedEffectApp without args\n";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3151, column 12 - line 3153, column 75): " + [arg0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3170, column 12 - line 3172, column 75): " + [arg0.constructor.name]);
                           }
                           ;
                           if (v.value0 instanceof Var && v.value0.value0.value1 === "logRecord") {
@@ -48416,7 +48650,7 @@ var codegenExpr_ = function(renames) {
                               return "// Unsupported UncurriedEffectApp without args\n";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3156, column 12 - line 3158, column 75): " + [arg0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3175, column 12 - line 3177, column 75): " + [arg0.constructor.name]);
                           }
                           ;
                           var appTy = inferTypeExpr(currentMod)(aritiesMap)(globalClassFields)(bound2)(new UncurriedEffectApp(v.value0, v.value1));
@@ -48468,7 +48702,7 @@ var codegenExpr_ = function(renames) {
                                       return "let mut " + (childName(depth) + (" = " + (parent + (".get_" + (fieldBase(renames)(v22.value0) + ("();\n    " + (setter + ("(purust_core::Value::Unit);\n    " + (setters(depth + 1 | 0)(childName(depth))(v22.value1.value0) + ("\n    " + (setter + ("(" + (childName(depth) + ");")))))))))))));
                                     }
                                     ;
-                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3209, column 14 - line 3215, column 67): " + [v22.value1.constructor.name]);
+                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3228, column 14 - line 3234, column 67): " + [v22.value1.constructor.name]);
                                   };
                                 })(v12.value0));
                               };
@@ -48486,7 +48720,7 @@ var codegenExpr_ = function(renames) {
                                     return stagedValues(depth + 1 | 0)(v22.value1.value0);
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3186, column 9 - line 3188, column 62): " + [v22.value1.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3205, column 9 - line 3207, column 62): " + [v22.value1.constructor.name]);
                                 };
                               })(v12.value0));
                             };
@@ -48656,7 +48890,7 @@ var codegenExpr_ = function(renames) {
                                       return Nothing.value;
                                     }
                                     ;
-                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3289, column 51 - line 3294, column 39): " + [v4.constructor.name]);
+                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3308, column 51 - line 3313, column 39): " + [v4.constructor.name]);
                                   }
                                   ;
                                   if (v32 instanceof Nothing) {
@@ -48687,17 +48921,17 @@ var codegenExpr_ = function(renames) {
                                         return Nothing.value;
                                       }
                                       ;
-                                      throw new Error("Failed pattern match at Purust.CodeGen (line 3303, column 26 - line 3307, column 43): " + [v4.constructor.name]);
+                                      throw new Error("Failed pattern match at Purust.CodeGen (line 3322, column 26 - line 3326, column 43): " + [v4.constructor.name]);
                                     }
                                     ;
                                     if (elementTy instanceof Nothing) {
                                       return Nothing.value;
                                     }
                                     ;
-                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3295, column 30 - line 3308, column 39): " + [elementTy.constructor.name]);
+                                    throw new Error("Failed pattern match at Purust.CodeGen (line 3314, column 30 - line 3327, column 39): " + [elementTy.constructor.name]);
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3288, column 20 - line 3308, column 39): " + [v32.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3307, column 20 - line 3327, column 39): " + [v32.constructor.name]);
                                 }
                                 ;
                                 return v22(true);
@@ -48731,7 +48965,7 @@ var codegenExpr_ = function(renames) {
                                     return "none";
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3312, column 138 - line 3314, column 28): " + [v12.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3331, column 138 - line 3333, column 28): " + [v12.constructor.name]);
                                 })() + (", lvl_3 in arities: " + (function() {
                                   var v12 = lookup2(ordString)("lvl_3")(aritiesMap);
                                   if (v12 instanceof Just) {
@@ -48742,7 +48976,7 @@ var codegenExpr_ = function(renames) {
                                     return "none";
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3314, column 60 - line 3316, column 28): " + [v12.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3333, column 60 - line 3335, column 28): " + [v12.constructor.name]);
                                 })())));
                               }
                               ;
@@ -48798,10 +49032,10 @@ var codegenExpr_ = function(renames) {
                                 return v3(true);
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 3326, column 20 - line 3335, column 125): " + [filterCount.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 3345, column 20 - line 3354, column 125): " + [filterCount.constructor.name]);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3321, column 24 - line 3335, column 125): " + [v1.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3340, column 24 - line 3354, column 125): " + [v1.constructor.name]);
                           }
                           ;
                           if (v.value0.value0 instanceof OpIsTag) {
@@ -48814,7 +49048,7 @@ var codegenExpr_ = function(renames) {
                                 return currentMod;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 3337, column 26 - line 3339, column 36): " + [v.value0.value0.value0.value0.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 3356, column 26 - line 3358, column 36): " + [v.value0.value0.value0.value0.constructor.name]);
                             })();
                             var tagTy = fromMaybe(aTy)(map(functorMaybe)(extractFinalRetType)(lookup2(ordString)(ctorModule + ("_" + sanitizeIdent(v.value0.value0.value0.value1)))(aritiesMap)));
                             var v1 = unwrapType(tagTy);
@@ -48832,7 +49066,7 @@ var codegenExpr_ = function(renames) {
                                   return "Nothing";
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3356, column 83 - line 3358, column 40): " + [lookupRes.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3375, column 83 - line 3377, column 40): " + [lookupRes.constructor.name]);
                               })() + " */ ")));
                               var hasArgs = (function() {
                                 var v22 = map(functorMaybe)(unwrapType)(lookupRes);
@@ -48929,7 +49163,7 @@ var codegenExpr_ = function(renames) {
                               return "{ let _mod_l: i64 = " + (aStrInt + ("; let _mod_r: i64 = " + (bStrInt + "; _mod_l.checked_rem_euclid(_mod_r).unwrap_or(0_i64) }")));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3391, column 25 - line 3395, column 150): " + [v1.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3410, column 25 - line 3414, column 150): " + [v1.constructor.name]);
                           }
                           ;
                           if (v.value0.value0 instanceof OpIntBitAnd) {
@@ -49102,7 +49336,7 @@ var codegenExpr_ = function(renames) {
                               return indexed;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3434, column 23 - line 3442, column 25): " + [v1.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3453, column 23 - line 3461, column 25): " + [v1.constructor.name]);
                           }
                           ;
                           if (v.value0.value0 instanceof OpNumberNum && v.value0.value0.value0 instanceof OpAdd) {
@@ -49149,7 +49383,7 @@ var codegenExpr_ = function(renames) {
                             return "(" + (boxUnbox(renames)(valueEnums)(globalClassFields)(currentMod)(Any.value)(baseTy)(baseCode) + (").array_get(" + (show(showInt)(v.value1.value0) + ")")));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 3451, column 37 - line 3458, column 136): " + [v1.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 3470, column 37 - line 3477, column 136): " + [v1.constructor.name]);
                         }
                         ;
                         if (v instanceof Accessor && v.value1 instanceof GetProp) {
@@ -49194,7 +49428,7 @@ var codegenExpr_ = function(renames) {
                               return currentMod;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3481, column 19 - line 3483, column 32): " + [v.value1.value0.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3500, column 19 - line 3502, column 32): " + [v.value1.value0.value0.constructor.name]);
                           })();
                           var matchArgs = joinWith(", ")(map(functorArray)(function(i) {
                             var $2170 = i === v.value1.value5;
@@ -49245,7 +49479,7 @@ var codegenExpr_ = function(renames) {
                               return replaceAll(".")("_")(currentMod) + "_";
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3494, column 23 - line 3496, column 91): " + [v.value0.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3513, column 23 - line 3515, column 91): " + [v.value0.value0.constructor.name]);
                           })();
                           var fullName = modPrefix + sanitizeIdent(v.value0.value1);
                           var isAlive = member2(ordString)(fullName)(alive);
@@ -49267,7 +49501,7 @@ var codegenExpr_ = function(renames) {
                               return 0;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3501, column 32 - line 3503, column 25): " + [v12.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3520, column 32 - line 3522, column 25): " + [v12.constructor.name]);
                           })();
                           var varCode = (function() {
                             if (true) {
@@ -49300,7 +49534,7 @@ var codegenExpr_ = function(renames) {
                               return "lvl_" + show(showInt)(unwrap()(v.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3517, column 14 - line 3519, column 47): " + [v.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3536, column 14 - line 3538, column 47): " + [v.value0.constructor.name]);
                           })();
                           var newBound = insert(ordString)(name2)(valTy)(bound2);
                           var newMbLoop = (function() {
@@ -49353,7 +49587,7 @@ var codegenExpr_ = function(renames) {
                                     return "lvl_" + show(showInt)(unwrap()(chainLet.level));
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3549, column 29 - line 3551, column 68): " + [chainLet.ident.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3568, column 29 - line 3570, column 68): " + [chainLet.ident.constructor.name]);
                                 })();
                                 var chainMbLoop = (function() {
                                   if (st.mbLoop instanceof Just && st.mbLoop.value0.name === chainName) {
@@ -49452,7 +49686,7 @@ var codegenExpr_ = function(renames) {
                             return "{ let mut " + (v1.value0.fields.source + (" = " + (v1.value0.fields.source + ("; " + ("let _taken = std::rc::Rc::get_mut(&mut " + (v1.value0.fields.source + (").and_then(|node| node.__purust_take()); " + ("match _taken { std::option::Option::Some(" + (ownedFieldsPattern(v1.value0.fields) + (") => " + (codegenExpr_(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bindOwnedFields(v1.value0.fields)(bound2))(alive)(inEffectBlock)(v1.value0.reused) + (", std::option::Option::None => " + (codegenExpr_(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(insert2(ordString)(v1.value0.fields.source)(alive))(inEffectBlock)(v) + ", _ => unreachable!() } }")))))))))))));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 3577, column 8 - line 3593, column 36): " + [v1.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 3596, column 8 - line 3612, column 36): " + [v1.constructor.name]);
                         }
                         ;
                         if (v instanceof PrimEffect) {
@@ -49482,7 +49716,7 @@ var codegenExpr_ = function(renames) {
                               return "Control_Monad_ST_Internal_write(" + (operand(union2(ordString)(alive)(freeVariables2(v.value0.value0)))(v.value0.value1) + (", " + (operand(alive)(v.value0.value0) + ")")));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3600, column 16 - line 3604, column 150): " + [v.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3619, column 16 - line 3623, column 150): " + [v.value0.constructor.name]);
                           })();
                           return "(" + (prefix + (call3 + ").unwrap_func1()(purust_core::Value::Unit)"));
                         }
@@ -49526,7 +49760,7 @@ var codegenExpr_ = function(renames) {
                               return "lvl_" + show(showInt)(unwrap()(v.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3608, column 16 - line 3610, column 49): " + [v.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3627, column 16 - line 3629, column 49): " + [v.value0.constructor.name]);
                           })();
                           var newMbLoop = (function() {
                             if (mbLoop instanceof Just && mbLoop.value0.name === name2) {
@@ -49637,7 +49871,7 @@ var codegenExpr_ = function(renames) {
                               return "lvl_" + show(showInt)(unwrap()(v.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3696, column 16 - line 3698, column 49): " + [v.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3715, column 16 - line 3717, column 49): " + [v.value0.constructor.name]);
                           })();
                           var t = (function() {
                             var v12 = lookup2(ordString)(name2)(bound2);
@@ -49649,7 +49883,7 @@ var codegenExpr_ = function(renames) {
                               return Any.value;
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3699, column 13 - line 3701, column 25): " + [v12.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3718, column 13 - line 3720, column 25): " + [v12.constructor.name]);
                           })();
                           var v1 = (function() {
                             var $2293 = name2 === "sup";
@@ -49764,7 +49998,7 @@ var codegenExpr_ = function(renames) {
                             })() + "..Default::default() }))"))))));
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 3704, column 14 - line 3744, column 196): " + [v.value0.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 3723, column 14 - line 3763, column 196): " + [v.value0.constructor.name]);
                         }
                         ;
                         if (v instanceof Abs) {
@@ -49777,7 +50011,7 @@ var codegenExpr_ = function(renames) {
                               return "lvl_" + show(showInt)(unwrap()(v12.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3747, column 45 - line 3749, column 47): " + [v12.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3766, column 45 - line 3768, column 47): " + [v12.value0.constructor.name]);
                           })(toArray3(v.value0));
                           return genAbs(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map(functorArray)(function(v12) {
                             return Any.value;
@@ -49794,7 +50028,7 @@ var codegenExpr_ = function(renames) {
                               return "lvl_" + show(showInt)(unwrap()(v12.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3753, column 45 - line 3755, column 47): " + [v12.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3772, column 45 - line 3774, column 47): " + [v12.value0.constructor.name]);
                           })(v.value0);
                           return genAbs(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map(functorArray)(function(v12) {
                             return Any.value;
@@ -49811,7 +50045,7 @@ var codegenExpr_ = function(renames) {
                               return "lvl_" + show(showInt)(unwrap()(v12.value1));
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3759, column 45 - line 3761, column 47): " + [v12.value0.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3778, column 45 - line 3780, column 47): " + [v12.value0.constructor.name]);
                           })(v.value0);
                           return genEffectAbs(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(mbLoop)(aritiesMap)(globalClassFields)(bound2)(alive)(paramsArr)(new Func(map(functorArray)(function(v12) {
                             return Any.value;
@@ -49848,7 +50082,7 @@ var codegenExpr_ = function(renames) {
                                   return "crate::" + sanitizeIdent(v.value2);
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3775, column 28 - line 3779, column 64): " + [v.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3794, column 28 - line 3798, column 64): " + [v.value0.value0.constructor.name]);
                               })();
                               var structFieldsCode = joinWith(", ")(mapWithIndex2(function(i) {
                                 return function(v32) {
@@ -49901,7 +50135,7 @@ var codegenExpr_ = function(renames) {
                                             return replaceAll(".")("_")(currentMod) + "_";
                                           }
                                           ;
-                                          throw new Error("Failed pattern match at Purust.CodeGen (line 3824, column 37 - line 3826, column 106): " + [v.value0.value0.constructor.name]);
+                                          throw new Error("Failed pattern match at Purust.CodeGen (line 3843, column 37 - line 3845, column 106): " + [v.value0.value0.constructor.name]);
                                         })() + sanitizeIdent(v.value3);
                                         var expectedFieldTy = (function() {
                                           var v32 = lookup2(ordString)(ctorFqn)(aritiesMap);
@@ -49913,7 +50147,7 @@ var codegenExpr_ = function(renames) {
                                             return Any.value;
                                           }
                                           ;
-                                          throw new Error("Failed pattern match at Purust.CodeGen (line 3827, column 44 - line 3829, column 42): " + [v32.constructor.name]);
+                                          throw new Error("Failed pattern match at Purust.CodeGen (line 3846, column 44 - line 3848, column 42): " + [v32.constructor.name]);
                                         })();
                                         var aliveForV = union2(ordString)(fieldAlive)(foldl2(union5)(empty3)(map(functorArray)(freeVariables2)(subsequent)));
                                         var valCode2 = codegenExpr_(renames)(valueEnums)(currentMod)(allZeroArity)(reuseContext)(argLoopContext(mbLoop))(aritiesMap)(globalClassFields)(fieldBound2)(aliveForV)(false)(val);
@@ -49941,7 +50175,7 @@ var codegenExpr_ = function(renames) {
                                   return "crate::";
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3793, column 29 - line 3797, column 38): " + [v.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3812, column 29 - line 3816, column 38): " + [v.value0.value0.constructor.name]);
                               })();
                               var enumName = sanitizeIdent(v.value2);
                               var source2 = consumedConstructorSource(operandType)("std::rc::Rc<" + (enumPrefix + (enumName + ">")))(v.value3)(alive)(map(functorArray)(function(v32) {
@@ -49956,7 +50190,7 @@ var codegenExpr_ = function(renames) {
                                   return currentMod;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3832, column 29 - line 3834, column 39): " + [v.value0.value0.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3851, column 29 - line 3853, column 39): " + [v.value0.value0.constructor.name]);
                               })();
                               var ctorClean = sanitizeIdent(v.value3);
                               var candidates = ownedFieldSources(valueEnums)(currentMod)(aritiesMap)(globalClassFields)(bound2)(alive)(values2);
@@ -49981,7 +50215,7 @@ var codegenExpr_ = function(renames) {
                                   return alive;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3814, column 33 - line 3816, column 34): " + [source2.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3833, column 33 - line 3835, column 34): " + [source2.constructor.name]);
                               })();
                               var constructed = enumPrefix + (enumName + ("::" + (ctorClean + renderFields(bound2)(aliveForFields)(values2))));
                               var fallback = (function() {
@@ -49993,7 +50227,7 @@ var codegenExpr_ = function(renames) {
                                   return "{ let _rebuilt = " + (constructed + ("; let mut _reused = " + (source2.value0 + "; if let std::option::Option::Some(_slot) = std::rc::Rc::get_mut(&mut _reused) { *_slot = _rebuilt; _reused } else { std::rc::Rc::new(_rebuilt) } }")));
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3836, column 27 - line 3841, column 88): " + [source2.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3855, column 27 - line 3860, column 88): " + [source2.constructor.name]);
                               })();
                               var $2379 = isValueEnum(valueEnums)(ctorModule)(v.value2);
                               if ($2379) {
@@ -50037,16 +50271,16 @@ var codegenExpr_ = function(renames) {
                                   return "{ let mut " + (transfer.value0.owned.source + (" = " + (transfer.value0.owned.source + ("; " + ("let _taken = std::rc::Rc::get_mut(&mut " + (transfer.value0.owned.source + (").and_then(|node| node.__purust_take()); " + ("match _taken { std::option::Option::Some(" + (ownedFieldsPattern(transfer.value0.owned) + (") => { let _rebuilt = " + (rebuilt + ("; " + ("*std::rc::Rc::get_mut(&mut " + (transfer.value0.owned.source + (").unwrap() = _rebuilt; " + (transfer.value0.owned.source + (" }, " + ("std::option::Option::None => " + (fallback + ", _ => unreachable!() } }")))))))))))))))))));
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3855, column 23 - line 3868, column 97): " + [update2.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3874, column 23 - line 3887, column 97): " + [update2.constructor.name]);
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 3842, column 85 - line 3868, column 97): " + [transfer.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 3861, column 85 - line 3887, column 97): " + [transfer.constructor.name]);
                             }
                             ;
-                            throw new Error("Failed pattern match at Purust.CodeGen (line 3772, column 12 - line 3868, column 97): " + [v2.constructor.name]);
+                            throw new Error("Failed pattern match at Purust.CodeGen (line 3791, column 12 - line 3887, column 97): " + [v2.constructor.name]);
                           }
                           ;
-                          throw new Error("Failed pattern match at Purust.CodeGen (line 3765, column 5 - line 3868, column 97): " + [v1.constructor.name]);
+                          throw new Error("Failed pattern match at Purust.CodeGen (line 3784, column 5 - line 3887, column 97): " + [v1.constructor.name]);
                         }
                         ;
                         if (v instanceof CtorDef) {
@@ -50132,7 +50366,7 @@ var codegenExpr_ = function(renames) {
                                   return false;
                                 }
                                 ;
-                                throw new Error("Failed pattern match at Purust.CodeGen (line 3907, column 43 - line 3909, column 33): " + [extracted.constructor.name]);
+                                throw new Error("Failed pattern match at Purust.CodeGen (line 3926, column 43 - line 3928, column 33): " + [extracted.constructor.name]);
                               })();
                               var aliveForVal2 = union2(ordString)(alive)(union2(ordString)(bindsVarsForAlive)(union2(ordString)(freeVariables2(v.value2))(varsSubsequent)));
                               var $2419 = isTCO && length(allArgTypes) > 0;
@@ -50147,7 +50381,7 @@ var codegenExpr_ = function(renames) {
                                     return [];
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3912, column 32 - line 3914, column 35): " + [extracted.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3931, column 32 - line 3933, column 35): " + [extracted.constructor.name]);
                                 })();
                                 var innerExpr = (function() {
                                   if (extracted instanceof Just) {
@@ -50158,7 +50392,7 @@ var codegenExpr_ = function(renames) {
                                     return v12.value1;
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3916, column 32 - line 3918, column 36): " + [extracted.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3935, column 32 - line 3937, column 36): " + [extracted.constructor.name]);
                                 })();
                                 var fnName = sanitizeIdent(v12.value0) + "_impl";
                                 var dedupedParams = dedupArgs(paramsArr2);
@@ -50229,7 +50463,7 @@ var codegenExpr_ = function(renames) {
                                         return innerCallGeneric;
                                       }
                                       ;
-                                      throw new Error("Failed pattern match at Purust.CodeGen (line 3963, column 40 - line 3965, column 57): " + [viewCandidate.constructor.name]);
+                                      throw new Error("Failed pattern match at Purust.CodeGen (line 3982, column 40 - line 3984, column 57): " + [viewCandidate.constructor.name]);
                                     })();
                                     var clones = joinWith("\n        ")(map(functorArray)(function(c) {
                                       return "let mut " + (sanitizeIdent(c) + (" = " + (sanitizeIdent(c) + ".clone();")));
@@ -50270,7 +50504,7 @@ var codegenExpr_ = function(renames) {
                                     return "";
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3947, column 33 - line 3953, column 35): " + [viewCandidate.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 3966, column 33 - line 3972, column 35): " + [viewCandidate.constructor.name]);
                                 })();
                                 return "let val_" + (sanitizeIdent(v12.value0) + (" = {\n        " + (clonesCode + ("\n        " + (capturedClones + ("\n        " + (fnCode + ("\n        " + (viewFnCode + ("\n        " + (finalBridgeCode + "\n    };")))))))))));
                               }
@@ -50371,7 +50605,7 @@ var codegenBindingGroup = function(options) {
                                 return false;
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1510, column 31 - line 1512, column 33): " + [extracted.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1529, column 31 - line 1531, column 33): " + [extracted.constructor.name]);
                             })();
                             var paramsArr = (function() {
                               if (extracted instanceof Just) {
@@ -50386,7 +50620,7 @@ var codegenBindingGroup = function(options) {
                                 })(allArgTypes);
                               }
                               ;
-                              throw new Error("Failed pattern match at Purust.CodeGen (line 1513, column 27 - line 1515, column 79): " + [extracted.constructor.name]);
+                              throw new Error("Failed pattern match at Purust.CodeGen (line 1532, column 27 - line 1534, column 79): " + [extracted.constructor.name]);
                             })();
                             var deduped = dedupArgs(paramsArr);
                             var mbLoop = (function() {
@@ -50488,7 +50722,7 @@ var codegenBindingGroup = function(options) {
                                     return boxUnbox(options.fieldRenames)(valueEnums)(globalClassFields)(modNameStr)(retType)(v6.value0)(v6.value1);
                                   }
                                   ;
-                                  throw new Error("Failed pattern match at Purust.CodeGen (line 1474, column 1 - line 1474, column 409): " + [extracted.constructor.name]);
+                                  throw new Error("Failed pattern match at Purust.CodeGen (line 1493, column 1 - line 1493, column 432): " + [extracted.constructor.name]);
                                 };
                                 if (extracted instanceof Nothing) {
                                   var $2507 = !isSelfRecursive;
@@ -50788,9 +51022,11 @@ var codegenModuleWithOptions = function(options) {
       return function(globalClassFields) {
         return function(v) {
           return function(inputMod) {
+            var modNameStr = replaceAll(".")("_")(unwrap()(inputMod.name));
+            var representation = codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false);
             var schemas = (function() {
               if (options.jsonSchemas) {
-                return specializeDecoderSchemas(options.jsonLayouts)(sanitizeIdent)(inputArities)(v)(inputMod);
+                return specializeDecoderSchemas(options.jsonLayouts)(options.jsonArrays)(codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false))(sanitizeIdent)(inputArities)(v)(inputMod);
               }
               ;
               return {
@@ -50799,32 +51035,19 @@ var codegenModuleWithOptions = function(options) {
                 code: ""
               };
             })();
-            var modNameStr = replaceAll(".")("_")(unwrap()(schemas.module.name));
-            var classesCode = apply(joinWith("\n"))(map(functorArray)(function(v1) {
-              var superFields = map(functorArray)(function(v2) {
-                return "    pub " + (recordFieldIdent(options.fieldRenames)(v2.value0) + (": " + codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false)(v2.value1)));
-              })(superclassFields(v1));
-              var methFields = map(functorArray)(function(v2) {
-                return "    pub " + (recordFieldIdent(options.fieldRenames)(v2.value0) + (": " + codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false)(v2.value1)));
-              })(v1.methods);
-              var fieldsCode = joinWith(",\n")(concat([superFields, methFields]));
-              var className = sanitizeIdent(v1.name);
-              return "#[derive(Clone)]\npub struct " + (className + (" {\n" + (fieldsCode + "\n}\n")));
-            })(v.classDecls));
-            var copyTagType = function(ty) {
-              var v1 = unwrapType(ty);
-              if (v1 instanceof ADT) {
-                return copyScalarType(valueEnums)(modNameStr)(ty);
-              }
-              ;
-              return false;
-            };
+            var reservedGlobals = fromFoldable4(foldableArray)(ordString)(mapMaybe((function() {
+              var $2652 = map(functorMaybe)(sanitizeIdent);
+              var $2653 = stripPrefix(modNameStr + "_");
+              return function($2654) {
+                return $2652($2653($2654));
+              };
+            })())(fromFoldable(foldableSet)(keys3(schemas.arities))));
             var enumsCode = apply(joinWith("\n"))(map(functorArray)(function(decl) {
               var takeBody = (function() {
-                var v1 = find2(function($2652) {
+                var v1 = find2(function($2655) {
                   return $$null((function(v2) {
                     return v2.fields;
-                  })($2652));
+                  })($2655));
                 })(decl.constructors);
                 if (v1 instanceof Just) {
                   return "std::option::Option::Some(std::mem::replace(self, Self::" + (sanitizeIdent(v1.value0.name) + "))");
@@ -50834,12 +51057,12 @@ var codegenModuleWithOptions = function(options) {
                   return "std::option::Option::None";
                 }
                 ;
-                throw new Error("Failed pattern match at Purust.CodeGen (line 490, column 20 - line 492, column 49): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at Purust.CodeGen (line 498, column 20 - line 500, column 49): " + [v1.constructor.name]);
               })();
               var enumName = sanitizeIdent(decl.name);
               var takeMethod = (function() {
-                var $2601 = isValueEnum(valueEnums)(modNameStr)(decl.name);
-                if ($2601) {
+                var $2590 = isValueEnum(valueEnums)(modNameStr)(decl.name);
+                if ($2590) {
                   return "";
                 }
                 ;
@@ -50851,8 +51074,8 @@ var codegenModuleWithOptions = function(options) {
                 })(ctor.fields);
                 var ctorNameClean = sanitizeIdent(ctor.name);
                 return "    " + (ctorNameClean + (function() {
-                  var $2602 = length(fields) > 0;
-                  if ($2602) {
+                  var $2591 = length(fields) > 0;
+                  if ($2591) {
                     return "(" + (joinWith(", ")(fields) + ")");
                   }
                   ;
@@ -50860,35 +51083,46 @@ var codegenModuleWithOptions = function(options) {
                 })());
               })(decl.constructors);
               return (function() {
-                var $2603 = isValueEnum(valueEnums)(modNameStr)(decl.name);
-                if ($2603) {
+                var $2592 = isValueEnum(valueEnums)(modNameStr)(decl.name);
+                if ($2592) {
                   return "#[derive(Clone, Copy)]";
                 }
                 ;
                 return "#[derive(Clone)]";
               })() + ("\npub enum " + (enumName + (" {\n" + (joinWith(",\n")(ctors) + ("\n}\n" + takeMethod)))));
             })(v.dataDecls));
-            var representation = codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false);
+            var copyTagType = function(ty) {
+              var v1 = unwrapType(ty);
+              if (v1 instanceof ADT) {
+                return copyScalarType(valueEnums)(modNameStr)(ty);
+              }
+              ;
+              return false;
+            };
             var prepareChildCases = function(v1) {
               var ty = inferTypeExpr(modNameStr)(schemas.arities)(globalClassFields)(empty2)(v1.value1);
               var args = extractAllArgTypes(ty);
               return bind(bindMaybe)(extractAbsParams(length(args))(v1.value1))(function(v2) {
                 var cases = constructorCases(representation)(copyTagType)(v2.value0)(args)(extractFinalRetType(ty))(v2.value1);
-                var $2606 = $$null(cases);
-                if ($2606) {
+                var $2599 = $$null(cases);
+                if ($2599) {
                   return Nothing.value;
                 }
                 ;
                 return new Just(new Tuple(modNameStr + ("_" + sanitizeIdent(v1.value0)), cases));
               });
             };
-            var reservedGlobals = fromFoldable4(foldableArray)(ordString)(mapMaybe((function() {
-              var $2653 = map(functorMaybe)(sanitizeIdent);
-              var $2654 = stripPrefix(modNameStr + "_");
-              return function($2655) {
-                return $2653($2654($2655));
-              };
-            })())(fromFoldable(foldableSet)(keys3(schemas.arities))));
+            var classesCode = apply(joinWith("\n"))(map(functorArray)(function(v1) {
+              var superFields = map(functorArray)(function(v2) {
+                return "    pub " + (recordFieldIdent(options.fieldRenames)(v2.value0) + (": " + codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false)(v2.value1)));
+              })(superclassFields(v1));
+              var methFields = map(functorArray)(function(v2) {
+                return "    pub " + (recordFieldIdent(options.fieldRenames)(v2.value0) + (": " + codegenExprTypeWithValueEnums(valueEnums)(modNameStr)(false)(v2.value1)));
+              })(v1.methods);
+              var fieldsCode = joinWith(",\n")(concat([superFields, methFields]));
+              var className = sanitizeIdent(v1.name);
+              return "#[derive(Clone)]\npub struct " + (className + (" {\n" + (fieldsCode + "\n}\n")));
+            })(v.classDecls));
             var nativeConstructors = fromFoldable3(ordString)(foldableArray)(concatMap(function(decl) {
               var resultType2 = new ADT(decl.name, [unwrap()(schemas.module.name), decl.name], []);
               var repr = representation(resultType2);
@@ -55959,7 +56193,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                           moduleValues: eligibleValues(v3),
                           fieldRenames: fieldRenameMap,
                           jsonSchemas: !elem2(eqString)("--no-json-schemas")(args),
-                          jsonLayouts: !elem2(eqString)("--no-json-layouts")(args)
+                          jsonLayouts: !elem2(eqString)("--no-json-layouts")(args),
+                          jsonArrays: !elem2(eqString)("--no-json-arrays")(args)
                         })(prepared.globalValueEnums)(prepared.globalArities)(prepared.globalClassFields)(v3)(backendMod);
                         return liftEffect(monadEffectAff)(function __do() {
                           apply(when(applicativeEffect)(tracePhases))(log2("[purust] generated " + modNameStr))();

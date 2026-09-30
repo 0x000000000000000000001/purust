@@ -23,7 +23,7 @@ const dictionary = native => call(standard('decodeRecord'), row(native), S.PrimU
 function compile(expr, signatures = arities, extra = []) {
   const mod = { name: owner, bindings: [{ recursive: false, bindings: [...extra, new Tuple('read', expr)] }] };
   const before = JSON.stringify(mod);
-  const result = specializeDecoderSchemas(true)(sanitizeIdent)(signatures)({ name: owner, dataDecls: [] })(mod);
+  const result = specializeDecoderSchemas(true)(true)(_ => 'unused')(sanitizeIdent)(signatures)({ name: owner, dataDecls: [] })(mod);
   assert.equal(JSON.stringify(mod), before, 'recognition must not mutate source IR');
   return result;
 }

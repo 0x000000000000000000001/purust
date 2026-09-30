@@ -6,6 +6,7 @@ import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:), (.:?))
 import Data.Argonaut.Decode.Error (JsonDecodeError(..), printJsonDecodeError)
 import Data.Argonaut.Decode.Parser (decodeJsonStringWith)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -80,6 +81,44 @@ instance decodeRecover :: DecodeJson Recover where
 
 recover :: Json -> Either JsonDecodeError { item :: Recover }
 recover = decodeJson
+
+type Arrays =
+  { integers :: Array Int, decimals :: Array Number, flags :: Array Boolean
+  , names :: Array String, lines :: Array Line, groups :: Array (Array Line)
+  }
+
+decodeArrays :: Json -> Either JsonDecodeError Arrays
+decodeArrays = decodeJson
+
+decodeArraysText :: String -> Either JsonDecodeError Arrays
+decodeArraysText = decodeJsonStringWith decodeArrays
+
+fingerprintArrays :: Either JsonDecodeError Arrays -> String
+fingerprintArrays = case _ of
+  Left error -> printJsonDecodeError error
+  Right value -> stringify (encodeJson { value })
+
+-- Exercise representation-preserving readers and the public operations which
+-- build new arrays, including ST thaw/freeze used by updateAt and sorting.
+arrayOps :: Arrays -> String
+arrayOps original =
+  let value = opaque original
+      lines = Array.reverse (Array.filter (\line -> line.count > 1) value.lines)
+      changed = fromMaybe [] (Array.updateAt 0 { count: 99, cost: 2.0 } lines)
+  in stringify (encodeJson
+    { changed
+    , sorted: Array.sortBy (\a b -> compare a.cost b.cost) value.lines
+    , zipped: Array.zipWith (\a b -> a.count + b.count) value.lines (Array.reverse value.lines)
+    , sliced: Array.slice 1 3 value.lines
+    , flattened: Array.concat value.groups
+    , mapped: map (\line -> line.count) value.lines
+    , integers: map (_ + 1) value.integers
+    , decimals: Array.reverse value.decimals
+    , flags: Array.filter identity value.flags
+    , names: Array.slice 0 2 value.names
+    , equal: value.names == Array.reverse (Array.reverse value.names)
+    , original: value.lines
+    })
 
 main :: Effect Unit
 main = pure unit

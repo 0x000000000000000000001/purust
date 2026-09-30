@@ -25,14 +25,19 @@ import PureScript.Backend.Optimizer.Syntax (BackendAccessor(..), BackendOperator
 -- Failure ALWAYS replays the original composition, preserving error priority,
 -- custom recovery and parser messages. No opaque callback runs speculatively.
 data Schema = Scalar String | Sequence Schema | Optional Schema
-  | ObjectSchema (Array (Tuple String Schema)) | Derived Program
+  | ObjectSchema (Array (Tuple String Schema)) | Derived (Maybe CF.ExprType) Program
 data Program = ReadField Level String Boolean Boolean Schema Program
   | Choice Level String Program Program | ReturnValue NeutralExpr | Reject
 data Atom = Input | ObjectInput | ReadValue Schema Level | Value NeutralExpr
   | Success Atom | BooleanValue Boolean | Test Level String
   | Closure (Map.Map Level Atom) (Array (Tuple (Maybe Ident) Level)) NeutralExpr
   | Constructor NeutralExpr Int (Array Atom)
-type Context = { owner :: ModuleName, definitions :: Map.Map Ident NeutralExpr, constructors :: Map.Map (Qualified Ident) Int }
+type Context =
+  { owner :: ModuleName
+  , definitions :: Map.Map Ident NeutralExpr
+  , constructors :: Map.Map (Qualified Ident) Int
+  , constructorResults :: Map.Map (Qualified Ident) CF.ExprType
+  }
 
 strip :: NeutralExpr -> BackendSyntax NeutralExpr
 strip (NeutralExpr syn) = case syn of
@@ -107,7 +112,7 @@ decoder ctx fuel expr = do
           apply ctx (fuel - 1) next fn [ Input ] \_ result -> case result of
             Success value -> ReturnValue <$> expression value
             _ -> Nothing
-        pure (Derived program)
+        pure (Derived (join (programResult ctx program)) program)
       _ -> Nothing
     _ -> Nothing
 
@@ -143,7 +148,7 @@ nativeMatches ctx fuel schema expr = fromMaybe false do
   Tuple head args <- resolve ctx fuel expr
   pure case schema, args of
     Scalar tag, [] -> standard ("nativeField" <> tag) head
-    Derived _, [] -> standard "nativeFieldOther" head
+    Derived _ _, [] -> standard "nativeFieldOther" head
     Optional inner, [ arg ] -> standard "nativeFieldMaybe" head && nativeMatches ctx (fuel - 1) inner arg
     Sequence inner, [ arg ] -> standard "nativeFieldArray" head && nativeMatches ctx (fuel - 1) inner arg
     ObjectSchema fields, [ proxy, row ] -> standard "nativeFieldRecord" head && erased proxy
@@ -160,7 +165,7 @@ sameSchema (Optional a) (Optional b) = sameSchema a b
 sameSchema (Sequence a) (Sequence b) = sameSchema a b
 sameSchema (ObjectSchema a) (ObjectSchema b) = sameFields a b
 -- The ordinary DecodeJson dictionary, not NativeFieldOther, owns this body.
-sameSchema (Derived _) (Derived _) = false
+sameSchema (Derived _ _) (Derived _ _) = false
 sameSchema _ _ = false
 
 -- PBO may expose a standard method rather than its dictionary. Tags alone are
@@ -316,13 +321,37 @@ apply ctx fuel next fn args k
           k next (Value (NeutralExpr (App ctor exprs)))
       _ -> Nothing
 
+-- Layout information is derived only after the method body has been proved.
+-- Keep the existing ADT ABI (including its Rc) while removing the outer
+-- per-element Value::Class allocation in homogeneous result arrays.
+programResult :: Context -> Program -> Maybe (Maybe CF.ExprType)
+programResult ctx = case _ of
+  ReadField _ _ _ _ _ next -> programResult ctx next
+  Choice _ _ yes no -> do
+    a <- programResult ctx yes
+    b <- programResult ctx no
+    case a, b of
+      Nothing, _ -> pure b
+      _, Nothing -> pure a
+      Just ta, Just tb | ta == tb -> pure a
+      _, _ -> Nothing
+  Reject -> Just Nothing
+  ReturnValue value -> Just <$> result value
+  where
+  result value = case strip value of
+    CtorSaturated ctor _ _ _ _ -> Map.lookup ctor ctx.constructorResults
+    App fn _ -> case strip fn of
+      Var ctor -> Map.lookup ctor ctx.constructorResults
+      _ -> Nothing
+    _ -> Nothing
+
 weight :: Schema -> Int
 weight = case _ of
   Scalar _ -> 1
   Sequence child -> 1 + weight child
   Optional child -> 1 + weight child
   ObjectSchema fields -> 1 + foldl (\n (Tuple _ child) -> n + weight child) 0 fields
-  Derived program -> programWeight program
+  Derived _ program -> programWeight program
   where
   programWeight = case _ of
     ReadField _ _ _ _ child rest -> 1 + weight child + programWeight rest
@@ -335,7 +364,7 @@ textComplete = case _ of
   Sequence child -> textComplete child
   Optional child -> textComplete child
   ObjectSchema fields -> all (\(Tuple _ child) -> textComplete child) fields
-  Derived program -> complete program
+  Derived _ program -> complete program
   _ -> true
   where
   complete = case _ of
@@ -383,19 +412,38 @@ runtime = "Purs_Data_Argonaut_Decode_Internal_Record::"
 
 -- Native functions use Option<Value> internally, one public Either at the
 -- root. Rust monomorphizes the same worker for DOM and text cursors.
-emit :: Boolean -> String -> Schema -> String
-emit layouts name schema =
-  "fn " <> name <> "<I: " <> runtime <> "SchemaInput>(raw: I) -> Option<purust_core::Value> {\n" <> body schema <> "\n}\n"
+emit :: Boolean -> Boolean -> (CF.ExprType -> String) -> String -> Schema -> String
+emit layouts arrays representation name schema =
+  (case schema of
+    ObjectSchema fields | layouts ->
+      function name "purust_core::Value" (name <> "_value(raw).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))")
+      <> function (name <> "_value") (name <> "_Record") (body (ObjectSchema fields))
+    Derived (Just ty) program | arrays ->
+      function name "purust_core::Value" (name <> "_value(raw).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))")
+      <> function (name <> "_value") (representation ty) (slots (keys program) <> programCode (keys program) name program)
+    _ -> function name "purust_core::Value" (body schema))
     <> (case schema of
       ObjectSchema fields | layouts -> recordLayout name fields
       _ -> "")
-    <> foldMap (\(Tuple child value) -> emit layouts child value) (children name schema)
+    <> foldMap (\(Tuple child value) -> emit layouts arrays representation child value) (children name schema)
   where
+  function label ty code = "fn " <> label <> "<I: " <> runtime <> "SchemaInput>(raw: I) -> Option<" <> ty <> "> {\n" <> code <> "\n}\n"
   success value = "Some(" <> value <> ")"
   body = case _ of
     Scalar tag -> "raw.scalar(" <> quote tag <> ")"
     Optional _ -> "if raw.is_null() { " <> success (runtime <> "purust_maybe_nothing()") <> " } else { Some(" <> runtime <> "purust_maybe_just(" <> name <> "_item(raw)?)) }"
-    Sequence _ -> "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" <> name <> "_item(item)?); }\nSome(purust_core::Value::Array(std::rc::Rc::new(out)))"
+    Sequence child ->
+      let packed = case child of
+            ObjectSchema _ | layouts && arrays -> Just (Tuple "NativeRecords" (name <> "_item_value(item)?"))
+            Derived (Just _) _ | arrays -> Just (Tuple "NativeClasses" (name <> "_item_value(item)?"))
+            Scalar "Int" | arrays -> Just (Tuple "IntArray" (unboxField child (name <> "_item(item)?")))
+            _ | arrays && isScalar child -> Just (Tuple "NativeScalars" (unboxField child (name <> "_item(item)?")))
+            _ -> Nothing
+          Tuple container item = fromMaybe (Tuple "Array" (name <> "_item(item)?")) packed
+          wrap = if container == "Array" || container == "IntArray"
+            then "purust_core::Value::" <> container <> "(std::rc::Rc::new(out))"
+            else "purust_core::Value::NativeArray(std::rc::Rc::new(purust_core::" <> container <> "(out)))"
+      in "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" <> item <> "); }\nSome(" <> wrap <> ")"
     ObjectSchema fields ->
       slots (map (\(Tuple key _) -> key) fields)
       <> String.joinWith "\n" (Array.mapWithIndex (\i (Tuple _ child) ->
@@ -404,15 +452,20 @@ emit layouts name schema =
               Optional _ -> runtime <> "purust_maybe_nothing()"
               _ -> "return None") <> " };" ) fields)
       <> (if layouts then
-        "\nSome(purust_core::Value::NativeRecord(std::rc::Rc::new(" <> name <> "_Record {"
+        "\nSome(" <> name <> "_Record {"
         <> String.joinWith "," (Array.mapWithIndex (\i (Tuple _ child) -> "field" <> show i <> ": " <> unboxField child ("value" <> show i)) fields)
-        <> "})))"
+        <> "})"
       else "\nstd::thread_local! { static KEYS: [std::rc::Rc<str>; " <> show (Array.length fields) <> "] = ["
       <> String.joinWith "," (map (\(Tuple key _) -> "std::rc::Rc::from(" <> quote key <> ")") fields) <> "]; }\n"
       <> "KEYS.with(|keys| { let mut fields = purust_core::RecordFields::with_capacity(" <> show (Array.length fields) <> ");\n"
       <> String.joinWith "\n" (Array.mapWithIndex (\i _ -> "fields.push(keys[" <> show i <> "].clone(), value" <> show i <> ");") fields)
       <> "\nSome(purust_core::Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))) })")
-    Derived program -> slots (keys program) <> programCode (keys program) name program
+    Derived _ program -> slots (keys program) <> programCode (keys program) name program
+
+isScalar :: Schema -> Boolean
+isScalar schema = case fieldScalar schema of
+  Just _ -> true
+  Nothing -> false
 
 -- Complete concrete fields, exposed through the same record projection API.
 -- Arrays, optionals and custom ADTs already hold their ordinary eager result;
@@ -484,7 +537,7 @@ children name = case _ of
   Sequence inner -> [ Tuple (name <> "_item") inner ]
   Optional inner -> [ Tuple (name <> "_item") inner ]
   ObjectSchema fields -> Array.mapWithIndex (\i (Tuple _ child) -> Tuple (name <> "_field" <> show i) child) fields
-  Derived program -> reads name program
+  Derived _ program -> reads name program
   _ -> []
   where
   reads path = case _ of
@@ -492,27 +545,27 @@ children name = case _ of
     Choice _ _ a b -> reads (path <> "_yes") a <> reads (path <> "_no") b
     _ -> []
 
-constructors :: String -> Schema -> Array (Tuple Ident NeutralExpr)
-constructors name = case _ of
-  Derived program -> sources name program
-  schema -> Array.concatMap (\(Tuple child value) -> constructors child value) (children name schema)
+constructors :: Boolean -> String -> Schema -> Array (Tuple Ident NeutralExpr)
+constructors arrays name = case _ of
+  Derived native program -> sources (if arrays then fromMaybe CF.Any native else CF.Any) name program
+  schema -> Array.concatMap (\(Tuple child value) -> constructors arrays child value) (children name schema)
   where
-  sources path = case _ of
-    ReadField _ _ _ _ schema next -> constructors (path <> "_read") schema <> sources (path <> "_next") next
-    Choice _ _ a b -> sources (path <> "_yes") a <> sources (path <> "_no") b
+  sources result path = case _ of
+    ReadField _ _ _ _ schema next -> constructors arrays (path <> "_read") schema <> sources result (path <> "_next") next
+    Choice _ _ a b -> sources result (path <> "_yes") a <> sources result (path <> "_no") b
     ReturnValue value ->
       let params = parameters value
           refs = map (\(Tuple level _) -> Tuple Nothing level) params
-          expr = NeutralExpr (Typed CF.Any value)
+          expr = NeutralExpr (Typed result value)
           body = case NEA.fromArray refs of
             Nothing -> expr
-            Just bindings -> NeutralExpr (Typed (CF.Func (map (\(Tuple _ ty) -> ty) params) CF.Any) (NeutralExpr (Abs bindings expr)))
+            Just bindings -> NeutralExpr (Typed (CF.Func (map (\(Tuple _ ty) -> ty) params) result) (NeutralExpr (Abs bindings expr)))
       in [ Tuple (Ident (path <> "_construct")) body ]
     _ -> []
 
-specializeDecoderSchemas :: Boolean -> (String -> String) -> Map.Map String CF.ExprType -> Module CF.Ann -> BackendModule
+specializeDecoderSchemas :: Boolean -> Boolean -> (CF.ExprType -> String) -> (String -> String) -> Map.Map String CF.ExprType -> Module CF.Ann -> BackendModule
   -> { module :: BackendModule, arities :: Map.Map String CF.ExprType, code :: String }
-specializeDecoderSchemas layouts sanitize arities (Module core) mod
+specializeDecoderSchemas layouts arrays representation sanitize arities (Module core) mod
   | not (Map.member "Data_Argonaut_Decode_Internal_Record_schemaDecoderABI2" arities) = { module: mod, arities, code: "" }
   | otherwise =
       let
@@ -520,6 +573,9 @@ specializeDecoderSchemas layouts sanitize arities (Module core) mod
           , definitions: Map.fromFoldable (Array.concatMap (\g -> if g.recursive then [] else g.bindings) mod.bindings)
           , constructors: Map.fromFoldable (Array.concatMap (\decl -> map (\ctor -> Tuple
               (Qualified (Just mod.name) (Ident ctor.name)) (Array.length ctor.fields)) decl.constructors) core.dataDecls)
+          , constructorResults: Map.fromFoldable (Array.concatMap (\decl -> map (\ctor -> Tuple
+              (Qualified (Just mod.name) (Ident ctor.name)) (CF.ADT decl.name
+                (Array.snoc (String.split (Pattern ".") (unwrap mod.name)) decl.name) [])) decl.constructors) core.dataDecls)
           }
         initial = { next: 0, code: "", sources: [], arities }
         Tuple bindings result = runState (traverse (rewriteGroup ctx) mod.bindings) initial
@@ -562,8 +618,8 @@ specializeDecoderSchemas layouts sanitize arities (Module core) mod
     else do
       let worker = name <> "_worker"
           qualifiedWorker = prefix <> worker
-          sourceBindings = [ Tuple (Ident source) (NeutralExpr (Typed ty original)) ] <> constructors worker schema
-          workerCode = emit layouts qualifiedWorker schema
+          sourceBindings = [ Tuple (Ident source) (NeutralExpr (Typed ty original)) ] <> constructors arrays worker schema
+          workerCode = emit layouts arrays representation qualifiedWorker schema
           input = if text then "String" else "purust_core::Value"
           cursor = if text then runtime <> "SchemaText::parse(&input).map(|doc| " <> qualifiedWorker <> "(doc.root())) .flatten()"
             else qualifiedWorker <> "(" <> runtime <> "SchemaDom(input.clone()))"

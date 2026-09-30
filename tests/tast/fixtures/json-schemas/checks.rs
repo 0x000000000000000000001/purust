@@ -3,6 +3,26 @@ use Purs_Data_Either::Either;
 use purust_core::Value;
 use std::rc::Rc;
 
+// Count allocations on this test thread only, including Arc-mode runs. This
+// guards the reader/consumer contract rather than the decoder's code shape.
+struct Counting;
+thread_local! { static ALLOCATIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
+unsafe impl std::alloc::GlobalAlloc for Counting {
+    unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
+        ALLOCATIONS.with(|n| n.set(n.get() + 1));
+        std::alloc::GlobalAlloc::alloc(&std::alloc::System, layout)
+    }
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: std::alloc::Layout) {
+        std::alloc::GlobalAlloc::dealloc(&std::alloc::System, ptr, layout)
+    }
+    unsafe fn realloc(&self, ptr: *mut u8, layout: std::alloc::Layout, size: usize) -> *mut u8 {
+        ALLOCATIONS.with(|n| n.set(n.get() + 1));
+        std::alloc::GlobalAlloc::realloc(&std::alloc::System, ptr, layout, size)
+    }
+}
+#[global_allocator]
+static ALLOCATOR: Counting = Counting;
+
 fn parse(text: &str) -> Value {
     Purs_Data_Argonaut_Core::purust_json_parse_text(text).unwrap()
 }
@@ -34,6 +54,42 @@ fn custom_constructors_and_owned_results() {
     assert!(output.contains("\"label\":\"first\""));
     assert!(output.contains("\"count\":3"));
     assert_eq!(output, print(SchemaProbe_decodeText(raw.into())));
+}
+
+#[test]
+fn escaping_array_elements_retain_identity_and_owned_storage() {
+    let result = SchemaProbe_decodeText(r#"{"actions":[{"kind":"close","code":9,"lines":[{"cost":1.5,"count":3}]}],"active":true}"#.into());
+    let Either::Right(document) = result.as_ref() else { panic!("document"); };
+    let actions = document.__purust_get_field("actions").unwrap();
+    let action = actions.array_get(0);
+    let again = actions.array_get(0);
+    assert!(Rc::ptr_eq(action.unwrap_class::<Rc<Action>>(), again.unwrap_class::<Rc<Action>>()));
+    assert!(action.__purust_get_field("missing").is_none());
+    let Action::Close(_, lines) = action.unwrap_class::<Rc<Action>>().as_ref() else { panic!("Close"); };
+    let line = lines.array_get(0);
+    let before = ALLOCATIONS.with(|n| n.get());
+    for _ in 0..32 {
+        let items = purust_core::IntItems::from(lines);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items.raw(0).get_count().unwrap_int(), 3);
+        assert_eq!(lines.array_iter().rev().map(|line| line.get_count().unwrap_int()).sum::<i64>(), 3);
+    }
+    assert_eq!(ALLOCATIONS.with(|n| n.get()), before, "indexing and traversing records must not allocate wrappers or buffers");
+    if let Value::NativeElement(owner, index) = &line {
+        let Value::NativeElement(other, other_index) = lines.array_get(0) else { panic!("view"); };
+        assert!(Rc::ptr_eq(owner, &other));
+        assert_eq!(*index, other_index);
+        assert_eq!(std::mem::size_of::<Value>(), 32, "views must not enlarge every Value");
+    }
+    drop(result);
+    drop(actions);
+    drop(action);
+    drop(again);
+    assert_eq!(line.get_count().unwrap_int(), 3);
+    let changed = line.clone().__purust_set_field("count", Value::Int(99));
+    assert_eq!(changed.get_count().unwrap_int(), 99);
+    assert_eq!(line.get_count().unwrap_int(), 3);
+    assert_eq!(line.__purust_foreign_object().get("cost").unwrap().unwrap_number(), 1.5);
 }
 
 #[test]
@@ -126,6 +182,17 @@ fn normalized_keys_strings_and_numeric_boundaries() {
 #[test]
 fn differential_outputs_through_polymorphic_abi() {
     let mut output = Vec::new();
+    for raw in [
+        r#"{"integers":[],"decimals":[],"flags":[],"names":[],"lines":[],"groups":[]}"#,
+        r#"{"integers":[-2147483648,0,2147483647],"decimals":[-0,1e-300,1.5],"flags":[true,false,true],"names":["a","\ud800","\udfff"],"lines":[{"count":1,"cost":3},{"count":2,"cost":2},{"count":3,"cost":1}],"groups":[[],[{"count":7,"cost":0}]]}"#,
+        r#"{"integers":[0,2147483648],"decimals":[],"flags":[],"names":[],"lines":[],"groups":[]}"#,
+        r#"{"integers":[],"decimals":[1,false],"flags":[],"names":[],"lines":[],"groups":[]}"#,
+    ] {
+        let result = SchemaProbe_decodeArraysText(raw.into());
+        assert_eq!(SchemaProbe_fingerprintArrays(result.clone()), SchemaProbe_fingerprintArrays(SchemaProbe_decodeArrays(parse(raw))));
+        if let Either::Right(value) = result.as_ref() { output.push(SchemaProbe_arrayOps(value.clone())); }
+        output.push(SchemaProbe_fingerprintArrays(result));
+    }
     let mut seed: u32 = 0x52705eed;
     for index in 0..512 {
         seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);

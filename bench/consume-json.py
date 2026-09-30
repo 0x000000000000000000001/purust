@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--workspace', required=True, help='Canonical build-json workspace')
     parser.add_argument('--output', required=True, help='Fresh diagnostic directory')
     parser.add_argument('--boxed', action='store_true', help='Use ordinary record layouts')
+    parser.add_argument('--no-arrays', action='store_true', help='Use ordinary array element layouts')
     args = parser.parse_args()
     compiler = Path(__file__).resolve().parents[1]
     harness = compiler.parents[1] / 'altbak.pub/bin/benchmark/json-diagnostic.py'
@@ -49,7 +50,8 @@ def main():
     commands = [
         ['spago', 'build'],
         [str(compiler / 'bin/purust'), '--main', 'Test.JsonDecoding', '--source', 'output', '--out', str(project)]
-        + (['--no-json-layouts'] if args.boxed else []),
+        + (['--no-json-layouts'] if args.boxed else [])
+        + (['--no-json-arrays'] if args.no_arrays else []),
         ['cargo', 'build', '--release', '--manifest-path', str(project / 'Cargo.toml'), '--bin', 'purust_output'],
     ]
     env = diagnostic.environment()
@@ -61,6 +63,7 @@ def main():
     manifest = {
         'scope': 'parse/decode/combined + complete PS encode/fingerprint inside timing',
         'boxed': args.boxed,
+        'no_arrays': args.no_arrays,
         'commands': commands,
         'release': {'opt-level': 3, 'debug': False},
         'sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
