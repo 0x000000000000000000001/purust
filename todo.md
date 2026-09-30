@@ -7,10 +7,42 @@ chaînes, vecteurs et optionnels.
 
 ## Résultats établis
 
-Les ports sont publiés sous `0x000000000000000000001`. Les plans natifs,
-`Record_a` sparse, les clés partagées, les accesseurs natifs et le parser sur
-octets sont livrés. Le nouveau jalon qualifié est **1 372,79 µs** combined,
-contre **6 817,98 µs** pour la cellule précédente.
+Les ports sont publiés sous `0x000000000000000000001`. Le jalon courant est
+**1 130,69 µs** combined, après **1 372,79 µs**, puis **6 817,98 µs** auparavant.
+Il inclut les tableaux natifs, les absences locales partagées, les chaînes
+échappées réservées, les transferts de paramètres et les discriminateurs empruntés.
+
+**Campagne finale `owned-v11`**, GOMAXPROCS=1/GOGC=100, six permutations et
+médiane des minima, mêmes binaires Go/C publiés :
+
+| phase | Rust précédent réexécuté | Rust courant | Go publié réexécuté | C réexécuté |
+|---|---:|---:|---:|---:|
+| parse | 1 722,000 | **1 659,229** | 1 905,709 | 373,438 |
+| decode | 688,042 | **661,375** | 636,938 | 274,458 |
+| combined | 1 342,167 | **1 130,688** | 2 141,146 | 659,646 |
+
+Combined : **−15,8 %** face au Rust précédent, **−47,2 %** face au Go publié,
+et encore **1,71×** le C. Decode seul reste **3,8 %** au-dessus du Go dans cette
+campagne. La campagne officielle indépendante confirme **1 122,833 µs** Rust ;
+le Go générique reconstruit (**9 980,334 µs**) reste une autre référence.
+
+Allocations combined par cas : plats **16 014→9 017**, imbriqués
+**14 013→11 014**, optionnels **11 263→4 514**, Unicode **14 435→6 997**.
+Le profil entier attribue **31 548** requêtes, réparties exactement entre
+index (**5**), résultat (**31 527**) et reste (**16**), sans régions imbriquées.
+
+Consommateur final : tableaux seuls **15 867,146→15 966,688 µs** combined
+(**+0,63 %**, decode **+1,51 %**). Aucun gain isolé du consommateur de tableaux
+n'est revendiqué. Face au contrôle antérieur `consume6-records`, l'ensemble
+mesure **16 211,979→16 064,917 µs** combined ; ce contrôle incluait déjà le
+partage local des absences et n'est pas le binaire publié `move-v1`.
+
+Rapport : `altbak.pub/docs/benchmark-results/2026-09-30-rust-json-packed.{md,json}`.
+
+### Jalon précédent : premiers workers et records natifs
+
+Les plans natifs, `Record_a` sparse, les clés partagées, les accesseurs natifs
+et le parser sur octets étaient déjà livrés à ce jalon.
 
 La nouvelle baseline est reconstruite depuis les drivers canoniques :
 `.purs` → `spago build` → purust → Cargo release, codes de sortie vérifiés.
@@ -126,6 +158,11 @@ corrigé ; les premiers tableaux sont conservés comme historique exploratoire.
 - Mesures et snapshots de cette étape :
   `altbak.pub/var/benchmark/json-packed-20260930/`. Les variantes à `Value`
   élargi (`packed-v1`, `packed-v2`) restent des expériences non retenues.
+- `packed-v6` : combined **1 366,229 → 1 324,271 µs**, mais consommateur complet
+  **16 683,313 → 17 245,688 µs**. La baisse d'allocations ne suffisait pas à
+  justifier ce surcoût. `index-v7` supprime l'appel virtuel d'identification à
+  chaque lecture et garde la longueur dans le propriétaire mince : consommateur
+  appairé **16 772,417 → 16 706,792 µs**, sans enveloppe par élément.
 
 ### 3. Texte validé→résultat — premier prototype implémenté
 
@@ -154,6 +191,22 @@ corrigé ; les premiers tableaux sont conservés comme historique exploratoire.
   retenu conserve la recherche scalaire dans le dernier mot. Le test conserve
   les cas supplémentaires à plusieurs caractères spéciaux et emprunts entre
   lanes. Rapport : `json-packed-20260930/scan-v4-paired.json`.
+- Après attribution par piles : réserver les chaînes échappées grâce à la borne
+  du token validé, puis copier les plages sans escape en bloc. Les `Int` décimaux
+  courts validés utilisent une accumulation bornée ; tous les autres conservent
+  la conversion IEEE-754 originale. Essai isolé **1 354,604 → 1 175,417 µs**.
+- Les constructeurs `CtorDef` et leurs wrappers transfèrent les arguments
+  possédés au lieu de cloner deux fois les chaînes : **1 190,605 → 1 172,126 µs**.
+  Contrats explicites : adresse du buffer, une allocation ADT, identité des
+  arguments partagés et application partielle réutilisable.
+- Les aliases de fonctions globales transfèrent aussi leurs paramètres
+  synthétiques possédés : cela retire la copie complète du texte par le wrapper
+  `decodeText`. Le test codegen vérifie l'adresse du buffer à travers un alias.
+- Les lectures String utilisées uniquement comme discriminateurs restent des
+  curseurs locaux ; les lectures incluses dans le résultat restent possédées.
+  Preuve par les usages du programme de succès, comparaison UTF-16, handshake
+  **ABI3** et repli ordinaire avec les anciens ports. Essai isolé
+  **1 159,896 → 1 141,646 µs** ; qualification finale ci-dessus.
 
 ## Protocole de mesure et de livraison
 
@@ -191,6 +244,22 @@ texte est spécialisé.
   La cause n'est pas établie ; examiner notamment la réentrance de `OnceLock`
   avant la garde de l'allocateur. Aucune attribution aux closures ou boxages
   n'est tenue pour prouvée.
+- Ce blocage historique est désormais contourné par `bench/allocation-stacks.py` :
+  la garde de réentrance est posée avant l'initialisation et la symbolisation.
+  Un passage combined attribue **43 840 requêtes** sur `index-v7`, exactement
+  le total des régions disjointes. Les piles démontrent les réallocations des
+  chaînes échappées et les copies dans les constructeurs ; elles sont archivées
+  dans `json-packed-20260930/stacks-v7/`. La cause du premier blocage n'est pas
+  déduite rétroactivement du succès de ce nouveau diagnostic.
+- Après les chaînes, les constructeurs et les discriminateurs, les piles de
+  `borrow-v10` totalisent **31 553** requêtes : **−6 308** pour les buffers des
+  chaînes échappées, **−3 502** dans `View`, **−2 477** pour les discriminateurs.
+  Les `Just` ordinaires totalisent encore **6 308** requêtes. Ce sont des
+  décomptes attribués ; leurs temps instrumentés ne constituent pas des cellules.
+- `instrument.py` reconstruit maintenant TAST avant le profilage et vérifie les
+  oracles individuels. Le premier `allocations-v10.json` réutilisait un ancien
+  TAST ABI2 et a donc mesuré le décodeur ordinaire ; il est écarté. Les profils
+  `stages-v10`/`stacks-v10` copient le workspace canonique neuf et sont valides.
 - Nouveau diagnostic `bench/stages-json.py` : copie isolée des sources Rust
   générées, régions **disjointes** indexation / construction du résultat /
   reste de la fenêtre. Les compteurs mesurent les requêtes alloc+realloc et
@@ -218,12 +287,41 @@ texte est spécialisé.
       les quatre modes, plus tests du scanner Rc/Arc.
 - [x] Campagne officielle et campagne appairée avec GOMAXPROCS=1.
 - [x] Commits/push des ports et du compilateur ; publication du jalon qualifié
-      dans `altbak.pub/docs/benchmark-results/2026-09-30-rust-json-native.md`.
+       dans `altbak.pub/docs/benchmark-results/2026-09-30-rust-json-native.md`.
+- [x] Tableaux concrets, propriétaires minces, projections directes et partage
+      local des absences ; contrôles d'identité, d'allocations et de libération.
+- [x] Attribution complète par piles ; chaînes, constructeurs, aliases et
+      discriminateurs corrigés sur la base de ces mesures.
+- [x] Version finale : codegen **81/81**, TAST **43/43**, fixture JSON dans cinq
+      modes (**9 tests/mode**) et scanner Rc/Arc.
+- [x] b8x final **286/286**, `build-Rue4Pa` ; compiler reconstruit proprement,
+      étape Linux reprise après remplacement du conteneur pendant le build.
+- [x] Campagnes finale appairée, consommateurs et officielle indépendantes au
+      repos ; publication `2026-09-30-rust-json-packed.{md,json}`.
 
 ## Prochain jalon vers le C
 
-Le jalon Go est franchi pour combined. Restent les représentations concrètes
-des éléments de tableaux et des ADT paramétrés, intégrées à `UnknownType` et
-aux consommateurs, puis une vectorisation plus large du scanner si les mesures
-la justifient. Préserver exactement les contrats ci-dessus ; ne pas annoncer
-un facteur de gain avant une mesure appairée qualifiée.
+Le jalon Go est franchi pour combined. Les tableaux de records/scalaires/ADT
+sont désormais intégrés ; l'écart au C reste à réduire par des mesures isolées.
+
+1. **Chaînes courtes possédées dans les résultats natifs.** La référence C utilise
+   `std::string`, qui possède un stockage inline des petites chaînes. Un essai
+   de layout Rust sûr donne 24 octets pour `Inline { len: u8, bytes: [u8; 15] } |
+   Heap(String)`, mais 32 avec 23 octets inline. Sur le corpus, 8 450 chaînes
+   non vides de champs records/tableaux scalaires tiennent dans 15 octets de
+   l'encodage UTF-16 interne. C'est un inventaire de données, **pas un gain de
+   temps établi**. Une éventuelle implémentation doit construire les octets
+   possédés dans le worker et qualifier les conversions des consommateurs,
+   ainsi que le chemin DOM qui fournit déjà des `String` allouées.
+2. **ADT paramétrés et `Just`.** Le profil attribue encore 6 308 requêtes aux
+   deux couches des carriers `Just`. Supprimer un boxage demande une projection
+   compatible avec `UnknownType`, sans allocation à la lecture ni modification
+   de l'identité du `Rc<ADT>`. Une simple représentation privée suivie d'une
+   matérialisation après chronométrage ne convient pas.
+3. **Indexation/scan.** Reprofiler au repos après chaque étape de représentation,
+   puis tester une vectorisation plus large si elle cible le coût dominant.
+   L'essai `trailing_zeros` rejeté ne constitue pas une preuve contre toutes
+   les variantes du scanner.
+
+Préserver exactement les contrats ci-dessus ; ne pas annoncer un facteur de
+gain avant une mesure appairée qualifiée.
