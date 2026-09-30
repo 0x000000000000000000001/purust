@@ -32,6 +32,7 @@ import Purust.ClassFields (superclassFields)
 import Purust.DataLayout (ValueEnums, isValueEnum, isOpaqueForeignType)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import Purust.ListFusion (optimizeListPipelines)
+import Purust.Caf (hoistClosedValues)
 import Purust.RecordScalarization (optimizeRecordLoops)
 import Purust.FunctionFusion (countedFunctionProducers)
 import Purust.Utf16 (runtimeHelpers, rustStringLiteral, rustCharLiteral)
@@ -518,7 +519,24 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
     scalarized = optimizeRecordLoops sanitizeIdent reservedGlobals backendMod.name backendMod.bindings
     fused = optimizeThunkProducers sanitizeIdent reservedGlobals backendMod.name scalarized.bindings
     listFused = optimizeListPipelines backendMod.name fused.bindings
-    namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) listFused
+    -- Closed constructions and closed lambdas become module values or static
+    -- functions, evaluated once instead of on every call. Their inferred
+    -- types join the arity map so reference sites resolve them like globals.
+    caf = hoistClosedValues reservedGlobals backendMod.name isHoistable listFused
+    isHoistable expr = isLambda expr || not (isFunctionType expr)
+    isLambda (NeutralExpr syn) = case syn of
+      Abs _ _ -> true
+      UncurriedAbs _ _ -> true
+      UncurriedEffectAbs _ _ -> true
+      Typed _ inner -> isLambda inner
+      Syn.TypeApp inner _ -> isLambda inner
+      _ -> false
+    isFunctionType expr = case unwrapType (inferTypeExpr modNameStr globalAritiesMap globalClassFields Map.empty expr) of
+      Func _ _ -> true
+      _ -> false
+    cafArities = Map.fromFoldable $ map (\(Tuple (Ident name) expr) ->
+      Tuple (modNameStr <> "_" <> sanitizeIdent name) (inferTypeExpr modNameStr globalAritiesMap globalClassFields Map.empty expr)) caf.hoisted
+    namedGroups = map (\group -> group { bindings = map (\(Tuple ident expr) -> Tuple ident (renameLocals expr)) group.bindings }) caf.groups
     -- The global signature map also contains local foreign declarations,
     -- which have no binding body here but still reserve their Rust names.
     bindingNames = Set.union
@@ -649,7 +667,7 @@ codegenModuleWithOptions options valueEnums globalAritiesMap globalClassFields (
     bindingsRes = Array.foldl (\acc group ->
       let res = codegenBindingGroup options valueEnums coreFnMod.name modNameStr Set.empty reuseContext acc.arities globalClassFields group
       in { code: acc.code <> res.code, arities: res.arities }
-    ) { code: rebuildersCode <> foldMap _.code postHelpers, arities: Map.union workerArities (Map.union helperArities globalAritiesMap) } (namedGroups <> workerGroups)
+    ) { code: rebuildersCode <> foldMap _.code postHelpers, arities: Map.union cafArities (Map.union workerArities (Map.union helperArities globalAritiesMap)) } (namedGroups <> workerGroups)
 
     bindingsCode = bindingsRes.code
 
