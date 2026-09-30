@@ -77,7 +77,9 @@ def main():
                 if name not in binaries:
                     continue
                 report = run_binary(binaries[name], corpus_path, order)
-                validate(report, expected)
+                # The C reference reports its phases without the oracle fields.
+                if name != 'c':
+                    validate(report, expected)
                 runs[name].append(report)
 
     medians = {}
