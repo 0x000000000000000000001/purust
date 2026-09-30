@@ -73,6 +73,19 @@ harness complète, `t -c` b8x après tout changement de runtime.
    restent sur place (leçon du CAF : seules les spines d'appel et les closures
    closes sont déplaçables).
    Validation : compteurs d'allocations par cas + oracle.
+
+   **État au 30/09 : implémenté sur la branche `edge-caf`, non fusionné.**
+   `Purust.Caf` hoiste les appels top-level clos et les lambdas closes
+   (identité des locaux `(nom, niveau)`, refus des cycles, littéraux
+   contextuels laissés en place). Tests codegen 80/80, empreintes oracle
+   exactes, mais les fixtures TAST échouent : elles encodent des **contrats
+   d'allocation exacts** (ex. `seeded` doit allouer 1 fois, mêmes pointeurs)
+   et l'initialisation paresseuse des nouvelles valeurs de module s'ajoute
+   dans la fenêtre mesurée (7 au lieu de 1). Ce n'est pas une rupture
+   sémantique mais un conflit avec les garanties du compilateur : avant
+   fusion, il faut soit restreindre le hoisting pour ne pas introduire de
+   valeur de module dans ces contrats, soit réviser explicitement les
+   contrats TAST. Reprendre sur `edge-caf` avec `bench/instrument.py`.
 2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
    type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
    Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
