@@ -90,6 +90,19 @@ harness complète, `t -c` b8x après tout changement de runtime.
    Conclusion : ne pas refaire le lambda lifting générique. La phase 1 doit
    viser les allocations SANS déplacer de lambdas (ABI interne, conteneurs,
    primitives).
+
+   **Attribution mesurée (30/09).** 100 % des allocations du decode sont dans
+   le plan de payload (tout est imbriqué) ; le chemin `events` en porte 129 k
+   sur 135 k : 119 allocations par événement minimal (« view »), 158 sans
+   items, 182 avec un item. Les appels d'interface sont rares (3 `getField`,
+   1 copie d'objet, 1 tableau) et sortir les défauts d'erreur en valeurs de
+   module est **neutre** : purust partage déjà les valeurs closes. Le coût
+   restant est donc le **boxage dynamique de valeurs déjà partagées** et les
+   **closures d'enveloppe aux frontières** (`FuncN::Shared(Rc::new(...))`
+   par évaluation pour les applications partielles/projections), plus les
+   enveloppes `Either`/`Maybe`. Prochaine tentative ciblée : cache par site
+   de la forme *boxée* des valeurs/dictionnaires partagés, sinon phase 2
+   (représentation).
 2. **ABI interne de décodage sans `Rc<Either>`.** Introduire dans le port un
    type de résultat interne par valeur (`enum Decoded { Ok(UnknownType),
    Err(Rc<JsonDecodeError>) }`) pour les chemins plan/instance/accesseurs ;
