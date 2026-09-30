@@ -426,7 +426,7 @@ emit layouts arrays representation name schema =
       <> function (name <> "_value") (name <> "_Record") (body (ObjectSchema fields))
     Derived (Just ty) program | arrays ->
       function name "purust_core::Value" (name <> "_value(raw, absent).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))")
-      <> function (name <> "_value") (representation ty) (slots (keys program) <> programCode (keys program) name program)
+      <> function (name <> "_value") (representation ty) (slots (keys program) <> programCode Set.empty (keys program) name program)
     _ -> function name "purust_core::Value" (body schema))
     <> (case schema of
       ObjectSchema fields | layouts -> recordLayout name fields
@@ -466,7 +466,7 @@ emit layouts arrays representation name schema =
       <> "KEYS.with(|keys| { let mut fields = purust_core::RecordFields::with_capacity(" <> show (Array.length fields) <> ");\n"
       <> String.joinWith "\n" (Array.mapWithIndex (\i _ -> "fields.push(keys[" <> show i <> "].clone(), value" <> show i <> ");") fields)
       <> "\nSome(purust_core::Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))) })")
-    Derived _ program -> slots (keys program) <> programCode (keys program) name program
+    Derived _ program -> slots (keys program) <> programCode Set.empty (keys program) name program
 
 isScalar :: Schema -> Boolean
 isScalar schema = case fieldScalar schema of
@@ -524,17 +524,34 @@ keys = Array.nub <<< go
 local :: Level -> String
 local (Level n) = "field" <> show n
 
-programCode :: Array String -> String -> Program -> String
-programCode names name = case _ of
-  ReadField level key optional nullable _ next ->
-    "let " <> local level <> " = match input" <> show (fromMaybe 0 (Array.elemIndex key names))
-    <> (if Array.elem key (keys next) then ".clone()" else ".take()") <> " {\n"
-    <> (if optional then "None => " <> absentValue <> ",\n" else "None => return None,\n")
-    <> (if nullable then "Some(raw) if raw.is_null() => " <> absentValue <> ",\n" else "")
-    <> "Some(raw) => " <> (if optional then runtime <> "purust_maybe_just(" else "") <> name <> "_read(raw, absent)?"
-    <> (if optional then ")" else "") <> "\n};\n" <> programCode names (name <> "_next") next
-  Choice level literal yes no -> "if matches!(&" <> local level <> ", purust_core::Value::String(value) if value == " <> quote literal <> ") {\n"
-    <> programCode names (name <> "_yes") yes <> "\n} else {\n" <> programCode names (name <> "_no") no <> "\n}"
+-- Keep a discriminator borrowed only when no successful constructor uses its
+-- value. Result strings and repeated reads still get independent owned values.
+choiceOnly :: Level -> Program -> Boolean
+choiceOnly level = case _ of
+  ReadField _ _ _ _ _ next -> choiceOnly level next
+  Choice _ _ yes no -> choiceOnly level yes && choiceOnly level no
+  ReturnValue value -> not (Array.any (\(Tuple used _) -> used == level) (parameters value))
+  Reject -> true
+
+programCode :: Set.Set Level -> Array String -> String -> Program -> String
+programCode borrowed names name = case _ of
+  ReadField level key optional nullable schema next ->
+    let predicate = not optional && not nullable && choiceOnly level next && case schema of
+          Scalar "String" -> true
+          _ -> false
+        cursor = "input" <> show (fromMaybe 0 (Array.elemIndex key names))
+          <> (if Array.elem key (keys next) then ".clone()" else ".take()")
+        read = if predicate then cursor <> "?;\nif !" <> local level <> ".is_string() { return None; }\n"
+          else "match " <> cursor <> " {\n"
+            <> (if optional then "None => " <> absentValue <> ",\n" else "None => return None,\n")
+            <> (if nullable then "Some(raw) if raw.is_null() => " <> absentValue <> ",\n" else "")
+            <> "Some(raw) => " <> (if optional then runtime <> "purust_maybe_just(" else "") <> name <> "_read(raw, absent)?"
+            <> (if optional then ")" else "") <> "\n};\n"
+    in "let " <> local level <> " = " <> read
+      <> programCode (if predicate then Set.insert level borrowed else borrowed) names (name <> "_next") next
+  Choice level literal yes no -> "if " <> (if Set.member level borrowed then local level <> ".string_eq(" <> quote literal <> ")?"
+      else "matches!(&" <> local level <> ", purust_core::Value::String(value) if value == " <> quote literal <> ")") <> " {\n"
+    <> programCode borrowed names (name <> "_yes") yes <> "\n} else {\n" <> programCode borrowed names (name <> "_no") no <> "\n}"
   ReturnValue value -> "Some(" <> name <> "_construct(" <> String.joinWith "," (map (\(Tuple level ty) -> moveArgument ty (local level)) (parameters value)) <> "))"
   Reject -> "None"
 
@@ -572,7 +589,7 @@ constructors arrays name = case _ of
 specializeDecoderSchemas :: Boolean -> Boolean -> (CF.ExprType -> String) -> (String -> String) -> Map.Map String CF.ExprType -> Module CF.Ann -> BackendModule
   -> { module :: BackendModule, arities :: Map.Map String CF.ExprType, code :: String }
 specializeDecoderSchemas layouts arrays representation sanitize arities (Module core) mod
-  | not (Map.member "Data_Argonaut_Decode_Internal_Record_schemaDecoderABI2" arities) = { module: mod, arities, code: "" }
+  | not (Map.member "Data_Argonaut_Decode_Internal_Record_schemaDecoderABI3" arities) = { module: mod, arities, code: "" }
   | otherwise =
       let
         ctx = { owner: mod.name
@@ -596,7 +613,7 @@ specializeDecoderSchemas layouts arrays representation sanitize arities (Module 
       guard (weight schema > 1 && weight schema <= 256)
       pure (Tuple false schema)
     App fn args | global "Data.Argonaut.Decode.Parser" "decodeJsonStringWith" fn
-      && Map.member "Data_Argonaut_Decode_Internal_Record_schemaTextDecoderABI2" arities -> do
+      && Map.member "Data_Argonaut_Decode_Internal_Record_schemaTextDecoderABI3" arities -> do
       method <- one (NEA.toArray args)
       schema <- methodSchema ctx 128 method
       guard (weight schema > 1 && weight schema <= 256 && textComplete schema)

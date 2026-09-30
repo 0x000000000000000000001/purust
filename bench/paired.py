@@ -51,11 +51,11 @@ def validate_samples(report):
             raise SystemExit(f'reported time is not the sample minimum: {phase}')
 
 
-def validate(report, expected):
+def validate(report, expected, phases=PHASES):
     for key in ('fingerprints', 'json_fingerprints', 'names', 'modules', 'timed_cases'):
         if key in expected and report.get(key) != expected[key]:
             raise SystemExit(f'oracle mismatch in {key}')
-    if set(report.get('phases', {})) != set(PHASES):
+    if set(report.get('phases', {})) != set(phases):
         raise SystemExit('report phases differ from the protocol')
 
 

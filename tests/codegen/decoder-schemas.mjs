@@ -12,7 +12,7 @@ const owner = 'AnotherDecoder';
 const global = (module, name) => new S.Var(new T.Qualified(new Just(module), name));
 const standard = name => global('Data.Argonaut.Decode.Class', name);
 const call = (fn, ...args) => new S.App(fn, args);
-const marker = 'Data_Argonaut_Decode_Internal_Record_schemaDecoderABI2';
+const marker = 'Data_Argonaut_Decode_Internal_Record_schemaDecoderABI3';
 const arities = insert(ordString)(marker)(T.Int.value)(empty);
 const label = name => new S.Lit(new T.LitRecord([new T.Prop('reflectSymbol',
   new S.Abs([new Tuple(Nothing.value, 0)], new S.Lit(new T.LitString(name))))]));
@@ -31,6 +31,8 @@ const expression = call(standard('decodeJson'), dictionary());
 assert.match(compile(expression).code, /SchemaInput/);
 assert.match(compile(expression).code, /"quantity"/);
 assert.equal(compile(expression, empty).code, '', 'old ports cannot receive new workers');
+assert.equal(compile(expression, insert(ordString)('Data_Argonaut_Decode_Internal_Record_schemaDecoderABI2')(T.Int.value)(empty)).code,
+  '', 'ABI2 ports lack borrowed discriminator predicates');
 assert.equal(compile(call(standard('decodeJson'), dictionary('nativeFieldNumber'))).code, '',
   'NativeField is a real second dictionary, not disposable type metadata');
 const requiredMaybe = call(standard('gDecodeJsonCons'),

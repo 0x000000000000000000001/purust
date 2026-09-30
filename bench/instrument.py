@@ -12,12 +12,15 @@ usage:
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
 import subprocess
 import statistics
 from pathlib import Path
+
+from paired import DEFAULT_EXPECTED, validate, validate_samples
 
 DRIVER = 'rust/src/Test/JsonDecoding.rs'
 MAIN = 'rust/rust-project/src/main.rs'
@@ -93,14 +96,22 @@ def patch_main(path):
 
 
 def build(workspace, purust):
+    # Reused profiling workspaces may predate a codec ABI marker. Fresh Rust
+    # generation alone would then silently exercise the ordinary decoder.
+    harness = Path(__file__).resolve().parents[3] / 'altbak.pub/bin/benchmark/json-diagnostic.py'
+    spec = importlib.util.spec_from_file_location('diagnostic', harness)
+    diagnostic = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(diagnostic)
+    env = diagnostic.environment()
+    subprocess.run(['spago', 'build'], cwd=workspace / 'rust', env=env, check=True)
     subprocess.run([str(purust), '--main', 'Test.JsonDecoding', '--source', 'output',
-                    '--out', 'rust-project'], cwd=workspace / 'rust', check=True)
+                    '--out', 'rust-project'], cwd=workspace / 'rust', env=env, check=True)
     patch_main(workspace / MAIN)
-    env = dict(os.environ, CARGO_PROFILE_RELEASE_OPT_LEVEL='3', CARGO_PROFILE_RELEASE_DEBUG='false')
+    env.update(CARGO_PROFILE_RELEASE_OPT_LEVEL='3', CARGO_PROFILE_RELEASE_DEBUG='false')
     subprocess.run(['cargo', 'build', '--release'], cwd=workspace / 'rust/rust-project', env=env, check=True)
 
 
-def run_case(workspace, corpus, label, phases):
+def run_case(workspace, corpus, label, phases, expected):
     env = dict(os.environ, DIAG_CORPUS=str(corpus), DIAG_PHASES=phases)
     result = subprocess.run([str(workspace / BINARY)], env=env, capture_output=True, text=True)
     if result.returncode != 0:
@@ -112,7 +123,10 @@ def run_case(workspace, corpus, label, phases):
     summary = {phase: {key: statistics.median(c[key] for c in counters if c['phase'] == phase and c['pass'] >= 2)
                        for key in ['allocs', 'bytes']} for phase in phases.split(',')}
     print(label, json.dumps(summary))
-    return {'summary': summary, 'counters': counters, 'report': json.loads(result.stdout.splitlines()[-1])}
+    report = json.loads(result.stdout.splitlines()[-1])
+    validate(report, expected, phases.split(','))
+    validate_samples(report)
+    return {'summary': summary, 'counters': counters, 'report': report}
 
 
 def main():
@@ -120,6 +134,7 @@ def main():
     parser.add_argument('--workspace', required=True)
     parser.add_argument('--purust', required=True)
     parser.add_argument('--corpus', required=True)
+    parser.add_argument('--expected', default=str(DEFAULT_EXPECTED))
     parser.add_argument('--single-cases', default=None)
     parser.add_argument('--phases', default='parse,decode,combined')
     parser.add_argument('--output')
@@ -130,6 +145,7 @@ def main():
     build(workspace, Path(args.purust).resolve())
 
     corpus = json.loads(Path(args.corpus).read_text())
+    expected = json.loads(Path(args.expected).read_text())
     reports = {}
     if args.single_cases:
         out = Path(args.single_cases)
@@ -139,13 +155,18 @@ def main():
                 continue
             single = out / f"{case['name']}.json"
             single.write_text(json.dumps([dict(case, benchmark=True)]))
-            reports[case['name']] = run_case(workspace, single, case['name'], args.phases)
+            index = expected['names'].index(case['name'])
+            oracle = {key: [expected[key][index]] for key in ['names', 'fingerprints', 'json_fingerprints']}
+            oracle.update(modules=1, timed_cases=1)
+            reports[case['name']] = run_case(workspace, single, case['name'], args.phases, oracle)
     else:
-        reports['corpus'] = run_case(workspace, args.corpus, 'corpus', args.phases)
+        reports['corpus'] = run_case(workspace, args.corpus, 'corpus', args.phases, expected)
     if args.output:
         Path(args.output).write_text(json.dumps(reports, indent=2) + '\n')
         paths = [workspace / BINARY, workspace / DRIVER, workspace / MAIN,
-                 Path(args.purust).resolve(), Path(args.corpus).resolve()]
+                 Path(args.purust).resolve(), Path(args.corpus).resolve(), Path(args.expected).resolve()]
+        paths += sorted((workspace / 'rust/output').glob('*/corefn.json'))
+        paths += sorted((workspace / 'rust/rust-project').glob('*/src/*.rs'))
         bundle = Path(args.purust).resolve().with_suffix('.js')
         if bundle.is_file():
             paths.append(bundle)

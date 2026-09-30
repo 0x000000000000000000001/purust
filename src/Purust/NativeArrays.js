@@ -26,11 +26,13 @@ pub enum NativeArrayOwner {
     Numbers(Vec<f64>),
     Booleans(Vec<bool>),
     Strings(Vec<String>),
-    Elements(Box<dyn NativeArray>),
+    // Only record/class vectors enter this branch. Cache the length beside
+    // the erased vector so indexing needs no virtual call or temporary item.
+    Elements { values: Box<dyn NativeArray>, len: usize },
 }
 impl NativeArrayOwner {
     pub fn len(&self) -> usize {
-        match self { Self::Empty => 0, Self::Numbers(v) => v.len(), Self::Booleans(v) => v.len(), Self::Strings(v) => v.len(), Self::Elements(v) => v.len() }
+        match self { Self::Empty => 0, Self::Numbers(v) => v.len(), Self::Booleans(v) => v.len(), Self::Strings(v) => v.len(), Self::Elements { len, .. } => *len }
     }
     pub fn item(&self, index: usize) -> NativeItem<'_> {
         match self {
@@ -38,14 +40,14 @@ impl NativeArrayOwner {
             Self::Numbers(v) => NativeItem::Scalar(Value::Number(v[index])),
             Self::Booleans(v) => NativeItem::Scalar(Value::Bool(v[index])),
             Self::Strings(v) => NativeItem::Scalar(Value::String(v[index].clone())),
-            Self::Elements(v) => v.item(index),
+            Self::Elements { values, .. } => values.item(index),
         }
     }
     pub fn record(&self, index: usize) -> Option<&dyn NativeRecord> {
         match self.item(index) { NativeItem::Record(value) => Some(value), _ => None }
     }
     pub fn field(&self, index: usize, name: &str) -> Option<std::borrow::Cow<'_, Value>> {
-        match self { Self::Elements(values) => values.field(index, name), _ => panic!("Expected record") }
+        match self { Self::Elements { values, .. } => values.field(index, name), _ => panic!("Expected record") }
     }
     pub fn class(&self, index: usize) -> &dyn std::any::Any {
         match self.item(index) { NativeItem::Class(value) => value, _ => panic!("Expected Class element") }
@@ -54,7 +56,7 @@ impl NativeArrayOwner {
 
 pub struct NativeRecords<T: NativeRecord>(pub Vec<T>);
 impl<T: NativeRecord> From<NativeRecords<T>> for NativeArrayOwner {
-    fn from(value: NativeRecords<T>) -> Self { if value.0.is_empty() { Self::Empty } else { Self::Elements(Box::new(value)) } }
+    fn from(value: NativeRecords<T>) -> Self { if value.0.is_empty() { Self::Empty } else { let len = value.0.len(); Self::Elements { values: Box::new(value), len } } }
 }
 impl<T: NativeRecord> NativeArray for NativeRecords<T> {
     fn len(&self) -> usize { self.0.len() }
@@ -66,7 +68,7 @@ impl<T: NativeRecord> NativeArray for NativeRecords<T> {
 
 pub struct NativeClasses<T>(pub Vec<T>);
 impl<T: std::any::Any + 'static> From<NativeClasses<T>> for NativeArrayOwner {
-    fn from(value: NativeClasses<T>) -> Self { if value.0.is_empty() { Self::Empty } else { Self::Elements(Box::new(value)) } }
+    fn from(value: NativeClasses<T>) -> Self { if value.0.is_empty() { Self::Empty } else { let len = value.0.len(); Self::Elements { values: Box::new(value), len } } }
 }
 impl<T: std::any::Any + 'static> NativeArray for NativeClasses<T> {
     fn len(&self) -> usize { self.0.len() }
@@ -94,9 +96,15 @@ impl<T: NativeScalar> NativeArray for NativeScalars<T> {
 
 #[inline]
 pub fn native_array_item(owner: &std::rc::Rc<NativeArrayOwner>, index: usize) -> Value {
-    match owner.item(index) {
-        NativeItem::Scalar(value) => value,
-        _ => Value::NativeElement(owner.clone(), index),
+    match owner.as_ref() {
+        NativeArrayOwner::Elements { len, .. } => {
+            assert!(index < *len, "Array index out of bounds");
+            Value::NativeElement(owner.clone(), index)
+        }
+        _ => match owner.item(index) {
+            NativeItem::Scalar(value) => value,
+            _ => unreachable!("record/class vectors have an erased owner"),
+        },
     }
 }
 

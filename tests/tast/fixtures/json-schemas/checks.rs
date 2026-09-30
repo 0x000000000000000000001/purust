@@ -34,6 +34,32 @@ fn ordinary_text(text: String) -> String {
 }
 
 #[test]
+fn constructors_transfer_owned_arguments_and_preserve_partial_captures() {
+    let original = "owned constructor string".to_owned();
+    let label = original.clone();
+    let address = label.as_ptr();
+    let limit = Rc::new(Purs_Data_Maybe::Maybe::Just(Value::Int(17)));
+    let before = ALLOCATIONS.with(|n| n.get());
+    let action = SchemaProbe_Open(label, limit.clone());
+    assert_eq!(ALLOCATIONS.with(|n| n.get()) - before, 1, "only the ADT node is allocated");
+    let Action::Open(label, value) = action.as_ref() else { panic!("Open"); };
+    assert_eq!(label.as_ptr(), address, "owned strings move into the constructor");
+    assert_eq!(label, &original);
+    assert!(Rc::ptr_eq(value, &limit));
+    let actions = SchemaProbe_reusedBuilder(original.clone());
+    for index in 0..2 {
+        let value = actions.array_get(index);
+        let Action::Open(label, limit) = value.unwrap_class::<Rc<Action>>().as_ref() else { panic!("Open"); };
+        assert_eq!(label, &original);
+        match (index, limit.as_ref()) {
+            (0, Purs_Data_Maybe::Maybe::Nothing) => {}
+            (1, Purs_Data_Maybe::Maybe::Just(value)) => assert_eq!(value.unwrap_int(), 7),
+            _ => panic!("partial application lost its capture"),
+        }
+    }
+}
+
+#[test]
 fn custom_constructors_and_owned_results() {
     let raw = r#"{"actions":[{"kind":"open","label":"first","limit":4},{"lines":[{"cost":1.5,"count":3}],"code":9,"kind":"close"}],"active":true}"#;
     let input = parse(raw);
@@ -112,6 +138,8 @@ fn order_duplicates_optionals_and_errors() {
         r#"{"note":null,"active":false,"actions":[{"limit":null,"label":"é","kind":"open"}]}"#,
         r#"{"active":"wrong","actions":[],"active":true}"#,
         r#"{"actions":[{"kind":"bad","kind":"open","label":"ok"}],"active":true}"#,
+        r#"{"actions":[{"kind":"\u006fpen","label":"escaped discriminator"}],"active":true}"#,
+        r#"{"actions":[{"kind":17,"label":"wrong discriminator type"}],"active":true}"#,
         r#"{"actions":[{"kind":"open","label":42}],"active":true}"#,
         r#"{"actions":[{"kind":"close","code":2147483648,"lines":[]}],"active":true}"#,
         r#"{"actions":[{"kind":"close","code":1,"lines":[{"count":1.5,"cost":0}]}],"active":true}"#,
@@ -146,6 +174,14 @@ fn dynamic_decoder_is_called_and_errors_can_recover() {
     let Twice::Twice(first, second) = value.as_ref();
     assert_eq!(first, "twice");
     assert_eq!(second, "twice");
+    for raw in [r#"{"tag":"echo"}"#, r#"{"tag":"\u0065cho"}"#] {
+        for result in [SchemaProbe_tagged(parse(raw)), SchemaProbe_taggedText(raw.into())] {
+            let Either::Right(value) = result.as_ref() else { panic!("retained discriminator"); };
+            let value = value.unwrap_class::<Rc<Tagged>>();
+            let Tagged::Tagged(tag) = value.as_ref();
+            assert_eq!(tag, "echo", "a discriminator used in the result must be owned");
+        }
+    }
 }
 
 #[test]
@@ -177,7 +213,7 @@ fn text_validates_ignored_fields_and_keeps_parser_errors() {
 
 #[test]
 fn normalized_keys_strings_and_numeric_boundaries() {
-    for number in ["0", "-0", "1.0", "1e0", "2147483647", "-2147483648", "2147483648", "-2147483649", "1.5", "1e400", "5e-324", "9007199254740993"] {
+    for number in ["0", "-0", "1.0", "1e0", "2147483647", "-2147483648", "2147483648", "-2147483649", "2147483647.00000001", "-2147483648.00000001", "21474836470e-1", "9999999999", "1.5", "1e400", "5e-324", "9007199254740993"] {
         let raw = format!("{{\"actions\":[{{\"kind\":\"close\",\"code\":{number},\"lines\":[{{\"count\":1,\"cost\":{number}}}]}}],\"active\":true}}");
         assert_eq!(print(SchemaProbe_decodeText(raw.clone())), ordinary_text(raw.clone()), "{raw}");
     }
@@ -188,6 +224,10 @@ fn normalized_keys_strings_and_numeric_boundaries() {
     }
     for number in ["9".repeat(4096), format!("1e{}", "9".repeat(4096)), format!("-0.{}1", "0".repeat(4096))] {
         let raw = format!("{{\"actions\":[],\"active\":true,\"ignored\":{number}}}");
+        assert_eq!(print(SchemaProbe_decodeText(raw.clone())), ordinary_text(raw));
+    }
+    for escape in [r#"\""#, r#"\uD800"#, r#"\uD800\uDFFF"#, r#"\n\t\b"#] {
+        let raw = format!("{{\"actions\":[{{\"kind\":\"open\",\"label\":\"{}{escape}{}\"}}],\"active\":true}}", "plain é ".repeat(256), "tail ".repeat(256));
         assert_eq!(print(SchemaProbe_decodeText(raw.clone())), ordinary_text(raw));
     }
 }

@@ -1519,6 +1519,12 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
            NeutralExpr (Typed _ inner) -> inner
            NeutralExpr inner -> NeutralExpr inner
            _ -> expr
+        ownsEtaArgs (NeutralExpr syntax) = case syntax of
+          Typed _ inner -> ownsEtaArgs inner
+          Syn.TypeApp inner _ -> ownsEtaArgs inner
+          CtorDef _ _ _ _ -> true
+          Var (Qualified (Just _) _) -> true
+          _ -> false
         { paramsCode, retCode, bodyCode, isFunc } =
           let allArgTypes = extractAllArgTypes inferredType
           in if Array.length allArgTypes > 0 then
@@ -1643,7 +1649,11 @@ codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseCont
                        -- including when only one Typed wrapper remains.
                        fnCode = codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext Nothing mergedArities globalClassFields bound Set.empty false expr
                        fnTy = shapeTypeToAST inferredType expr
-                       argsCodeAndType = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in Tuple ty (sanitizeIdent p <> ".clone()")) deduped
+                       -- Constructor/global-function wrappers consume fresh
+                       -- by-value arguments once. Their closed callee cannot
+                       -- capture the synthetic parameters introduced here.
+                       argsCodeAndType = Array.mapWithIndex (\i p -> let ty = fromMaybe Any (Array.index argTypes i) in Tuple ty
+                         (sanitizeIdent p <> if ownsEtaArgs expr then "" else ".clone()")) deduped
                        
                        Tuple actualRetTy callCode = buildCallBindingGroupAt renames valueEnums globalClassFields modNameStr argsCodeAndType fnTy fnCode 0
                    in boxUnbox renames valueEnums globalClassFields modNameStr retType actualRetTy callCode
@@ -3895,7 +3905,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
           retTyStr = codegenExprTypeWithValueEnums valueEnums currentMod true retTy
           argNames = Array.mapWithIndex (\i _ -> "a" <> show i) fields
           argsCode = String.joinWith ", " (Array.mapWithIndex (\i a -> "mut " <> a <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false (fromMaybe Any (Array.index argTys i))) argNames)
-          innerCall = "std::rc::Rc::new(" <> rustCtor <> "(" <> String.joinWith ", " (map (\a -> a <> ".clone()") argNames) <> "))"
+          innerCall = "std::rc::Rc::new(" <> rustCtor <> "(" <> String.joinWith ", " argNames <> "))"
       in if len == 0 then
            if isValueEnum valueEnums currentMod tyNameStr then rustCtor else "std::rc::Rc::new(" <> rustCtor <> ")"
          else if len <= maxNativeFunctionArity then "purust_core::Func" <> show len <> "::Static(|" <> argsCode <> "| -> " <> retTyStr <> " { " <> innerCall <> " } as fn(" <> String.joinWith ", " (map (\i -> codegenExprTypeWithValueEnums valueEnums currentMod false (fromMaybe Any (Array.index argTys i))) (Array.range 0 (len - 1))) <> ") -> " <> retTyStr <> ")"

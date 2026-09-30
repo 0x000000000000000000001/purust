@@ -5,21 +5,25 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { codegenModule, codegenPrelude } from '../../output/Purust.CodeGen/index.js';
-import { empty as emptyMap } from '../../output/Data.Map/index.js';
+import { empty as emptyMap, insert } from '../../output/Data.Map/index.js';
 import { empty as emptySet } from '../../output/Data.Set/index.js';
+import { ordString } from '../../output/Data.Ord/index.js';
 import { Just } from '../../output/Data.Maybe/index.js';
 import { Tuple } from '../../output/Data.Tuple/index.js';
-import { Any, Func, LitString, String as StringType } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
-import { Abs, App, Fail, Lit, Local, Typed } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
+import { Any, Func, LitString, Qualified, String as StringType } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
+import { Abs, App, Fail, Lit, Local, Typed, Var } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
 
 const consume = new Func([Any.value], Any.value);
 const binding = (name, expression) => new Tuple(name, new Typed(new Func([consume], Any.value),
   new Abs([new Tuple(new Just('consume'), 0)], new App(new Local(new Just('consume'), 0),
     [new Typed(StringType.value, expression)]))));
-const generated = codegenModule(emptyMap)(emptyMap)({ name: 'OwnedString', dataDecls: [], classDecls: [] })({
+const echo = new Func([StringType.value], StringType.value);
+const arities = insert(ordString)('OwnedString_echo')(echo)(emptyMap);
+const generated = codegenModule(arities)(emptyMap)({ name: 'OwnedString', dataDecls: [], classDecls: [] })({
   name: 'OwnedString', bindings: [{ recursive: false, bindings: [
     binding('failed', new Fail('Failed pattern match')),
     binding('value', new Lit(new LitString('abc\ud800😀'))),
+    new Tuple('alias', new Typed(echo, new Var(new Qualified(new Just('OwnedString'), 'echo')))),
   ] }],
 });
 assert.ok(generated.includes('purust_core::Value::String('));
@@ -30,7 +34,11 @@ writeFileSync(source, `${codegenPrelude(emptySet)}
 extern crate self as purust_core;
 #[path = ${JSON.stringify(runtime)}] mod perceus_ptr;
 ${generated}
+fn OwnedString_echo(value: String) -> String { value }
 fn main() {
+    let owned = "function alias must transfer its argument".to_owned();
+    let address = owned.as_ptr();
+    assert_eq!(OwnedString_alias(owned).as_ptr(), address);
     assert_eq!(purust_string_to_utf16(&OwnedString_value(Func1::Static(|x| x)).unwrap_string()),
         vec![97, 98, 99, 0xd800, 0xd83d, 0xde00]);
     std::panic::set_hook(Box::new(|_| {}));

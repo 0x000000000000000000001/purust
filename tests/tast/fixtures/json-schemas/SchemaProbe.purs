@@ -16,6 +16,13 @@ import Effect (Effect)
 type Line = { count :: Int, cost :: Number }
 data Action = Open String (Maybe Int) | Close Int (Array Line)
 
+-- A constructor used as a reusable partial application must keep its capture,
+-- while each fully applied constructor owns its fresh arguments.
+reusedBuilder :: String -> Array Action
+reusedBuilder label =
+  let make = opaque (Open label)
+  in [ make Nothing, make (Just 7) ]
+
 instance decodeAction :: DecodeJson Action where
   decodeJson json = do
     object <- decodeJson json
@@ -72,6 +79,20 @@ instance decodeTwice :: DecodeJson Twice where
 
 twice :: Json -> Either JsonDecodeError Twice
 twice = decodeJson
+
+data Tagged = Tagged String
+instance decodeTagged :: DecodeJson Tagged where
+  decodeJson json = do
+    object <- decodeJson json
+    tag <- object .: "tag"
+    if tag == "echo" then pure (Tagged tag)
+    else Left (TypeMismatch "Tagged tag")
+
+tagged :: Json -> Either JsonDecodeError Tagged
+tagged = decodeJson
+
+taggedText :: String -> Either JsonDecodeError Tagged
+taggedText = decodeJsonStringWith tagged
 
 data Recover = Recover Int
 instance decodeRecover :: DecodeJson Recover where
