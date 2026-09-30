@@ -37379,6 +37379,10 @@ pub struct RecordFields(Vec<(String, Value)>);
 
 impl RecordFields {
     pub fn new() -> Self { Self::default() }
+    pub fn with_capacity(capacity: usize) -> Self { Self(Vec::with_capacity(capacity)) }
+    // The caller guarantees the name is absent; used by native construction
+    // plans whose rows are duplicate-free.
+    pub fn push(&mut self, name: String, value: Value) { self.0.push((name, value)); }
     pub fn get(&self, name: &str) -> Option<&Value> {
         self.0.iter().find(|(key, _)| key == name).map(|(_, value)| value)
     }
@@ -37392,6 +37396,8 @@ impl RecordFields {
     pub fn remove(&mut self, name: &str) -> Option<Value> {
         self.0.iter().position(|(key, _)| key == name).map(|i| self.0.remove(i).1)
     }
+    // Keep the internal order. Used where enumeration order is irrelevant.
+    pub fn into_entries(self) -> Vec<(String, Value)> { self.0 }
     pub fn entries(&self) -> Vec<(String, Value)> {
         let mut entries = self.0.clone();
         entries.sort_by_key(|(key, _)| {
@@ -37404,21 +37410,21 @@ impl RecordFields {
 
 // Shared mutable own-property storage used by native object FFI. Keeping the
 // carrier here lets Foreign readers inspect it without a library dependency cycle.
-pub struct SharedRecord(std::sync::Mutex<RecordFields>);
+pub struct SharedRecord(std::cell::RefCell<RecordFields>);
 impl SharedRecord {
-    pub fn empty() -> Self { Self(std::sync::Mutex::new(RecordFields::new())) }
+    pub fn empty() -> Self { Self(std::cell::RefCell::new(RecordFields::new())) }
     pub fn from_entries(entries: Vec<(String, Value)>) -> Self {
         let mut fields = RecordFields::new();
         for (key, value) in entries { fields.insert(key, value); }
-        Self(std::sync::Mutex::new(fields))
+        Self(std::cell::RefCell::new(fields))
     }
-    pub fn snapshot(&self) -> Self { Self(std::sync::Mutex::new(self.lock().clone())) }
+    pub fn snapshot(&self) -> Self { Self(std::cell::RefCell::new(self.lock().clone())) }
     pub fn get(&self, key: &str) -> Option<Value> { self.lock().get(key).cloned() }
     pub fn entries(&self) -> Vec<(String, Value)> { self.lock().entries() }
     pub fn insert(&self, key: String, value: Value) -> Option<Value> { self.lock().insert(key, value) }
     pub fn remove(&self, key: &str) -> Option<Value> { self.lock().remove(key) }
-    fn lock(&self) -> std::sync::MutexGuard<'_, RecordFields> {
-        self.0.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    fn lock(&self) -> std::cell::RefMut<'_, RecordFields> {
+        self.0.borrow_mut()
     }
 }
 
