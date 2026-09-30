@@ -58,7 +58,7 @@ fn main() {
     assert_eq!(RecursiveValues_boxed(Value::Char('r')).unwrap_char(), 'r');
     let array = std::rc::Rc::new(vec![Value::Int(42)]);
     assert!(std::rc::Rc::ptr_eq(&array, &RecursiveValues_boxed(Value::Array(array.clone())).unwrap_array()));
-    let mut record = Value::Record_a(perceus_ptr::PerceusPtr::new(Record_a { tag: "Node", ..Default::default() }));
+    let mut record = { let mut record = Record_a::default(); record.tag = "Node"; Value::Record_a(perceus_ptr::PerceusPtr::new(record)) };
     record.set_value(Value::Int(42));
     assert_eq!(RecursiveValues_field(record.clone()), 42);
     let mut wrapped = RecursiveValues_boxed(record.clone());

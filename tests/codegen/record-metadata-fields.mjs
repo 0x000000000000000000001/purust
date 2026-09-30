@@ -36,7 +36,7 @@ fn main() {
     let widened = closed.__purust_set_field("extra", mk_int(5));
     assert_eq!(widened.get_tag().unwrap_int(), 3);
     assert_eq!(widened.__purust_get_field("vals").unwrap().unwrap_int(), 4);
-    let internal = Value::Record_a(perceus_ptr::PerceusPtr::new(Record_a { tag: "Node", ..Default::default() }));
+    let internal = { let mut record = Record_a::default(); record.tag = "Node"; Value::Record_a(perceus_ptr::PerceusPtr::new(record)) };
     assert_eq!(internal.__purust_ctor_tag(), "Node");
     assert!(internal.__purust_get_field("tag").is_none());
     let dynamic = internal.__purust_set_field("tag", mk_string("user tag"));

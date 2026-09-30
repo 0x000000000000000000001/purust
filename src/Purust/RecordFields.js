@@ -25,6 +25,7 @@ impl RecordFields {
     }
     // Keep the internal order. Used where enumeration order is irrelevant.
     pub fn into_entries(self) -> Vec<(String, Value)> { self.0 }
+    pub fn entries_unsorted(&self) -> Vec<(String, Value)> { self.0.clone() }
     pub fn entries(&self) -> Vec<(String, Value)> {
         let mut entries = self.0.clone();
         entries.sort_by_key(|(key, _)| {
@@ -37,21 +38,22 @@ impl RecordFields {
 
 // Shared mutable own-property storage used by native object FFI. Keeping the
 // carrier here lets Foreign readers inspect it without a library dependency cycle.
-pub struct SharedRecord(std::cell::RefCell<RecordFields>);
+pub struct SharedRecord(std::sync::Mutex<RecordFields>);
 impl SharedRecord {
-    pub fn empty() -> Self { Self(std::cell::RefCell::new(RecordFields::new())) }
+    pub fn empty() -> Self { Self(std::sync::Mutex::new(RecordFields::new())) }
     pub fn from_entries(entries: Vec<(String, Value)>) -> Self {
         let mut fields = RecordFields::new();
         for (key, value) in entries { fields.insert(key, value); }
-        Self(std::cell::RefCell::new(fields))
+        Self(std::sync::Mutex::new(fields))
     }
-    pub fn snapshot(&self) -> Self { Self(std::cell::RefCell::new(self.lock().clone())) }
+    pub fn snapshot(&self) -> Self { Self(std::sync::Mutex::new(self.lock().clone())) }
     pub fn get(&self, key: &str) -> Option<Value> { self.lock().get(key).cloned() }
     pub fn entries(&self) -> Vec<(String, Value)> { self.lock().entries() }
+    pub fn entries_unsorted(&self) -> Vec<(String, Value)> { self.lock().entries_unsorted() }
     pub fn insert(&self, key: String, value: Value) -> Option<Value> { self.lock().insert(key, value) }
     pub fn remove(&self, key: &str) -> Option<Value> { self.lock().remove(key) }
-    fn lock(&self) -> std::cell::RefMut<'_, RecordFields> {
-        self.0.borrow_mut()
+    fn lock(&self) -> std::sync::MutexGuard<'_, RecordFields> {
+        self.0.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 

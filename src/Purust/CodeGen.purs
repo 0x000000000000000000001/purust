@@ -714,7 +714,7 @@ codegenPreludeWithRenames renames shapes =
           ) validShapes
       in "    pub fn get_" <> sf <> "(&self) -> UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
-         genericFieldArm f ("            Value::Record_a(r) => r." <> field <> ".clone().unwrap(),\n") <>
+         genericFieldArm f ("            Value::Record_a(r) => r.get_field(" <> show f <> ").cloned().unwrap(),\n") <>
          "            Value::DynamicRecord(r) => r.get(" <> show f <> ").cloned().expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -729,9 +729,7 @@ codegenPreludeWithRenames renames shapes =
         Array.foldMap (\f -> "                " <> show f <> " => r." <> recordFieldIdent renames f <> ".clone(),\n")
           (String.split (Pattern ",") shape) <>
         "                _ => None,\n            },\n") validShapes <>
-      "            Value::Record_a(r) => match name {\n" <>
-      Array.foldMap (\f -> "                " <> show f <> " => r." <> recordFieldIdent renames f <> ".clone(),\n") genericFields <>
-      "                _ => None,\n            },\n" <>
+      "            Value::Record_a(r) => r.get_field(name).cloned(),\n" <>
       "            Value::DynamicRecord(r) => r.get(name).cloned(),\n" <>
       "            _ => panic!(\"Expected record\"),\n" <>
       "        }\n    }\n"
@@ -743,6 +741,10 @@ codegenPreludeWithRenames renames shapes =
       Array.foldMap (\f -> "                " <> show f <> " => { perceus_ptr::PerceusPtr::make_mut(r)." <>
         recordFieldIdent renames f <> " = Some(value); return self; },\n") names <>
       "                _ => {},\n            }"
+    setSparseFields names = "match name {\n" <>
+      Array.foldMap (\f -> "                " <> show f <> " => { perceus_ptr::PerceusPtr::make_mut(r).set_field(" <>
+        show f <> ", value); return self; },\n") names <>
+      "                _ => {},\n            }"
     copyFields names = Array.foldMap (\f ->
       "                if let Some(value) = &r." <> recordFieldIdent renames f <>
       " { fields.insert(" <> show f <> ".to_owned(), value.clone()); }\n") names
@@ -752,14 +754,14 @@ codegenPreludeWithRenames renames shapes =
       "        match &mut self {\n" <>
       Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
         "(r) => " <> setKnownFields (String.split (Pattern ",") shape) <> ",\n") validShapes <>
-      "            Value::Record_a(r) => " <> setKnownFields genericFields <> ",\n" <>
+      "            Value::Record_a(r) => " <> setSparseFields genericFields <> ",\n" <>
       "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(name.to_owned(), value); return self; },\n" <>
       "            _ => panic!(\"Expected record\"),\n        }\n" <>
       "        let mut fields = RecordFields::new();\n" <>
       "        match &self {\n" <>
       Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
         "(r) => {\n" <> copyFields (String.split (Pattern ",") shape) <> "            },\n") validShapes <>
-      "            Value::Record_a(r) => {\n" <> copyFields genericFields <> "            },\n" <>
+      "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n" <>
       "            _ => unreachable!(),\n        }\n" <>
       "        fields.insert(name.to_owned(), value);\n" <>
       "        Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))\n    }\n"
@@ -769,7 +771,7 @@ codegenPreludeWithRenames renames shapes =
       "        let mut fields = RecordFields::new();\n        match self.resolve() {\n" <>
       Array.foldMap (\shape -> "            Value::" <> shapeToStructName shape <>
         "(r) => {\n" <> copyFields (String.split (Pattern ",") shape) <> "            },\n") validShapes <>
-      "            Value::Record_a(r) => {\n" <> copyFields genericFields <> "            },\n" <>
+      "            Value::Record_a(r) => { for (key, value) in &r.fields { fields.insert(key.clone(), value.clone()); } },\n" <>
       "            Value::DynamicRecord(r) => return Some((**r).clone()),\n" <>
       "            _ => return None,\n        }\n        Some(fields)\n    }\n"
 
@@ -786,7 +788,7 @@ codegenPreludeWithRenames renames shapes =
           ) validShapes
       in "    pub fn __purust_borrow_" <> sf <> "(&self) -> &UnknownType {\n" <>
          "        match self.resolve() {\n" <> matchArms <>
-         genericFieldArm f ("            Value::Record_a(r) => r." <> field <> ".as_ref().unwrap(),\n") <>
+         genericFieldArm f ("            Value::Record_a(r) => r.get_field(" <> show f <> ").unwrap(),\n") <>
          "            Value::DynamicRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
@@ -809,8 +811,7 @@ codegenPreludeWithRenames renames shapes =
          "        if matches!(self, Value::Thunk(_)) { *self = self.resolve().clone(); }\n" <>
          "        match self {\n" <> matchArms <>
          genericFieldArm f ("            Value::Record_a(r) => {\n" <>
-         "                let mut mut_r = perceus_ptr::PerceusPtr::make_mut(r);\n" <>
-         "                mut_r." <> field <> " = Some(val);\n" <>
+         "                perceus_ptr::PerceusPtr::make_mut(r).set_field(" <> show f <> ", val);\n" <>
          "            },\n") <>
          "            Value::DynamicRecord(r) => { perceus_ptr::PerceusPtr::make_mut(r).insert(" <> show f <> ".to_owned(), val); },\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
@@ -1012,9 +1013,28 @@ codegenPreludeWithRenames renames shapes =
   "    pub tag: &'static str,\n" <>
   "    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" <>
   "    pub call: Option<Func1<UnknownType, UnknownType>>,\n" <>
-  Array.foldMap (\field ->
-    "    pub " <> recordFieldIdent renames field <> ": Option<UnknownType>,\n"
-  ) genericFields <>
+  "    pub fields: Vec<(String, UnknownType)>,\n" <>
+  "}\n\n" <>
+  "impl Record_a {\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn get_field(&self, name: &str) -> Option<&UnknownType> {\n" <>
+  "        self.fields.iter().find(|(key, _)| key == name).map(|(_, value)| value)\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn set_field(&mut self, name: &str, value: UnknownType) {\n" <>
+  "        match self.fields.iter_mut().find(|(key, _)| key == name) {\n" <>
+  "            Some(slot) => slot.1 = value,\n" <>
+  "            None => self.fields.push((name.to_owned(), value)),\n" <>
+  "        }\n" <>
+  "    }\n" <>
+  "    #[inline(always)]\n" <>
+  "    pub fn from_fields(fields: Vec<(&str, UnknownType)>) -> Self {\n" <>
+  "        let mut record = Self::default();\n" <>
+  "        for (name, value) in fields {\n" <>
+  "            record.set_field(name, value);\n" <>
+  "        }\n" <>
+  "        record\n" <>
+  "    }\n" <>
   "}\n\n" <>
   recordStructs <>
   "\n\n" <>
@@ -1272,8 +1292,14 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
                          recordFieldIdent renames field <> ": Some(" <>
                            boxUnbox renames valueEnums globalClassFields currentMod Any fieldType
                              ("(__purust_boxed)." <> recordFieldIdent renames field <> ".clone()") <> ")") fields)
+                   fieldPairs = String.joinWith ", " (map (\(Tuple field fieldType) ->
+                         "(" <> show field <> ", " <>
+                           boxUnbox renames valueEnums globalClassFields currentMod Any fieldType
+                             ("(__purust_boxed)." <> recordFieldIdent renames field <> ".clone()") <> ")") fields)
                  in "{ let __purust_boxed = " <> code <> "; purust_core::Value::" <> shape <>
-                    "(perceus_ptr::PerceusPtr::new(purust_core::" <> shape <> " { " <> fieldInits <> " })) }"
+                    (if shape == "Record_a"
+                       then "(perceus_ptr::PerceusPtr::new(purust_core::Record_a::from_fields(vec![" <> fieldPairs <> "])))"
+                       else "(perceus_ptr::PerceusPtr::new(purust_core::" <> shape <> " { " <> fieldInits <> " }))") <> " }"
                Nothing -> "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
         else if (actStr == "crate::UnknownType" || actStr == "purust_core::Value") && isExpADT then
           let downcast value = "(" <> value <> ").unwrap_class::<" <> expStr <> ">().clone()"
@@ -3688,15 +3714,22 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
     LitRecord props ->
       let arrProps = props
           structName = recordStructName renames (map (\(Prop k _) -> k) arrProps)
-          fields = String.joinWith ", " (Array.mapWithIndex (\i (Prop k v) -> 
+          propCode setter i (Prop k v) =
             let subsequent = Array.drop (i + 1) arrProps
                 aliveForV = Set.union alive (Array.foldl Set.union Set.empty (map (\(Prop _ sv) -> freeVariables sv) subsequent))
                 vCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields bound aliveForV false v
                 vTy = inferTypeExpr currentMod aritiesMap globalClassFields bound v
                 vFinal = boxUnbox renames valueEnums globalClassFields currentMod Any vTy vCode
-            in recordFieldIdent renames k <> ": Some(" <> vFinal <> ")"
-          ) arrProps)
-      in "purust_core::Value::" <> structName <> "(perceus_ptr::PerceusPtr::new(" <> structName <> " { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
+            in if setter
+              then "(" <> show k <> ", " <> vFinal <> ")"
+              else recordFieldIdent renames k <> ": Some(" <> vFinal <> ")"
+          fields = String.joinWith ", " (Array.mapWithIndex (propCode false) arrProps)
+      in if structName == "Record_a" then
+           "purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(crate::Record_a::from_fields(vec![" <>
+           String.joinWith ", " (Array.mapWithIndex (propCode true) arrProps) <>
+           "])))"
+         else
+           "purust_core::Value::" <> structName <> "(perceus_ptr::PerceusPtr::new(" <> structName <> " { " <> fields <> (if Array.length props > 0 then ", " else "") <> "..Default::default() }))"
   Abs params body -> 
     let
       paramsArr = map (\(Tuple mbId lvl) -> case mbId of

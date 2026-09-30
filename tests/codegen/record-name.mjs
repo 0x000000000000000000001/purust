@@ -23,7 +23,7 @@ extern crate self as purust_core;
 #[path = ${JSON.stringify(runtime)}] mod perceus_ptr;
 fn main() {
     let closed = Value::ClosedRecord_a(perceus_ptr::PerceusPtr::new(ClosedRecord_a { a: Some(mk_int(42)) }));
-    let open = Value::Record_a(perceus_ptr::PerceusPtr::new(Record_a { a: Some(mk_int(7)), ..Default::default() }));
+    let open = Value::Record_a(perceus_ptr::PerceusPtr::new(Record_a::from_fields(vec![("a", mk_int(7))])));
     assert_eq!(closed.get_a().unwrap_int(), 42);
     assert_eq!(open.get_a().unwrap_int(), 7);
     let updated = closed.clone().__purust_set_field("a", mk_int(99));

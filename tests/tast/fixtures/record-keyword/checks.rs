@@ -13,11 +13,10 @@ fn distinct_fields_borrow_and_update_preserve_original() {
 
 #[test]
 fn legacy_record_uses_the_same_fields_and_logical_keys() {
-    let mut value = purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a {
-        r#final: Some(purust_core::mk_int(7)),
-        final_kw: Some(purust_core::mk_int(11)),
-        ..Default::default()
-    }));
+    let mut value = purust_core::Value::Record_a(perceus_ptr::PerceusPtr::new(purust_core::Record_a::from_fields(vec![
+        ("final", purust_core::mk_int(7)),
+        ("final_kw", purust_core::mk_int(11)),
+    ])));
     let original = value.clone();
     assert_eq!(value.get_final().unwrap_int(), 7);
     assert_eq!(value.__purust_borrow_final().unwrap_int(), 7);

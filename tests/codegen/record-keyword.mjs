@@ -174,7 +174,7 @@ const groupsCode = compileGroups.map(({ fields, values }, group) => {
     changed_${group}_${index}.set_${fieldBase(field)}(mk_int(42));
     assert_eq!(changed_${group}_${index}.get_${fieldBase(field)}().unwrap_int(), 42);
     assert_eq!(closed.get_${fieldBase(field)}().unwrap_int(), ${values[index]});
-    let generic_${group}_${index} = Value::Record_a(perceus_ptr::PerceusPtr::new(Record_a { ${fieldIdent(field)}: Some(mk_int(44)), ..Default::default() }));
+    let generic_${group}_${index} = Value::Record_a(perceus_ptr::PerceusPtr::new(Record_a::from_fields(vec![(${JSON.stringify(field)}, mk_int(44))])));
     assert_eq!(generic_${group}_${index}.get_${fieldBase(field)}().unwrap_int(), 44);
     let updated_${group}_${index} = generic_${group}_${index}.__purust_set_field(${JSON.stringify(field)}, mk_int(45));
     assert_eq!(updated_${group}_${index}.get_${fieldBase(field)}().unwrap_int(), 45);`).join('');
