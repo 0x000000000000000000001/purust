@@ -8,11 +8,13 @@ const escape = code => {
   return `\\u{${code.toString(16)}}`;
 };
 
-export const rustStringLiteral = value => {
+export const rustStrLiteral = value => {
   let literal = '';
   for (let i = 0; i < value.length; i++) literal += escape(scalar(value.charCodeAt(i)));
-  return `String::from("${literal}")`;
+  return `"${literal}"`;
 };
+
+export const rustStringLiteral = value => `String::from(${rustStrLiteral(value)})`;
 
 export const rustCharLiteral = value => `'${escape(scalar(value.charCodeAt(0)))}'`;
 

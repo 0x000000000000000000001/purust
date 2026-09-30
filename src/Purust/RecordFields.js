@@ -1,4 +1,19 @@
 export const runtime = String.raw`
+// A concrete record owns its complete fields before entering UnknownType.
+// Primitive projections copy scalars; compound values retain ordinary shared
+// carriers. No deferred record/array construction or materialization cache.
+pub trait NativeRecord: std::any::Any + 'static {
+    fn get(&self, name: &str) -> Option<std::borrow::Cow<'_, Value>>;
+    fn keys(&self) -> &'static [&'static str];
+    fn fields(&self) -> RecordFields {
+        let mut fields = RecordFields::with_capacity(self.keys().len());
+        for &key in self.keys() {
+            fields.push(key, self.get(key).expect("native record key").into_owned());
+        }
+        fields
+    }
+}
+
 // Own properties retain insertion order. Enumeration puts array indices first,
 // as JS Object.keys does; replacing a value never moves its property. Keys are
 // shared: construction plans and repeated record shapes reuse one allocation.
@@ -67,6 +82,12 @@ impl SharedRecord {
     }
     pub fn snapshot(&self) -> Self { Self(std::sync::Mutex::new(self.lock().clone())) }
     pub fn get(&self, key: &str) -> Option<Value> { self.lock().get(key).cloned() }
+    // Snapshot selected fields under one lock. Generated read-only decoders
+    // release it before descending into children, including aliased objects.
+    pub fn get_many<const N: usize>(&self, keys: [&str; N]) -> [Option<Value>; N] {
+        let fields = self.lock();
+        std::array::from_fn(|index| fields.get(keys[index]).cloned())
+    }
     pub fn entries(&self) -> Vec<(String, Value)> { self.lock().entries() }
     pub fn entries_unsorted(&self) -> Vec<(String, Value)> { self.lock().entries_unsorted() }
     pub fn entries_unsorted_shared(&self) -> Vec<(std::rc::Rc<str>, Value)> { self.lock().entries_unsorted_shared() }
