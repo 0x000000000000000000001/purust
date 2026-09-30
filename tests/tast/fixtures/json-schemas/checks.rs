@@ -64,7 +64,7 @@ fn escaping_array_elements_retain_identity_and_owned_storage() {
     let action = actions.array_get(0);
     let again = actions.array_get(0);
     assert!(Rc::ptr_eq(action.unwrap_class::<Rc<Action>>(), again.unwrap_class::<Rc<Action>>()));
-    assert!(action.__purust_get_field("missing").is_none());
+    assert!(action.__purust_record_fields().is_none());
     let Action::Close(_, lines) = action.unwrap_class::<Rc<Action>>().as_ref() else { panic!("Close"); };
     let line = lines.array_get(0);
     let before = ALLOCATIONS.with(|n| n.get());
@@ -79,7 +79,7 @@ fn escaping_array_elements_retain_identity_and_owned_storage() {
         let Value::NativeElement(other, other_index) = lines.array_get(0) else { panic!("view"); };
         assert!(Rc::ptr_eq(owner, &other));
         assert_eq!(*index, other_index);
-        assert_eq!(std::mem::size_of::<Value>(), 32, "views must not enlarge every Value");
+        assert_eq!(std::mem::size_of::<Value>(), 24, "views must not enlarge every Value");
     }
     drop(result);
     drop(actions);
@@ -90,6 +90,19 @@ fn escaping_array_elements_retain_identity_and_owned_storage() {
     assert_eq!(changed.get_count().unwrap_int(), 99);
     assert_eq!(line.get_count().unwrap_int(), 3);
     assert_eq!(line.__purust_foreign_object().get("cost").unwrap().unwrap_number(), 1.5);
+}
+
+#[test]
+fn absent_values_are_owned_by_the_result_and_released_with_it() {
+    let raw = r#"{"actions":[{"kind":"open","label":"first"},{"kind":"open","label":"second","limit":null}],"active":true}"#;
+    let result = SchemaProbe_decodeText(raw.into());
+    let Either::Right(document) = result.as_ref() else { panic!("document"); };
+    let note = document.__purust_get_field("note").unwrap();
+    let weak = Rc::downgrade(note.unwrap_class::<Rc<Purs_Data_Maybe::Maybe>>());
+    assert!(matches!(weak.upgrade().unwrap().as_ref(), Purs_Data_Maybe::Maybe::Nothing));
+    drop(note);
+    drop(result);
+    assert!(weak.upgrade().is_none(), "decoding must not retain a global optional cache");
 }
 
 #[test]
@@ -190,7 +203,21 @@ fn differential_outputs_through_polymorphic_abi() {
     ] {
         let result = SchemaProbe_decodeArraysText(raw.into());
         assert_eq!(SchemaProbe_fingerprintArrays(result.clone()), SchemaProbe_fingerprintArrays(SchemaProbe_decodeArrays(parse(raw))));
-        if let Either::Right(value) = result.as_ref() { output.push(SchemaProbe_arrayOps(value.clone())); }
+        if let Either::Right(value) = result.as_ref() {
+            output.push(SchemaProbe_arrayOps(value.clone()));
+            // Public fromArray keeps the native representation. Feed it back
+            // into both the generated DOM decoder and the ordinary fallback.
+            let input = parse(raw);
+            let object = input.unwrap_class::<Rc<purust_core::SharedRecord>>();
+            for key in ["integers", "decimals", "flags", "names"] {
+                let array = value.__purust_get_field(key).unwrap();
+                let json = Purs_Data_Argonaut_Core::Data_Argonaut_Core_fromArray(array);
+                assert_eq!(Purs_Data_Argonaut_Core::Data_Argonaut_Core_stringify(json.clone()),
+                    Purs_Data_Argonaut_Core::Data_Argonaut_Core_stringify(object.get(key).unwrap()));
+                object.insert(key.into(), json);
+            }
+            assert_eq!(SchemaProbe_fingerprintArrays(result.clone()), SchemaProbe_fingerprintArrays(SchemaProbe_decodeArrays(input)));
+        }
         output.push(SchemaProbe_fingerprintArrays(result));
     }
     let mut seed: u32 = 0x52705eed;

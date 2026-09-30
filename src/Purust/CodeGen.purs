@@ -69,7 +69,7 @@ maxNativeFunctionArity = 12
 -- representation are statically known. The caller instantiates the generic
 -- helper with a concrete closure, so the boxed callback layer and the boxed
 -- accumulator disappear once the loop is inlined.
--- Element representations and the two-representation array view. These live
+-- Element representations and the shared array view. These live
 -- at the crate root so generated modules and FFI files can name them.
 reprItemsSource :: String
 reprItemsSource = "pub trait Repr: Sized + Clone {\n" <>
@@ -122,7 +122,7 @@ reprItemsSource = "pub trait Repr: Sized + Clone {\n" <>
   "pub enum IntItems {\n" <>
   "    Boxed(std::rc::Rc<Vec<UnknownType>>),\n" <>
   "    Ints(std::rc::Rc<Vec<i64>>),\n" <>
-  "    Native(std::rc::Rc<dyn NativeArray>),\n" <>
+  "    Native(std::rc::Rc<NativeArrayOwner>),\n" <>
   "}\n" <>
   "impl IntItems {\n" <>
   "    #[inline]\n" <>
@@ -730,7 +730,7 @@ codegenPreludeWithRenames renames shapes =
          genericFieldArm f ("            Value::Record_a(r) => r.get_field(" <> show f <> ").cloned().unwrap(),\n") <>
           "            Value::DynamicRecord(r) => r.get(" <> show f <> ").cloned().expect(\"Missing record field\"),\n" <>
           "            Value::NativeRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\").into_owned(),\n" <>
-          "            Value::NativeElement(r, index) => r.record(*index).expect(\"Expected record\").get(" <> show f <> ").expect(\"Missing record field\").into_owned(),\n" <>
+          "            Value::NativeElement(r, index) => r.field(*index, " <> show f <> ").expect(\"Missing record field\").into_owned(),\n" <>
          "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
          "        }\n" <>
          "    }\n"
@@ -747,7 +747,7 @@ codegenPreludeWithRenames renames shapes =
       "            Value::Record_a(r) => r.get_field(name).cloned(),\n" <>
        "            Value::DynamicRecord(r) => r.get(name).cloned(),\n" <>
        "            Value::NativeRecord(r) => r.get(name).map(|value| value.into_owned()),\n" <>
-       "            Value::NativeElement(r, index) => r.record(*index).and_then(|record| record.get(name).map(|value| value.into_owned())),\n" <>
+       "            Value::NativeElement(r, index) => r.field(*index, name).map(|value| value.into_owned()),\n" <>
       "            _ => panic!(\"Expected record\"),\n" <>
       "        }\n    }\n"
 
@@ -812,7 +812,7 @@ codegenPreludeWithRenames renames shapes =
           genericFieldArm f ("            Value::Record_a(r) => r.get_field(" <> show f <> ").unwrap(),\n") <>
           "            Value::DynamicRecord(r) => r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
           "            Value::NativeRecord(r) => return r.get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
-          "            Value::NativeElement(r, index) => return r.record(*index).expect(\"Expected record\").get(" <> show f <> ").expect(\"Missing record field\"),\n" <>
+          "            Value::NativeElement(r, index) => return r.field(*index, " <> show f <> ").expect(\"Missing record field\"),\n" <>
           "            _ => panic!(\"Expected record with field " <> sf <> "\"),\n" <>
           "        })\n" <>
          "    }\n"
@@ -908,8 +908,8 @@ codegenPreludeWithRenames renames shapes =
   "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
   "    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" <>
   "    NativeRecord(std::rc::Rc<dyn NativeRecord>),\n" <>
-  "    NativeArray(std::rc::Rc<dyn NativeArray>),\n" <>
-  "    NativeElement(std::rc::Rc<dyn NativeArray>, usize),\n" <>
+  "    NativeArray(std::rc::Rc<NativeArrayOwner>),\n" <>
+  "    NativeElement(std::rc::Rc<NativeArrayOwner>, usize),\n" <>
   recordVariants <>
   "}\n\n" <>
   "impl Value {\n" <>

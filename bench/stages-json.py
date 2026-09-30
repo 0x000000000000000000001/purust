@@ -15,7 +15,7 @@ import shutil
 import statistics
 import subprocess
 
-from paired import run_binary, validate, validate_samples
+from paired import validate, validate_samples
 from instrument import ALLOCATOR
 
 HELPERS = '''
@@ -75,7 +75,7 @@ def main():
     inputs = {str(path.relative_to(project)): hashlib.sha256(path.read_bytes()).hexdigest()
               for path in project.rglob('*') if path.is_file() and path.suffix in {'.rs', '.toml', '.lock'}}
     text = lib.read_text()
-    expression = r'(Purs_Data_Argonaut_Decode_Internal_Record::SchemaText::parse\(&input\))\.map\(\|doc\| (\w+_worker\(doc\.root\(\)\))\)'
+    expression = r'(Purs_Data_Argonaut_Decode_Internal_Record::SchemaText::parse\(&input\))\.map\(\|doc\| (\w+_worker\(doc\.root\(\)(?:, &mut None)?\))\)'
     text, changed = re.subn(expression, r'json_stage(0, || \1).map(|doc| json_stage(1, || \2))', text)
     if changed < 1:
         raise SystemExit('no generated text worker found')
@@ -88,9 +88,10 @@ def main():
                     for counter in counters { counter.store(0, std::sync::atomic::Ordering::Relaxed); }
                 }
 ''').replace(end, end + '''
-                let counters: Vec<_> = (0..3).map(|stage| (JSON_STAGE_NS[stage].load(std::sync::atomic::Ordering::Relaxed),
+                let mut counters: [(u64, u64, u64); 3] = std::array::from_fn(|stage| (JSON_STAGE_NS[stage].load(std::sync::atomic::Ordering::Relaxed),
                     JSON_STAGE_ALLOCS[stage].load(std::sync::atomic::Ordering::Relaxed),
-                    JSON_STAGE_BYTES[stage].load(std::sync::atomic::Ordering::Relaxed))).collect();
+                    JSON_STAGE_BYTES[stage].load(std::sync::atomic::Ordering::Relaxed)));
+                counters[2].0 = ((elapsed * 1000.0) as u64).saturating_sub(counters[0].0 + counters[1].0);
                 eprintln!("STAGES {} {} {:?}", phase, pass, counters);
 ''')
     lib.write_text(text + HELPERS)

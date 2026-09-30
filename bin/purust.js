@@ -35177,7 +35177,7 @@ var isScalar = function(schema) {
     return false;
   }
   ;
-  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 466, column 19 - line 468, column 19): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Purust.DecoderSchemas (line 472, column 19 - line 474, column 19): " + [v.constructor.name]);
 };
 var recordLayout = function(name2) {
   return function(fields) {
@@ -35193,7 +35193,7 @@ var recordLayout = function(name2) {
             return "purust_core::Value";
           }
           ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 490, column 9 - line 492, column 38): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 496, column 9 - line 498, column 38): " + [v1.constructor.name]);
         })() + ",\n")));
       };
     })(fields)) + ("}\nimpl purust_core::NativeRecord for " + (name2 + ("_Record {\n" + ("fn keys(&self) -> &'static [&'static str] { &[" + (joinWith(",")(map(functorArray)(function(v) {
@@ -35217,7 +35217,7 @@ var recordLayout = function(name2) {
             return "std::borrow::Cow::Borrowed(&self.field" + (show(showInt)(i) + ")");
           }
           ;
-          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 497, column 9 - line 500, column 75): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at Purust.DecoderSchemas (line 503, column 9 - line 506, column 75): " + [v1.constructor.name]);
         })() + "),\n"));
       };
     })(fields)) + "_ => None } }\n}\n")))))))))));
@@ -35234,7 +35234,7 @@ var unboxField = function(schema) {
       return value;
     }
     ;
-    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 482, column 27 - line 484, column 19): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 488, column 27 - line 490, column 19): " + [v.constructor.name]);
   };
 };
 var moveArgument = function(ty) {
@@ -35256,62 +35256,6 @@ var moveArgument = function(ty) {
     }
     ;
     return value;
-  };
-};
-var programCode = function(names) {
-  return function(name2) {
-    return function(v) {
-      if (v instanceof ReadField) {
-        return "let " + (local2(v.value0) + (" = match input" + (show(showInt)(fromMaybe(0)(elemIndex(eqString)(v.value1)(names))) + ((function() {
-          var $337 = elem2(eqString)(v.value1)(keys4(v.value5));
-          if ($337) {
-            return ".clone()";
-          }
-          ;
-          return ".take()";
-        })() + (" {\n" + ((function() {
-          if (v.value2) {
-            return "None => " + (runtime + "purust_maybe_nothing(),\n");
-          }
-          ;
-          return "None => return None,\n";
-        })() + ((function() {
-          if (v.value3) {
-            return "Some(raw) if raw.is_null() => " + (runtime + "purust_maybe_nothing(),\n");
-          }
-          ;
-          return "";
-        })() + ("Some(raw) => " + ((function() {
-          if (v.value2) {
-            return runtime + "purust_maybe_just(";
-          }
-          ;
-          return "";
-        })() + (name2 + ("_read(raw)?" + ((function() {
-          if (v.value2) {
-            return ")";
-          }
-          ;
-          return "";
-        })() + ("\n};\n" + programCode(names)(name2 + "_next")(v.value5))))))))))))));
-      }
-      ;
-      if (v instanceof Choice) {
-        return "if matches!(&" + (local2(v.value0) + (", purust_core::Value::String(value) if value == " + (quote2(v.value1) + (") {\n" + (programCode(names)(name2 + "_yes")(v.value2) + ("\n} else {\n" + (programCode(names)(name2 + "_no")(v.value3) + "\n}")))))));
-      }
-      ;
-      if (v instanceof ReturnValue) {
-        return "Some(" + (name2 + ("_construct(" + (joinWith(",")(map(functorArray)(function(v1) {
-          return moveArgument(v1.value1)(local2(v1.value0));
-        })(parameters(v.value0))) + "))")));
-      }
-      ;
-      if (v instanceof Reject) {
-        return "None";
-      }
-      ;
-      throw new Error("Failed pattern match at Purust.DecoderSchemas (line 522, column 26 - line 533, column 19): " + [v.constructor.name]);
-    };
   };
 };
 var expression2 = function(v) {
@@ -35414,7 +35358,7 @@ var constructors = function(arrays) {
                 })(params), result), new Abs(v1.value0, expr));
               }
               ;
-              throw new Error("Failed pattern match at Purust.DecoderSchemas (line 560, column 18 - line 562, column 135): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at Purust.DecoderSchemas (line 566, column 18 - line 568, column 135): " + [v1.constructor.name]);
             })();
             return [new Tuple(path3 + "_construct", body)];
           }
@@ -35437,124 +35381,6 @@ var constructors = function(arrays) {
       return concatMap(function(v1) {
         return constructors(arrays)(v1.value0)(v1.value1);
       })(children(name2)(v));
-    };
-  };
-};
-var emit = function(layouts) {
-  return function(arrays) {
-    return function(representation) {
-      return function(name2) {
-        return function(schema) {
-          var success = function(value) {
-            return "Some(" + (value + ")");
-          };
-          var $$function = function(label2) {
-            return function(ty) {
-              return function(code) {
-                return "fn " + (label2 + ("<I: " + (runtime + ("SchemaInput>(raw: I) -> Option<" + (ty + ("> {\n" + (code + "\n}\n")))))));
-              };
-            };
-          };
-          var body = function(v) {
-            if (v instanceof Scalar) {
-              return "raw.scalar(" + (quote2(v.value0) + ")");
-            }
-            ;
-            if (v instanceof Optional) {
-              return "if raw.is_null() { " + (success(runtime + "purust_maybe_nothing()") + (" } else { Some(" + (runtime + ("purust_maybe_just(" + (name2 + "_item(raw)?)) }")))));
-            }
-            ;
-            if (v instanceof Sequence) {
-              var packed = (function() {
-                if (v.value0 instanceof ObjectSchema && (layouts && arrays)) {
-                  return new Just(new Tuple("NativeRecords", name2 + "_item_value(item)?"));
-                }
-                ;
-                if (v.value0 instanceof Derived && (v.value0.value0 instanceof Just && arrays)) {
-                  return new Just(new Tuple("NativeClasses", name2 + "_item_value(item)?"));
-                }
-                ;
-                if (v.value0 instanceof Scalar && (v.value0.value0 === "Int" && arrays)) {
-                  return new Just(new Tuple("IntArray", unboxField(v.value0)(name2 + "_item(item)?")));
-                }
-                ;
-                if (arrays && isScalar(v.value0)) {
-                  return new Just(new Tuple("NativeScalars", unboxField(v.value0)(name2 + "_item(item)?")));
-                }
-                ;
-                return Nothing.value;
-              })();
-              var v1 = fromMaybe(new Tuple("Array", name2 + "_item(item)?"))(packed);
-              var wrap2 = (function() {
-                var $419 = v1.value0 === "Array" || v1.value0 === "IntArray";
-                if ($419) {
-                  return "purust_core::Value::" + (v1.value0 + "(std::rc::Rc::new(out))");
-                }
-                ;
-                return "purust_core::Value::NativeArray(std::rc::Rc::new(purust_core::" + (v1.value0 + "(out)))");
-              })();
-              return "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" + (v1.value1 + ("); }\nSome(" + (wrap2 + ")")));
-            }
-            ;
-            if (v instanceof ObjectSchema) {
-              return slots(map(functorArray)(function(v12) {
-                return v12.value0;
-              })(v.value0)) + (joinWith("\n")(mapWithIndex2(function(i) {
-                return function(v12) {
-                  return "let value" + (show(showInt)(i) + (" = match input" + (show(showInt)(i) + (" { Some(raw) => " + (name2 + ("_field" + (show(showInt)(i) + ("(raw)?, None => " + ((function() {
-                    if (v12.value1 instanceof Optional) {
-                      return runtime + "purust_maybe_nothing()";
-                    }
-                    ;
-                    return "return None";
-                  })() + " };")))))))));
-                };
-              })(v.value0)) + (function() {
-                if (layouts) {
-                  return "\nSome(" + (name2 + ("_Record {" + (joinWith(",")(mapWithIndex2(function(i) {
-                    return function(v12) {
-                      return "field" + (show(showInt)(i) + (": " + unboxField(v12.value1)("value" + show(showInt)(i))));
-                    };
-                  })(v.value0)) + "})")));
-                }
-                ;
-                return "\nstd::thread_local! { static KEYS: [std::rc::Rc<str>; " + (show(showInt)(length(v.value0)) + ("] = [" + (joinWith(",")(map(functorArray)(function(v12) {
-                  return "std::rc::Rc::from(" + (quote2(v12.value0) + ")");
-                })(v.value0)) + ("]; }\n" + ("KEYS.with(|keys| { let mut fields = purust_core::RecordFields::with_capacity(" + (show(showInt)(length(v.value0)) + (");\n" + (joinWith("\n")(mapWithIndex2(function(i) {
-                  return function(v12) {
-                    return "fields.push(keys[" + (show(showInt)(i) + ("].clone(), value" + (show(showInt)(i) + ");")));
-                  };
-                })(v.value0)) + "\nSome(purust_core::Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))) })"))))))));
-              })());
-            }
-            ;
-            if (v instanceof Derived) {
-              return slots(keys4(v.value1)) + programCode(keys4(v.value1))(name2)(v.value1);
-            }
-            ;
-            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 432, column 10 - line 463, column 89): " + [v.constructor.name]);
-          };
-          return (function() {
-            if (schema instanceof ObjectSchema && layouts) {
-              return $$function(name2)("purust_core::Value")(name2 + "_value(raw).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))") + $$function(name2 + "_value")(name2 + "_Record")(body(new ObjectSchema(schema.value0)));
-            }
-            ;
-            if (schema instanceof Derived && (schema.value0 instanceof Just && arrays)) {
-              return $$function(name2)("purust_core::Value")(name2 + "_value(raw).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))") + $$function(name2 + "_value")(representation(schema.value0.value0))(slots(keys4(schema.value1)) + programCode(keys4(schema.value1))(name2)(schema.value1));
-            }
-            ;
-            return $$function(name2)("purust_core::Value")(body(schema));
-          })() + ((function() {
-            if (schema instanceof ObjectSchema && layouts) {
-              return recordLayout(name2)(schema.value0);
-            }
-            ;
-            return "";
-          })() + foldMap(foldableArray)(monoidString)(function(v) {
-            return emit(layouts)(arrays)(representation)(v.value0)(v.value1);
-          })(children(name2)(schema)));
-        };
-      };
     };
   };
 };
@@ -36038,8 +35864,8 @@ var apply3 = function(ctx) {
                 var v1 = uncons(fn.value1);
                 if (v1 instanceof Just && v instanceof Just) {
                   var env$prime = insert(ordLevel)(v1.value0.head.value1)(v.value0.head)(fn.value0);
-                  var $644 = $$null(v1.value0.tail);
-                  if ($644) {
+                  var $582 = $$null(v1.value0.tail);
+                  if ($582) {
                     return evaluate(ctx)(fuel - 1 | 0)(env$prime)(next2)(fn.value2)(function(n) {
                       return function(result) {
                         return apply3(ctx)(fuel - 1 | 0)(n)(result)(v.value0.tail)(k);
@@ -36056,8 +35882,8 @@ var apply3 = function(ctx) {
               if (fn instanceof Constructor) {
                 var allArgs = append(semigroupArray)(fn.value2)(args);
                 return discard(discardUnit)(bindMaybe)(guard2(alternativeMaybe)(length(allArgs) <= fn.value1))(function() {
-                  var $656 = length(allArgs) < fn.value1;
-                  if ($656) {
+                  var $594 = length(allArgs) < fn.value1;
+                  if ($594) {
                     return k(next2)(new Constructor(fn.value0, fn.value1, allArgs));
                   }
                   ;
@@ -36072,6 +35898,183 @@ var apply3 = function(ctx) {
             ;
             throw new Error("Failed pattern match at Purust.DecoderSchemas (line 304, column 1 - line 304, column 104): " + [ctx.constructor.name, fuel.constructor.name, next2.constructor.name, fn.constructor.name, args.constructor.name, k.constructor.name]);
           };
+        };
+      };
+    };
+  };
+};
+var absentValue = /* @__PURE__ */ (function() {
+  return "absent.get_or_insert_with(" + (runtime + "purust_maybe_nothing).clone()");
+})();
+var programCode = function(names) {
+  return function(name2) {
+    return function(v) {
+      if (v instanceof ReadField) {
+        return "let " + (local2(v.value0) + (" = match input" + (show(showInt)(fromMaybe(0)(elemIndex(eqString)(v.value1)(names))) + ((function() {
+          var $599 = elem2(eqString)(v.value1)(keys4(v.value5));
+          if ($599) {
+            return ".clone()";
+          }
+          ;
+          return ".take()";
+        })() + (" {\n" + ((function() {
+          if (v.value2) {
+            return "None => " + (absentValue + ",\n");
+          }
+          ;
+          return "None => return None,\n";
+        })() + ((function() {
+          if (v.value3) {
+            return "Some(raw) if raw.is_null() => " + (absentValue + ",\n");
+          }
+          ;
+          return "";
+        })() + ("Some(raw) => " + ((function() {
+          if (v.value2) {
+            return runtime + "purust_maybe_just(";
+          }
+          ;
+          return "";
+        })() + (name2 + ("_read(raw, absent)?" + ((function() {
+          if (v.value2) {
+            return ")";
+          }
+          ;
+          return "";
+        })() + ("\n};\n" + programCode(names)(name2 + "_next")(v.value5))))))))))))));
+      }
+      ;
+      if (v instanceof Choice) {
+        return "if matches!(&" + (local2(v.value0) + (", purust_core::Value::String(value) if value == " + (quote2(v.value1) + (") {\n" + (programCode(names)(name2 + "_yes")(v.value2) + ("\n} else {\n" + (programCode(names)(name2 + "_no")(v.value3) + "\n}")))))));
+      }
+      ;
+      if (v instanceof ReturnValue) {
+        return "Some(" + (name2 + ("_construct(" + (joinWith(",")(map(functorArray)(function(v1) {
+          return moveArgument(v1.value1)(local2(v1.value0));
+        })(parameters(v.value0))) + "))")));
+      }
+      ;
+      if (v instanceof Reject) {
+        return "None";
+      }
+      ;
+      throw new Error("Failed pattern match at Purust.DecoderSchemas (line 528, column 26 - line 539, column 19): " + [v.constructor.name]);
+    };
+  };
+};
+var emit = function(layouts) {
+  return function(arrays) {
+    return function(representation) {
+      return function(name2) {
+        return function(schema) {
+          var success = function(value) {
+            return "Some(" + (value + ")");
+          };
+          var $$function = function(label2) {
+            return function(ty) {
+              return function(code) {
+                return "fn " + (label2 + ("<I: " + (runtime + ("SchemaInput>(raw: I, absent: &mut Option<purust_core::Value>) -> Option<" + (ty + ("> {\n" + (code + "\n}\n")))))));
+              };
+            };
+          };
+          var body = function(v) {
+            if (v instanceof Scalar) {
+              return "raw.scalar(" + (quote2(v.value0) + ")");
+            }
+            ;
+            if (v instanceof Optional) {
+              return "if raw.is_null() { " + (success(absentValue) + (" } else { Some(" + (runtime + ("purust_maybe_just(" + (name2 + "_item(raw, absent)?)) }")))));
+            }
+            ;
+            if (v instanceof Sequence) {
+              var packed = (function() {
+                if (v.value0 instanceof ObjectSchema && (layouts && arrays)) {
+                  return new Just(new Tuple("NativeRecords", name2 + "_item_value(item, absent)?"));
+                }
+                ;
+                if (v.value0 instanceof Derived && (v.value0.value0 instanceof Just && arrays)) {
+                  return new Just(new Tuple("NativeClasses", name2 + "_item_value(item, absent)?"));
+                }
+                ;
+                if (v.value0 instanceof Scalar && (v.value0.value0 === "Int" && arrays)) {
+                  return new Just(new Tuple("IntArray", unboxField(v.value0)(name2 + "_item(item, absent)?")));
+                }
+                ;
+                if (arrays && isScalar(v.value0)) {
+                  return new Just(new Tuple("NativeScalars", unboxField(v.value0)(name2 + "_item(item, absent)?")));
+                }
+                ;
+                return Nothing.value;
+              })();
+              var v1 = fromMaybe(new Tuple("Array", name2 + "_item(item, absent)?"))(packed);
+              var wrap2 = (function() {
+                var $628 = v1.value0 === "Array" || v1.value0 === "IntArray";
+                if ($628) {
+                  return "purust_core::Value::" + (v1.value0 + "(std::rc::Rc::new(out))");
+                }
+                ;
+                return "purust_core::Value::NativeArray(std::rc::Rc::new(purust_core::" + (v1.value0 + "(out).into()))");
+              })();
+              return "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" + (v1.value1 + ("); }\nSome(" + (wrap2 + ")")));
+            }
+            ;
+            if (v instanceof ObjectSchema) {
+              return slots(map(functorArray)(function(v12) {
+                return v12.value0;
+              })(v.value0)) + (joinWith("\n")(mapWithIndex2(function(i) {
+                return function(v12) {
+                  return "let value" + (show(showInt)(i) + (" = match input" + (show(showInt)(i) + (" { Some(raw) => " + (name2 + ("_field" + (show(showInt)(i) + ("(raw, absent)?, None => " + ((function() {
+                    if (v12.value1 instanceof Optional) {
+                      return absentValue;
+                    }
+                    ;
+                    return "return None";
+                  })() + " };")))))))));
+                };
+              })(v.value0)) + (function() {
+                if (layouts) {
+                  return "\nSome(" + (name2 + ("_Record {" + (joinWith(",")(mapWithIndex2(function(i) {
+                    return function(v12) {
+                      return "field" + (show(showInt)(i) + (": " + unboxField(v12.value1)("value" + show(showInt)(i))));
+                    };
+                  })(v.value0)) + "})")));
+                }
+                ;
+                return "\nstd::thread_local! { static KEYS: [std::rc::Rc<str>; " + (show(showInt)(length(v.value0)) + ("] = [" + (joinWith(",")(map(functorArray)(function(v12) {
+                  return "std::rc::Rc::from(" + (quote2(v12.value0) + ")");
+                })(v.value0)) + ("]; }\n" + ("KEYS.with(|keys| { let mut fields = purust_core::RecordFields::with_capacity(" + (show(showInt)(length(v.value0)) + (");\n" + (joinWith("\n")(mapWithIndex2(function(i) {
+                  return function(v12) {
+                    return "fields.push(keys[" + (show(showInt)(i) + ("].clone(), value" + (show(showInt)(i) + ");")));
+                  };
+                })(v.value0)) + "\nSome(purust_core::Value::DynamicRecord(perceus_ptr::PerceusPtr::new(fields))) })"))))))));
+              })());
+            }
+            ;
+            if (v instanceof Derived) {
+              return slots(keys4(v.value1)) + programCode(keys4(v.value1))(name2)(v.value1);
+            }
+            ;
+            throw new Error("Failed pattern match at Purust.DecoderSchemas (line 438, column 10 - line 469, column 89): " + [v.constructor.name]);
+          };
+          return (function() {
+            if (schema instanceof ObjectSchema && layouts) {
+              return $$function(name2)("purust_core::Value")(name2 + "_value(raw, absent).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))") + $$function(name2 + "_value")(name2 + "_Record")(body(new ObjectSchema(schema.value0)));
+            }
+            ;
+            if (schema instanceof Derived && (schema.value0 instanceof Just && arrays)) {
+              return $$function(name2)("purust_core::Value")(name2 + "_value(raw, absent).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))") + $$function(name2 + "_value")(representation(schema.value0.value0))(slots(keys4(schema.value1)) + programCode(keys4(schema.value1))(name2)(schema.value1));
+            }
+            ;
+            return $$function(name2)("purust_core::Value")(body(schema));
+          })() + ((function() {
+            if (schema instanceof ObjectSchema && layouts) {
+              return recordLayout(name2)(schema.value0);
+            }
+            ;
+            return "";
+          })() + foldMap(foldableArray)(monoidString)(function(v) {
+            return emit(layouts)(arrays)(representation)(v.value0)(v.value1);
+          })(children(name2)(schema)));
         };
       };
     };
@@ -36171,10 +36174,10 @@ var specializeDecoderSchemas = function(layouts) {
                         })();
                         var cursor = (function() {
                           if (text) {
-                            return runtime + ("SchemaText::parse(&input).map(|doc| " + (qualifiedWorker + "(doc.root())) .flatten()"));
+                            return runtime + ("SchemaText::parse(&input).map(|doc| " + (qualifiedWorker + "(doc.root(), &mut None)) .flatten()"));
                           }
                           ;
-                          return qualifiedWorker + ("(" + (runtime + "SchemaDom(input.clone()))"));
+                          return qualifiedWorker + ("(" + (runtime + "SchemaDom(input.clone()), &mut None)"));
                         })();
                         var code = "pub fn " + (full + ("(input: " + (input + (") -> std::rc::Rc<Purs_Data_Either::Either> {\n" + ("match " + (cursor + (" { Some(value) => std::rc::Rc::new(Purs_Data_Either::Either::Right(value)), None => " + (prefix + (source2 + "(input) }\n}\n")))))))));
                         return discard(discardUnit)(bindStateT3)(put(monadStateStateT1)((function() {
@@ -36212,7 +36215,7 @@ var specializeDecoderSchemas = function(layouts) {
                       return map(functorStateT3)(NeutralExpr)(traverse(traversableBackendSyntax)(applicativeStateT3)(rewrite(ctx2))(v12));
                     }
                     ;
-                    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 604, column 40 - line 608, column 54): " + [v2.constructor.name]);
+                    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 610, column 40 - line 614, column 54): " + [v2.constructor.name]);
                   };
                 };
                 var rewriteGroup2 = function(ctx2) {
@@ -36232,7 +36235,7 @@ var specializeDecoderSchemas = function(layouts) {
                       });
                     }
                     ;
-                    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 599, column 3 - line 603, column 43): " + [ctx2.constructor.name, group4.constructor.name]);
+                    throw new Error("Failed pattern match at Purust.DecoderSchemas (line 605, column 3 - line 609, column 43): " + [ctx2.constructor.name, group4.constructor.name]);
                   };
                 };
                 var initial = {
@@ -36285,7 +36288,7 @@ var specializeDecoderSchemas = function(layouts) {
                 };
               }
               ;
-              throw new Error("Failed pattern match at Purust.DecoderSchemas (line 566, column 1 - line 567, column 88): " + [layouts.constructor.name, arrays.constructor.name, representation.constructor.name, sanitize.constructor.name, arities.constructor.name, v.constructor.name, mod2.constructor.name]);
+              throw new Error("Failed pattern match at Purust.DecoderSchemas (line 572, column 1 - line 573, column 88): " + [layouts.constructor.name, arrays.constructor.name, representation.constructor.name, sanitize.constructor.name, arities.constructor.name, v.constructor.name, mod2.constructor.name]);
             };
           };
         };
@@ -39025,21 +39028,62 @@ pub enum NativeItem<'a> {
 pub trait NativeArray: std::any::Any + 'static {
     fn len(&self) -> usize;
     fn item(&self, index: usize) -> NativeItem<'_>;
-    fn record(&self, index: usize) -> Option<&dyn NativeRecord> {
+    fn field(&self, index: usize, name: &str) -> Option<std::borrow::Cow<'_, Value>> {
+        match self.item(index) { NativeItem::Record(value) => value.get(name), _ => panic!("Expected record") }
+    }
+}
+
+// A thin shared owner keeps (owner, index) within 16 bytes, so adding an
+// element view does not enlarge every Value (including the input JSON DOM).
+// Scalar Vecs live directly here. A generated record/class Vec needs one
+// extra type-erasure box per array, never one box per element.
+pub enum NativeArrayOwner {
+    Empty,
+    Numbers(Vec<f64>),
+    Booleans(Vec<bool>),
+    Strings(Vec<String>),
+    Elements(Box<dyn NativeArray>),
+}
+impl NativeArrayOwner {
+    pub fn len(&self) -> usize {
+        match self { Self::Empty => 0, Self::Numbers(v) => v.len(), Self::Booleans(v) => v.len(), Self::Strings(v) => v.len(), Self::Elements(v) => v.len() }
+    }
+    pub fn item(&self, index: usize) -> NativeItem<'_> {
+        match self {
+            Self::Empty => panic!("Array index out of bounds"),
+            Self::Numbers(v) => NativeItem::Scalar(Value::Number(v[index])),
+            Self::Booleans(v) => NativeItem::Scalar(Value::Bool(v[index])),
+            Self::Strings(v) => NativeItem::Scalar(Value::String(v[index].clone())),
+            Self::Elements(v) => v.item(index),
+        }
+    }
+    pub fn record(&self, index: usize) -> Option<&dyn NativeRecord> {
         match self.item(index) { NativeItem::Record(value) => Some(value), _ => None }
     }
-    fn class(&self, index: usize) -> &dyn std::any::Any {
+    pub fn field(&self, index: usize, name: &str) -> Option<std::borrow::Cow<'_, Value>> {
+        match self { Self::Elements(values) => values.field(index, name), _ => panic!("Expected record") }
+    }
+    pub fn class(&self, index: usize) -> &dyn std::any::Any {
         match self.item(index) { NativeItem::Class(value) => value, _ => panic!("Expected Class element") }
     }
 }
 
 pub struct NativeRecords<T: NativeRecord>(pub Vec<T>);
+impl<T: NativeRecord> From<NativeRecords<T>> for NativeArrayOwner {
+    fn from(value: NativeRecords<T>) -> Self { if value.0.is_empty() { Self::Empty } else { Self::Elements(Box::new(value)) } }
+}
 impl<T: NativeRecord> NativeArray for NativeRecords<T> {
     fn len(&self) -> usize { self.0.len() }
     fn item(&self, index: usize) -> NativeItem<'_> { NativeItem::Record(&self.0[index]) }
+    // One virtual call projects directly from the concrete element. Returning
+    // a dyn NativeRecord first would require another virtual call per field.
+    fn field(&self, index: usize, name: &str) -> Option<std::borrow::Cow<'_, Value>> { self.0[index].get(name) }
 }
 
 pub struct NativeClasses<T>(pub Vec<T>);
+impl<T: std::any::Any + 'static> From<NativeClasses<T>> for NativeArrayOwner {
+    fn from(value: NativeClasses<T>) -> Self { if value.0.is_empty() { Self::Empty } else { Self::Elements(Box::new(value)) } }
+}
 impl<T: std::any::Any + 'static> NativeArray for NativeClasses<T> {
     fn len(&self) -> usize { self.0.len() }
     fn item(&self, index: usize) -> NativeItem<'_> { NativeItem::Class(&self.0[index]) }
@@ -39050,13 +39094,22 @@ impl NativeScalar for f64 { fn value(&self) -> Value { Value::Number(*self) } }
 impl NativeScalar for bool { fn value(&self) -> Value { Value::Bool(*self) } }
 impl NativeScalar for String { fn value(&self) -> Value { Value::String(self.clone()) } }
 pub struct NativeScalars<T: NativeScalar>(pub Vec<T>);
+impl From<NativeScalars<f64>> for NativeArrayOwner {
+    fn from(value: NativeScalars<f64>) -> Self { Self::Numbers(value.0) }
+}
+impl From<NativeScalars<bool>> for NativeArrayOwner {
+    fn from(value: NativeScalars<bool>) -> Self { Self::Booleans(value.0) }
+}
+impl From<NativeScalars<String>> for NativeArrayOwner {
+    fn from(value: NativeScalars<String>) -> Self { Self::Strings(value.0) }
+}
 impl<T: NativeScalar> NativeArray for NativeScalars<T> {
     fn len(&self) -> usize { self.0.len() }
     fn item(&self, index: usize) -> NativeItem<'_> { NativeItem::Scalar(self.0[index].value()) }
 }
 
 #[inline]
-pub fn native_array_item(owner: &std::rc::Rc<dyn NativeArray>, index: usize) -> Value {
+pub fn native_array_item(owner: &std::rc::Rc<NativeArrayOwner>, index: usize) -> Value {
     match owner.item(index) {
         NativeItem::Scalar(value) => value,
         _ => Value::NativeElement(owner.clone(), index),
@@ -39386,7 +39439,7 @@ var recordProjection = function(inferType) {
 // output/Purust.RecordFields/foreign.js
 var runtime4 = String.raw`
 // A concrete record owns its complete fields before entering UnknownType.
-// Primitive projections copy scalars; compound values retain ordinary shared
+// Primitive projections copy scalars; compound values retain eager shared
 // carriers. No deferred record/array construction or materialization cache.
 pub trait NativeRecord: std::any::Any + 'static {
     fn get(&self, name: &str) -> Option<std::borrow::Cow<'_, Value>>;
@@ -43170,7 +43223,7 @@ impl Repr for char {
 pub enum IntItems {
     Boxed(std::rc::Rc<Vec<UnknownType>>),
     Ints(std::rc::Rc<Vec<i64>>),
-    Native(std::rc::Rc<dyn NativeArray>),
+    Native(std::rc::Rc<NativeArrayOwner>),
 }
 impl IntItems {
     #[inline]
@@ -44433,7 +44486,7 @@ var codegenPreludeWithRenames = function(renames) {
         ;
         return "";
       })(validShapes);
-      return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").cloned().unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').cloned().expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ('            Value::NativeElement(r, index) => r.record(*index).expect("Expected record").get(' + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))))));
+      return "    pub fn get_" + (sf + ("(&self) -> UnknownType {\n" + ("        match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").cloned().unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').cloned().expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ("            Value::NativeElement(r, index) => r.field(*index, " + (show(showString)(f) + (').expect("Missing record field").into_owned(),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        }\n    }\n'))))))))))))))));
     })(validUniqueFields);
     var setMethods = foldMap2(monoidString)(function(f) {
       var sf = fieldBase(renames)(f);
@@ -44496,7 +44549,7 @@ var codegenPreludeWithRenames = function(renames) {
       return "            Value::" + (shapeToStructName(shape) + ("(r) => match name {\n" + (foldMap2(monoidString)(function(f) {
         return "                " + (show(showString)(f) + (" => r." + (recordFieldIdent(renames)(f) + ".clone(),\n")));
       })(split(",")(shape)) + "                _ => None,\n            },\n")));
-    })(validShapes) + '            Value::Record_a(r) => r.get_field(name).cloned(),\n            Value::DynamicRecord(r) => r.get(name).cloned(),\n            Value::NativeRecord(r) => r.get(name).map(|value| value.into_owned()),\n            Value::NativeElement(r, index) => r.record(*index).and_then(|record| record.get(name).map(|value| value.into_owned())),\n            _ => panic!("Expected record"),\n        }\n    }\n'));
+    })(validShapes) + '            Value::Record_a(r) => r.get_field(name).cloned(),\n            Value::DynamicRecord(r) => r.get(name).cloned(),\n            Value::NativeRecord(r) => r.get(name).map(|value| value.into_owned()),\n            Value::NativeElement(r, index) => r.field(*index, name).map(|value| value.into_owned()),\n            _ => panic!("Expected record"),\n        }\n    }\n'));
     var copyFields = function(names) {
       return foldMap2(monoidString)(function(f) {
         return "                if let Some(value) = &r." + (recordFieldIdent(renames)(f) + (" { fields.insert(" + (show(showString)(f) + ".to_owned(), value.clone()); }\n")));
@@ -44522,9 +44575,9 @@ var codegenPreludeWithRenames = function(renames) {
         ;
         return "";
       })(validShapes);
-      return "    pub fn __purust_borrow_" + (sf + ("(&self) -> std::borrow::Cow<'_, UnknownType> {\n" + ("        std::borrow::Cow::Borrowed(match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => return r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ('            Value::NativeElement(r, index) => return r.record(*index).expect("Expected record").get(' + (show(showString)(f) + (').expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        })\n    }\n'))))))))))))))));
+      return "    pub fn __purust_borrow_" + (sf + ("(&self) -> std::borrow::Cow<'_, UnknownType> {\n" + ("        std::borrow::Cow::Borrowed(match self.resolve() {\n" + (matchArms + (genericFieldArm(f)("            Value::Record_a(r) => r.get_field(" + (show(showString)(f) + ").unwrap(),\n")) + ("            Value::DynamicRecord(r) => r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ("            Value::NativeRecord(r) => return r.get(" + (show(showString)(f) + (').expect("Missing record field"),\n' + ("            Value::NativeElement(r, index) => return r.field(*index, " + (show(showString)(f) + (').expect("Missing record field"),\n' + ('            _ => panic!("Expected record with field ' + (sf + '"),\n        })\n    }\n'))))))))))))))));
     })(validUniqueFields);
-    return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Unit,\n" + ("    Null,\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + ("    IntArray(std::rc::Rc<Vec<i64>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + ("    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" + ("    NativeRecord(std::rc::Rc<dyn NativeRecord>),\n" + ("    NativeArray(std::rc::Rc<dyn NativeArray>),\n" + ("    NativeElement(std::rc::Rc<dyn NativeArray>, usize),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    #[inline(always)]\n" + ("    pub fn resolve(&self) -> &Self {\n" + ("        let mut value = self;\n" + ("        while let Value::Thunk(thunk) = value {\n" + ('            value = thunk.value.get().expect("recursive value used before initialization");\n' + ("        }\n" + ("        value\n" + ("    }\n" + ("    pub fn unwrap_unit(&self) {\n" + ('        if !matches!(self.resolve(), Value::Unit) { panic!("Expected Unit"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self.resolve() { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ("        // Foreign numbers can originate from a native PureScript Int.\n" + ('        match self.resolve() { Value::Number(v) => *v, Value::Int(v) => *v as f64, _ => panic!("Expected Number") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self.resolve() { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self.resolve() { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self.resolve() { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v.clone(),\n" + ("            Value::IntArray(v) => std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect()),\n" + ("            Value::NativeArray(v) => std::rc::Rc::new((0..v.len()).map(|index| native_array_item(v, index)).collect()),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn is_array(&self) -> bool {\n" + ("        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_) | Value::NativeArray(_))\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array_now(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    pub fn boxed_array_view(&self) -> Option<std::rc::Rc<Vec<UnknownType>>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => Some(v.clone()),\n" + ("            Value::IntArray(v) => Some(std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect())),\n" + ("            Value::NativeArray(_) => Some(self.unwrap_array()),\n" + ("            _ => None,\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_len(&self) -> usize {\n" + ('        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), Value::NativeArray(v) => v.len(), _ => panic!("Expected Array") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get(&self, index: usize) -> UnknownType {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v[index].clone(),\n" + ("            Value::IntArray(v) => Value::Int(v[index]),\n" + ("            Value::NativeArray(v) => native_array_item(v, index),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get_int(&self, index: usize) -> i64 {\n" + ("        match self.resolve() {\n" + ('            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!("Expected Int element"); },\n' + ("            Value::IntArray(v) => v[index],\n" + ("            Value::NativeArray(v) => native_array_item(v, index).unwrap_int(),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        match self.resolve() { Value::Class(v) => v.downcast_ref::<T>().unwrap(), Value::NativeElement(v, index) => v.class(*index).downcast_ref::<T>().unwrap(), _ => panic!("Expected Class") }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn __purust_ctor_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self.resolve() { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (dynamicGetMethod + (dynamicSetMethod + (recordEntriesMethod + (borrowMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + (runtimeHelpers + (runtime2 + (runtime4 + (runtime3 + ("pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" + ("    #[inline(always)]\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("    #[inline(always)]\n" + ("pub fn mk_int_array(val: Vec<i64>) -> UnknownType { Value::IntArray(std::rc::Rc::new(val)) }\n\n" + (reprItemsSource + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub value: std::sync::OnceLock<Value>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + ("    pub fields: Vec<(String, UnknownType)>,\n" + ("}\n\n" + ("impl Record_a {\n" + ("    #[inline(always)]\n" + ("    pub fn get_field(&self, name: &str) -> Option<&UnknownType> {\n" + ("        self.fields.iter().find(|(key, _)| key == name).map(|(_, value)| value)\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn set_field(&mut self, name: &str, value: UnknownType) {\n" + ("        match self.fields.iter_mut().find(|(key, _)| key == name) {\n" + ("            Some(slot) => slot.1 = value,\n" + ("            None => self.fields.push((name.to_owned(), value)),\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn from_fields(fields: Vec<(&str, UnknownType)>) -> Self {\n" + ("        let mut record = Self::default();\n" + ("        for (name, value) in fields {\n" + ("            record.set_field(name, value);\n" + ("        }\n" + ("        record\n" + ("    }\n" + ("}\n\n" + (recordStructs + ("\n\n" + (funcWrappers + typedTraversalsSource))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
+    return "#![allow(warnings)]\n\n" + ("use perceus_ptr::PerceusPtr;\n\n" + ("#[derive(Clone)]\npub enum Void {}\n\n" + ("#[derive(Clone)]\n" + ("pub enum Value {\n" + ("    Unit,\n" + ("    Null,\n" + ("    Int(i64),\n" + ("    Number(f64),\n" + ("    Bool(bool),\n" + ("    String(String),\n" + ("    Char(char),\n" + ("    Array(std::rc::Rc<Vec<UnknownType>>),\n" + ("    IntArray(std::rc::Rc<Vec<i64>>),\n" + (funcVariants + ("    Class(std::rc::Rc<dyn std::any::Any>),\n" + ("    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" + ("    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" + ("    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" + ("    NativeRecord(std::rc::Rc<dyn NativeRecord>),\n" + ("    NativeArray(std::rc::Rc<NativeArrayOwner>),\n" + ("    NativeElement(std::rc::Rc<NativeArrayOwner>, usize),\n" + (recordVariants + ("}\n\n" + ("impl Value {\n" + ("    #[inline(always)]\n" + ("    pub fn resolve(&self) -> &Self {\n" + ("        let mut value = self;\n" + ("        while let Value::Thunk(thunk) = value {\n" + ('            value = thunk.value.get().expect("recursive value used before initialization");\n' + ("        }\n" + ("        value\n" + ("    }\n" + ("    pub fn unwrap_unit(&self) {\n" + ('        if !matches!(self.resolve(), Value::Unit) { panic!("Expected Unit"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_int(&self) -> i64 {\n" + ('        if let Value::Int(v) = self.resolve() { *v } else { panic!("Expected Int"); }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_number(&self) -> f64 {\n" + ("        // Foreign numbers can originate from a native PureScript Int.\n" + ('        match self.resolve() { Value::Number(v) => *v, Value::Int(v) => *v as f64, _ => panic!("Expected Number") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn unwrap_bool(&self) -> bool {\n" + ('        if let Value::Bool(v) = self.resolve() { *v } else { panic!("Expected Bool"); }\n' + ("    }\n" + ("    pub fn unwrap_string(&self) -> String {\n" + ('        if let Value::String(v) = self.resolve() { v.clone() } else { panic!("Expected String"); }\n' + ("    }\n" + ("    pub fn unwrap_char(&self) -> char {\n" + ('        if let Value::Char(v) = self.resolve() { *v } else { panic!("Expected Char"); }\n' + ("    }\n" + ("    pub fn unwrap_array(&self) -> std::rc::Rc<Vec<UnknownType>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v.clone(),\n" + ("            Value::IntArray(v) => std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect()),\n" + ("            Value::NativeArray(v) => std::rc::Rc::new((0..v.len()).map(|index| native_array_item(v, index)).collect()),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn is_array(&self) -> bool {\n" + ("        matches!(self.resolve(), Value::Array(_) | Value::IntArray(_) | Value::NativeArray(_))\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self.resolve() { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn int_array_now(&self) -> Option<std::rc::Rc<Vec<i64>>> {\n" + ("        match self { Value::IntArray(v) => Some(v.clone()), _ => None }\n" + ("    }\n" + ("    pub fn boxed_array_view(&self) -> Option<std::rc::Rc<Vec<UnknownType>>> {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => Some(v.clone()),\n" + ("            Value::IntArray(v) => Some(std::rc::Rc::new(v.iter().map(|x| Value::Int(*x)).collect())),\n" + ("            Value::NativeArray(_) => Some(self.unwrap_array()),\n" + ("            _ => None,\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_len(&self) -> usize {\n" + ('        match self.resolve() { Value::Array(v) => v.len(), Value::IntArray(v) => v.len(), Value::NativeArray(v) => v.len(), _ => panic!("Expected Array") }\n' + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get(&self, index: usize) -> UnknownType {\n" + ("        match self.resolve() {\n" + ("            Value::Array(v) => v[index].clone(),\n" + ("            Value::IntArray(v) => Value::Int(v[index]),\n" + ("            Value::NativeArray(v) => native_array_item(v, index),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn array_get_int(&self, index: usize) -> i64 {\n" + ("        match self.resolve() {\n" + ('            Value::Array(v) => if let Value::Int(x) = &v[index] { *x } else { panic!("Expected Int element"); },\n' + ("            Value::IntArray(v) => v[index],\n" + ("            Value::NativeArray(v) => native_array_item(v, index).unwrap_int(),\n" + ('            _ => panic!("Expected Array"),\n' + ("        }\n" + ("    }\n" + (funcUnwraps + ("    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" + ('        match self.resolve() { Value::Class(v) => v.downcast_ref::<T>().unwrap(), Value::NativeElement(v, index) => v.class(*index).downcast_ref::<T>().unwrap(), _ => panic!("Expected Class") }\n' + ("    }\n" + ("    pub fn drop_explicit(self) {\n" + ("    }\n" + ("    pub fn __purust_ctor_tag(&self) -> &'static str {\n" + ('        if let Value::Record_a(r) = self.resolve() { r.tag } else { panic!("Expected Record_a for tag"); }\n' + ("    }\n" + (getMethods + (dynamicGetMethod + (dynamicSetMethod + (recordEntriesMethod + (borrowMethods + (setMethods + ("}\n\n" + ("pub type UnknownType = Value;\n\n" + (runtimeHelpers + (runtime2 + (runtime4 + (runtime3 + ("pub fn mk_unit(_val: ()) -> UnknownType { Value::Unit }\n" + ("    #[inline(always)]\n" + ("pub fn mk_int(val: i64) -> UnknownType { Value::Int(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_bool(val: bool) -> UnknownType { Value::Bool(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_number(val: f64) -> UnknownType { Value::Number(val) }\n" + ("pub fn mk_string(val: &str) -> UnknownType { Value::String(val.to_string()) }\n" + ("pub fn mk_char(val: char) -> UnknownType { Value::Char(val) }\n" + ("    #[inline(always)]\n" + ("pub fn mk_array(val: Vec<UnknownType>) -> UnknownType { Value::Array(std::rc::Rc::new(val)) }\n\n" + ("    #[inline(always)]\n" + ("pub fn mk_int_array(val: Vec<i64>) -> UnknownType { Value::IntArray(std::rc::Rc::new(val)) }\n\n" + (reprItemsSource + ("#[derive(Clone, Default)]\npub struct Thunk {\n" + ("    pub value: std::sync::OnceLock<Value>,\n" + ("}\n\n" + ("#[derive(Clone, Default)]\npub struct Record_a {\n" + ("    pub tag: &'static str,\n" + ("    pub vals: Option<std::rc::Rc<Vec<UnknownType>>>,\n" + ("    pub call: Option<Func1<UnknownType, UnknownType>>,\n" + ("    pub fields: Vec<(String, UnknownType)>,\n" + ("}\n\n" + ("impl Record_a {\n" + ("    #[inline(always)]\n" + ("    pub fn get_field(&self, name: &str) -> Option<&UnknownType> {\n" + ("        self.fields.iter().find(|(key, _)| key == name).map(|(_, value)| value)\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn set_field(&mut self, name: &str, value: UnknownType) {\n" + ("        match self.fields.iter_mut().find(|(key, _)| key == name) {\n" + ("            Some(slot) => slot.1 = value,\n" + ("            None => self.fields.push((name.to_owned(), value)),\n" + ("        }\n" + ("    }\n" + ("    #[inline(always)]\n" + ("    pub fn from_fields(fields: Vec<(&str, UnknownType)>) -> Self {\n" + ("        let mut record = Self::default();\n" + ("        for (name, value) in fields {\n" + ("            record.set_field(name, value);\n" + ("        }\n" + ("        record\n" + ("    }\n" + ("}\n\n" + (recordStructs + ("\n\n" + (funcWrappers + typedTraversalsSource))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
   };
 };
 var codegenExprTypeWithValueEnums = function(valueEnums) {

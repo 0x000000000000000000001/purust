@@ -77,7 +77,7 @@ corrigé ; les premiers tableaux sont conservés comme historique exploratoire.
   primitifs des constructeurs sont passés typés par valeur. Le test inclut les
   lectures répétées d'un même champ pour vérifier ce transfert.
 
-### 2. Représentations natives intégrées — prototype de records implémenté
+### 2. Représentations natives intégrées — records et éléments de tableaux
 
 - Records concrets, puis tableaux/ADT selon les usages démontrés ; conserver
   l'ABI polymorphe `UnknownType` utilisée par `drive`.
@@ -98,6 +98,34 @@ corrigé ; les premiers tableaux sont conservés comme historique exploratoire.
 - Mesure incluant ce consommateur (isolée avant le transfert final des arguments) :
   combined **18 019,833 → 17 195,167 µs** ; decode **17 433,042 → 16 720,063 µs**.
   Le gain ne disparaît donc pas lorsque le consommateur est chronométré.
+- Étape suivante : les workers construisent directement des `Vec` de records
+  concrets, de scalaires, ou de carriers ADT typés. `Value::NativeArray` et
+  `NativeElement` transportent le résultat à travers l'ABI polymorphe. Un
+  élément qui s'échappe garde son tableau propriétaire et son index ; il garde
+  donc aussi le stockage des autres éléments en vie. Aucun curseur JSON ou
+  travail de décodage différé ne s'échappe.
+- Les ADT custom gardent leur `Rc<ADT>` existant ; leur tableau supprime le
+  boxage `Value::Class` par élément. Les `Maybe` conservent leur représentation
+  ordinaire. Ce chantier ne constitue pas encore une spécialisation complète
+  des ADT paramétrés.
+- Les `Nothing` produits par un même appel spécialisé partagent un carrier
+  ordinaire, créé à la première absence. Le propriétaire temporaire reste sur
+  la pile de cet appel ; tout est libéré avec les derniers résultats. Aucun
+  cache global ni modification des CAF ou des constructeurs ordinaires.
+  Le contrôle `Weak` de la fixture vérifie cette libération.
+- Indexation, vues de parcours et folds n'allouent ni enveloppe d'élément
+  record/ADT ni tableau intermédiaire. `unwrap_array` reste une conversion
+  explicite pour les autres consommateurs. Projections,
+  mises à jour, tri, filtrage, égalité, encodage et pont `Json.fromArray` sont
+  couverts par les consommateurs ordinaires ; `--no-json-arrays` isole l'étape.
+- Premier prototype : son propriétaire trait-object + index élargissait
+  `Value` de **24 à 32 octets**, alourdissant le DOM et annulant le gain des
+  allocations supprimées. La version corrigée garde un propriétaire mince :
+  **24 octets** pour `Value`, sans `unsafe`. Les tableaux de records/ADT ont
+  une boîte d'effacement supplémentaire par tableau, les scalaires non.
+- Mesures et snapshots de cette étape :
+  `altbak.pub/var/benchmark/json-packed-20260930/`. Les variantes à `Value`
+  élargi (`packed-v1`, `packed-v2`) restent des expériences non retenues.
 
 ### 3. Texte validé→résultat — premier prototype implémenté
 
@@ -120,6 +148,12 @@ corrigé ; les premiers tableaux sont conservés comme historique exploratoire.
   octets par mot (SWAR), chargé sans accès hors limites, partagé avec le parser
   DOM. Test de chaque octet dans chaque position et chaque queue, plus
   différentiels de documents tronqués et de nombres longs.
+- Essai suivant écarté : retourner directement le premier bit SWAR marqué
+  (`trailing_zeros`) passe les contrôles fonctionnels, mais dégrade combined
+  de **1 365,604 à 1 490,708 µs** dans la comparaison appairée isolée. Le scan
+  retenu conserve la recherche scalaire dans le dernier mot. Le test conserve
+  les cas supplémentaires à plusieurs caractères spéciaux et emprunts entre
+  lanes. Rapport : `json-packed-20260930/scan-v4-paired.json`.
 
 ## Protocole de mesure et de livraison
 
@@ -157,6 +191,11 @@ texte est spécialisé.
   La cause n'est pas établie ; examiner notamment la réentrance de `OnceLock`
   avant la garde de l'allocateur. Aucune attribution aux closures ou boxages
   n'est tenue pour prouvée.
+- Nouveau diagnostic `bench/stages-json.py` : copie isolée des sources Rust
+  générées, régions **disjointes** indexation / construction du résultat /
+  reste de la fenêtre. Les compteurs mesurent les requêtes alloc+realloc et
+  les octets demandés, pas la mémoire vivante. Les temps instrumentés restent
+  diagnostiques et ne remplacent jamais la campagne appairée.
 - `SharedRecord` conserve `Mutex` : le remplacement global par `RefCell` était
   incompatible avec threaded/Arc. Le worker DOM groupe ses lectures sous un
   verrou qu'il libère avant de descendre dans les enfants.

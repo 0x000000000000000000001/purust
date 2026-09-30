@@ -410,16 +410,22 @@ textType = CF.Func [ CF.String ] resultType
 runtime :: String
 runtime = "Purs_Data_Argonaut_Decode_Internal_Record::"
 
--- Native functions use Option<Value> internally, one public Either at the
+-- A Nothing has no payload and is polymorphic. Share it only within this
+-- decoding call, retaining the ordinary Maybe ABI. The stack-local owner is
+-- released before returning; no global CAF or deferred result construction.
+absentValue :: String
+absentValue = "absent.get_or_insert_with(" <> runtime <> "purust_maybe_nothing).clone()"
+
+-- Native functions use Option<representation> internally, one public Either at the
 -- root. Rust monomorphizes the same worker for DOM and text cursors.
 emit :: Boolean -> Boolean -> (CF.ExprType -> String) -> String -> Schema -> String
 emit layouts arrays representation name schema =
   (case schema of
     ObjectSchema fields | layouts ->
-      function name "purust_core::Value" (name <> "_value(raw).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))")
+      function name "purust_core::Value" (name <> "_value(raw, absent).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))")
       <> function (name <> "_value") (name <> "_Record") (body (ObjectSchema fields))
     Derived (Just ty) program | arrays ->
-      function name "purust_core::Value" (name <> "_value(raw).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))")
+      function name "purust_core::Value" (name <> "_value(raw, absent).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))")
       <> function (name <> "_value") (representation ty) (slots (keys program) <> programCode (keys program) name program)
     _ -> function name "purust_core::Value" (body schema))
     <> (case schema of
@@ -427,29 +433,29 @@ emit layouts arrays representation name schema =
       _ -> "")
     <> foldMap (\(Tuple child value) -> emit layouts arrays representation child value) (children name schema)
   where
-  function label ty code = "fn " <> label <> "<I: " <> runtime <> "SchemaInput>(raw: I) -> Option<" <> ty <> "> {\n" <> code <> "\n}\n"
+  function label ty code = "fn " <> label <> "<I: " <> runtime <> "SchemaInput>(raw: I, absent: &mut Option<purust_core::Value>) -> Option<" <> ty <> "> {\n" <> code <> "\n}\n"
   success value = "Some(" <> value <> ")"
   body = case _ of
     Scalar tag -> "raw.scalar(" <> quote tag <> ")"
-    Optional _ -> "if raw.is_null() { " <> success (runtime <> "purust_maybe_nothing()") <> " } else { Some(" <> runtime <> "purust_maybe_just(" <> name <> "_item(raw)?)) }"
+    Optional _ -> "if raw.is_null() { " <> success absentValue <> " } else { Some(" <> runtime <> "purust_maybe_just(" <> name <> "_item(raw, absent)?)) }"
     Sequence child ->
       let packed = case child of
-            ObjectSchema _ | layouts && arrays -> Just (Tuple "NativeRecords" (name <> "_item_value(item)?"))
-            Derived (Just _) _ | arrays -> Just (Tuple "NativeClasses" (name <> "_item_value(item)?"))
-            Scalar "Int" | arrays -> Just (Tuple "IntArray" (unboxField child (name <> "_item(item)?")))
-            _ | arrays && isScalar child -> Just (Tuple "NativeScalars" (unboxField child (name <> "_item(item)?")))
+            ObjectSchema _ | layouts && arrays -> Just (Tuple "NativeRecords" (name <> "_item_value(item, absent)?"))
+            Derived (Just _) _ | arrays -> Just (Tuple "NativeClasses" (name <> "_item_value(item, absent)?"))
+            Scalar "Int" | arrays -> Just (Tuple "IntArray" (unboxField child (name <> "_item(item, absent)?")))
+            _ | arrays && isScalar child -> Just (Tuple "NativeScalars" (unboxField child (name <> "_item(item, absent)?")))
             _ -> Nothing
-          Tuple container item = fromMaybe (Tuple "Array" (name <> "_item(item)?")) packed
+          Tuple container item = fromMaybe (Tuple "Array" (name <> "_item(item, absent)?")) packed
           wrap = if container == "Array" || container == "IntArray"
             then "purust_core::Value::" <> container <> "(std::rc::Rc::new(out))"
-            else "purust_core::Value::NativeArray(std::rc::Rc::new(purust_core::" <> container <> "(out)))"
+            else "purust_core::Value::NativeArray(std::rc::Rc::new(purust_core::" <> container <> "(out).into()))"
       in "let items = raw.array()?;\nlet mut out = Vec::with_capacity(items.len());\nfor item in items { out.push(" <> item <> "); }\nSome(" <> wrap <> ")"
     ObjectSchema fields ->
       slots (map (\(Tuple key _) -> key) fields)
       <> String.joinWith "\n" (Array.mapWithIndex (\i (Tuple _ child) ->
-        "let value" <> show i <> " = match input" <> show i <> " { Some(raw) => " <> name <> "_field" <> show i <> "(raw)?, None => "
+        "let value" <> show i <> " = match input" <> show i <> " { Some(raw) => " <> name <> "_field" <> show i <> "(raw, absent)?, None => "
           <> (case child of
-              Optional _ -> runtime <> "purust_maybe_nothing()"
+              Optional _ -> absentValue
               _ -> "return None") <> " };" ) fields)
       <> (if layouts then
         "\nSome(" <> name <> "_Record {"
@@ -468,7 +474,7 @@ isScalar schema = case fieldScalar schema of
   Nothing -> false
 
 -- Complete concrete fields, exposed through the same record projection API.
--- Arrays, optionals and custom ADTs already hold their ordinary eager result;
+-- Arrays, optionals and custom ADTs already hold their complete eager result;
 -- projections of those values borrow the original carrier without rebuilding.
 fieldScalar :: Schema -> Maybe (Tuple String String)
 fieldScalar = case _ of
@@ -523,9 +529,9 @@ programCode names name = case _ of
   ReadField level key optional nullable _ next ->
     "let " <> local level <> " = match input" <> show (fromMaybe 0 (Array.elemIndex key names))
     <> (if Array.elem key (keys next) then ".clone()" else ".take()") <> " {\n"
-    <> (if optional then "None => " <> runtime <> "purust_maybe_nothing(),\n" else "None => return None,\n")
-    <> (if nullable then "Some(raw) if raw.is_null() => " <> runtime <> "purust_maybe_nothing(),\n" else "")
-    <> "Some(raw) => " <> (if optional then runtime <> "purust_maybe_just(" else "") <> name <> "_read(raw)?"
+    <> (if optional then "None => " <> absentValue <> ",\n" else "None => return None,\n")
+    <> (if nullable then "Some(raw) if raw.is_null() => " <> absentValue <> ",\n" else "")
+    <> "Some(raw) => " <> (if optional then runtime <> "purust_maybe_just(" else "") <> name <> "_read(raw, absent)?"
     <> (if optional then ")" else "") <> "\n};\n" <> programCode names (name <> "_next") next
   Choice level literal yes no -> "if matches!(&" <> local level <> ", purust_core::Value::String(value) if value == " <> quote literal <> ") {\n"
     <> programCode names (name <> "_yes") yes <> "\n} else {\n" <> programCode names (name <> "_no") no <> "\n}"
@@ -621,8 +627,8 @@ specializeDecoderSchemas layouts arrays representation sanitize arities (Module 
           sourceBindings = [ Tuple (Ident source) (NeutralExpr (Typed ty original)) ] <> constructors arrays worker schema
           workerCode = emit layouts arrays representation qualifiedWorker schema
           input = if text then "String" else "purust_core::Value"
-          cursor = if text then runtime <> "SchemaText::parse(&input).map(|doc| " <> qualifiedWorker <> "(doc.root())) .flatten()"
-            else qualifiedWorker <> "(" <> runtime <> "SchemaDom(input.clone()))"
+          cursor = if text then runtime <> "SchemaText::parse(&input).map(|doc| " <> qualifiedWorker <> "(doc.root(), &mut None)) .flatten()"
+            else qualifiedWorker <> "(" <> runtime <> "SchemaDom(input.clone()), &mut None)"
           code = "pub fn " <> full <> "(input: " <> input <> ") -> std::rc::Rc<Purs_Data_Either::Either> {\n"
             <> "match " <> cursor <> " { Some(value) => std::rc::Rc::new(Purs_Data_Either::Either::Right(value)), None => " <> prefix <> source <> "(input) }\n}\n"
       put next { code = state.code <> workerCode <> code

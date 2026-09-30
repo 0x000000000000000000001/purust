@@ -142,6 +142,7 @@ Paths are relative to the application's working directory. Arguments can be plac
 | `--threaded` | Disabled | Use atomic ownership and thread-safe shared callbacks. Required for the Rust Aff runtime. |
 | `--no-json-schemas` | Disabled | Disable generated Argonaut DOM/text decoders for differential checks. |
 | `--no-json-layouts` | Disabled | Keep ordinary record carriers in generated JSON decoders for representation comparisons. |
+| `--no-json-arrays` | Disabled | Keep boxed array elements in generated JSON decoders for representation comparisons. |
 
 The CLI currently has no help/version command or strict argument validation. Configure the options above in `workspace.backend.args`. To enable threaded output, add `--threaded` to that YAML list while retaining your existing arguments.
 

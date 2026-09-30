@@ -11,12 +11,12 @@ usage:
       --purust ../purust/bin/purust --corpus corpus.json [--single-cases DIR]
 """
 import argparse
+import hashlib
 import json
 import os
 import re
 import subprocess
 import statistics
-import sys
 from pathlib import Path
 
 DRIVER = 'rust/src/Test/JsonDecoding.rs'
@@ -144,6 +144,17 @@ def main():
         reports['corpus'] = run_case(workspace, args.corpus, 'corpus', args.phases)
     if args.output:
         Path(args.output).write_text(json.dumps(reports, indent=2) + '\n')
+        paths = [workspace / BINARY, workspace / DRIVER, workspace / MAIN,
+                 Path(args.purust).resolve(), Path(args.corpus).resolve()]
+        bundle = Path(args.purust).resolve().with_suffix('.js')
+        if bundle.is_file():
+            paths.append(bundle)
+        Path(args.output).with_suffix('.manifest.json').write_text(json.dumps({
+            'phases': args.phases.split(','), 'samples': 5, 'warmups': 2,
+            'counts': 'alloc + realloc requests; bytes requested, not live memory',
+            'release': {'opt-level': 3, 'debug': False},
+            'sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},
+        }, indent=2) + '\n')
 
 
 if __name__ == '__main__':

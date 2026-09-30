@@ -1,6 +1,6 @@
 export const runtime = String.raw`
 // A concrete record owns its complete fields before entering UnknownType.
-// Primitive projections copy scalars; compound values retain ordinary shared
+// Primitive projections copy scalars; compound values retain eager shared
 // carriers. No deferred record/array construction or materialization cache.
 pub trait NativeRecord: std::any::Any + 'static {
     fn get(&self, name: &str) -> Option<std::borrow::Cow<'_, Value>>;
