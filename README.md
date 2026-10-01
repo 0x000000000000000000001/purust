@@ -4,7 +4,7 @@
 
 **An experimental PureScript-to-Rust backend.** `purust` compiles PureScript through a typed intermediate representation and emits a Cargo workspace containing a native executable, generated modules, and its runtime.
 
-The backend is written in PureScript, with JavaScript support code, and runs on Node.js during compilation. The generated application runs as a Rust binary. Follow development in the [project devlog](https://discourse.purescript.org/t/leveraging-modern-low-level-a-rust-backend-for-purescript/5932/7).
+The backend is written in PureScript and can run on Node.js or be bootstrapped into an experimental native Rust executable. The generated application runs as a Rust binary. Follow development in the [project devlog](https://discourse.purescript.org/t/leveraging-modern-low-level-a-rust-backend-for-purescript/5932/7).
 
 ## Features
 
@@ -63,6 +63,71 @@ npm install        # prepare builds the backend and bundles bin/purust.js
 ```
 
 After compiler changes, rebuild with `npm run build`. The [bin/purust](bin/purust) launcher runs the bundle with the Node.js stack and heap settings used by the project.
+
+### Native compiler bootstrap
+
+```bash
+npm run build:native
+# Select the TAST compiler explicitly:
+PURUST_PURS=/absolute/path/to/typed/purs npm run build:native
+# Retain the generated Rust workspace and build logs:
+npm run build:native -- --keep-workspace
+```
+
+This compiles the PureScript sources of `purust`, PBO and their dependencies
+into **`bin/purust-native`**. It requires the toolchains above and the sibling
+`purust-*` library checkouts. The script rebuilds the Node backend, creates an
+isolated Spago workspace using those Rust library ports, compiles fresh TAST,
+generates Rust with the Node backend, and runs `cargo build --release` with
+`profile.release.lto=false`. This avoids passing Rust 1.96's LLVM 22 bitcode
+to an incompatible Apple linker when linking the compiler's large archives.
+`tools/embed-native-runtime.mjs` embeds the canonical runtime sources in the
+native compiler during the build.
+
+`PURUST_PURS` overrides discovery of the newest compiler executable under
+`../../purescript/.stack-work/dist/*/*/build/purs/purs`. Every CoreFn module is
+checked for `typeTable`, `dataDecls` and `classDecls` before Rust generation.
+`PURUST_NATIVE_TMPDIR` selects the parent directory for temporary workspaces.
+Failures retain the workspace and logs, and the installed binary is replaced
+only after a successful Cargo build. Interrupts also stop child processes.
+
+The executable accepts the same backend arguments:
+
+```bash
+./bin/purust-native --source output --out output/purust_output --main Main
+npm run test:native -- --keep-workspace
+```
+
+The native smoke test creates fresh TAST, compares Node/native Rust and Cargo
+files byte for byte, then builds and executes the generated application.
+`PURUST_NATIVE` can select another compiler binary for this test.
+The initial macOS arm64 validation on 2026-10-01 covered 152 TAST modules and
+312 identical generated files; the compiled ADT/record/array fixture printed
+`PURUST_NATIVE_OK 42`.
+
+To close the self-hosting loop, retain the bootstrap workspace, change into it,
+and run the installed native compiler on the same TAST:
+
+```bash
+/absolute/path/to/purust/bin/purust-native --source output --out rust-stage2 --main Main --threaded
+diff -r --exclude=target --exclude=Cargo.lock rust rust-stage2
+cargo build --release --config profile.release.lto=false --manifest-path rust-stage2/Cargo.toml
+```
+
+The comparison checks the emitted sources and manifests. Debug information can
+contain different build paths, so it does not require identical binary hashes.
+
+The native backend and optimizer execute without Node. The `purs` frontend
+produces TAST, and Cargo compiles the generated application. The bootstrap
+uses `--threaded` for the compiler's Aff and system libraries; the native
+compiler still supports both local and threaded application output.
+
+Native bootstrapping is experimental. PBO's native implementation cache holds
+immutable modules for one build, without the JavaScript cache's disk spill or
+byte budget. The unused legacy BackendModule JSON cache misses on reads and
+rejects writes; V8/Go allocation-profile output is unavailable in Rust.
+Native speedups must be measured on representative projects and are not
+implied by successful self-compilation.
 
 ### Compile and run an application
 

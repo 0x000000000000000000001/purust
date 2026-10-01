@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { threadedRust, threadedPrelude } from '../../src/Purust/Threading.js';
+import { threadedRust, threadedPrelude, rustModules } from '../../src/Purust/Threading.js';
 import { codegenPrelude } from '../../output/Purust.CodeGen/index.js';
 import { singleton } from '../../output/Data.Set/index.js';
 const literals = [
@@ -18,6 +18,15 @@ assert.equal(threadedRust("fn f(x: impl Fn() + 'static) {}"),
   "fn f(x: impl Fn() + Send + Sync + 'static) {}");
 assert.equal(threadedRust("fn f(x: impl Fn() + Send + Sync + 'static) {}"),
   "fn f(x: impl Fn() + Send + Sync + 'static) {}");
+assert.deepEqual(rustModules(`
+use Purs_Data_Maybe::*;
+let template = "Purs_Test_Spec_Discovery::register()";
+let raw = r###"Purs_Template::emit()"###;
+// Purs_Comment::ignored()
+/* Purs_Outer::ignored() /* Purs_Nested::ignored() */ */
+Purs_Data_Maybe::Maybe::Nothing;
+fn borrow<'a>(value: &'a Purs_Data_Array::Array) {}
+`), ['Data_Maybe', 'Data_Array']);
 const runtime = fileURLToPath(new URL('../runtime/perceus_ptr/src/lib.rs', import.meta.url));
 const refs = readFileSync(new URL('../../../purust-refs/src/Effect/Ref.rs', import.meta.url), 'utf8');
 const source = `${threadedPrelude(codegenPrelude(singleton('state,value')))}

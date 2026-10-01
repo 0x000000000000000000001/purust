@@ -12,4 +12,11 @@ tests/runner/src/
 tests/runner/spago.yaml
 tests/runner/output/
 bin/purust.js
+bin/purust-native
+bin/.purust-native-*/
+src/Purust/Runtime.rs
+src/Purust/RecordFields.rs
+src/Purust/NativeArrays.rs
+src/Purust/ModuleValues.rs
+src/Purust/Utf16.rs
 target/

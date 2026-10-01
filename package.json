@@ -7,7 +7,9 @@
     "purust": "bin/purust.js"
   },
   "scripts": {
-    "build": "spago build && spago bundle --module Main --platform node --outfile bin/purust.js --bundle-type app",
+    "build": "node tools/embed-native-runtime.mjs && spago build && spago bundle --module Main --platform node --outfile bin/purust.js --bundle-type app",
+    "build:native": "node tools/build-native.mjs",
+    "test:native": "node tools/test-native.mjs",
     "test:codegen": "node --test tests/codegen/*.mjs",
     "test:tast": "node --test tests/tast/*.mjs",
     "prepare": "npm run build"

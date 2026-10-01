@@ -13,7 +13,7 @@ import { Just } from '../../output/Data.Maybe/index.js';
 import { ordString } from '../../output/Data.Ord/index.js';
 import { Tuple } from '../../output/Data.Tuple/index.js';
 import { ADT, Any, Func, Int, LitInt, Qualified, SumType } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
-import { Abs, Accessor, App, Branch, CtorSaturated, GetCtorField, Let, LetRec, Lit, Local, Op2, OpAdd, OpEq, OpIntNum, OpIntOrd, OpSubtract, Pair, PrimOp, Typed, Var } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
+import { Abs, Accessor, App, Branch, CtorSaturated, Fail, GetCtorField, Let, LetRec, Lit, Local, Op2, OpAdd, OpEq, OpIntNum, OpIntOrd, OpSubtract, Pair, PrimOp, Typed, Var } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
 
 const param = (name, level) => new Tuple(new Just(name), level);
 const local = (name, level) => new Local(new Just(name), level);
@@ -65,6 +65,27 @@ function ownedTail(name, resultType, finish) {
 }
 const ownedInt = ownedTail('ownedInt', Int.value, value => new Typed(Int.value, value));
 const ownedClass = ownedTail('ownedClass', holderType, holder);
+// A non-tail direct worker call returns its declared native representation,
+// even when the recursive thunk is erased in a branch beside a boxed value.
+function nonTailCase(name, resultType, finish, annotated = false) {
+  const fallback = local('fallback', 1), depth = local('depth', 3);
+  const decrement = numeric(OpSubtract.value, depth, literal(1));
+  const callee = annotated ? new Typed(new Func([Int.value], resultType), local('worker', 2)) : local('worker', 2);
+  const call = new App(callee, [decrement]);
+  const result = annotated
+    ? new Branch([new Pair(isZero(decrement), fallback), new Pair(isZero(literal(0)), new Typed(resultType, call))], new Fail('unreachable'))
+    : new Branch([new Pair(isZero(decrement), fallback)], call);
+  const worker = new Typed(new Func([Int.value], resultType), new Abs([param('depth', 3)],
+    new Branch([new Pair(isZero(depth), finish(literal(42)))],
+      new Let(new Just('result'), 4, result, new Typed(resultType, local('result', 4))))));
+  return new Tuple(name, new Typed(new Func([Int.value, Any.value], resultType),
+    new Abs([param('n', 0), param('fallback', 1)], new LetRec(2, [new Tuple('worker', worker)],
+      new Typed(resultType, new App(local('worker', 2), [n]))))));
+}
+const directInt = nonTailCase('directInt', Int.value, value => value);
+const directClass = nonTailCase('directClass', holderType, holder);
+const annotatedInt = nonTailCase('annotatedInt', Int.value, value => value, true);
+const annotatedClass = nonTailCase('annotatedClass', holderType, holder, true);
 const arities = insert(ordString)('TailCalls_Holder')(new Func([Any.value], holderType))(emptyMap);
 const generated = codegenModule(arities)(emptyMap)(
   { name: 'TailCalls', dataDecls: [{ name: 'Holder', constructors: [
@@ -72,7 +93,7 @@ const generated = codegenModule(arities)(emptyMap)(
   ] }], classDecls: [] },
 )({ name: 'TailCalls', bindings: [
   { recursive: true, bindings: [swap] },
-  { recursive: false, bindings: [increment, ownedInt, ownedClass] },
+  { recursive: false, bindings: [increment, ownedInt, ownedClass, directInt, directClass, annotatedInt, annotatedClass] },
 ] });
 assert.ok(generated.includes('unwrap_or_clone'), 'the regression must move constructor fields');
 assert.ok(generated.includes('continue;'), 'the regression must exercise tail-call loops');
@@ -94,6 +115,23 @@ fn main() {
     let result = TailCalls_ownedClass(100000);
     let Holder::Holder(value) = result.as_ref() else { unreachable!() };
     assert_eq!(value.unwrap_int(), 42);
+    for depth in [0, 1, 3] {
+        let expected = if depth == 0 { 42 } else { 7 };
+        assert_eq!(TailCalls_directInt(depth, mk_int(7)), expected);
+        assert_eq!(TailCalls_annotatedInt(depth, mk_int(7)), expected);
+        let owner = std::rc::Rc::new(Holder::Holder(mk_int(7)));
+        let fallback = Value::Class(std::rc::Rc::new(owner.clone()));
+        let annotated = TailCalls_annotatedClass(depth, fallback.clone());
+        let Holder::Holder(field) = annotated.as_ref() else { unreachable!() };
+        assert_eq!(field.unwrap_int(), expected);
+        let value = TailCalls_directClass(depth, fallback);
+        let Holder::Holder(field) = value.as_ref() else { unreachable!() };
+        assert_eq!(field.unwrap_int(), expected);
+        drop(annotated);
+        drop(value);
+        assert_eq!(std::rc::Rc::strong_count(&owner), 1,
+            "local recursive workers must release their captured environment");
+    }
 }
 `;
 const dir = mkdtempSync(join(tmpdir(), 'purust-tail-calls-'));

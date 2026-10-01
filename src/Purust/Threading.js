@@ -51,3 +51,12 @@ export const threadedRust = source => mapCode(source, ownership);
 export const threadedPrelude = source => mapCode(source, code => ownership(code)
   .replaceAll(") -> R>),", ") -> R + Send + Sync>),")
   .replaceAll("dyn std::any::Any>", "dyn std::any::Any + Send + Sync>"));
+
+export const rustModules = source => {
+  const modules = new Set();
+  mapCode(source, code => {
+    for (const match of code.matchAll(/\bPurs_([A-Za-z_][A-Za-z0-9_]*)::/g)) modules.add(match[1]);
+    return '';
+  });
+  return [...modules];
+};

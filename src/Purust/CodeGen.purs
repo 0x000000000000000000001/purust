@@ -1181,7 +1181,7 @@ continuesLoop currentMod mbLoop = go
     LetRec _ _ body -> go body
     Branch branches fallback -> go fallback && Array.all (\(Pair _ body) -> go body) (NonEmptyArray.toArray branches)
     App fn args -> case mbLoop, callee fn of
-      Just loop, Just name -> name == loop.name && NonEmptyArray.length args == Array.length loop.params
+      Just loop, Just name -> loop.tco && name == loop.name && NonEmptyArray.length args == Array.length loop.params
       _, _ -> false
     _ -> false
 
@@ -1192,9 +1192,12 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
     actStr = codegenExprTypeWithValueEnums valueEnums currentMod true actual
     _ = if expStr == "crate::UnknownType" && actStr == "std::rc::Rc<dyn Fn(crate::UnknownType) -> crate::UnknownType>" then Debug.trace ("BOXUNBOX DEBUG: expStr=" <> expStr <> " actStr=" <> actStr <> " expTy=" <> printType expected <> " actTy=" <> printType actual <> " expStr==actStr is " <> show (expStr == actStr)) \_ -> unit else unit
   in
-    if String.indexOf (Pattern "unimplemented!()") code == Just 0 || (String.indexOf (Pattern "/* Typed ") code == Just 0 && String.contains (Pattern "unimplemented!()") code && not (String.contains (Pattern "\n") code)) then code
-    else if String.drop (String.length code - 15) code == "continue;\n    }" then code
-    else if expStr == actStr then code
+    -- Equal representations need no inspection of the (potentially large)
+    -- generated body. Rust syntax checks use code units: counting code points
+    -- allocates an array for every character in the native strings library.
+    if expStr == actStr then code
+    else if SCU.take 15 code == "unimplemented!()" || (SCU.take 9 code == "/* Typed " && String.contains (Pattern "unimplemented!()") code && not (String.contains (Pattern "\n") code)) then code
+    else if SCU.drop (SCU.length code - 15) code == "continue;\n    }" then code
     else case unwrapType expected, unwrapType actual of
       Func expArgs expRet, Func actArgs actRet ->
         let expArity = Array.length expArgs
@@ -1806,7 +1809,7 @@ type LoopContext =
   -- Rust worker `fn` emitted for a local recursive binding, with its leading
   -- captured arguments. A non-tail self-call then lowers to a direct call
   -- instead of allocating a closure for every element.
-  , impl :: Maybe String
+  , impl :: Maybe { name :: String, result :: ExprType }
   , captures :: Array String
   }
 
@@ -2419,8 +2422,9 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
         directLocalCall = case mbLoop, mbFnName of
           Just loop, Just n | n == loop.name && m == Array.length loop.params && not loop.tco, Just implName <- loop.impl ->
             let
-              calleeTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound fn
-              resultTy = extractFinalRetType calleeTy
+              -- A recursive thunk may be erased at this call site. Its direct
+              -- worker still returns the concrete type declared at the binding.
+              resultTy = implName.result
               convertArg i =
                 let argExpr = fromMaybe (NeutralExpr (Fail "missing argument")) (Array.index argsArray i)
                     argTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound argExpr
@@ -2430,7 +2434,7 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                 in boxUnbox renames valueEnums globalClassFields modNameStr paramTy argTy (fromMaybe "" (Array.index argsCodeArray i))
               capturedArgs = map (\c -> c <> ".clone()") loop.captures
               callArgs = capturedArgs <> Array.mapWithIndex (\i _ -> convertArg i) argsCodeArray
-            in Just (Tuple resultTy (implName <> "(" <> String.joinWith ", " callArgs <> ")"))
+            in Just (Tuple resultTy (implName.name <> "(" <> String.joinWith ", " callArgs <> ")"))
           _, _ -> Nothing
         resultCode = case typedCall of
           Just (Tuple actualTy typedCode) -> boxUnbox renames valueEnums globalClassFields modNameStr appTy actualTy typedCode
@@ -3946,7 +3950,14 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                      Just (Tuple _ inner) -> inner
                      Nothing -> val
                      
-                   capturedSet = Set.difference (freeVariables val) (Set.fromFoldable dedupedParams)
+                    -- Saturated recursive calls use the loop/direct worker,
+                    -- not the recursive Value. Capturing that Value would form
+                    -- a thunk -> closure -> thunk cycle and retain every other
+                    -- capture after the caller has finished.
+                    omittedCaptures = Set.fromFoldable (dedupedParams <>
+                      if directSelfCallsOnly (sanitizeIdent n) (Array.length allArgTypes) innerExpr
+                        then [sanitizeIdent n] else [])
+                    capturedSet = Set.difference (freeVariables val) omittedCaptures
                    capturedArr = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable capturedSet)
                    
                    -- A captured Int array read by index: the loop is also
@@ -3961,8 +3972,8 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                    funcArgs = map (\(Tuple p ty) -> "mut " <> sanitizeIdent p <> ": " <> codegenExprTypeWithValueEnums valueEnums currentMod false ty) paramPairs
                    allArgsCode = String.joinWith ", " (capturedArgs <> funcArgs)
                    
-                   mbLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: Nothing, tco: true, impl: Just fnName, captures: map sanitizeIdent capturedArr }
-                   viewLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: viewContext, tco: true, impl: Just fnName, captures: map sanitizeIdent capturedArr }
+                   mbLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: Nothing, tco: true, impl: Just { name: fnName, result: retType }, captures: map sanitizeIdent capturedArr }
+                   viewLoop = Just { name: sanitizeIdent n, params: dedupedParams, view: viewContext, tco: true, impl: Just { name: fnName, result: retType }, captures: map sanitizeIdent capturedArr }
                    innerBound = Array.foldl (\b (Tuple p ty) -> Map.insert (sanitizeIdent p) ty b) bound paramPairs
                    bodyRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields innerBound (freeVariables innerExpr) false innerExpr
                    bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields innerBound innerExpr
@@ -4024,19 +4035,40 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
 
 
+-- A nested function/recursive group has its own worker context. A partial
+-- application or first-class reference likewise still needs the recursive
+-- Value, so retain its capture in those cases.
+directSelfCallsOnly :: String -> Int -> NeutralExpr -> Boolean
+directSelfCallsOnly name arity = go
+  where
+  isSelf expr = case stripCodegenWrappers expr of
+    NeutralExpr (Local (Just (Ident ident)) _) -> sanitizeIdent ident == name
+    _ -> false
+
+  go expr@(NeutralExpr syn) = case syn of
+    Local (Just (Ident ident)) _ -> sanitizeIdent ident /= name
+    App fn args | isSelf fn && NonEmptyArray.length args == arity ->
+      Array.all go (NonEmptyArray.toArray args)
+    UncurriedApp fn args | isSelf fn && Array.length args == arity -> Array.all go args
+    Abs _ _ -> not (Set.member name (freeVariables expr))
+    UncurriedAbs _ _ -> not (Set.member name (freeVariables expr))
+    UncurriedEffectAbs _ _ -> not (Set.member name (freeVariables expr))
+    LetRec _ _ _ -> not (Set.member name (freeVariables expr))
+    _ -> Array.all go (Array.fromFoldable syn)
+
 -- | Replace whole identifiers only: `purs_local_6` must not match inside
 -- | `purs_local_6_rec_0`. Used when a rewritten closure body must reference a
 -- | pre-cloned capture binding.
 replaceIdentifier :: String -> String -> String -> String
 replaceIdentifier needle replacement = go
   where
-  go input = case String.indexOf (Pattern needle) input of
+  go input = case SCU.indexOf (Pattern needle) input of
     Nothing -> input
     Just index ->
       let
-        before = String.take index input
-        after = String.drop (index + String.length needle) input
-        beforeChar = SCU.charAt (String.length before - 1) before
+        before = SCU.take index input
+        after = SCU.drop (index + SCU.length needle) input
+        beforeChar = SCU.charAt (SCU.length before - 1) before
         afterChar = SCU.charAt 0 after
         isIdentChar c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'
         boundaryOk = (case beforeChar of

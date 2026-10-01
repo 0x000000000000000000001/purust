@@ -21,7 +21,7 @@ import Purust.Metrics as Metrics
 import Purust.DataLayout (opaqueEmptyTypesForModules, opaqueForeignTypeKey, valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Monomorphization (buildGlobalTypes, monomorphizeModules)
-import Purust.Threading (threadedRust, threadedPrelude)
+import Purust.Threading (threadedRust, threadedPrelude, rustModules)
 import Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource)
 import Purust.FfiCargo (loadFfiCargo)
 import Purust.ForeignTypes (foreignTypeForwards, foreignUnboundTypes)
@@ -32,7 +32,6 @@ import Data.List as List
 import Data.Set as Set
 import Data.Array as Array
 import Data.String as String
-import Data.String.CodeUnits as SCU
 import Data.Foldable (foldl)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
@@ -188,14 +187,16 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
       gatherOpaque (Module m) = do
         let dotted = unwrap m.name
         let modName = String.replaceAll (Pattern ".") (Replacement "_") dotted
-        ffiPathMb <- findFfiFile ".rs" [] ffiDir dotted (Just m.path)
+        sourceExists <- FS.exists m.path
+        source <- if sourceExists then FS.readTextFile UTF8 m.path else pure ""
+        ffiPathMb <- if needsForeignFile m.foreign source
+          then findFfiFile ".rs" [] ffiDir dotted (Just m.path)
+          else pure Nothing
         ffiContent <- case ffiPathMb of
           Just ffiPath -> do
             exists <- FS.exists ffiPath
             if exists then FS.readTextFile UTF8 ffiPath else pure ""
           Nothing -> pure ""
-        sourceExists <- FS.exists m.path
-        source <- if sourceExists then FS.readTextFile UTF8 m.path else pure ""
         pure $ map (opaqueForeignTypeKey modName) (foreignUnboundTypes source ffiContent)
     opaqueForeignTypes <- liftEffect do
       perModule <- traverse gatherOpaque (List.toUnfoldable finalModules :: Array (Module Ann))
@@ -236,7 +237,11 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
           let modPrefix = modName <> "_"
           let allMacroBindings = Set.empty -- Placeholder
           
-          ffiPathMb <- findFfiFile ".rs" [] ffiDir modNameStr (Just coreFnMod.path)
+          sourceExists <- FS.exists coreFnMod.path
+          source <- if sourceExists then FS.readTextFile UTF8 coreFnMod.path else pure ""
+          ffiPathMb <- if needsForeignFile foreignArr source
+            then findFfiFile ".rs" [] ffiDir modNameStr (Just coreFnMod.path)
+            else pure Nothing
           cargo <- case ffiPathMb of
             Just ffiPath -> loadFfiCargo ffiPath
             Nothing -> pure ""
@@ -278,21 +283,9 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
                 Tuple _ Nothing -> ""
               ) (Map.toUnfoldable foreignArr)
           
-          sourceExists <- FS.exists coreFnMod.path
-          opaqueTypes <- if sourceExists then do
-            source <- FS.readTextFile UTF8 coreFnMod.path
-            pure $ foreignTypeForwards source (rsFile <> "\n" <> ffiContent)
-            else pure ""
+          let opaqueTypes = foreignTypeForwards source (rsFile <> "\n" <> ffiContent)
           let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
-          let extractModules s = Array.mapMaybe (\part -> 
-                case String.indexOf (Pattern "::") part of
-                  Just i -> 
-                    let mod = String.take i part
-                        isValid c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'
-                    in if String.length mod > 0 && String.length mod < 100 && Array.all isValid (SCU.toCharArray mod) then Just mod else Nothing
-                  Nothing -> Nothing
-              ) (Array.drop 1 (String.split (Pattern "Purs_") s))
-          let extractedModules = extractModules (rsFile <> "\n" <> ffiContent)
+          let extractedModules = rustModules (rsFile <> "\n" <> ffiContent)
           let allModules = Array.concat [rawModules, extractedModules]
           
           let coreImports = Array.nub (Array.mapMaybe (\n -> 
@@ -493,6 +486,12 @@ chooseRecordShapes occurrences = map choose (Array.fromFoldable (Map.values (fol
       _ -> entry.key
     _ -> entry.key
 
+
+-- Only declared foreign values/types opt a module into FFI. An adjacent Rust
+-- source can be unrelated (notably on case-insensitive filesystems).
+needsForeignFile :: Map.Map Ident (Maybe ExprType) -> String -> Boolean
+needsForeignFile values source =
+  not (Map.isEmpty values) || not (Array.null (foreignUnboundTypes source ""))
 
 configureThreading :: Boolean -> String -> String
 configureThreading false = identity
