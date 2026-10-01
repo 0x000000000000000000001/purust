@@ -3950,12 +3950,15 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                      Just (Tuple _ inner) -> inner
                      Nothing -> val
                      
-                   -- Saturated recursive calls use the loop/direct worker,
-                   -- not the recursive Value. Capturing that Value would form
-                   -- a thunk -> closure -> thunk cycle and retain every other
-                   -- capture after the caller has finished.
+                   -- Saturated recursive calls use the loop/direct worker.
+                   -- A singleton worker can also rebuild its first-class self
+                   -- reference from its ordinary captures at each entry. Both
+                   -- avoid thunk -> closure -> thunk cycles retaining the env.
+                   needsSelfValue = not (directSelfCallsOnly (sanitizeIdent n) (Array.length allArgTypes) innerExpr)
+                   rebuildSelf = needsSelfValue && Array.length bindsArray == 1
+                     && Array.length allArgTypes <= maxNativeFunctionArity
                    omittedCaptures = Set.fromFoldable (dedupedParams <>
-                     if directSelfCallsOnly (sanitizeIdent n) (Array.length allArgTypes) innerExpr
+                     if not needsSelfValue || rebuildSelf
                        then [sanitizeIdent n] else [])
                    capturedSet = Set.difference (freeVariables val) omittedCaptures
                    capturedArr = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable capturedSet)
@@ -3981,7 +3984,10 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                      else boxUnbox renames valueEnums globalClassFields currentMod retType bodyTy bodyRaw
                    
                    retTyStr = codegenExprTypeWithValueEnums valueEnums currentMod true retType
-                   fnCode = "fn " <> fnName <> "(" <> allArgsCode <> ") -> " <> retTyStr <> " {\n        loop {\n            break " <> boxedBody <> ";\n        }\n    }"
+                   selfBindingCode = if rebuildSelf then
+                     "let mut " <> sanitizeIdent n <> " = {\n        " <> capturedClones <> "\n        " <> finalBridgeCode <> "\n    };\n        "
+                     else ""
+                   fnCode = "fn " <> fnName <> "(" <> allArgsCode <> ") -> " <> retTyStr <> " {\n        " <> selfBindingCode <> "loop {\n            break " <> boxedBody <> ";\n        }\n    }"
                    -- The slice variant is only called when the capture is an
                    -- unboxed Int array, so its index reads need no dispatch.
                    viewFnCode = case viewCandidate of
@@ -3989,7 +3995,7 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                        let viewBodyRaw = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext viewLoop aritiesMap globalClassFields innerBound (freeVariables innerExpr) false innerExpr
                            boxedViewBody = if continuesLoop currentMod viewLoop innerExpr then viewBodyRaw
                              else boxUnbox renames valueEnums globalClassFields currentMod retType (inferTypeExpr currentMod aritiesMap globalClassFields innerBound innerExpr) viewBodyRaw
-                       in "fn " <> fnName <> "_view(__purust_view: &[i64], " <> allArgsCode <> ") -> " <> retTyStr <> " {\n        loop {\n            break " <> boxedViewBody <> ";\n        }\n    }"
+                       in "fn " <> fnName <> "_view(__purust_view: &[i64], " <> allArgsCode <> ") -> " <> retTyStr <> " {\n        " <> selfBindingCode <> "loop {\n            break " <> boxedViewBody <> ";\n        }\n    }"
                      Nothing -> ""
                    
                    -- Bridge closure
@@ -4038,7 +4044,8 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
 -- Only descend through forms whose printer preserves the worker context.
 -- Closures, effects, aggregate literals and specialized traversals can reset
 -- it. Those forms, partial applications and first-class references still need
--- the recursive Value, so retain its capture when it occurs there.
+-- a recursive Value binding, reconstructed for singleton function groups or
+-- retained as a capture for other recursive groups.
 directSelfCallsOnly :: String -> Int -> NeutralExpr -> Boolean
 directSelfCallsOnly name arity = go
   where

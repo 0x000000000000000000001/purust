@@ -91,26 +91,34 @@ const annotatedClass = nonTailCase('annotatedClass', holderType, holder, true);
 // application and recursion under a new function/LetRec worker context.
 const escaped = ['alias', 'partial', 'closure', 'nestedRec', 'array'].map(name => {
   const type = new Func([Int.value, Int.value], Int.value);
-  const worker = new Typed(type, local('worker', 1));
-  const depth = local('depth', 2), total = local('total', 3);
+  const worker = new Typed(type, local('worker', 2));
+  const depth = local('depth', 3), total = local('total', 4);
   const args = [numeric(OpSubtract.value, depth, literal(1)), numeric(OpAdd.value, total, literal(1))];
   const call = new App(worker, args);
-  const closure = new Typed(new Func([Int.value], Int.value), new Abs([param('ignored', 5)], call));
+  const closure = new Typed(new Func([Int.value], Int.value), new Abs([param('ignored', 6)], call));
   const recur = name === 'alias'
-    ? new Let(new Just('alias'), 4, worker, new App(local('alias', 4), args))
+    ? new Let(new Just('alias'), 5, worker, new App(local('alias', 5), args))
     : name === 'partial'
-      ? new Let(new Just('partial'), 4, new App(worker, [args[0]]), new App(local('partial', 4), [args[1]]))
+      ? new Let(new Just('partial'), 5, new App(worker, [args[0]]), new App(local('partial', 5), [args[1]]))
       : name === 'closure'
-        ? new Let(new Just('closure'), 4, closure, new App(local('closure', 4), [literal(0)]))
+        ? new Let(new Just('closure'), 5, closure, new App(local('closure', 5), [literal(0)]))
         : name === 'nestedRec'
-          ? new LetRec(4, [new Tuple('nested', closure)], new App(local('nested', 4), [literal(0)]))
-          : new Let(new Just('array'), 4, new Lit(new LitArray([call])),
-            new Typed(Int.value, new PrimOp(new Op2(OpArrayIndex.value, local('array', 4), literal(0)))));
-  const rhs = new Typed(type, new Abs([param('depth', 2), param('total', 3)],
-    new Branch([new Pair(isZero(depth), total)], recur)));
-  return new Tuple(name, new Typed(new Func([Int.value], Int.value), new Abs([param('n', 0)],
-    new LetRec(1, [new Tuple('worker', rhs)], new App(worker, [n, literal(42)])))));
+          ? new LetRec(5, [new Tuple('nested', closure)], new App(local('nested', 5), [literal(0)]))
+          : new Let(new Just('array'), 5, new Lit(new LitArray([call])),
+            new Typed(Int.value, new PrimOp(new Op2(OpArrayIndex.value, local('array', 5), literal(0)))));
+  const capturedField = new Typed(Int.value, new Accessor(local('owner', 1), new GetCtorField(
+    new Qualified(new Just('TailCalls'), 'Holder'), SumType.value, 'Holder', 'Holder', 'value0', 0)));
+  const rhs = new Typed(type, new Abs([param('depth', 3), param('total', 4)],
+    new Branch([new Pair(isZero(depth), numeric(OpAdd.value, total, capturedField))], recur)));
+  return new Tuple(name, new Typed(new Func([Int.value, holderType], Int.value), new Abs([param('n', 0), param('owner', 1)],
+    new LetRec(2, [new Tuple('worker', rhs)], new App(worker, [n, literal(0)])))));
 });
+// A first-class recursive function returned from its own worker must remain
+// callable after that frame exits, and release its captures when finally dropped.
+const returnedWorker = new Typed(new Func([Int.value], Any.value), new Abs([param('depth', 2)],
+  new Branch([new Pair(isZero(local('depth', 2)), local('owner', 0))], local('worker', 1))));
+const returned = new Tuple('returned', new Typed(new Func([Any.value], Any.value), new Abs([param('owner', 0)],
+  new LetRec(1, [new Tuple('worker', returnedWorker)], new App(local('worker', 1), [literal(1)])))));
 const failedBranch = new Tuple('failedBranch', new Typed(new Func([Int.value], StringType.value),
   new Abs([param('n', 0)], new Branch([new Pair(isZero(n), new Lit(new LitString('ok')))], new Fail('unreachable')))));
 const arities = insert(ordString)('TailCalls_Holder')(new Func([Any.value], holderType))(emptyMap);
@@ -120,7 +128,7 @@ const generated = codegenModule(arities)(emptyMap)(
   ] }], classDecls: [] },
 )({ name: 'TailCalls', bindings: [
   { recursive: true, bindings: [swap] },
-  { recursive: false, bindings: [increment, ownedInt, ownedClass, directInt, directClass, annotatedInt, annotatedClass, ...escaped, failedBranch] },
+  { recursive: false, bindings: [increment, ownedInt, ownedClass, directInt, directClass, annotatedInt, annotatedClass, ...escaped, returned, failedBranch] },
 ] });
 assert.ok(generated.includes('unwrap_or_clone'), 'the regression must move constructor fields');
 assert.ok(generated.includes('continue;'), 'the regression must exercise tail-call loops');
@@ -132,11 +140,17 @@ mod perceus_ptr;
 ${generated}
 fn main() {
     assert_eq!(TailCalls_failedBranch(0), "ok");
-    assert_eq!(TailCalls_alias(3), 45);
-    assert_eq!(TailCalls_partial(3), 45);
-    assert_eq!(TailCalls_closure(3), 45);
-    assert_eq!(TailCalls_nestedRec(3), 45);
-    assert_eq!(TailCalls_array(3), 45);
+    let owner = std::rc::Rc::new(Holder::Holder(mk_int(42)));
+    for run in [TailCalls_alias, TailCalls_partial, TailCalls_closure, TailCalls_nestedRec, TailCalls_array] {
+        assert_eq!(run(3, owner.clone()), 45);
+        assert_eq!(std::rc::Rc::strong_count(&owner), 1, "first-class self reference leaked its environment");
+    }
+    let recursive = TailCalls_returned(Value::Class(std::rc::Rc::new(owner.clone()))).unwrap_func1();
+    let returned = recursive(mk_int(0));
+    assert!(std::rc::Rc::ptr_eq(&owner, returned.unwrap_class::<std::rc::Rc<Holder>>()));
+    drop(returned);
+    drop(recursive);
+    assert_eq!(std::rc::Rc::strong_count(&owner), 1, "returned recursive function leaked its environment");
     assert_eq!(TailCalls_swap(0, 17, mk_int(42)).unwrap_int(), 42);
     assert_eq!(TailCalls_swap(1, 17, mk_int(42)).unwrap_int(), 17);
     assert_eq!(TailCalls_swap(2, 17, mk_int(42)).unwrap_int(), 42);

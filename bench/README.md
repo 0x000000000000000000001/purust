@@ -32,6 +32,8 @@ python3 bench/instrument.py --workspace ../altbak.pub/var/benchmark/json-decodin
   `npm run build:native -- --keep-workspace` et écrit le profil `sample`, le
   journal et les événements horodatés dans ce workspace. `PURUST_NATIVE`
   sélectionne le binaire et `PURUST_PROFILE_NAME` le préfixe des fichiers.
+  Pour un binaire instrumenté, `PURUST_PROFILE_LINE` peut remplacer le marqueur
+  de phase par un préfixe de ligne de diagnostic.
 
   ```bash
   node bench/profile-native.mjs /chemin/purust-native-build-XXXXXX \

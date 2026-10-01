@@ -13,6 +13,7 @@ if (!directory) throw new Error('Usage: node bench/profile-native.mjs BOOTSTRAP_
 const workspace = resolve(directory);
 const binary = process.env.PURUST_NATIVE ? resolve(process.env.PURUST_NATIVE) : join(root, 'bin/purust-native');
 const prefix = process.env.PURUST_PROFILE_NAME ?? 'native-profile';
+const marker = process.env.PURUST_PROFILE_LINE ?? `[purust] ${phase}`;
 const log = createWriteStream(join(workspace, prefix + '.log'));
 const events = [], started = performance.now();
 const child = spawn(binary, ['--source', 'output', '--out', `${prefix}-output`, '--main', 'Main', '--threaded', '--trace-phases'],
@@ -26,7 +27,7 @@ for (const stream of [child.stdout, child.stderr]) {
   createInterface({ input: stream }).on('line', line => {
     const elapsed = performance.now() - started;
     events.push({ elapsed, line });
-    if (line === `[purust] ${phase}` && !sampling) {
+    if ((process.env.PURUST_PROFILE_LINE ? line.startsWith(marker) : line === marker) && !sampling) {
       console.log(`Profiling PID ${child.pid} at ${phase} after ${(elapsed / 1000).toFixed(1)} s`);
       sample = spawn('/usr/bin/sample', [String(child.pid), '5', '1', '-file', join(workspace, prefix + '.sample.txt')],
         { stdio: 'inherit' });
