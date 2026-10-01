@@ -2261,6 +2261,14 @@ typedTraversalCall renames valueEnums currentMod allZeroArity reuseContext mbLoo
       pure (Tuple Boolean ("purust_core::typed::" <> helperName <> "_array::<" <> rustTy elTy <> ", _>(" <> xsCode <> ", " <> predC <> ")"))
 
 genApp :: Map.Map String String -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> ExprType -> NeutralExpr -> Array NeutralExpr -> String
+genApp renames valueEnums modNameStr allZeroArity reuseContext _ aritiesMap globalClassFields bound alive appTy fn [] =
+    -- PBO's nullary case continuations and FFI Fn0 use the same boxed callback
+    -- ABI: a dummy Unit argument, with the result boxed independently of it.
+    let fnTy = inferTypeExpr modNameStr aritiesMap globalClassFields bound fn
+        fnCode = codegenExpr_ renames valueEnums modNameStr allZeroArity reuseContext Nothing aritiesMap globalClassFields bound alive false fn
+        boxedFn = boxUnbox renames valueEnums globalClassFields modNameStr Any fnTy fnCode
+    in boxUnbox renames valueEnums globalClassFields modNameStr appTy Any
+      ("(" <> boxedFn <> ").unwrap_func1()(purust_core::Value::Unit)")
 genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive appTy fn originalArgs =
     let
         expectedArgs = extractAllArgTypes (inferTypeExpr modNameStr aritiesMap globalClassFields bound fn)
@@ -2547,6 +2555,13 @@ genEffectAbs :: Map.Map String String -> ValueEnums -> String -> Set.Set String 
 genEffectAbs renames valueEnums = genAbsWithEffect renames true valueEnums
 
 genAbsWithEffect :: Map.Map String String -> Boolean -> ValueEnums -> String -> Set.Set String -> ReuseContext -> Maybe LoopContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> Map.Map String ExprType -> Set.Set String -> Array String -> ExprType -> NeutralExpr -> String
+genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive [] _ body =
+    -- Empty UncurriedAbs binders still introduce a function. Emitting the body
+    -- here eagerly evaluates unselected case branches and duplicates shared
+    -- continuations during self-compilation.
+    let callbackTy = Func [Unit] Any
+    in boxUnbox renames valueEnums globalClassFields currentMod Any callbackTy
+      (genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive ["_"] callbackTy body)
 genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseContext mbLoop aritiesMap globalClassFields bound alive paramsArr fnTy body =
     let
       capturedVars = Set.difference (freeVariables body) (Set.fromFoldable paramsArr)

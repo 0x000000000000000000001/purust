@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, globSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findTypedCompiler, nativeWorkspaceConfig, verifyTypedOutput } from './native-workspace.mjs';
+import { compareGeneratedSources, findTypedCompiler, nativeWorkspaceConfig, verifyTypedOutput } from './native-workspace.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const binary = process.env.PURUST_NATIVE ? resolve(process.env.PURUST_NATIVE) : join(root, 'bin/purust-native');
@@ -32,14 +32,11 @@ try {
   ]) {
     run(`${name}-generate`, command, [...prefix, '--source', 'output', '--out', `${name}-rust`, '--main', 'Main']);
   }
-  const files = globSync(['**/*.rs', '**/Cargo.toml'], { cwd: join(workspace, 'node-rust') }).sort();
-  assert.deepEqual(globSync(['**/*.rs', '**/Cargo.toml'], { cwd: join(workspace, 'native-rust') }).sort(), files);
-  for (const file of files) assert.equal(readFileSync(join(workspace, 'native-rust', file), 'utf8'),
-    readFileSync(join(workspace, 'node-rust', file), 'utf8'), `Native/Node output mismatch: ${file}`);
+  const files = compareGeneratedSources(join(workspace, 'node-rust'), join(workspace, 'native-rust'));
   const stdout = run('native-application', 'cargo', ['run', '--quiet', '--release', '--config', 'profile.release.lto=false',
     '--manifest-path', 'native-rust/Cargo.toml']);
   assert.equal(stdout.trim(), 'PURUST_NATIVE_OK 42');
-  console.log(`Native smoke: ${metadata.modules} fresh TAST modules, ${files.length} identical generated files, application result verified.`);
+  console.log(`Native smoke: ${metadata.modules} fresh TAST modules, ${files} identical generated files, application result verified.`);
   success = true;
 } finally {
   if (success && !process.argv.includes('--keep-workspace')) rmSync(workspace, { recursive: true, force: true });

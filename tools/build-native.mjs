@@ -3,16 +3,16 @@ import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CommandRunner, Interrupted } from './command-runner.mjs';
-import { findTypedCompiler, nativeWorkspaceConfig, verifyTypedOutput } from './native-workspace.mjs';
+import { compareGeneratedSources, findTypedCompiler, nativeWorkspaceConfig, verifyTypedOutput } from './native-workspace.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('Usage: npm run build:native -- [--keep-workspace]\nBootstrap bin/purust-native using the Node backend and Rust library ports.\nPURUST_PURS selects the typed purs fork; PURUST_NATIVE_TMPDIR selects the workspace parent.');
+  console.log('Usage: npm run build:native -- [--self-host] [--keep-workspace]\nBootstrap bin/purust-native using the Node backend and Rust library ports.\n--self-host rebuilds the compiler with stage 1, compares generated sources, and smoke-tests stage 2 before installing it.\nPURUST_PURS selects the typed purs fork; PURUST_NATIVE_TMPDIR selects the workspace parent.');
   process.exit(0);
 }
-if (args.some(arg => arg !== '--keep-workspace')) {
-  console.error(`Unknown option: ${args.find(arg => arg !== '--keep-workspace')}`);
+if (args.some(arg => !['--keep-workspace', '--self-host'].includes(arg))) {
+  console.error(`Unknown option: ${args.find(arg => !['--keep-workspace', '--self-host'].includes(arg))}`);
   process.exit(1);
 }
 
@@ -70,9 +70,31 @@ try {
   // archives; Apple's LLVM 17 linker cannot read it. Emit native objects.
   await run('cargo-build', 'cargo', ['build', '--release', '--config', 'profile.release.lto=false',
     '--manifest-path', join(rust, 'Cargo.toml')], workspace);
+  let binary = join(rust, 'target/release/purust_output');
+  if (args.includes('--self-host')) {
+    const stage2 = join(workspace, 'rust-stage2');
+    await run('native-generate', binary, ['--source', join(workspace, 'output'), '--out', stage2,
+      '--main', 'Main', '--threaded', '--trace-phases'], workspace);
+    stage = 'compare-native-sources';
+    const log = join(workspace, `${stage}.log`);
+    try {
+      const count = compareGeneratedSources(rust, stage2);
+      const message = `${count} generated Rust sources and Cargo manifests are byte-identical.`;
+      writeFileSync(log, message + '\n');
+      console.log(message);
+    } catch (error) {
+      writeFileSync(log, error.message + '\n');
+      throw error;
+    }
+    await run('stage2-cargo-build', 'cargo', ['build', '--release', '--config', 'profile.release.lto=false',
+      '--manifest-path', join(stage2, 'Cargo.toml')], workspace);
+    binary = join(stage2, 'target/release/purust_output');
+    await run('stage2-smoke', process.execPath, [join(root, 'tools/test-native.mjs')], root,
+      { ...environment, PURUST_NATIVE: binary, PURUST_PURS: compiler, PURUST_NATIVE_TMPDIR: workspace });
+  }
   commands.checkInterrupted();
   stage = 'publish';
-  console.log(`Built ${publish(join(rust, 'target/release/purust_output'))}`);
+  console.log(`Built ${publish(binary)}`);
   if (args.includes('--keep-workspace')) console.log(`Workspace retained: ${workspace}`);
   else rmSync(workspace, { recursive: true, force: true });
 } catch (error) {

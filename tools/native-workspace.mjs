@@ -65,3 +65,23 @@ export function verifyTypedOutput(output) {
   if (!modules || !types) throw new Error('No typed CoreFn modules were produced');
   return { modules, types };
 }
+
+// Compare the compiler outputs, excluding Cargo build artifacts and lockfiles.
+// Build paths in debug information need not produce identical executable bytes.
+export function compareGeneratedSources(expected, actual) {
+  function sources(directory, prefix = '') {
+    return readdirSync(join(directory, prefix), { withFileTypes: true }).flatMap(entry => {
+      const path = join(prefix, entry.name);
+      if (entry.isDirectory()) return entry.name === 'target' ? [] : sources(directory, path);
+      return entry.isFile() && (entry.name.endsWith('.rs') || entry.name === 'Cargo.toml') ? [path] : [];
+    }).sort();
+  }
+  const left = sources(expected), right = sources(actual);
+  if (!left.length) throw new Error(`No generated sources in ${expected}`);
+  const leftSet = new Set(left), rightSet = new Set(right);
+  const mismatches = [...new Set([...left, ...right])].filter(path =>
+    !leftSet.has(path) || !rightSet.has(path) ||
+    !readFileSync(join(expected, path)).equals(readFileSync(join(actual, path))));
+  if (mismatches.length) throw new Error(`Node/native output mismatch (${mismatches.length} files):\n${mismatches.sort().join('\n')}`);
+  return left.length;
+}

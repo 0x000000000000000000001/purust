@@ -72,6 +72,8 @@ npm run build:native
 PURUST_PURS=/absolute/path/to/typed/purs npm run build:native
 # Retain the generated Rust workspace and build logs:
 npm run build:native -- --keep-workspace
+# Rebuild with the native compiler and install the validated second generation:
+npm run build:native -- --self-host --keep-workspace
 ```
 
 This compiles the PureScript sources of `purust`, PBO and their dependencies
@@ -105,8 +107,13 @@ The initial macOS arm64 validation on 2026-10-01 covered 152 TAST modules and
 312 identical generated files; the compiled ADT/record/array fixture printed
 `PURUST_NATIVE_OK 42`.
 
-To close the self-hosting loop, retain the bootstrap workspace, change into it,
-and run the installed native compiler on the same TAST:
+`--self-host` closes the loop automatically: stage 1 generates Rust from the
+compiler's own TAST, its sources and manifests are compared byte for byte with
+the Node output, Cargo builds stage 2, and that compiler runs the fresh-project
+smoke test. The script then atomically installs stage 2 as `bin/purust-native`.
+
+To perform these steps manually, retain the bootstrap workspace, change into
+it, and run the installed native compiler on the same TAST:
 
 ```bash
 /absolute/path/to/purust/bin/purust-native --source output --out rust-stage2 --main Main --threaded
