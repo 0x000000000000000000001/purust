@@ -24,4 +24,16 @@ python3 bench/instrument.py --workspace ../altbak.pub/var/benchmark/json-decodin
 - `backtrace-main.rs` + `aggregate-bt.py` — échantillonnage borné des
   backtraces d'allocation : remplacer l'allocateur généré par le gabarit,
   compiler avec `CARGO_PROFILE_RELEASE_DEBUG=true`, lancer avec
-  `DIAG_BT_START`/`DIAG_BT_COUNT`/`DIAG_BT_OUT`, puis agréger les sites.
+   `DIAG_BT_START`/`DIAG_BT_COUNT`/`DIAG_BT_OUT`, puis agréger les sites.
+
+- `profile-native.mjs` — sur macOS, échantillonne le compilateur natif pendant
+  cinq secondes au début d'une phase `--trace-phases`, puis arrête cette
+  compilation de diagnostic. Réutilise le TAST d'un bootstrap conservé par
+  `npm run build:native -- --keep-workspace` et écrit le profil `sample`, le
+  journal et les événements horodatés dans ce workspace. `PURUST_NATIVE`
+  sélectionne le binaire et `PURUST_PROFILE_NAME` le préfixe des fichiers.
+
+  ```bash
+  node bench/profile-native.mjs /chemin/purust-native-build-XXXXXX \
+    "codegen PureScript.Backend.Optimizer.Semantics"
+  ```

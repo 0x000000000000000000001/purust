@@ -1196,7 +1196,7 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
     -- generated body. Rust syntax checks use code units: counting code points
     -- allocates an array for every character in the native strings library.
     if expStr == actStr then code
-    else if SCU.take 15 code == "unimplemented!()" || (SCU.take 9 code == "/* Typed " && String.contains (Pattern "unimplemented!()") code && not (String.contains (Pattern "\n") code)) then code
+    else if SCU.take (SCU.length "unimplemented!()") code == "unimplemented!()" || (SCU.take (SCU.length "/* Typed ") code == "/* Typed " && String.contains (Pattern "unimplemented!()") code && not (String.contains (Pattern "\n") code)) then code
     else if SCU.drop (SCU.length code - 15) code == "continue;\n    }" then code
     else case unwrapType expected, unwrapType actual of
       Func expArgs expRet, Func actArgs actRet ->
@@ -3950,14 +3950,14 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
                      Just (Tuple _ inner) -> inner
                      Nothing -> val
                      
-                    -- Saturated recursive calls use the loop/direct worker,
-                    -- not the recursive Value. Capturing that Value would form
-                    -- a thunk -> closure -> thunk cycle and retain every other
-                    -- capture after the caller has finished.
-                    omittedCaptures = Set.fromFoldable (dedupedParams <>
-                      if directSelfCallsOnly (sanitizeIdent n) (Array.length allArgTypes) innerExpr
-                        then [sanitizeIdent n] else [])
-                    capturedSet = Set.difference (freeVariables val) omittedCaptures
+                   -- Saturated recursive calls use the loop/direct worker,
+                   -- not the recursive Value. Capturing that Value would form
+                   -- a thunk -> closure -> thunk cycle and retain every other
+                   -- capture after the caller has finished.
+                   omittedCaptures = Set.fromFoldable (dedupedParams <>
+                     if directSelfCallsOnly (sanitizeIdent n) (Array.length allArgTypes) innerExpr
+                       then [sanitizeIdent n] else [])
+                   capturedSet = Set.difference (freeVariables val) omittedCaptures
                    capturedArr = Array.filter (\v -> not (Map.member v aritiesMap) && not (Set.member v allZeroArity)) (Array.fromFoldable capturedSet)
                    
                    -- A captured Int array read by index: the loop is also
@@ -4035,9 +4035,10 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
   _ -> "{ let _t: crate::UnknownType = unimplemented!(); _t } /* Unsupported Expr: " <> printAST expr <> " */"
 
 
--- A nested function/recursive group has its own worker context. A partial
--- application or first-class reference likewise still needs the recursive
--- Value, so retain its capture in those cases.
+-- Only descend through forms whose printer preserves the worker context.
+-- Closures, effects, aggregate literals and specialized traversals can reset
+-- it. Those forms, partial applications and first-class references still need
+-- the recursive Value, so retain its capture when it occurs there.
 directSelfCallsOnly :: String -> Int -> NeutralExpr -> Boolean
 directSelfCallsOnly name arity = go
   where
@@ -4046,15 +4047,16 @@ directSelfCallsOnly name arity = go
     _ -> false
 
   go expr@(NeutralExpr syn) = case syn of
-    Local (Just (Ident ident)) _ -> sanitizeIdent ident /= name
+    Typed _ inner -> go inner
+    Syn.TypeApp inner _ -> go inner
     App fn args | isSelf fn && NonEmptyArray.length args == arity ->
       Array.all go (NonEmptyArray.toArray args)
     UncurriedApp fn args | isSelf fn && Array.length args == arity -> Array.all go args
-    Abs _ _ -> not (Set.member name (freeVariables expr))
-    UncurriedAbs _ _ -> not (Set.member name (freeVariables expr))
-    UncurriedEffectAbs _ _ -> not (Set.member name (freeVariables expr))
-    LetRec _ _ _ -> not (Set.member name (freeVariables expr))
-    _ -> Array.all go (Array.fromFoldable syn)
+    Branch _ _ -> Array.all go (Array.fromFoldable syn)
+    Let _ _ value body -> go value && go body
+    PrimOp (Op2 OpArrayIndex _ _) -> not (Set.member name (freeVariables expr))
+    PrimOp (Op2 _ a b) -> go a && go b
+    _ -> not (Set.member name (freeVariables expr))
 
 -- | Replace whole identifiers only: `purs_local_6` must not match inside
 -- | `purs_local_6_rec_0`. Used when a rewritten closure body must reference a
