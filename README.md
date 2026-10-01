@@ -60,9 +60,13 @@ Once those checkouts exist, build the compiler from this repository:
 
 ```bash
 npm install        # prepare builds the backend and bundles bin/purust.js
+npm run build:native
 ```
 
-After compiler changes, rebuild with `npm run build`. The [bin/purust](bin/purust) launcher runs the bundle with the Node.js stack and heap settings used by the project.
+The [bin/purust](bin/purust) launcher and the npm `purust` command use
+`bin/purust-native` by default. After compiler changes, rebuild it with
+`npm run build:native`. To select the Node backend explicitly, rebuild its
+bundle with `npm run build` and run `PURUST_JS=1 ./bin/purust ...`.
 
 ### Native compiler bootstrap
 
@@ -126,6 +130,19 @@ PURUST_NATIVE="$PWD/rust-stage2/target/release/purust_output" \
 
 The comparison checks the emitted sources and manifests. Debug information can
 contain different build paths, so it does not require identical binary hashes.
+
+On macOS arm64 (2026-10-01), native generation of the full compiler from 448
+TAST modules produced 904 Rust sources and Cargo manifests identical to Node's
+output. Cargo then built the second-generation compiler successfully in 168.6
+seconds. Stage 2 passed the fresh-project smoke test: 152 TAST modules, 312
+identical generated files, and the executable result `PURUST_NATIVE_OK 42`.
+This validates the complete backend/PBO self-reconstruction loop.
+
+Native generation in that run took 93.6 seconds with a peak physical memory
+footprint of 861 MiB (`/usr/bin/time -l`; maximum RSS 910 MiB). Node generation
+of the same input took 32.8 seconds. These are single-run observations with the
+current threaded release profile (`opt-level = 1`, LTO disabled), not evidence
+of a native speedup.
 
 The native backend and optimizer execute without Node. The `purs` frontend
 produces TAST, and Cargo compiles the generated application. The bootstrap

@@ -4,7 +4,7 @@
   "description": "PureScript-to-Rust backend",
   "type": "module",
   "bin": {
-    "purust": "bin/purust.js"
+    "purust": "bin/purust"
   },
   "scripts": {
     "build": "node tools/embed-native-runtime.mjs && spago build && spago bundle --module Main --platform node --outfile bin/purust.js --bundle-type app",

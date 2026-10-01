@@ -19,7 +19,7 @@ Each sibling script still controls its own build, caches, and cleanup.`);
     if (!options.list) {
       console.log(`Selected ${modules.length} modules (${options.resume ? "resume" : options.targets.length ? "explicit selection" : "all"}).`);
       processes = new TestProcesses();
-      if (options.clean) await processes.run("build-purust", "npm", ["run", "build", "--silent"], { cwd: root });
+      if (options.clean) await processes.run("build-purust", "npm", ["run", process.env.PURUST_JS === "1" ? "build" : "build:native", "--silent"], { cwd: root });
       for (const directory of modules) await processes.run(basename(directory), "./bin/test", [], { cwd: directory });
       console.log(`Summary: ${modules.length} modules passed.`);
     }

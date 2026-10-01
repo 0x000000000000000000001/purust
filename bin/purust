@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+set -euo pipefail
 
-node --expose-gc --stack-size=65536 --max-old-space-size=16384 "$DIR/purust.js" "$@"
+# npm exposes this launcher through a symlink in node_modules/.bin.
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  if [[ "$SOURCE" != /* ]]; then SOURCE="$DIR/$SOURCE"; fi
+done
+DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+if [[ "${PURUST_JS:-0}" == "1" ]]; then
+  exec node --expose-gc --stack-size=65536 --max-old-space-size=16384 "$DIR/purust.js" "$@"
+fi
+
+if [[ ! -x "$DIR/purust-native" ]]; then
+  echo "Missing native compiler: run npm run build:native in $DIR/.." >&2
+  exit 1
+fi
+exec "$DIR/purust-native" "$@"
