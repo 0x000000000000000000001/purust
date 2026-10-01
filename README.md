@@ -112,6 +112,9 @@ and run the installed native compiler on the same TAST:
 /absolute/path/to/purust/bin/purust-native --source output --out rust-stage2 --main Main --threaded
 diff -r --exclude=target --exclude=Cargo.lock rust rust-stage2
 cargo build --release --config profile.release.lto=false --manifest-path rust-stage2/Cargo.toml
+# Check that this second-generation compiler can build another project:
+PURUST_NATIVE="$PWD/rust-stage2/target/release/purust_output" \
+  npm --prefix /absolute/path/to/purust run test:native
 ```
 
 The comparison checks the emitted sources and manifests. Debug information can

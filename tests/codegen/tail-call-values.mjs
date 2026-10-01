@@ -13,8 +13,8 @@ import { empty as emptySet } from '../../output/Data.Set/index.js';
 import { Just } from '../../output/Data.Maybe/index.js';
 import { ordString } from '../../output/Data.Ord/index.js';
 import { Tuple } from '../../output/Data.Tuple/index.js';
-import { ADT, Any, Func, Int, LitInt, LitString, Qualified, String as StringType, SumType } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
-import { Abs, Accessor, App, Branch, CtorSaturated, Fail, GetCtorField, Let, LetRec, Lit, Local, Op2, OpAdd, OpEq, OpIntNum, OpIntOrd, OpSubtract, Pair, PrimOp, Typed, Var } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
+import { ADT, Any, Func, Int, LitArray, LitInt, LitString, Qualified, String as StringType, SumType } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
+import { Abs, Accessor, App, Branch, CtorSaturated, Fail, GetCtorField, Let, LetRec, Lit, Local, Op2, OpAdd, OpArrayIndex, OpEq, OpIntNum, OpIntOrd, OpSubtract, Pair, PrimOp, Typed, Var } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
 
 const param = (name, level) => new Tuple(new Just(name), level);
 const local = (name, level) => new Local(new Just(name), level);
@@ -89,7 +89,7 @@ const annotatedInt = nonTailCase('annotatedInt', Int.value, value => value, true
 const annotatedClass = nonTailCase('annotatedClass', holderType, holder, true);
 // These recursive references still need their Value binding: aliases, partial
 // application and recursion under a new function/LetRec worker context.
-const escaped = ['alias', 'partial', 'closure', 'nestedRec'].map(name => {
+const escaped = ['alias', 'partial', 'closure', 'nestedRec', 'array'].map(name => {
   const type = new Func([Int.value, Int.value], Int.value);
   const worker = new Typed(type, local('worker', 1));
   const depth = local('depth', 2), total = local('total', 3);
@@ -102,7 +102,10 @@ const escaped = ['alias', 'partial', 'closure', 'nestedRec'].map(name => {
       ? new Let(new Just('partial'), 4, new App(worker, [args[0]]), new App(local('partial', 4), [args[1]]))
       : name === 'closure'
         ? new Let(new Just('closure'), 4, closure, new App(local('closure', 4), [literal(0)]))
-        : new LetRec(4, [new Tuple('nested', closure)], new App(local('nested', 4), [literal(0)]));
+        : name === 'nestedRec'
+          ? new LetRec(4, [new Tuple('nested', closure)], new App(local('nested', 4), [literal(0)]))
+          : new Let(new Just('array'), 4, new Lit(new LitArray([call])),
+            new Typed(Int.value, new PrimOp(new Op2(OpArrayIndex.value, local('array', 4), literal(0)))));
   const rhs = new Typed(type, new Abs([param('depth', 2), param('total', 3)],
     new Branch([new Pair(isZero(depth), total)], recur)));
   return new Tuple(name, new Typed(new Func([Int.value], Int.value), new Abs([param('n', 0)],
@@ -133,6 +136,7 @@ fn main() {
     assert_eq!(TailCalls_partial(3), 45);
     assert_eq!(TailCalls_closure(3), 45);
     assert_eq!(TailCalls_nestedRec(3), 45);
+    assert_eq!(TailCalls_array(3), 45);
     assert_eq!(TailCalls_swap(0, 17, mk_int(42)).unwrap_int(), 42);
     assert_eq!(TailCalls_swap(1, 17, mk_int(42)).unwrap_int(), 17);
     assert_eq!(TailCalls_swap(2, 17, mk_int(42)).unwrap_int(), 42);
