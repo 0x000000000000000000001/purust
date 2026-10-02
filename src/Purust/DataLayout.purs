@@ -28,7 +28,14 @@ valueEnumsForModules :: forall f a. Foldable f => f (Module a) -> ValueEnums
 valueEnumsForModules = foldl (\acc mod -> Set.union acc (valueEnumsForModule mod)) Set.empty
 
 isValueEnum :: ValueEnums -> String -> String -> Boolean
-isValueEnum enums modName typeName = Set.member (Tuple (moduleKey modName) typeName) enums
+isValueEnum = memberLayoutImpl memberLayoutPure
+
+foreign import memberLayoutImpl
+  :: (ValueEnums -> String -> String -> Boolean)
+  -> ValueEnums -> String -> String -> Boolean
+
+memberLayoutPure :: ValueEnums -> String -> String -> Boolean
+memberLayoutPure enums modName typeName = Set.member (Tuple (moduleKey modName) typeName) enums
 
 -- Foreign data types without a native Rust binding have no constructors and no
 -- finite layout: values of the type are whatever unsafeCoerce moved in. They
@@ -38,7 +45,7 @@ opaqueForeignTypeKey :: String -> String -> Tuple String String
 opaqueForeignTypeKey modName typeName = Tuple (moduleKey modName) (opaqueForeignTypeMarker <> typeName)
 
 isOpaqueForeignType :: ValueEnums -> String -> String -> Boolean
-isOpaqueForeignType enums modName typeName = Set.member (opaqueForeignTypeKey modName typeName) enums
+isOpaqueForeignType enums modName typeName = isValueEnum enums modName (opaqueForeignTypeMarker <> typeName)
 
 -- Data types declared without constructors have no native layout: no value can
 -- be built, so any value present must have crossed unsafeCoerce or FFI and is a

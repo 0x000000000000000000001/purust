@@ -1197,7 +1197,7 @@ var min = function(dictOrd) {
   };
 };
 var ordArray = function(dictOrd) {
-  var eqArray15 = eqArray(dictOrd.Eq0());
+  var eqArray16 = eqArray(dictOrd.Eq0());
   return {
     compare: /* @__PURE__ */ (function() {
       var toDelta = function(x) {
@@ -1225,7 +1225,7 @@ var ordArray = function(dictOrd) {
       };
     })(),
     Eq0: function() {
-      return eqArray15;
+      return eqArray16;
     }
   };
 };
@@ -3169,11 +3169,11 @@ var eq1Tuple = function(dictEq) {
   };
 };
 var ord1Tuple = function(dictOrd) {
-  var ordTuple13 = ordTuple(dictOrd);
+  var ordTuple14 = ordTuple(dictOrd);
   var eq1Tuple1 = eq1Tuple(dictOrd.Eq0());
   return {
     compare1: function(dictOrd1) {
-      return compare(ordTuple13(dictOrd1));
+      return compare(ordTuple14(dictOrd1));
     },
     Eq10: function() {
       return eq1Tuple1;
@@ -3205,9 +3205,9 @@ var commutativeRingTuple = function(dictCommutativeRing) {
   };
 };
 var boundedTuple = function(dictBounded) {
-  var ordTuple13 = ordTuple(dictBounded.Ord0());
+  var ordTuple14 = ordTuple(dictBounded.Ord0());
   return function(dictBounded1) {
-    var ordTuple22 = ordTuple13(dictBounded1.Ord0());
+    var ordTuple22 = ordTuple14(dictBounded1.Ord0());
     return {
       top: new Tuple(top(dictBounded), top(dictBounded1)),
       bottom: new Tuple(bottom(dictBounded), bottom(dictBounded1)),
@@ -9610,8 +9610,16 @@ function showErrorImpl(err) {
 function error(msg) {
   return new Error(msg);
 }
+function throwException(e) {
+  return function() {
+    throw e;
+  };
+}
 
 // output/Effect.Exception/index.js
+var $$throw = function($2) {
+  return throwException(error($2));
+};
 var showError = {
   show: showErrorImpl
 };
@@ -20042,22 +20050,22 @@ var hasAnalysisBackendExpr = {
 };
 var analysisOf2 = /* @__PURE__ */ analysisOf(hasAnalysisBackendExpr);
 var eqUnpackOp = function(dictEq) {
-  var eqArray15 = eqArray(eqProp(dictEq));
-  var eqArray16 = eqArray(dictEq);
+  var eqArray16 = eqArray(eqProp(dictEq));
+  var eqArray17 = eqArray(dictEq);
   var eqArray22 = eqArray(eqTuple4(dictEq));
   return {
     eq: function(x) {
       return function(y) {
         if (x instanceof UnpackRecord && y instanceof UnpackRecord) {
-          return eq(eqArray15)(x.value0)(y.value0);
+          return eq(eqArray16)(x.value0)(y.value0);
         }
         ;
         if (x instanceof UnpackUpdate && y instanceof UnpackUpdate) {
-          return eq(dictEq)(x.value0)(y.value0) && eq(eqArray15)(x.value1)(y.value1);
+          return eq(dictEq)(x.value0)(y.value0) && eq(eqArray16)(x.value1)(y.value1);
         }
         ;
         if (x instanceof UnpackArray && y instanceof UnpackArray) {
-          return eq(eqArray16)(x.value0)(y.value0);
+          return eq(eqArray17)(x.value0)(y.value0);
         }
         ;
         if (x instanceof UnpackData && y instanceof UnpackData) {
@@ -20128,7 +20136,7 @@ var ordInlineAccessor = {
 };
 var eqDistOp = function(dictEq) {
   var eqNonEmptyArray1 = eqNonEmptyArray(dictEq);
-  var eqArray15 = eqArray(dictEq);
+  var eqArray16 = eqArray(dictEq);
   return {
     eq: function(x) {
       return function(y) {
@@ -20137,7 +20145,7 @@ var eqDistOp = function(dictEq) {
         }
         ;
         if (x instanceof DistUncurriedApp && y instanceof DistUncurriedApp) {
-          return eq(eqArray15)(x.value0)(y.value0);
+          return eq(eqArray16)(x.value0)(y.value0);
         }
         ;
         if (x instanceof DistAccessor && y instanceof DistAccessor) {
@@ -32984,7 +32992,7 @@ var buildModules = function(dictMonadEffect) {
   var Bind1 = Monad0.Bind1();
   var liftEffect7 = liftEffect(dictMonadEffect);
   var liftEffect12 = liftEffect(dictMonadEffect);
-  var liftEffect22 = liftEffect(dictMonadEffect);
+  var liftEffect23 = liftEffect(dictMonadEffect);
   var $$void7 = $$void(Monad0.Bind1().Apply0().Functor0());
   return function(options) {
     return function(coreFnModules) {
@@ -33022,7 +33030,7 @@ var buildModules = function(dictMonadEffect) {
                 ;
                 if (mbCachedMod instanceof Nothing) {
                   return bind(Bind1)(apply(liftEffect12)(createBoundedMemo(512)(mkFn2(instantiateNeutralType))))(function(instantiate) {
-                    return bind(Bind1)(apply(liftEffect22)(createStringMemo(512)(mkFn2(lookupPurmetaImplementation))))(function(lookupRaw) {
+                    return bind(Bind1)(apply(liftEffect23)(createStringMemo(512)(mkFn2(lookupPurmetaImplementation))))(function(lookupRaw) {
                       var forcedDirectives = forcePrivateInlines(union2(ordQualified5)(v.privateGlobals)(untypedPrivateGlobals(v2)))(v.directives);
                       var v3 = toBackendModuleWithLookup(lookupRaw)(v2)({
                         analyzeCustom: options.analyzeCustom,
@@ -41293,10 +41301,10 @@ var makeWorker = function(sanitize) {
               return new Tuple(new Just("__purust_field_arg_" + show(showInt)(index3)), found.freshLevel + index3 | 0);
             };
           })(deps);
-          var lookup6 = fromFoldable3(ordDependency)(foldableArray)(zip(deps)(refs));
+          var lookup7 = fromFoldable3(ordDependency)(foldableArray)(zip(deps)(refs));
           var replace3 = function(dep) {
             return function(fallback) {
-              var v = lookup2(ordDependency)(dep)(lookup6);
+              var v = lookup2(ordDependency)(dep)(lookup7);
               if (v instanceof Just) {
                 return new Typed(Int.value, new Local(v.value0.value0, v.value0.value1));
               }
@@ -52959,6 +52967,63 @@ var codegenModuleWithOptions = function(options) {
   };
 };
 
+// output/Purust.Dependencies/foreign.js
+var closureImpl = (fallback) => (edges) => fallback(edges);
+
+// output/Purust.Dependencies/index.js
+var eqArray15 = /* @__PURE__ */ eqArray(eqInt);
+var toUnfoldable7 = /* @__PURE__ */ toUnfoldable4(unfoldableArray);
+var fromFoldable15 = /* @__PURE__ */ fromFoldable4(foldableArray);
+var fromFoldable16 = /* @__PURE__ */ fromFoldable15(ordInt);
+var lookup5 = /* @__PURE__ */ lookup2(ordString);
+var fromFoldable25 = /* @__PURE__ */ fromFoldable3(ordString)(foldableArray);
+var fromFoldable33 = /* @__PURE__ */ fromFoldable15(ordString);
+var closurePure = function(edges) {
+  var go = function($copy_rows) {
+    var $tco_done = false;
+    var $tco_result;
+    function $tco_loop(rows) {
+      var next2 = map(functorArray)(function(deps) {
+        return foldl(foldableSet)(function(acc) {
+          return function(i) {
+            return union2(ordInt)(acc)(fromMaybe(empty3)(index(rows)(i)));
+          };
+        })(deps)(deps);
+      })(rows);
+      var $8 = eq(eqArray15)(map(functorArray)(size2)(next2))(map(functorArray)(size2)(rows));
+      if ($8) {
+        $tco_done = true;
+        return next2;
+      }
+      ;
+      $copy_rows = next2;
+      return;
+    }
+    ;
+    while (!$tco_done) {
+      $tco_result = $tco_loop($copy_rows);
+    }
+    ;
+    return $tco_result;
+  };
+  return map(functorArray)(toUnfoldable7)(go(map(functorArray)(fromFoldable16)(edges)));
+};
+var transitiveImports = function(graph) {
+  var names = toUnfoldable4(unfoldableArray)(unions2(foldableArray)(ordString)(cons(keys3(graph))(fromFoldable(foldableList)(values(graph)))));
+  var indices = fromFoldable3(ordString)(foldableArray)(mapWithIndex2(function(i) {
+    return function(name2) {
+      return new Tuple(name2, i);
+    };
+  })(names));
+  var edges = map(functorArray)(function(name2) {
+    return mapMaybe(flip(lookup5)(indices))(toUnfoldable4(unfoldableArray)(fromMaybe(empty3)(lookup2(ordString)(name2)(graph))));
+  })(names);
+  var closed2 = closureImpl(closurePure)(edges);
+  return apply(fromFoldable25)(map(functorArray)(function(name2) {
+    return apply(Tuple.create(name2))(apply(fromFoldable33)(mapMaybe(index(names))(fromMaybe([])(bind(bindMaybe)(lookup2(ordString)(name2)(indices))(index(closed2))))));
+  })(toUnfoldable4(unfoldableArray)(keys3(graph))));
+};
+
 // output/Purust.Emission/index.js
 var $runtime_lazy20 = function(name2, moduleName2, init4) {
   var state2 = 0;
@@ -53184,12 +53249,12 @@ var sameIdentity = (a) => (b) => Object.is(a, b);
 // output/PureScript.Backend.Optimizer.CoreFn.BindingGroups/index.js
 var monoidSet8 = /* @__PURE__ */ monoidSet(ordIdent);
 var semigroupSet8 = /* @__PURE__ */ semigroupSet(ordIdent);
-var fromFoldable15 = /* @__PURE__ */ fromFoldable3(ordIdent)(foldableArray);
+var fromFoldable17 = /* @__PURE__ */ fromFoldable3(ordIdent)(foldableArray);
 var identity25 = /* @__PURE__ */ identity(categoryFn);
-var fromFoldable16 = /* @__PURE__ */ fromFoldable3(ordInt)(foldableArray);
-var fromFoldable25 = /* @__PURE__ */ fromFoldable(foldableSet);
-var fromFoldable33 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordInt);
-var lookup5 = /* @__PURE__ */ lookup2(ordIdent);
+var fromFoldable18 = /* @__PURE__ */ fromFoldable3(ordInt)(foldableArray);
+var fromFoldable26 = /* @__PURE__ */ fromFoldable(foldableSet);
+var fromFoldable34 = /* @__PURE__ */ fromFoldable4(foldableArray)(ordInt);
+var lookup6 = /* @__PURE__ */ lookup2(ordIdent);
 var fromFoldable42 = /* @__PURE__ */ fromFoldable(foldableSet);
 var append5 = /* @__PURE__ */ append(semigroupArray);
 var Enter = /* @__PURE__ */ (function() {
@@ -53424,16 +53489,16 @@ var sortBindingGroups = function(moduleName2) {
         return index3;
       };
     })(groups);
-    var owners = apply(fromFoldable15)(apply(concatMap(identity25))(mapWithIndex2(function(index3) {
+    var owners = apply(fromFoldable17)(apply(concatMap(identity25))(mapWithIndex2(function(index3) {
       return function(group4) {
         return map(functorArray)(function(v) {
           return new Tuple(v.value1, index3);
         })(bindings2(group4));
       };
     })(groups)));
-    var graph = apply(fromFoldable16)(mapWithIndex2(function(index3) {
+    var graph = apply(fromFoldable18)(mapWithIndex2(function(index3) {
       return function(group4) {
-        return apply(Tuple.create(index3))(apply(fromFoldable25)(apply(fromFoldable33)(apply(mapMaybe(flip(lookup5)(owners)))(apply(fromFoldable42)(foldMap(foldableArray)(monoidSet8)(function(v) {
+        return apply(Tuple.create(index3))(apply(fromFoldable26)(apply(fromFoldable34)(apply(mapMaybe(flip(lookup6)(owners)))(apply(fromFoldable42)(foldMap(foldableArray)(monoidSet8)(function(v) {
           return references2(moduleName2)(empty3)(v.value2);
         })(bindings2(group4)))))));
       };
@@ -57335,28 +57400,19 @@ var rustModules = (source2) => {
 };
 
 // output/Main/index.js
-var $runtime_lazy21 = function(name2, moduleName2, init4) {
-  var state2 = 0;
-  var val;
-  return function(lineNumber) {
-    if (state2 === 2) return val;
-    if (state2 === 1) throw new ReferenceError(name2 + " was needed before it finished initializing (module " + moduleName2 + ", line " + lineNumber + ")", moduleName2, lineNumber);
-    state2 = 1;
-    val = init4();
-    state2 = 2;
-    return val;
-  };
-};
 var identity27 = /* @__PURE__ */ identity(categoryFn);
 var compare6 = /* @__PURE__ */ compare(ordString);
 var liftEffect6 = /* @__PURE__ */ liftEffect(monadEffectAff);
 var pure21 = /* @__PURE__ */ pure(applicativeEffect);
-var pure110 = /* @__PURE__ */ pure(applicativeEffect);
-var ordTuple5 = /* @__PURE__ */ ordTuple(ordString)(ordString);
 var liftEffect1 = /* @__PURE__ */ liftEffect(monadEffectAff);
-var pure24 = /* @__PURE__ */ pure(applicativeEffect);
+var ordTuple5 = /* @__PURE__ */ ordTuple(ordString);
+var fromFoldable19 = /* @__PURE__ */ fromFoldable4(foldableArray)(/* @__PURE__ */ ordTuple5(ordString));
+var ordTuple13 = /* @__PURE__ */ ordTuple5(ordString);
+var liftEffect22 = /* @__PURE__ */ liftEffect(monadEffectAff);
+var liftEffect32 = /* @__PURE__ */ liftEffect(monadEffectAff);
+var pure110 = /* @__PURE__ */ pure(applicativeEffect);
 var eqMaybe26 = /* @__PURE__ */ eqMaybe(eqInt);
-var pure34 = /* @__PURE__ */ pure(applicativeEffect);
+var pure24 = /* @__PURE__ */ pure(applicativeEffect);
 var needsForeignFile = function(values2) {
   return function(source2) {
     return !isEmpty(values2) || !$$null(foreignUnboundTypes(source2)(""));
@@ -57371,16 +57427,16 @@ var configureThreading = function(v) {
     return replaceAll("[dependencies]\n")('[dependencies]\ntokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync", "macros"] }\n');
   }
   ;
-  throw new Error("Failed pattern match at Main (line 502, column 1 - line 502, column 50): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 486, column 1 - line 486, column 50): " + [v.constructor.name]);
 };
 var chooseRecordShapes = function(occurrences) {
   var insert6 = function(acc) {
     return function(occurrence) {
-      var labels = filter(function($262) {
-        return !$$null2($262);
+      var labels = filter(function($259) {
+        return !$$null2($259);
       })(split(",")(occurrence.shape));
-      var $72 = $$null(labels);
-      if ($72) {
+      var $75 = $$null(labels);
+      if ($75) {
         return acc;
       }
       ;
@@ -57424,7 +57480,7 @@ var chooseRecordShapes = function(occurrences) {
         })())(acc);
       }
       ;
-      throw new Error("Failed pattern match at Main (line 471, column 13 - line 483, column 17): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 455, column 13 - line 467, column 17): " + [v.constructor.name]);
     };
   };
   var choose3 = function(entry) {
@@ -57463,7 +57519,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
         return new Just("../");
       }
       ;
-      throw new Error("Failed pattern match at Main (line 57, column 16 - line 59, column 30): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 59, column 16 - line 61, column 30): " + [v1.constructor.name]);
     })();
     var mainModule = (function() {
       var v1 = findIndex(function(v22) {
@@ -57479,14 +57535,14 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
           return "Main";
         }
         ;
-        throw new Error("Failed pattern match at Main (line 61, column 34 - line 63, column 53): " + [v2.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 63, column 34 - line 65, column 53): " + [v2.constructor.name]);
       }
       ;
       if (v1 instanceof Nothing) {
         return "Main";
       }
       ;
-      throw new Error("Failed pattern match at Main (line 60, column 20 - line 64, column 39): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 62, column 20 - line 66, column 39): " + [v1.constructor.name]);
     })();
     return discard(discardUnit)(bindAff)(apply(liftEffect6)(apply(log2)("Generating Rust code for " + mainModule)))(function() {
       var sourceDir = (function() {
@@ -57503,14 +57559,14 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
             return "output";
           }
           ;
-          throw new Error("Failed pattern match at Main (line 68, column 34 - line 70, column 55): " + [v2.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 70, column 34 - line 72, column 55): " + [v2.constructor.name]);
         }
         ;
         if (v1 instanceof Nothing) {
           return "output";
         }
         ;
-        throw new Error("Failed pattern match at Main (line 67, column 19 - line 71, column 41): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 69, column 19 - line 73, column 41): " + [v1.constructor.name]);
       })();
       return bind(bindAff)(measure("load TAST + sort")(function(v1) {
         return coreFnModulesFromOutput(sourceDir);
@@ -57530,8 +57586,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
             var labels = map(functorArray)(function(v2) {
               return v2.value0;
             })(concat([superclassFields(classDecl), classDecl.methods]));
-            var $97 = $$null(labels);
-            if ($97) {
+            var $100 = $$null(labels);
+            if ($100) {
               return [];
             }
             ;
@@ -57542,8 +57598,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
           })(v1.classDecls);
         })(toUnfoldable2(unfoldableArray)(finalModules));
         var allShapes = chooseRecordShapes(append(semigroupArray)(shapeOccurrences)(classShapeOccurrences));
-        var shapeLabels = fromFoldable4(foldableArray)(ordString)(filter(function($263) {
-          return !$$null2($263);
+        var shapeLabels = fromFoldable4(foldableArray)(ordString)(filter(function($260) {
+          return !$$null2($260);
         })(concatMap(function(shape) {
           return split(",")(shape);
         })(allShapes)));
@@ -57644,7 +57700,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                   return v2.value0;
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 105, column 24 - line 115, column 38): " + [v2.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 107, column 24 - line 117, column 38): " + [v2.constructor.name]);
               };
               var processBind = function(a) {
                 return function(v2) {
@@ -57659,7 +57715,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                         return getTy2(extractAnn(v2.value0.value2));
                       }
                       ;
-                      throw new Error("Failed pattern match at Main (line 119, column 26 - line 121, column 61): " + [v3.constructor.name]);
+                      throw new Error("Failed pattern match at Main (line 121, column 26 - line 123, column 61): " + [v3.constructor.name]);
                     })();
                     if (tyMb instanceof Just) {
                       return insert(ordString)(modPrefix + sanitizeIdent(v2.value0.value1))(tyMb.value0)(a);
@@ -57669,7 +57725,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                       return a;
                     }
                     ;
-                    throw new Error("Failed pattern match at Main (line 122, column 18 - line 124, column 29): " + [tyMb.constructor.name]);
+                    throw new Error("Failed pattern match at Main (line 124, column 18 - line 126, column 29): " + [tyMb.constructor.name]);
                   }
                   ;
                   if (v2 instanceof Rec) {
@@ -57685,7 +57741,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                             return getTy2(extractAnn(v3.value2));
                           }
                           ;
-                          throw new Error("Failed pattern match at Main (line 127, column 28 - line 129, column 63): " + [v4.constructor.name]);
+                          throw new Error("Failed pattern match at Main (line 129, column 28 - line 131, column 63): " + [v4.constructor.name]);
                         })();
                         if (tyMb2 instanceof Just) {
                           return insert(ordString)(modPrefix + sanitizeIdent(v3.value1))(tyMb2.value0)(a$prime);
@@ -57695,12 +57751,12 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                           return a$prime;
                         }
                         ;
-                        throw new Error("Failed pattern match at Main (line 130, column 20 - line 132, column 32): " + [tyMb2.constructor.name]);
+                        throw new Error("Failed pattern match at Main (line 132, column 20 - line 134, column 32): " + [tyMb2.constructor.name]);
                       };
                     })(a)(v2.value0);
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 117, column 27 - line 133, column 24): " + [v2.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 119, column 27 - line 135, column 24): " + [v2.constructor.name]);
                 };
               };
               var acc11 = foldl(foldableArray)(processBind)(acc)(v1.decls);
@@ -57714,7 +57770,7 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                     return a;
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 138, column 15 - line 140, column 29): " + [v2.value1.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 140, column 15 - line 142, column 29): " + [v2.value1.constructor.name]);
                 };
               })(acc11)(toUnfoldable3(unfoldableArray)(v1.foreign));
               var acc3 = foldl(foldableArray)(function(a) {
@@ -57725,8 +57781,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                       var fqn = snoc(modPath)(decl.name);
                       var retTy = new ADT(decl.name, fqn, []);
                       var ty = (function() {
-                        var $165 = length(ctor.fields) > 0;
-                        if ($165) {
+                        var $168 = length(ctor.fields) > 0;
+                        if ($168) {
                           return new Func(ctor.fields, retTy);
                         }
                         ;
@@ -57746,9 +57802,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
           var globalArities = buildGlobalArities(finalModules);
           var globalTypes = buildGlobalTypes2(finalModules);
           var globalClassFields = buildGlobalClassFields(finalModules);
-          var gatherOpaque = function(v2) {
+          var readModuleInputs = function(v2) {
             var dotted = unwrap()(v2.name);
-            var modName = replaceAll(".")("_")(dotted);
             return function __do2() {
               var sourceExists = exists(v2.path)();
               var source2 = (function() {
@@ -57759,8 +57814,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                 return "";
               })();
               var ffiPathMb = (function() {
-                var $168 = needsForeignFile(v2.foreign)(source2);
-                if ($168) {
+                var $171 = needsForeignFile(v2.foreign)(source2);
+                if ($171) {
                   return findFfiFile(".rs")([])(ffiDir)(dotted)(new Just(v2.path))();
                 }
                 ;
@@ -57780,24 +57835,31 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                   return "";
                 }
                 ;
-                throw new Error("Failed pattern match at Main (line 196, column 23 - line 200, column 29): " + [ffiPathMb.constructor.name]);
+                throw new Error("Failed pattern match at Main (line 197, column 23 - line 201, column 29): " + [ffiPathMb.constructor.name]);
               })();
-              return apply(pure21)(map(functorArray)(opaqueForeignTypeKey(modName))(foreignUnboundTypes(source2)(ffiContent)))();
+              return apply(pure21)(new Tuple(dotted, {
+                source: source2,
+                ffiPath: ffiPathMb,
+                ffiContent
+              }))();
             };
           };
-          return bind(bindAff)(liftEffect(monadEffectAff)(function __do2() {
-            var perModule = traverse(traversableArray)(applicativeEffect)(gatherOpaque)(toUnfoldable2(unfoldableArray)(finalModules))();
-            return apply(pure110)(fromFoldable4(foldableArray)(ordTuple5)(concat(perModule)))();
-          }))(function(opaqueForeignTypes) {
-            var globalValueEnums = unions2(foldableArray)(ordTuple5)([valueEnumsForModules(foldableList)(finalModules), opaqueForeignTypes, opaqueEmptyTypesForModules(foldableList)(finalModules)]);
+          return bind(bindAff)(apply(liftEffect1)(traverse(traversableArray)(applicativeEffect)(readModuleInputs)(toUnfoldable2(unfoldableArray)(finalModules))))(function(inputs) {
+            var moduleInputs = fromFoldable3(ordString)(foldableArray)(inputs);
+            var opaqueForeignTypes = apply(fromFoldable19)(concatMap(function(v2) {
+              var modName = replaceAll(".")("_")(v2.value0);
+              return map(functorArray)(opaqueForeignTypeKey(modName))(foreignUnboundTypes(v2.value1.source)(v2.value1.ffiContent));
+            })(inputs));
+            var globalValueEnums = unions2(foldableArray)(ordTuple13)([valueEnumsForModules(foldableList)(finalModules), opaqueForeignTypes, opaqueEmptyTypesForModules(foldableList)(finalModules)]);
             return bind(bindAff)(loadDirectives)(function(directives) {
-              return bind(bindAff)(apply(liftEffect1)($$new(empty2)))(function(modulesRef) {
+              return bind(bindAff)(apply(liftEffect22)($$new(empty2)))(function(modulesRef) {
                 return pure(applicativeAff)({
                   globalArities,
                   globalClassFields,
                   globalValueEnums,
                   directives,
-                  modulesRef
+                  modulesRef,
+                  moduleInputs
                 });
               });
             });
@@ -57809,162 +57871,159 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
             };
             var generate = function(v2) {
               var modNameStr = unwrap()(v2.value1.name);
-              return discard(discardUnit)(bindAff)(apply(when(applicativeAff)(tracePhases))(apply(liftEffect6)(log2("[purust] codegen " + modNameStr))))(function() {
-                var rsFile = codegenModuleWithOptions({
-                  threaded,
-                  moduleValues: eligibleValues(v2.value0),
-                  fieldRenames: fieldRenameMap,
-                  jsonSchemas: !elem2(eqString)("--no-json-schemas")(args),
-                  jsonLayouts: !elem2(eqString)("--no-json-layouts")(args),
-                  jsonArrays: !elem2(eqString)("--no-json-arrays")(args)
-                })(prepared.globalValueEnums)(prepared.globalArities)(prepared.globalClassFields)(v2.value0)(v2.value1);
-                return liftEffect(monadEffectAff)(function __do2() {
-                  apply(when(applicativeEffect)(tracePhases))(log2("[purust] generated " + modNameStr))();
-                  var modName = replaceAll(".")("_")(unwrap()(v2.value0.name));
-                  var modPrefix = modName + "_";
-                  var sourceExists = exists(v2.value0.path)();
-                  var source2 = (function() {
-                    if (sourceExists) {
-                      return readTextFile(UTF8.value)(v2.value0.path)();
-                    }
-                    ;
-                    return "";
-                  })();
-                  var ffiPathMb = (function() {
-                    var $178 = needsForeignFile(v2.value0.foreign)(source2);
-                    if ($178) {
-                      return findFfiFile(".rs")([])(ffiDir)(modNameStr)(new Just(v2.value0.path))();
-                    }
-                    ;
-                    return Nothing.value;
-                  })();
-                  var cargo = (function() {
-                    if (ffiPathMb instanceof Just) {
-                      return loadFfiCargo(ffiPathMb.value0)();
-                    }
-                    ;
-                    if (ffiPathMb instanceof Nothing) {
-                      return "";
-                    }
-                    ;
-                    throw new Error("Failed pattern match at Main (line 237, column 20 - line 239, column 31): " + [ffiPathMb.constructor.name]);
-                  })();
-                  var getArity2 = function(v3) {
-                    if (v3 instanceof ForAll) {
-                      return getArity2(v3.value1);
-                    }
-                    ;
-                    if (v3 instanceof ConstrainedType) {
-                      return getArity2(v3.value1);
-                    }
-                    ;
-                    if (v3 instanceof Func) {
-                      return length(v3.value0) + getArity2(v3.value1) | 0;
-                    }
-                    ;
-                    return 0;
-                  };
-                  var genFallback = function(name2) {
-                    return function(ty) {
-                      var $188 = !member2(ordString)(modPrefix + sanitizeIdent(unwrap()(name2)))(empty3);
-                      if ($188) {
-                        var retTyStr = codegenExprTypeWithValueEnums(prepared.globalValueEnums)(modName)(true)(extractFinalRetType(ty));
-                        var defaultRet = (function() {
-                          if (retTyStr === "i64") {
-                            return "0";
-                          }
-                          ;
-                          if (retTyStr === "f64") {
-                            return "0.0";
-                          }
-                          ;
-                          if (retTyStr === "bool") {
-                            return "false";
-                          }
-                          ;
-                          if (retTyStr === "char") {
-                            return "'\\0'";
-                          }
-                          ;
-                          if (retTyStr === "String") {
-                            return "String::new()";
-                          }
-                          ;
-                          return "unimplemented!()";
-                        })();
-                        var argTypes = extractAllArgTypes(ty);
-                        var args1 = mapWithIndex2(function(i) {
-                          return function(argTy) {
-                            return "mut a" + (show(showInt)(i) + (": " + codegenExprTypeWithValueEnums(prepared.globalValueEnums)(modName)(true)(argTy)));
-                          };
-                        })(argTypes);
-                        return "pub fn " + (modPrefix + (sanitizeIdent(unwrap()(name2)) + ("(" + (joinWith(", ")(args1) + (") -> " + (retTyStr + (" { " + (defaultRet + " }\n"))))))));
+              return bind(bindAff)((function() {
+                var v3 = lookup2(ordString)(unwrap()(v2.value0.name))(prepared.moduleInputs);
+                if (v3 instanceof Just) {
+                  return pure(applicativeAff)(v3.value0);
+                }
+                ;
+                if (v3 instanceof Nothing) {
+                  return apply(liftEffect32)($$throw("Missing prepared module inputs: " + unwrap()(v2.value0.name)));
+                }
+                ;
+                throw new Error("Failed pattern match at Main (line 227, column 18 - line 229, column 112): " + [v3.constructor.name]);
+              })())(function(input) {
+                return discard(discardUnit)(bindAff)(apply(when(applicativeAff)(tracePhases))(apply(liftEffect6)(log2("[purust] codegen " + modNameStr))))(function() {
+                  var rsFile = codegenModuleWithOptions({
+                    threaded,
+                    moduleValues: eligibleValues(v2.value0),
+                    fieldRenames: fieldRenameMap,
+                    jsonSchemas: !elem2(eqString)("--no-json-schemas")(args),
+                    jsonLayouts: !elem2(eqString)("--no-json-layouts")(args),
+                    jsonArrays: !elem2(eqString)("--no-json-arrays")(args)
+                  })(prepared.globalValueEnums)(prepared.globalArities)(prepared.globalClassFields)(v2.value0)(v2.value1);
+                  return liftEffect(monadEffectAff)(function __do2() {
+                    apply(when(applicativeEffect)(tracePhases))(log2("[purust] generated " + modNameStr))();
+                    var modName = replaceAll(".")("_")(unwrap()(v2.value0.name));
+                    var modPrefix = modName + "_";
+                    var cargo = (function() {
+                      if (input.ffiPath instanceof Just) {
+                        return loadFfiCargo(input.ffiPath.value0)();
                       }
                       ;
-                      return "";
+                      if (input.ffiPath instanceof Nothing) {
+                        return "";
+                      }
+                      ;
+                      throw new Error("Failed pattern match at Main (line 242, column 20 - line 244, column 31): " + [input.ffiPath.constructor.name]);
+                    })();
+                    var getArity2 = function(v3) {
+                      if (v3 instanceof ForAll) {
+                        return getArity2(v3.value1);
+                      }
+                      ;
+                      if (v3 instanceof ConstrainedType) {
+                        return getArity2(v3.value1);
+                      }
+                      ;
+                      if (v3 instanceof Func) {
+                        return length(v3.value0) + getArity2(v3.value1) | 0;
+                      }
+                      ;
+                      return 0;
                     };
-                  };
-                  var ffiContent = (function() {
-                    if (ffiPathMb instanceof Just) {
-                      var content = readTextFile(UTF8.value)(ffiPathMb.value0)();
-                      var missingStubs = foldMap2(monoidString)(function(tup) {
-                        if (tup.value1 instanceof Just) {
-                          var $192 = contains("fn " + (modPrefix + sanitizeIdent(unwrap()(tup.value0))))(content);
-                          if ($192) {
+                    var genFallback = function(name2) {
+                      return function(ty) {
+                        var $194 = !member2(ordString)(modPrefix + sanitizeIdent(unwrap()(name2)))(empty3);
+                        if ($194) {
+                          var retTyStr = codegenExprTypeWithValueEnums(prepared.globalValueEnums)(modName)(true)(extractFinalRetType(ty));
+                          var defaultRet = (function() {
+                            if (retTyStr === "i64") {
+                              return "0";
+                            }
+                            ;
+                            if (retTyStr === "f64") {
+                              return "0.0";
+                            }
+                            ;
+                            if (retTyStr === "bool") {
+                              return "false";
+                            }
+                            ;
+                            if (retTyStr === "char") {
+                              return "'\\0'";
+                            }
+                            ;
+                            if (retTyStr === "String") {
+                              return "String::new()";
+                            }
+                            ;
+                            return "unimplemented!()";
+                          })();
+                          var argTypes = extractAllArgTypes(ty);
+                          var args1 = mapWithIndex2(function(i) {
+                            return function(argTy) {
+                              return "mut a" + (show(showInt)(i) + (": " + codegenExprTypeWithValueEnums(prepared.globalValueEnums)(modName)(true)(argTy)));
+                            };
+                          })(argTypes);
+                          return "pub fn " + (modPrefix + (sanitizeIdent(unwrap()(name2)) + ("(" + (joinWith(", ")(args1) + (") -> " + (retTyStr + (" { " + (defaultRet + " }\n"))))))));
+                        }
+                        ;
+                        return "";
+                      };
+                    };
+                    var ffiContent = (function() {
+                      if (input.ffiPath instanceof Just) {
+                        var missingStubs = foldMap2(monoidString)(function(tup) {
+                          if (tup.value1 instanceof Just) {
+                            var $198 = contains("fn " + (modPrefix + sanitizeIdent(unwrap()(tup.value0))))(input.ffiContent);
+                            if ($198) {
+                              return "";
+                            }
+                            ;
+                            return genFallback(tup.value0)(tup.value1.value0);
+                          }
+                          ;
+                          if (tup.value1 instanceof Nothing) {
                             return "";
                           }
                           ;
-                          return genFallback(tup.value0)(tup.value1.value0);
-                        }
-                        ;
-                        if (tup.value1 instanceof Nothing) {
-                          return "";
-                        }
-                        ;
-                        throw new Error("Failed pattern match at Main (line 264, column 57 - line 270, column 42): " + [tup.constructor.name]);
-                      })(toUnfoldable3(unfoldableArray)(v2.value0.foreign));
-                      return apply(pure24)(content + ("\n\n" + missingStubs))();
-                    }
-                    ;
-                    if (ffiPathMb instanceof Nothing) {
-                      return apply(pure24)(foldMap2(monoidString)(function(tup) {
-                        if (tup.value1 instanceof Just) {
-                          return genFallback(tup.value0)(tup.value1.value0);
-                        }
-                        ;
-                        if (tup.value1 instanceof Nothing) {
-                          return "";
-                        }
-                        ;
-                        throw new Error("Failed pattern match at Main (line 273, column 54 - line 275, column 38): " + [tup.constructor.name]);
-                      })(toUnfoldable3(unfoldableArray)(v2.value0.foreign)))();
-                    }
-                    ;
-                    throw new Error("Failed pattern match at Main (line 261, column 25 - line 276, column 46): " + [ffiPathMb.constructor.name]);
-                  })();
-                  var opaqueTypes = foreignTypeForwards(source2)(rsFile + ("\n" + ffiContent));
-                  var rawModules = toUnfoldable4(unfoldableArray)(collectModulesModule(v2.value0));
-                  var extractedModules = rustModules(rsFile + ("\n" + ffiContent));
-                  var allModules = concat([rawModules, extractedModules]);
-                  var coreImports = nub(ordString)(mapMaybe(function(n) {
-                    var nStr = replaceAll(".")("_")(n);
-                    var isSelf2 = nStr === modName;
-                    var $205 = n === "Prim" || (eq(eqMaybe26)(indexOf2("Prim.")(n))(new Just(0)) || isSelf2);
-                    if ($205) {
-                      return Nothing.value;
-                    }
-                    ;
-                    return new Just(nStr);
-                  })(allModules));
-                  var importsRust = joinWith("\n")(map(functorArray)(function(i) {
-                    return "use Purs_" + (i + "::*;");
-                  })(coreImports));
-                  var rustCode = '#![allow(warnings)]\n#![recursion_limit = "512"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n' + (importsRust + ("\n\n" + (rsFile + ("\n\n" + (ffiContent + ("\n\n" + opaqueTypes))))));
-                  return apply(pure34)(new Tuple(modName, {
-                    code: rustCode,
-                    imports: coreImports,
-                    cargo
-                  }))();
+                          throw new Error("Failed pattern match at Main (line 269, column 57 - line 275, column 42): " + [tup.constructor.name]);
+                        })(toUnfoldable3(unfoldableArray)(v2.value0.foreign));
+                        return apply(pure110)(input.ffiContent + ("\n\n" + missingStubs))();
+                      }
+                      ;
+                      if (input.ffiPath instanceof Nothing) {
+                        return apply(pure110)(foldMap2(monoidString)(function(tup) {
+                          if (tup.value1 instanceof Just) {
+                            return genFallback(tup.value0)(tup.value1.value0);
+                          }
+                          ;
+                          if (tup.value1 instanceof Nothing) {
+                            return "";
+                          }
+                          ;
+                          throw new Error("Failed pattern match at Main (line 278, column 54 - line 280, column 38): " + [tup.constructor.name]);
+                        })(toUnfoldable3(unfoldableArray)(v2.value0.foreign)))();
+                      }
+                      ;
+                      throw new Error("Failed pattern match at Main (line 266, column 25 - line 281, column 46): " + [input.ffiPath.constructor.name]);
+                    })();
+                    var combinedRust = rsFile + ("\n" + ffiContent);
+                    var opaqueTypes = foreignTypeForwards(input.source)(combinedRust);
+                    var rawModules = toUnfoldable4(unfoldableArray)(collectModulesModule(v2.value0));
+                    var extractedModules = rustModules(combinedRust);
+                    var allModules = concat([rawModules, extractedModules]);
+                    var coreImports = nub(ordString)(mapMaybe(function(n) {
+                      var nStr = replaceAll(".")("_")(n);
+                      var isSelf2 = nStr === modName;
+                      var $211 = n === "Prim" || (eq(eqMaybe26)(indexOf2("Prim.")(n))(new Just(0)) || isSelf2);
+                      if ($211) {
+                        return Nothing.value;
+                      }
+                      ;
+                      return new Just(nStr);
+                    })(allModules));
+                    var importsRust = joinWith("\n")(map(functorArray)(function(i) {
+                      return "use Purs_" + (i + "::*;");
+                    })(coreImports));
+                    var rustCode = '#![allow(warnings)]\n#![recursion_limit = "512"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n' + (importsRust + ("\n\n" + (rsFile + ("\n\n" + (ffiContent + ("\n\n" + opaqueTypes))))));
+                    return apply(pure24)(new Tuple(modName, {
+                      code: rustCode,
+                      imports: coreImports,
+                      cargo
+                    }))();
+                  });
                 });
               });
             };
@@ -58021,14 +58080,14 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                       return "output/purust_output";
                     }
                     ;
-                    throw new Error("Failed pattern match at Main (line 310, column 34 - line 312, column 69): " + [v3.constructor.name]);
+                    throw new Error("Failed pattern match at Main (line 316, column 34 - line 318, column 69): " + [v3.constructor.name]);
                   }
                   ;
                   if (v2 instanceof Nothing) {
                     return "output/purust_output";
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 309, column 18 - line 313, column 55): " + [v2.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 315, column 18 - line 319, column 55): " + [v2.constructor.name]);
                 })();
                 return function __do2() {
                   var srcExists = exists(outDir + "/src")();
@@ -58038,58 +58097,9 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                   })();
                   writeRuntime(outDir)();
                   var allModules = read(prepared.modulesRef)();
-                  var tcRef = $$new(empty2)();
-                  var initTc = toUnfoldable3(unfoldableArray)(allModules);
-                  foldl(foldableArray)(function(eff) {
-                    return function(v2) {
-                      return applySecond(applyEffect)(eff)(modify_(insert(ordString)(v2.value0)(fromFoldable4(foldableArray)(ordString)(v2.value1.imports)))(tcRef));
-                    };
-                  })(pure(applicativeEffect)(unit))(initTc)();
-                  var $lazy_loop = $runtime_lazy21("loop", "Main", function() {
-                    return function __do3() {
-                      var changed = $$new(false)();
-                      var currMap = read(tcRef)();
-                      var arr = toUnfoldable3(unfoldableArray)(currMap);
-                      foldl(foldableArray)(function(eff) {
-                        return function(v2) {
-                          return applySecond(applyEffect)(eff)((function() {
-                            var newImps = foldl(foldableArray)(function(acc) {
-                              return function(i) {
-                                var v3 = lookup2(ordString)(i)(currMap);
-                                if (v3 instanceof Just) {
-                                  return union2(ordString)(acc)(v3.value0);
-                                }
-                                ;
-                                if (v3 instanceof Nothing) {
-                                  return acc;
-                                }
-                                ;
-                                throw new Error("Failed pattern match at Main (line 334, column 19 - line 336, column 35): " + [v3.constructor.name]);
-                              };
-                            })(v2.value1)(toUnfoldable4(unfoldableArray)(v2.value1));
-                            var $219 = size2(newImps) > size2(v2.value1);
-                            if ($219) {
-                              return function __do4() {
-                                write(true)(changed)();
-                                return modify_(insert(ordString)(v2.value0)(newImps))(tcRef)();
-                              };
-                            }
-                            ;
-                            return pure(applicativeEffect)(unit);
-                          })());
-                        };
-                      })(pure(applicativeEffect)(unit))(arr)();
-                      var isChanged = read(changed)();
-                      if (isChanged) {
-                        return $lazy_loop(344)();
-                      }
-                      ;
-                      return unit;
-                    };
-                  });
-                  var loop = $lazy_loop(328);
-                  loop();
-                  var finalTcMap = read(tcRef)();
+                  var finalTcMap = transitiveImports(map(functorMap)(function(generated) {
+                    return fromFoldable4(foldableArray)(ordString)(generated.imports);
+                  })(allModules));
                   var preludeRsContent = (function() {
                     if (threaded) {
                       return threadedPrelude;
@@ -58099,8 +58109,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                   })()(codegenPreludeWithRenames(fieldRenameMap)(allShapes));
                   var mainModuleSanitized = replaceAll(".")("_")(mainModule);
                   var specModules = (function() {
-                    var $224 = member(ordString)("Test_Spec_Discovery")(allModules);
-                    if ($224) {
+                    var $220 = member(ordString)("Test_Spec_Discovery")(allModules);
+                    if ($220) {
                       return mapMaybe(function(v2) {
                         var dotted = unwrap()(v2.name);
                         var key = replaceAll(".")("_")(dotted);
@@ -58114,10 +58124,10 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                             return false;
                           }
                           ;
-                          throw new Error("Failed pattern match at Main (line 363, column 35 - line 365, column 39): " + [v3.constructor.name]);
+                          throw new Error("Failed pattern match at Main (line 347, column 35 - line 349, column 39): " + [v3.constructor.name]);
                         })();
-                        var $228 = key !== "Test_Spec_Discovery" && (elem2(eqIdent)("spec")(v2.exports) && hasAccessor);
-                        if ($228) {
+                        var $224 = key !== "Test_Spec_Discovery" && (elem2(eqIdent)("spec")(v2.exports) && hasAccessor);
+                        if ($224) {
                           return new Just(new Tuple(dotted, key));
                         }
                         ;
@@ -58128,8 +58138,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                     return [];
                   })();
                   var registrationDeps = (function() {
-                    var $229 = $$null(specModules);
-                    if ($229) {
+                    var $225 = $$null(specModules);
+                    if ($225) {
                       return "";
                     }
                     ;
@@ -58214,8 +58224,8 @@ var main = /* @__PURE__ */ apply(launchAff_)(/* @__PURE__ */ measure("backend to
                           })(modDepList))));
                           var modCargoToml = '[package]\nname = "Purs_' + (v2.value0 + ('"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' + modDeps));
                           writeTextFile(UTF8.value)(modDir + "/Cargo.toml")(configureThreading(threaded)(modCargoToml + (function() {
-                            var $250 = v2.value1.cargo === "";
-                            if ($250) {
+                            var $246 = v2.value1.cargo === "";
+                            if ($246) {
                               return "";
                             }
                             ;

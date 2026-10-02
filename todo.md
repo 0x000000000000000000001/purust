@@ -28,7 +28,7 @@ Rapport et mesures :
 `../../altbak.pub/docs/benchmark-results/2026-10-01-purust-aff-compilation.{md,json}`.
 Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
 
-## Résultat validé de cette campagne
+## Première campagne — résultat validé
 
 Le **2 octobre 2026**, sur le même TAST figé, la campagne finale de cinq paires
 donne **6 774 ms JS / 10 328 ms natif**, ratio **1,52×**. Le natif utilise O3
@@ -45,6 +45,24 @@ Résultats et mesures brutes :
 `../../altbak.pub/docs/benchmark-results/2026-10-02-purust-aff-compilation.{md,json}`.
 Diagnostic et essais détaillés :
 `../../altbak.pub/docs/benchmark-results/2026-10-02-purust-compiler-optimization.{md,json}`.
+
+## Deuxième campagne — résultat final
+
+Le deuxième lot, installé après auto-reconstruction, donne **6 463 ms JS /
+8 247 ms natif**, ratio **1,28×**, sur cinq paires avec le même TAST figé.
+Le natif utilise désormais **4 PBO + 4 codegen** dans son budget de 8 workers.
+Les deux dernières paires ont ralenti ; tous les échantillons sont conservés.
+Les 12 sorties contiennent les mêmes 496 fichiers et l'application passe les
+47 checks Aff. Battre JS reste le prochain jalon.
+
+La comparaison contrôlée avec le binaire publié après le premier lot donne
+**10 419 → 8 189 ms**, soit **−21,4 % / 1,27×** plus rapide. RSS maximal
+**465 → 498 Mio**. Cette campagne avant/après est distincte du tableau JS/natif,
+qui conserve la médiane native **8 247 ms**.
+
+Rapports et mesures brutes :
+`../../altbak.pub/docs/benchmark-results/2026-10-02-purust-aff-codegen-compilation.{md,json}` ;
+`../../altbak.pub/docs/benchmark-results/2026-10-02-purust-codegen-optimization.{md,json}`.
 
 ## 1 — Diagnostic et profil de compilation
 
@@ -205,7 +223,7 @@ consigner alors le résultat plutôt que d'introduire une modification non justi
   diagnostics, empreintes et logs. Les médianes, les 548 empreintes figées et
   les 12 sorties de la campagne JS/natif ont été revérifiées indépendamment.
 
-## Priorité de la campagne suivante
+## Priorité après la première campagne (historique)
 
 Le codegen séquentiel (~5,4 s) devient le poste dominant après le parallélisme
 PBO. Cibler d'abord les allocations confirmées de `sanitizeIdent`,
@@ -255,11 +273,75 @@ Espace durable : `../../altbak.pub/var/benchmark/purust-codegen-20261002/`.
 - [x] Régressions : suite codegen de **90 tests**, puis tests ciblés des derniers
       changements ; **43 tests TAST** passent après relance du seul test crypto
       qui avait échoué car le conteneur Docker était arrêté.
-- [ ] Qualifier le candidat retenu : codegen/TAST, Aff, auto-reconstruction,
-      comparaison finale JS/natif, publication des mesures et de la table.
+- [x] Qualifier le candidat retenu : codegen/TAST, suite Aff complète et
+      auto-reconstruction. **452 modules / 282 280 types**, **912 fichiers
+      identiques** JS/stage 1 ; Cargo reconstruit stage 2, qui passe le smoke test
+      indépendant (**152 modules / 312 fichiers**, `PURUST_NATIVE_OK 42`).
+      Le premier smoke réussit mais son nettoyage échoue avec `ENOTEMPTY` ;
+      après correction du script et relance avec workspace conservé, stage 2
+      est installé. La suite Aff complète passe : 47 checks, 5 tests Rust,
+      concurrence/Ref/AVar, durée de vie et 9 scénarios d'erreur.
+- [x] Comparaison finale JS/natif et avant/après, publication des mesures et
+      mise à jour de la table.
+- [x] Revérifier les archives : empreintes et médianes, 544 entrées applicatives,
+      912 fichiers auto-reconstruits, **52 sorties à 496 fichiers identiques**,
+      identité du binaire installé et mesuré.
 
 Le premier bootstrap de l'émetteur a échoué avec `No space left on device`.
 Le cache Cargo de l'essai terminé `purust-native-build-9Q9eMi` (première
 campagne) a été supprimé après conservation de son exécutable ; les sources,
 mesures et logs sont conservés. La reconstruction corrigée utilise un nouvel
 espace, journal `bootstrap-emission-deferred.log`.
+
+## Prochaines cibles
+
+Le codegen parallèle est qualifié. Les autres allocations de chaînes/types
+(`codegenExprTypeWithValueEnums`, `boxUnbox`, `joinWith`) restent à attribuer et
+réduire avec des mesures ciblées. Le chargement TAST (**1 714 ms natif / 601 ms JS**)
+et la finalisation (**1 526 / 868 ms**) restent coûteux ; spécialiser le décodage
+et les constructions confirmées par le profil. Ces chiffres sont des médianes
+de phase de la dernière campagne, non des gains promis.
+
+## Troisième campagne — pipeline, en cours
+
+Espace durable : `../../altbak.pub/var/benchmark/purust-pipeline-20261002/`.
+
+- [x] Figer les 548 fichiers de la deuxième campagne. Le natif installé a
+      encore changé (`0a45b38c…`) ; le conserver à côté du témoin publié
+      (`0a0f2afe…`). Le bundle JS correspond toujours à la publication.
+- [x] Reprofiler tous les threads : 16 715 échantillons contenant des frames
+      PureScript, dont 866 avec la table de types, 1 552 avec le décodage,
+      4 513 avec Maps/Sets et 5 691 avec codegen. Familles inclusives qui se
+      recouvrent, non des pourcentages CPU additionnables.
+- [x] Mesurer les allocations avec compteurs par thread : **795 375 892
+      requêtes / 34 387 965 902 octets demandés**. Chargement : 119 029 955
+      requêtes ; préparation : 13 762 123 ; optimisation/génération :
+      568 233 862 ; finalisation : 86 652 810. 63 tentatives PBO différées,
+      496 fichiers identiques ; temps instrumentés exclus des benchmarks.
+- [x] Construire et mesurer le candidat préparation : lectures source/FFI
+      mutualisées, regex fixes réutilisées, concaténation répétée supprimée.
+      Témoin publié **7 572 ms**, installé **7 904 ms**, candidat **7 748 ms**.
+      Préparation **700 → 640 ms**, RSS maximal **503 → 474 Mio** ; le gain
+      global n'est pas établi. Ne pas retenir sur la seule petite phase.
+- [x] Implémenter une fermeture transitive compacte, avec référence PureScript,
+      cycles et feuilles externes conservés, sortie canonique inchangée.
+      **422 graphes PS / 417 graphes Rust** passent, dont limites 64/128 bits,
+      auto-cycles, Unicode, dépendances absentes et borne du stockage dense.
+- [x] Mesurer ce candidat contre préparation et le témoin publié (`graph.json`,
+      trois passages) : **7 975 / 7 973 / 7 108 ms**, soit **−10,9 %** pour
+      préparation + graphe contre le témoin. Finalisation **1 467 → 747 ms** ;
+      les 12 sorties contiennent les mêmes 496 fichiers. Le candidat préparation
+      seul reste sans gain global démontré dans cette seconde comparaison.
+- [x] Qualifier la résolution native des tables de types : **830 tables /
+      151 339 entrées**, dont 648 chemins rapides ; valeurs, erreurs exactes et
+      partage des références vérifiés avec le runtime généré réel. Chemin rapide
+      pour les DAG valides ; cycles et erreurs passent par le décodeur de
+      référence pour préserver leur résolution/priorité.
+- [ ] Mesurer le compilateur cumulant préparation, graphe et tables natives.
+- [ ] Retenir uniquement les variantes justifiées, refaire les allocations,
+      qualifier le compilateur et publier cinq paires JS/natif et avant/après.
+
+Le premier test natif des tables de types a été interrompu par `ENOSPC`.
+D'anciens caches Cargo terminés ont été nettoyés après conservation des
+exécutables ; les sources et logs sont conservés. La relance et le benchmark
+du graphe ont réussi. Le candidat cumulant les tables natives est en construction.

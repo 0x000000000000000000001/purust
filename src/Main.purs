@@ -13,6 +13,7 @@ import Data.Set as Set
 import Data.Newtype (unwrap)
 import Purust.Build (buildModulesInScope, buildConcurrency)
 import Purust.Emission (withEmitter)
+import Purust.Dependencies as Dependencies
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
@@ -42,6 +43,7 @@ import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
 import Effect.Console as Console
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
+import Effect.Exception as Exception
 
 cacheVersion :: String
 cacheVersion = "1.0.0"
@@ -185,9 +187,8 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     -- scan needs only the module source and its FFI file, so it runs before
     -- code generation and joins the shared layout-fact set.
     let
-      gatherOpaque (Module m) = do
+      readModuleInputs (Module m) = do
         let dotted = unwrap m.name
-        let modName = String.replaceAll (Pattern ".") (Replacement "_") dotted
         sourceExists <- FS.exists m.path
         source <- if sourceExists then FS.readTextFile UTF8 m.path else pure ""
         ffiPathMb <- if needsForeignFile m.foreign source
@@ -198,10 +199,14 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
             exists <- FS.exists ffiPath
             if exists then FS.readTextFile UTF8 ffiPath else pure ""
           Nothing -> pure ""
-        pure $ map (opaqueForeignTypeKey modName) (foreignUnboundTypes source ffiContent)
-    opaqueForeignTypes <- liftEffect do
-      perModule <- traverse gatherOpaque (List.toUnfoldable finalModules :: Array (Module Ann))
-      pure $ Set.fromFoldable (Array.concat perModule)
+        pure $ Tuple dotted { source, ffiPath: ffiPathMb, ffiContent }
+    inputs <- liftEffect $ traverse readModuleInputs (List.toUnfoldable finalModules :: Array (Module Ann))
+    let moduleInputs = Map.fromFoldable inputs
+    let opaqueForeignTypes = Set.fromFoldable $ Array.concatMap
+          (\(Tuple dotted input) ->
+            let modName = String.replaceAll (Pattern ".") (Replacement "_") dotted
+            in map (opaqueForeignTypeKey modName) (foreignUnboundTypes input.source input.ffiContent))
+          inputs
     let globalValueEnums = Set.unions
           [ valueEnumsForModules finalModules
           , opaqueForeignTypes
@@ -211,14 +216,17 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     directives <- loadDirectives
 
     modulesRef <- liftEffect $ Ref.new (Map.empty :: Map.Map String GeneratedModule)
-    pure { globalArities, globalClassFields, globalValueEnums, directives, modulesRef }
+    pure { globalArities, globalClassFields, globalValueEnums, directives, modulesRef, moduleInputs }
 
-  let { globalArities, globalClassFields, globalValueEnums, directives, modulesRef } = prepared
+  let { globalArities, globalClassFields, globalValueEnums, directives, modulesRef, moduleInputs } = prepared
 
   Metrics.measure "optimize + generate" \_ -> do
     let
       generate (Tuple (Module coreFnMod) backendMod) = do
         let modNameStr = unwrap backendMod.name
+        input <- case Map.lookup (unwrap coreFnMod.name) moduleInputs of
+          Just value -> pure value
+          Nothing -> liftEffect $ Exception.throw ("Missing prepared module inputs: " <> unwrap coreFnMod.name)
         when tracePhases $ liftEffect $ log ("[purust] codegen " <> modNameStr)
         let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod), fieldRenames: fieldRenameMap, jsonSchemas: not (Array.elem "--no-json-schemas" args), jsonLayouts: not (Array.elem "--no-json-layouts" args), jsonArrays: not (Array.elem "--no-json-arrays" args) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
         
@@ -229,11 +237,8 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
           let modPrefix = modName <> "_"
           let allMacroBindings = Set.empty -- Placeholder
           
-          sourceExists <- FS.exists coreFnMod.path
-          source <- if sourceExists then FS.readTextFile UTF8 coreFnMod.path else pure ""
-          ffiPathMb <- if needsForeignFile foreignArr source
-            then findFfiFile ".rs" [] ffiDir modNameStr (Just coreFnMod.path)
-            else pure Nothing
+          let source = input.source
+          let ffiPathMb = input.ffiPath
           cargo <- case ffiPathMb of
             Just ffiPath -> loadFfiCargo ffiPath
             Nothing -> pure ""
@@ -259,8 +264,8 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
               else ""
 
           ffiContent <- case ffiPathMb of
-            Just ffiPath -> do
-              content <- FS.readTextFile UTF8 ffiPath
+            Just _ -> do
+              let content = input.ffiContent
               let missingStubs = Array.foldMap (\tup -> case tup of
                     Tuple name (Just ty) ->
                       if String.contains (Pattern ("fn " <> modPrefix <> sanitizeIdent (unwrap name))) content then
@@ -275,9 +280,10 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
                 Tuple _ Nothing -> ""
               ) (Map.toUnfoldable foreignArr)
           
-          let opaqueTypes = foreignTypeForwards source (rsFile <> "\n" <> ffiContent)
+          let combinedRust = rsFile <> "\n" <> ffiContent
+          let opaqueTypes = foreignTypeForwards source combinedRust
           let rawModules = Set.toUnfoldable (Purust.ASTCollector.collectModulesModule (Module coreFnMod)) :: Array String
-          let extractedModules = rustModules (rsFile <> "\n" <> ffiContent)
+          let extractedModules = rustModules combinedRust
           let allModules = Array.concat [rawModules, extractedModules]
           
           let coreImports = Array.nub (Array.mapMaybe (\n -> 
@@ -320,30 +326,8 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     
     allModules <- Ref.read modulesRef
     
-    -- Transitive closure of imports
-    tcRef <- Ref.new (Map.empty :: Map.Map String (Set.Set String))
-    let initTc = Map.toUnfoldable allModules :: Array (Tuple String GeneratedModule)
-    _ <- foldl (\eff (Tuple k v) -> eff *> Ref.modify_ (Map.insert k (Set.fromFoldable v.imports)) tcRef) (pure unit) initTc
-    
-    let loop = do
-          changed <- Ref.new false
-          currMap <- Ref.read tcRef
-          let arr = Map.toUnfoldable currMap :: Array (Tuple String (Set.Set String))
-          _ <- foldl (\eff (Tuple k imps) -> eff *> do
-            let newImps = foldl (\acc i -> 
-                  case Map.lookup i currMap of
-                    Just trans -> Set.union acc trans
-                    Nothing -> acc
-                ) imps (Set.toUnfoldable imps :: Array String)
-            if Set.size newImps > Set.size imps then do
-               Ref.write true changed
-               Ref.modify_ (Map.insert k newImps) tcRef
-            else pure unit
-          ) (pure unit) arr
-          isChanged <- Ref.read changed
-          if isChanged then loop else pure unit
-    loop
-    finalTcMap <- Ref.read tcRef
+    let finalTcMap = Dependencies.transitiveImports
+          (map (\generated -> Set.fromFoldable generated.imports) allModules)
 
     
     let preludeRsContent = (if threaded then threadedPrelude else identity) (codegenPreludeWithRenames fieldRenameMap allShapes)

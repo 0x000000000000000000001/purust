@@ -39,6 +39,6 @@ try {
   console.log(`Native smoke: ${metadata.modules} fresh TAST modules, ${files} identical generated files, application result verified.`);
   success = true;
 } finally {
-  if (success && !process.argv.includes('--keep-workspace')) rmSync(workspace, { recursive: true, force: true });
+  if (success && !process.argv.includes('--keep-workspace')) rmSync(workspace, { recursive: true, force: true, maxRetries: 3 });
   else console.log(`Workspace and logs retained: ${workspace}`);
 }

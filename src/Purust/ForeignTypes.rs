@@ -1,4 +1,5 @@
 fn purust_foreign_declarations(source: &str) -> Vec<String> {
+    static DECLARATIONS: std::sync::OnceLock<fancy_regex::Regex> = std::sync::OnceLock::new();
     let mut clean = String::new();
     let mut i = 0;
     while i < source.len() {
@@ -36,16 +37,17 @@ fn purust_foreign_declarations(source: &str) -> Vec<String> {
             i += ch.len_utf8();
         }
     }
-    fancy_regex::Regex::new(r"(?m)^foreign\s+import\s+data\s+([A-Z][A-Za-z0-9_']*)\b").unwrap()
+    DECLARATIONS.get_or_init(|| fancy_regex::Regex::new(r"(?m)^foreign\s+import\s+data\s+([A-Z][A-Za-z0-9_']*)\b").unwrap())
         .captures_iter(&clean).map(|m| m.unwrap()[1].to_owned()).collect()
 }
 
 fn purust_native_definition(rust: &str, name: &str) -> bool {
+    static USES: std::sync::OnceLock<fancy_regex::Regex> = std::sync::OnceLock::new();
     let escaped: String = name.chars().flat_map(|ch| {
         if ".*+?^${}()|[]\\".contains(ch) { vec!['\\', ch] } else { vec![ch] }
     }).collect();
     if fancy_regex::Regex::new(&format!(r"\b(?:struct|enum|type|trait)\s+{}\b", escaped)).unwrap().is_match(rust).unwrap() { return true; }
-    let uses = fancy_regex::Regex::new(r"\bpub\s+use\s+([^;]+);").unwrap();
+    let uses = USES.get_or_init(|| fancy_regex::Regex::new(r"\bpub\s+use\s+([^;]+);").unwrap());
     for captures in uses.captures_iter(rust) {
         for part in captures.unwrap()[1].replace(['{', '}'], "").split(',') {
             if part.trim().rsplit("::").next().unwrap().split_whitespace().last() == Some(name) { return true; }

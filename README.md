@@ -20,11 +20,12 @@ The [Rust results in altbak.pub](https://github.com/0x000000000000000000001/altb
 
 Consult that repository's commands, inputs, and recorded baseline when evaluating a compiler change. Results vary by workload, hardware, compiler version, and Cargo profile; the published core table measures sequential workloads and does not establish multi-core scaling or application-wide speedups.
 
-The [2026-10-02 compiler benchmark](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-purust-aff-compilation.md)
-measures `purust-aff` backend compilation at **6,774 ms JS / 10,328 ms native**
-(median of five pairs, native PBO at 8 workers). A separate controlled old/new
-native comparison shows **41.9% less time**, from 17,111 to 9,935 ms. The native
-compiler still takes 1.52× the JavaScript time in the paired campaign.
+The [2026-10-02 codegen benchmark](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-purust-aff-codegen-compilation.md)
+measures `purust-aff` backend compilation at **6,463 ms JS / 8,247 ms native**
+(median of five pairs, native at 4 PBO + 4 codegen workers). A separate controlled
+comparison against the first optimized compiler shows **21.4% less time** for
+this second lot, from 10,419 to 8,189 ms. The native compiler takes **1.28×** the
+JavaScript time in the paired campaign. Every measured output matches exactly.
 
 ## Getting started
 
@@ -147,12 +148,12 @@ seconds. Stage 2 passed the fresh-project smoke test: 152 TAST modules, 312
 identical generated files, and the executable result `PURUST_NATIVE_OK 42`.
 This validates the complete backend/PBO self-reconstruction loop.
 
-The 2026-10-02 validation with the optimized compiler and 8 PBO workers covers
-**451 TAST modules and 910 byte-identical Rust sources/manifests**. Cargo built
+The second 2026-10-02 validation, with **4 PBO + 4 codegen workers**, covers
+**452 TAST modules and 912 byte-identical Rust sources/manifests**. Cargo built
 stage 2 at optimization level 3, and stage 2 passed the independent 152-module,
-312-file smoke test before installation.
+312-file smoke test with `PURUST_NATIVE_OK 42`.
 
-Native generation in that run took 93.6 seconds with a peak physical memory
+Native generation in the initial 2026-10-01 run took 93.6 seconds with a peak physical memory
 footprint of 861 MiB (`/usr/bin/time -l`; maximum RSS 910 MiB). Node generation
 of the same input took 32.8 seconds. These are single-run observations with the
 then-current threaded release profile (`opt-level = 1`, LTO disabled), not evidence

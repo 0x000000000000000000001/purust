@@ -96,14 +96,15 @@ try {
     await run('stage2-cargo-build', 'cargo', [...cargoFlags,
       '--manifest-path', join(stage2, 'Cargo.toml')], workspace);
     binary = join(stage2, 'target/release/purust_output');
-    await run('stage2-smoke', process.execPath, [join(root, 'tools/test-native.mjs')], root,
+    await run('stage2-smoke', process.execPath, [join(root, 'tools/test-native.mjs'),
+      ...(args.includes('--keep-workspace') ? ['--keep-workspace'] : [])], root,
       { ...environment, PURUST_NATIVE: binary, PURUST_PURS: compiler, PURUST_NATIVE_TMPDIR: workspace });
   }
   commands.checkInterrupted();
   stage = 'publish';
   console.log(`Built ${publish(binary)}`);
   if (args.includes('--keep-workspace')) console.log(`Workspace retained: ${workspace}`);
-  else rmSync(workspace, { recursive: true, force: true });
+  else rmSync(workspace, { recursive: true, force: true, maxRetries: 3 });
 } catch (error) {
   console.error(`Native bootstrap failed during ${stage}: ${error.message}`);
   if (workspace) console.error(`Workspace and logs retained: ${workspace}`);
