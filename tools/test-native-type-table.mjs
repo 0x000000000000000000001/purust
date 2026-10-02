@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -80,11 +80,14 @@ for (let sample = 0; sample < 200; sample++) {
 let corpusTables = 0;
 for (const module of readdirSync(corpus, { withFileTypes: true })) {
   if (!module.isDirectory()) continue;
-  const value = JSON.parse(readFileSync(join(corpus, module.name, 'corefn.json'), 'utf8'));
+  const path = join(corpus, module.name, 'corefn.json');
+  if (!existsSync(path)) continue;
+  const value = JSON.parse(readFileSync(path, 'utf8'));
   add('either', value.typeTable); corpusTables++;
 }
+assert(corpusTables > 0, `No frozen module tables in ${corpus}`);
 writeFileSync(join(directory, 'cases.ndjson'), cases.join('\n') + '\n');
-const modules = ['purust_core', 'Purs_Data_Argonaut_Core', 'Purs_Data_Argonaut_Decode_Error', 'Purs_Data_Either',
+const modules = ['purust_core', 'perceus_ptr', 'Purs_Data_Argonaut_Core', 'Purs_Data_Argonaut_Decode_Error', 'Purs_Data_Either',
   'Purs_Data_Maybe', 'Purs_Data_Tuple', 'Purs_Foreign_Object', 'Purs_PureScript_Backend_Optimizer_CoreFn',
   'Purs_PureScript_Backend_Optimizer_CoreFn_TypeTable'];
 writeFileSync(join(directory, 'Cargo.toml'), '[package]\nname = "purust_native_type_table_test"\nversion = "0.0.0"\nedition = "2021"\n' +

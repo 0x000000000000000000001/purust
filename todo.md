@@ -441,3 +441,212 @@ allocations de PBO restantes. Le parsing JSON et le décodage des modules et
 annotations conservent leur implémentation actuelle ; leur spécialisation
 reste à justifier par un nouveau profil. Le seuil ambitieux natif/JS de 0,3
 n'est pas établi par ce lot.
+
+## Comparaison gopurs-aff — 2 octobre 2026
+
+À la demande de comparaison Go/Rust, le même TAST original de **gopurs-aff**
+est figé pour les quatre compilateurs : **238 modules / 136 604 types /
+26 606 491 octets**, distinct du corpus `purust-aff` des trois lots précédents.
+Les compilateurs installés sont copiés ; Purust reste le stage 2 `96cf27f0…`.
+
+- [x] Adapter localement six FFI Rust aux interfaces PureScript de gopurs,
+      sans changer le TAST chronométré. Sources/FFI et exécutables empreintés.
+- [x] Construire et exécuter les applications. La suite originale est instable
+      côté Rust : **Go 5/5, Rust 2/5** dans le diagnostic fixé à cinq passages.
+      Échecs de scheduling documentés, ainsi que les trois échecs préliminaires.
+- [x] Qualifier séparément les adaptateurs avec les synchronisations explicites
+      déjà présentes dans `purust-aff` et une lecture post-bracket : seul
+      `Test.Main` change, les **237 autres TAST sont identiques**. **5/5 passages
+      par cible**, chacun avec 45 checks et le stress AVar de 1 000 échanges.
+- [x] Mesurer les quatre variantes séquentiellement, une chauffe puis cinq
+      passages avec ordre tournant : **gopurs.js 7 630 ms / Go natif 2 146 ms /
+      purust.js 6 238 ms / Rust natif 5 495 ms**. Rust prend **2,56×** le temps
+      du Go natif, mais **11,9 % de moins** que Purust JS sur ce corpus.
+- [x] Vérifier **12 sorties Go × 294 fichiers**, **12 sorties Rust × 484 fichiers**,
+      identiques JS/natif dans chaque cible ; archive finale **1 032 fichiers
+      figés / 26 sorties avec références / 10 114 fichiers générés**.
+- [x] Publier rapport/JSON et ajouter la colonne Rust à `altbak.pub/README.md`.
+      Seule la ligne Aff est mesurée ; réserve explicite sur les tests originaux.
+
+Médianes natives : chargement TAST **56 ms Go / 804 ms Rust**, préparation
+**703 / 613 ms**, optimisation/émission Go **1 386 ms**, optimisation/génération
+Rust **3 299 ms** puis finalisation **681 ms**. Les phases diffèrent entre
+backends ; les médianes ne s'additionnent pas. Prochain lot à justifier par
+profil : décodage modules/annotations et parsing JSON, puis allocations PBO,
+conversions types/Value et chaînes. Rejoindre 2 146 ms demanderait environ
+**61 % de réduction** sur ce corpus, pas un gain acquis.
+
+Une première chauffe a révélé une différence de résolution de `--ffi-dir`
+absolu entre JS et natif. Le harness passe désormais un chemin relatif ; la
+tentative et ses trois échantillons restent archivés, exclus des médianes.
+La campagne finale repasse toutes les comparaisons exactes.
+
+Rapport :
+`../../altbak.pub/docs/benchmark-results/2026-10-02-gopurs-aff-go-rust-compilation.{md,json}`.
+Harness : `../../altbak.pub/bin/benchmark/gopurs-aff/`.
+Archive : `../../altbak.pub/var/benchmark/gopurs-purust-aff-20261002/`.
+Les **5 495 ms sur gopurs-aff** ne sont pas un gain à comparer directement aux
+**5 743 ms sur purust-aff** : le compilateur est identique, le corpus diffère.
+
+## Quatrième campagne — JSON vers TAST, terminée
+
+Lot approuvé après la comparaison Go/Rust. Utiliser `Test.JsonTypedAst` comme
+banc de diagnostic du vrai `parseModule` de PBO, puis confirmer chaque gain
+sur le chargement et le backend Aff complets.
+
+- [x] Activer le pilote Rust de `JsonTypedAst` et le lier au fork PBO Purust,
+      avec le runtime threadé et le profil O3 sans LTO du compilateur natif.
+      Préserver le fonctionnement de la suite `JsonDecoding` existante.
+- [x] Figer une référence JS/Go/Rust : corpus historique **12 modules /
+      5 545 093 octets**, puis corpus original **238 modules gopurs-aff**.
+      Garder les oracles structurels complets et tous les échantillons.
+- [x] Distinguer parsing, décodage du JSON pré-parsé, chemin texte complet,
+      libération des résultats et allocations ; profiler hors fingerprint.
+- [x] Implémenter les seules optimisations justifiées par ce profil, puis
+      vérifier valeurs, erreurs, Unicode, tables de types et source-usage.
+- [x] Confirmer le gain sur les deux corpus isolés puis la compilation Aff
+      complète, avec sorties sources/manifests identiques.
+- [x] Qualifier les changements retenus : régressions ciblées, suite Aff et
+      auto-reconstruction JS → stage 1 → stage 2 → smoke indépendant.
+- [x] Publier les références/mesures, compléter la ligne Rust « JSON to Typed
+      AST » et actualiser les comparaisons de compilation correspondantes.
+
+Archive : `../../altbak.pub/var/benchmark/purust-tast-20261002/`.
+Référence native installée au démarrage : `96cf27f0…`. Au début du lot, le chemin
+texte Rust appelle le parsing JSON puis le décodage de référence ; la résolution
+native des tables de types du troisième lot est déjà active.
+
+Préparation initiale de la qualification :
+`../../altbak.pub/bin/benchmark/purust-tast/` contient le wrapper du bootstrap
+auto-hébergé (exécutable candidat archivé) et la comparaison backend sur une
+copie vérifiée des 238 modules. Celle-ci conserve les adaptateurs FFI figés,
+vérifie chaque sortie contre la référence déjà qualifiée et utilise une chauffe
+puis cinq passages tournants. À cette étape, la syntaxe est vérifiée et les
+mesures backend restent à effectuer.
+
+**Référence isolée terminée.** Empreintes JSON et TAST conformes à l'oracle JS
+pour les 238 modules dans les trois runtimes, et à l'oracle historique pour
+les 12 modules (JS/Go/Rust/C). Statistique historique : médiane des trois
+minima de processus, deux chauffes puis cinq passages par phase.
+
+| Corpus / runtime | Parse | Decode | Combined |
+|---|---:|---:|---:|
+| 12 / JS | 20,345 ms | 59,083 ms | 80,647 ms |
+| 12 / Go | 19,377 ms | 11,601 ms | 20,237 ms |
+| 12 / Rust | 18,608 ms | 125,987 ms | 151,162 ms |
+| 238 / JS | 101,633 ms | 289,095 ms | 392,464 ms |
+| 238 / Go | 95,415 ms | 60,142 ms | 101,347 ms |
+| 238 / Rust | 90,380 ms | 595,734 ms | 717,886 ms |
+
+Rust 238 : **46 413 892 allocations / 1 596 925 637 octets** pour decode,
+**52 382 610 / 2 092 673 148** pour combined. Libération finale séparée :
+environ **20,8 ms** pour combined. Les profils CPU dédiés excluent les
+empreintes et confirment la domination des allocations/libérations et des
+copies ; le parseur n'est pas la première cible. Début du candidat natif
+`decodeArrayImpl` + `decodeAnnWithUsageImpl`, avec repli de l'annotation entière
+sur la référence PS pour conserver les erreurs. Les modifications suivantes
+seront décidées sur la comparaison des exécutables avant/après gelés.
+
+Les 14 empreintes d'`artifacts/SHA256SUMS` ont été revérifiées. La référence C
+238 diffère sur la canonicalisation numérique d'un module ; son diagnostic
+est conservé et elle n'est pas utilisée comme oracle de ce corpus.
+
+La préservation du runner `JsonDecoding` est également vérifiée par un build
+frais et **neuf processus** (trois Go, trois JS, trois Rust) : les **17 cas**,
+dont cinq chronométrés, conservent toutes les empreintes attendues. Ce contrôle
+est archivé dans `json-decoding-regression{,-results}/` ; ses temps ne remplacent
+pas les mesures publiées de cette autre suite.
+
+**Candidat tableaux/annotations validé en isolation.** 82 cas de tableaux,
+70 cas d'annotations et **110 909 annotations / 238 modules** conformes à PS,
+avec zéro repli sur les annotations du corpus. Erreurs exactes, ordre et nombre
+des callbacks, Unicode, ownership et partage des types vérifiés.
+
+Avant/après contrôlé (médiane de trois minima) : combined **692,722 → 565,790 ms
+sur 238 modules (−18,3 %)**, **145,331 → 116,851 ms sur 12 (−19,6 %)**. Decode
+238 **580,648 → 455,077 ms (−21,6 %)**. Les empreintes de tous les processus
+restent conformes aux oracles. **11 300 087 requêtes / 378 807 712 octets**
+d'allocation sont supprimés par passage. Le gain de compilation complète reste
+à établir ; bootstrap, régressions et comparaisons backend sont lancés dans
+`run-qualification.sh`, séquentiellement.
+
+Le premier passage codegen donne **90/94 succès** ; les quatre échecs concernent
+uniquement le socket Docker/OrbStack absent. Le service a été redémarré et seuls
+ces quatre tests sont relancés par `run-qualification-resume.sh`, qui enchaîne
+ensuite tables de types, bootstrap, suite Aff et mesures. Le log initial est
+conservé dans `logs/codegen.log`.
+
+Les **94 checks codegen passent désormais** (90 initiaux + quatre relancés).
+Il fallait également redémarrer le conteneur existant `core-api-cli-1` ; le
+diagnostic intermédiaire reste archivé. Le test des tables de types a ensuite
+rencontré le répertoire `Prim`, qui n'a pas de `corefn.json` dans le corpus 238 :
+le harness ignore maintenant ces répertoires, exige au moins une table et lie
+`perceus_ptr` pour le FFI enrichi. `logs/type-table-prim-diagnostic.log` conserve
+l'échec initial ; la qualification reprend après codegen, sans relancer ses
+94 checks déjà réussis.
+
+Le contrôle des tables de types passe ensuite : **824 tables différentielles /
+149 495 entrées**, dont **642 chemins rapides** et les 238 tables du corpus
+Aff ; erreurs exactes et références partagées conformes. Le bootstrap utilise
+un snapshot de sources/FFI/frontend et conserve ses deux générations natives.
+
+**Qualification fonctionnelle réussie, régression globale détectée.** Bootstrap
+453 modules / 282 610 types, 914 fichiers identiques, stage 2 + smoke frais et
+suite Aff complète passent (47 checks, 5 tests Rust, 9 scénarios d'erreur).
+Stage 2 candidat `002ed7b5…`, non installé. Sur 238 modules : chargement
+**788 → 640 ms (−18,8 %)**, mais optimisation/génération **2 668 → 3 195 ms** et
+backend **4 865 → 5 266 ms (+8,2 %)**. Les 18 sorties × 484 fichiers sont exactes.
+Les tentatives PBO différées passent de 65–72 à 70–73 ; diagnostic nécessaire
+avant rétention. La confirmation 244 a d'abord visé un répertoire sans
+`manifest.json` : l'erreur de chemin est archivée et la campagne reprend avec
+le snapshot `purust-pipeline-20261002/reference`.
+
+La confirmation 244 passe : **5 540 → 5 399 ms (−2,5 %)**, JS **6 181 ms**,
+18 sorties × 496 fichiers exactes. Chargement **796 → 643 ms**,
+optimisation/génération **3 291 → 3 305 ms**. Contrôle 238 avec un seul worker :
+**8 966 → 8 887 ms**, chargement **770 → 613 ms** ; la régression globale
+initiale n'y apparaît pas. Une ablation dans un même exécutable compare les
+deux chemins natifs séparément au décodeur de référence, sans modifier les
+sources de production ni l'exécutable installé.
+
+Relecture indépendante : aucun défaut sémantique identifié. Tests enrichis
+avec égalité structurelle des arbres d'erreur, **52 annotations numériques**
+(`Value::Int`, vrai `-0.0`, non-finis) et **16 tableaux compacts**, tous conformes,
+en plus des 82/70 cas et 110 909 annotations initiales. Contrats PBO : **7 tests
+de champs, 12 de source-usage, 5 de négation numérique** et le script de tables
+de types passent contre les modules JS reconstruits. Logs dans
+`native-tast-extended.log` et `pbo-*.log`.
+
+**Confirmation étendue et rétention.** L'ablation établit que les régimes
+rapide/lent apparaissent aussi avec le décodeur de référence dans un même
+exécutable ; les deux chemins natifs gagnent chacun sur le chargement. La
+confirmation fixée à **21 paires avant/après** donne **5 342 → 5 189 ms (−2,9 %)**,
+moyenne **5 210,5 → 5 072,1 ms (−2,7 %)**, **16 paires favorables / 21**. Le
+chargement médian passe de **782 à 635 ms**, optimisation/génération de
+**3 158 à 3 135 ms**. Les 44 sorties × 484 fichiers sont exactes. La première
+campagne défavorable, le contrôle séquentiel et les 20 sorties d'ablation sont
+conservés ; aucun échantillon n'est retiré de leur série.
+
+Le candidat est retenu sur les deux corpus et le stage 2 **`002ed7b5…` est
+installé**. JavaScript reste le bundle `969bf49f…`, le lanceur conserve le natif
+par défaut et `PURUST_JS=1` comme sélection explicite. Vérification finale :
+**5 429 empreintes d'artefacts/entrées**, **112 sorties / 54 424 fichiers générés**,
+empreintes structurelles et médianes recalculées, identité du stage 2 qualifié,
+mesuré et installé. Les 914 sources auto-reconstruites et le smoke frais
+152 modules / 312 fichiers sont qualifiés. Le script d'installation vérifie
+également le marqueur applicatif dans le log enfant du smoke ; une première
+recherche dans le log parent est conservée comme diagnostic de harness.
+
+Publication : `../../altbak.pub/docs/benchmark-results/2026-10-02-rust-json-typed-ast.{md,json}`,
+ligne Rust « JSON to Typed AST » complétée (**116 850,71 µs**), résultats de
+compilation et READMEs actualisés. Le gain global est **2,5–2,9 %**, distinct
+des **18,3–19,6 %** du décodeur isolé. La suite de l'optimisation devra profiler
+le travail spéculatif PBO rejeté et ses dépendances ; ce lot conserve son
+ordonnancement actuel.
+
+Clôture : contrôles de syntaxe Python/JS, whitespace, valeurs README/JSON,
+liens locaux et cellules Rust non mesurées passent. Après conservation et
+vérification des exécutables, le cache Cargo stage 2 de ce lot est supprimé
+(`cache-cleanup-after-publication.json`) : **4,3 Gio libérés**, **7,7 Gio**
+disponibles. Sources générées, snapshots, binaires, profils et logs restent
+archivés.

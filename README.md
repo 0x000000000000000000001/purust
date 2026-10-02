@@ -20,13 +20,19 @@ The [Rust results in altbak.pub](https://github.com/0x000000000000000000001/altb
 
 Consult that repository's commands, inputs, and recorded baseline when evaluating a compiler change. Results vary by workload, hardware, compiler version, and Cargo profile; the published core table measures sequential workloads and does not establish multi-core scaling or application-wide speedups.
 
-The [2026-10-02 pipeline benchmark](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-purust-aff-pipeline-compilation.md)
-measures `purust-aff` backend compilation at **6,292 ms JS / 5,743 ms native**
-(median of five pairs, native at 4 PBO + 4 codegen workers). Native now takes
-**0.91× the JavaScript time**, an **8.7% reduction** on this workload. A separate
-controlled comparison against the preceding native compiler shows **27.5% less
-time** for this third lot, from **7,583 to 5,499 ms**. Every measured output matches
-exactly; the self-rebuilt stage 2 passes the full Aff suite.
+The [2026-10-02 TAST benchmark](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-rust-json-typed-ast.md)
+measures `purust-aff` backend compilation at **6,181 ms JS / 5,399 ms native**
+(median of five rotating rounds, native at 4 PBO + 4 codegen workers). Native takes
+**0.87× the JavaScript time**, a **12.7% reduction** on this workload. The fourth
+lot reduces native time by **2.5%** against its same-campaign control, **5,540 →
+5,399 ms**. On the separate 238-module gopurs-aff corpus, an extended 21-pair
+confirmation gives **5,342 → 5,189 ms (−2.9%)**; the report also retains an
+initial adverse campaign and the investigation of speculative PBO variability.
+The isolated JSON → TAST path improves **18.3–19.6%**. Every generated output
+matches exactly; the installed, self-rebuilt stage 2 passes the full Aff suite.
+
+The [preceding pipeline campaign](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-purust-aff-pipeline-compilation.md)
+records the third lot's **27.5%** controlled native gain with its own samples.
 
 ## Getting started
 
@@ -156,6 +162,12 @@ self-reconstruction. Cargo built stage 2 at optimization level 3 without LTO,
 and stage 2 passed the independent 152-module, 312-file smoke test with
 `PURUST_NATIVE_OK 42`, followed by the complete Aff suite.
 
+The fourth validation retains these same module/type/file counts after adding
+native TAST array and annotation decoding. It also checks **110,909 annotations**
+against the generated PureScript reference, including errors, native numeric
+representations, ownership and type sharing. Stage 2 is measured separately on
+both frozen Aff corpora before installation.
+
 Native generation in the initial 2026-10-01 run took 93.6 seconds with a peak physical memory
 footprint of 861 MiB (`/usr/bin/time -l`; maximum RSS 910 MiB). Node generation
 of the same input took 32.8 seconds. These are single-run observations with the
@@ -197,6 +209,12 @@ records phase times and peak RSS, and rotates the first variant each round.
 `PURUST_BENCH_RUNS` sets the number of measured rounds (default 5).
 Native AVL operations can be tested against the generated PureScript reference
 using `node tools/test-native-maps.mjs /path/to/generated/compiler/rust`.
+Native TAST array/annotation decoding can be compared with its PureScript
+reference using `node tools/test-native-tast.mjs /path/to/generated/compiler/rust
+/path/to/frozen/corefn-output`. This checks error precedence, callback counts,
+UTF-16 strings, ownership and shared types, and requires every annotation in
+the valid corpus to use the native fast path. The corpus may also be the packed
+`JsonTypedAst` diagnostic JSON file.
 `node tools/test-emission.mjs` checks bounded generation, ordered publication
 and error cleanup in a freshly compiled native application; `PURUST_NATIVE`
 selects an isolated compiler executable for this check.
