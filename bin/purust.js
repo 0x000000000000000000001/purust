@@ -32878,7 +32878,7 @@ var effectiveDirectives = function(base) {
                 return $$delete(ordEvalRef)(key)(acc);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 556, column 23 - line 558, column 34): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 566, column 23 - line 568, column 34): " + [v1.constructor.name]);
             };
           };
         };
@@ -32931,7 +32931,7 @@ var createRankLookup = function(dictMonadEffect) {
                   return ExternMissing.value;
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 587, column 17 - line 589, column 43): " + [v2.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 597, column 17 - line 599, column 43): " + [v2.constructor.name]);
               }
               ;
               if (v1 instanceof Nothing) {
@@ -32941,12 +32941,12 @@ var createRankLookup = function(dictMonadEffect) {
                 });
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 585, column 26 - line 592, column 35): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 595, column 26 - line 602, column 35): " + [v1.constructor.name]);
             }
             ;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 581, column 7 - line 592, column 35): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 591, column 7 - line 602, column 35): " + [v.constructor.name]);
         };
       };
       return apply(liftEffect7)(createStringMemo(512)(mkFn2(raw)));
@@ -33066,7 +33066,7 @@ var addQual = function(v) {
       return acc;
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 612, column 38 - line 614, column 17): " + [v.value0.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 622, column 38 - line 624, column 17): " + [v.value0.constructor.name]);
   };
 };
 var addBinderLit = function(lit) {
@@ -33146,7 +33146,7 @@ var addGuard = function(guard3) {
       })(acc)(guard3.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 640, column 22 - line 642, column 81): " + [guard3.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 650, column 22 - line 652, column 81): " + [guard3.constructor.name]);
   };
 };
 var addExpr = function(expr) {
@@ -33207,7 +33207,7 @@ var addExpr = function(expr) {
       return addExpr(expr.value1)(acc);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 617, column 20 - line 627, column 45): " + [expr.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 627, column 20 - line 637, column 45): " + [expr.constructor.name]);
   };
 };
 var addBinding = function(v) {
@@ -33229,7 +33229,7 @@ var addBind = function(bind3) {
       })(acc)(bind3.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 604, column 20 - line 606, column 62): " + [bind3.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 614, column 20 - line 616, column 62): " + [bind3.constructor.name]);
   };
 };
 var addAlt = function(v) {
@@ -33327,13 +33327,13 @@ var buildModulesParallel = function(dictMonadEffect) {
                 return Nothing.value;
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 384, column 13 - line 393, column 29): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 385, column 13 - line 394, column 29): " + [v1.constructor.name]);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 375, column 19 - line 393, column 29): " + [v.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 376, column 19 - line 394, column 29): " + [v.constructor.name]);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 373, column 3 - line 396, column 96): " + [st.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 374, column 3 - line 397, column 96): " + [st.constructor.name]);
         };
         var modules = fromFoldable(foldableList)(coreFnModules);
         var moduleCount = length(modules);
@@ -33374,6 +33374,19 @@ var buildModulesParallel = function(dictMonadEffect) {
                       };
                       return bind(Bind1)(options.onPrepareModule(buildEnv)(coreFnModule))(function(v1) {
                         return bind(Bind1)(options.onSkipModule(buildEnv)(v1))(function(mbCached) {
+                          var privateGlobals = foldrWithIndex(foldableWithIndexMap)(function(rank) {
+                            return function(globals) {
+                              return function(acc) {
+                                var $251 = rank < i;
+                                if ($251) {
+                                  return union2(ordQualified5)(globals)(acc);
+                                }
+                                ;
+                                return acc;
+                              };
+                            };
+                          })(untypedPrivateGlobals(v1))(st.privateGlobals);
+                          var forcedDirectives = forcePrivateInlines(privateGlobals)(directives);
                           if (mbCached instanceof Just) {
                             return pure(Applicative0)({
                               index: i,
@@ -33396,7 +33409,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                                 toLevel: empty2,
                                 implementations: empty2,
                                 moduleImplementations: empty2,
-                                directives,
+                                directives: forcedDirectives,
                                 dataTypes: empty2,
                                 foreignSemantics: options.foreignSemantics,
                                 rewriteLimit: options.rewriteLimit,
@@ -33419,7 +33432,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                             });
                           }
                           ;
-                          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 446, column 5 - line 485, column 12): " + [mbCached.constructor.name]);
+                          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 455, column 5 - line 494, column 12): " + [mbCached.constructor.name]);
                         });
                       });
                     });
@@ -33449,15 +33462,15 @@ var buildModulesParallel = function(dictMonadEffect) {
               return foldl(foldableArray)(function(a) {
                 return function(m) {
                   return insertWith(ordInt)(append4)((function() {
-                    var $258 = m > i;
-                    if ($258) {
+                    var $259 = m > i;
+                    if ($259) {
                       return m;
                     }
                     ;
                     return i;
                   })())([(function() {
-                    var $259 = m > i;
-                    if ($259) {
+                    var $260 = m > i;
+                    if ($260) {
                       return i;
                     }
                     ;
@@ -33505,6 +33518,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                     ready: st.ready,
                     finalized: st.finalized,
                     contributions: st.contributions,
+                    privateGlobals: st.privateGlobals,
                     accumulated: st.accumulated,
                     waiting: st.waiting,
                     inFlight: st.inFlight,
@@ -33529,7 +33543,7 @@ var buildModulesParallel = function(dictMonadEffect) {
             });
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 353, column 21 - line 368, column 10): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 354, column 21 - line 369, column 10): " + [v.constructor.name]);
         };
         var deps = apply(fromFoldable12)(mapWithIndex2(function(i) {
           return function(v) {
@@ -33546,8 +33560,8 @@ var buildModulesParallel = function(dictMonadEffect) {
             })(modules)),
             depsLeft: depsLeft0,
             ready: apply(fromFoldable22)(mapMaybe(function(v) {
-              var $268 = v.value1 === 0;
-              if ($268) {
+              var $269 = v.value1 === 0;
+              if ($269) {
                 return new Just(v.value0);
               }
               ;
@@ -33555,6 +33569,7 @@ var buildModulesParallel = function(dictMonadEffect) {
             })(toUnfoldable3(unfoldableArray)(depsLeft0))),
             finalized: empty2,
             contributions: empty2,
+            privateGlobals: empty2,
             accumulated: options.directives,
             waiting: empty2,
             nextCodegen: 0,
@@ -33590,8 +33605,8 @@ var buildModulesParallel = function(dictMonadEffect) {
         })(modules)))(toUnfoldable3(unfoldableArray)(deps));
         var step2 = function(st) {
           return function(result) {
-            var $275 = !isEmpty2(result.pendingDeps);
-            if ($275) {
+            var $276 = !isEmpty2(result.pendingDeps);
+            if ($276) {
               var stats$prime = {
                 emitMillis: st.stats.emitMillis,
                 wakeups: st.stats.wakeups,
@@ -33608,13 +33623,14 @@ var buildModulesParallel = function(dictMonadEffect) {
               var fresh = filter3(ordInt)(function(d) {
                 return !member(ordInt)(d)(st.finalized);
               })(result.pendingDeps);
-              var $276 = isEmpty2(fresh);
-              if ($276) {
+              var $277 = isEmpty2(fresh);
+              if ($277) {
                 return pure(Applicative0)({
                   finalized: st.finalized,
                   depsLeft: st.depsLeft,
                   pending: st.pending,
                   contributions: st.contributions,
+                  privateGlobals: st.privateGlobals,
                   accumulated: st.accumulated,
                   nextCodegen: st.nextCodegen,
                   waitingCodegen: st.waitingCodegen,
@@ -33630,6 +33646,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                 depsLeft: st.depsLeft,
                 pending: st.pending,
                 contributions: st.contributions,
+                privateGlobals: st.privateGlobals,
                 accumulated: st.accumulated,
                 nextCodegen: st.nextCodegen,
                 waitingCodegen: st.waitingCodegen,
@@ -33661,6 +33678,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                   ready: foldl(foldableArray)(flip(insert5))(woken.ready)(newlyReady),
                   finalized: insert(ordInt)(result.index)(result.backendMod.implementations)(st.finalized),
                   contributions: insert(ordInt)(result.index)(result.backendMod.directives)(st.contributions),
+                  privateGlobals: insert(ordInt)(result.index)(untypedPrivateGlobals(result.coreFnModule))(st.privateGlobals),
                   accumulated: foldrWithIndex(foldableWithIndexMap)(insertEvalRefImpl(evalRefCompare)(compare4))(st.accumulated)(result.backendMod.directives),
                   waiting: woken.waiting,
                   nextCodegen: st.nextCodegen,
@@ -33726,6 +33744,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                   accumulated: st.accumulated,
                   contributions: st.contributions,
                   finalized: st.finalized,
+                  privateGlobals: st.privateGlobals,
                   depsLeft: st.depsLeft,
                   nextCodegen: st.nextCodegen,
                   waitingCodegen: st.waitingCodegen,
@@ -33735,12 +33754,12 @@ var buildModulesParallel = function(dictMonadEffect) {
               });
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 399, column 34 - line 409, column 72): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 400, column 34 - line 410, column 72): " + [v1.constructor.name]);
           }
           ;
           if (v instanceof Nothing) {
-            var $285 = isEmpty2(st.inFlight);
-            if ($285) {
+            var $286 = isEmpty2(st.inFlight);
+            if ($286) {
               if (runner.onStats instanceof Just) {
                 return runner.onStats.value0({
                   dispatched: st.stats.dispatched,
@@ -33761,7 +33780,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                 return pure(Applicative0)(unit);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 412, column 9 - line 414, column 31): " + [runner.onStats.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 413, column 9 - line 415, column 31): " + [runner.onStats.constructor.name]);
             }
             ;
             return bind(Bind1)(liftEffect(dictMonadEffect)(nowMillis))(function(awaitStarted) {
@@ -33777,6 +33796,7 @@ var buildModulesParallel = function(dictMonadEffect) {
                           accumulated: st$prime.accumulated,
                           contributions: st$prime.contributions,
                           finalized: st$prime.finalized,
+                          privateGlobals: st$prime.privateGlobals,
                           depsLeft: st$prime.depsLeft,
                           nextCodegen: st$prime.nextCodegen,
                           waitingCodegen: st$prime.waitingCodegen,
@@ -33803,7 +33823,7 @@ var buildModulesParallel = function(dictMonadEffect) {
             });
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 398, column 11 - line 431, column 12): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 399, column 11 - line 432, column 12): " + [v.constructor.name]);
         };
         return discard(discardUnit)(Bind1)(liftEffect(dictMonadEffect)(beginPurmetaBuild))(function() {
           return go(initialState);
@@ -33841,7 +33861,7 @@ var buildModulesWithJobs = function(options) {
           jobs,
           scheduler,
           onStats: new Just(function(stats) {
-            return apply(liftEffect4)(apply(error2)("[purust] PBO jobs=" + (show(showInt)(jobs) + (" dispatched=" + (show(showInt)(stats.dispatched) + (" deferred=" + show(showInt)(stats.deferredAttempts)))))));
+            return apply(liftEffect4)(apply(error2)("[purust] PBO jobs=" + (show(showInt)(jobs) + (" dispatched=" + (show(showInt)(stats.dispatched) + (" fallback=" + (show(showInt)(stats.fallbackDispatched) + (" deferred=" + (show(showInt)(stats.deferredAttempts) + (" attempts-ms=" + (show(showNumber)(stats.attemptMillis) + (" codegen-ms=" + show(showNumber)(stats.emitMillis)))))))))))));
           })
         })(options)(modules);
       }));

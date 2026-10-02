@@ -32,12 +32,12 @@ Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
 
 - [x] Préserver les binaires, sources et entrées de référence ; relever leurs
       empreintes, révisions et paramètres de compilation.
-- [ ] Profiler CPU et allocations du compilateur natif sur le corpus figé.
+- [x] Profiler CPU et allocations du compilateur natif sur le corpus figé.
       Séparer les coûts de PBO, codegen, scanner et finalisation ; relever aussi
       nombre/octets d'allocations et mémoire maximale.
 - [x] Comparer `opt-level=1/2/3` sur les mêmes sources Rust du compilateur,
       avec LTO désactivé ; mesurer les binaires hors instrumentation.
-- [ ] Retenir un profil sur les résultats, puis établir l'ordre des corrections
+- [x] Retenir un profil sur les résultats, puis établir l'ordre des corrections
       à partir des postes dominants observés.
 
 ## 2 — Scanner Rust et construction des chaînes
@@ -79,7 +79,7 @@ Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
 
 ## 5 — Parallélisme borné
 
-- [ ] Intégrer `buildModulesParallel` déjà présent dans PBO, en conservant
+- [x] Intégrer `buildModulesParallel` déjà présent dans PBO, en conservant
       visibilité par rang, accumulation des directives et publication ordonnée.
 - [ ] Commencer avec codegen séquentiel ; comparer 1/2/4/8 workers et relever
       tentatives, relances, CPU, allocations et mémoire.
@@ -142,3 +142,17 @@ consigner alors le résultat plutôt que d'introduire une modification non justi
 - **Parallélisme en expérimentation.** `Purust.Build` branche le builder PBO
   existant sur un ordonnanceur Aff supervisé. `PURUST_PBO_JOBS=1` reste le défaut
   pendant la comparaison 1/2/4/8 ; le codegen reste ordonné et séquentiel.
+- **Allocations** (`allocations.json`) : O3 témoin **848 879 832 requêtes /
+  34 990 644 720 octets**, scanner + Maps **814 359 060 / 33 476 249 526**.
+  Le compteur inclut allocations et réallocations ; les octets sont un cumul
+  demandé, pas la mémoire résidente. Les temps instrumentés sont exclus des
+  benchmarks. Les 496 fichiers produits restent identiques au témoin.
+- **Régression parallèle corrigée.** Le premier essai à 2 workers produisait
+  quatre fichiers différents : le builder parallèle omettait l'inlining forcé
+  des symboles privés sans type, déjà présent dans le builder séquentiel.
+  PBO reprend désormais ces directives pour le module préparé courant et les
+  prédécesseurs finalisés visibles. Le test ciblé échoue avant correction et
+  passe ensuite à 2/4/8 ; propagation des erreurs et finalisation des workers
+  sont aussi testées. Les mesures de cette variante incorrecte sont écartées.
+- **Profil de bootstrap retenu : O3**, LTO désactivé. Le choix est configurable
+  par `PURUST_NATIVE_OPT_LEVEL` ; la sortie par `PURUST_NATIVE_OUTPUT`.

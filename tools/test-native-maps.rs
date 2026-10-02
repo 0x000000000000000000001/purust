@@ -73,6 +73,19 @@ fn main() {
     let ord = Purs_Data_Ord::Data_Ord_ordInt();
     let compare = ord.compare.clone();
     let combine = Func2::Static(|a: Value, b: Value| Value::Int(a.unwrap_int() * 10 - b.unwrap_int()));
+    for offset in 0..strings.len() {
+        let string_ord = Purs_Data_Ord::Data_Ord_ordString();
+        let mut a = Rc::new(Map::Leaf);
+        let mut b = a.clone();
+        for (i, key) in strings.iter().enumerate() {
+            if i <= offset { a = Data_Map_Internal_insert(string_ord.clone(), key.clone(), Value::Int(i as i64), a); }
+            if i >= offset { b = Data_Map_Internal_insert(string_ord.clone(), key.clone(), Value::Int(100 + i as i64), b); }
+        }
+        let expected = Data_Map_Internal_unionWith(string_ord.clone(), combine.clone(), a.clone(), b.clone());
+        assert_eq!(snapshot(&PureScript_Backend_Optimizer_NativeMaps_unionWithStringImpl(Value::Unit, combine.clone(), a.clone(), b.clone())), snapshot(&expected));
+        let left_biased = Data_Map_Internal_unionWith(string_ord, Func2::Static(|a, _| a), a.clone(), b.clone());
+        assert_eq!(snapshot(&PureScript_Backend_Optimizer_NativeMaps_unionStringImpl(Value::Unit, a, b)), snapshot(&left_biased));
+    }
     for size in 0..64 {
         let mut a = Rc::new(Map::Leaf);
         let mut b = a.clone();

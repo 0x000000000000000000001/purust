@@ -8,7 +8,7 @@ import { compareGeneratedSources, findTypedCompiler, nativeWorkspaceConfig, veri
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('Usage: npm run build:native -- [--self-host] [--keep-workspace]\nBootstrap bin/purust-native using the Node backend and Rust library ports.\n--self-host rebuilds the compiler with stage 1, compares generated sources, and smoke-tests stage 2 before installing it.\nPURUST_PURS selects the typed purs fork; PURUST_NATIVE_TMPDIR selects the workspace parent.\nPURUST_NATIVE_OUTPUT selects the executable destination; PURUST_NATIVE_OPT_LEVEL selects 1, 2 or 3 (default 1).');
+  console.log('Usage: npm run build:native -- [--self-host] [--keep-workspace]\nBootstrap bin/purust-native using the Node backend and Rust library ports.\n--self-host rebuilds the compiler with stage 1, compares generated sources, and smoke-tests stage 2 before installing it.\nPURUST_PURS selects the typed purs fork; PURUST_NATIVE_TMPDIR selects the workspace parent.\nPURUST_NATIVE_OUTPUT selects the executable destination; PURUST_NATIVE_OPT_LEVEL selects 1, 2 or 3 (default 3).');
   process.exit(0);
 }
 if (args.some(arg => !['--keep-workspace', '--self-host'].includes(arg))) {
@@ -16,7 +16,7 @@ if (args.some(arg => !['--keep-workspace', '--self-host'].includes(arg))) {
   process.exit(1);
 }
 
-const optLevel = process.env.PURUST_NATIVE_OPT_LEVEL ?? '1';
+const optLevel = process.env.PURUST_NATIVE_OPT_LEVEL ?? '3';
 if (!['1', '2', '3'].includes(optLevel)) throw new Error('PURUST_NATIVE_OPT_LEVEL must be 1, 2 or 3');
 const destination = process.env.PURUST_NATIVE_OUTPUT
   ? resolve(process.env.PURUST_NATIVE_OUTPUT) : join(root, 'bin/purust-native');

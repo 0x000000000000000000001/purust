@@ -4,12 +4,12 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { loadavg } from 'node:os';
+import { arch, cpus, loadavg, release, totalmem } from 'node:os';
 import { compareGeneratedSources } from './native-workspace.mjs';
 
 const [snapshotArg, resultArg, ...variants] = process.argv.slice(2);
 assert(snapshotArg && resultArg && variants.length >= 2,
-  'Usage: node tools/compare-native.mjs SNAPSHOT RESULT_JSON LABEL=EXECUTABLE LABEL=EXECUTABLE [...]');
+  'Usage: node tools/compare-native.mjs SNAPSHOT RESULT_JSON LABEL=EXECUTABLE_OR_CONFIG_JSON [...]\nConfig: { "binary": "path/relative/to/config", "env": { "PURUST_PBO_JOBS": "4" } }');
 const snapshot = resolve(snapshotArg), destination = resolve(resultArg);
 assert(!existsSync(destination), `Result already exists: ${destination}`);
 const manifest = JSON.parse(readFileSync(join(snapshot, 'manifest.json'), 'utf8'));
@@ -38,8 +38,12 @@ const work = destination.replace(/\.json$/, '') + '-runs';
 assert(!existsSync(work));
 mkdirSync(work, { recursive: true });
 const result = { started_at: new Date().toISOString(), snapshot, input_sha256: manifest.inputs.tast_sha256,
+  host: { architecture: arch(), os_release: release(), cpu: cpus()[0].model,
+    logical_cpus: cpus().length, memory_bytes: totalmem(), node: process.version },
   compilers, protocol: { rounds, warmups_per_compiler: 1, order: 'rotating first compiler each round',
-    metric: 'backend total in ms', fresh_output_and_purmeta: true }, runs: [] };
+    metric: 'backend total in ms', fresh_output_and_purmeta: true,
+    environment: 'PURUST_/GOPURS_/NODE_/RUST*/CARGO* removed, then per-variant env applied',
+    cpu_affinity: 'unset', os_file_cache: 'not flushed' }, runs: [] };
 const save = () => writeFileSync(destination, JSON.stringify(result, null, 2) + '\n');
 mkdirSync(dirname(destination), { recursive: true });
 let reference;
@@ -56,7 +60,8 @@ try {
       const started = performance.now(), load = loadavg();
       const execution = spawnSync('/usr/bin/time', ['-l', ...command], { cwd, env: { ...env, ...compiler.env }, encoding: 'utf8', timeout: 180000, maxBuffer: 32 * 1024 * 1024 });
       const run = { compiler: compiler.label, round, warmup: round === 0, command, load_average: load,
-        wall_ms: performance.now() - started, status: execution.status, stdout: execution.stdout, stderr: execution.stderr,
+        wall_ms: performance.now() - started, status: execution.status, signal: execution.signal,
+        stdout: execution.stdout, stderr: execution.stderr,
         phases_ms: Object.fromEntries([...execution.stderr.matchAll(/^\[purust\] (.+): (\d+) ms$/gm)].map(([, phase, ms]) => [phase, Number(ms)])),
         max_rss_bytes: Number(execution.stderr.match(/(\d+)\s+maximum resident set size/)?.[1]),
         peak_footprint_bytes: Number(execution.stderr.match(/(\d+)\s+peak memory footprint/)?.[1]) };
@@ -66,6 +71,7 @@ try {
       assert.ifError(execution.error);
       assert.equal(execution.status, 0, execution.stderr);
       assert(run.phases_ms['backend total'] > 0);
+      assert.equal([...execution.stderr.matchAll(/^\[purust\] backend total:/gm)].length, 1);
       if (!reference) reference = output;
       run.identical_files = compareGeneratedSources(reference, output);
       console.log(`${label}: ${run.phases_ms['backend total']} ms, ${run.identical_files} identical files`);

@@ -85,7 +85,8 @@ into **`bin/purust-native`**. It requires the toolchains above and the sibling
 `purust-*` library checkouts. The script rebuilds the Node backend, creates an
 isolated Spago workspace using those Rust library ports, compiles fresh TAST,
 generates Rust with the Node backend, and runs `cargo build --release` with
-`profile.release.lto=false`. This avoids passing Rust 1.96's LLVM 22 bitcode
+`profile.release.opt-level=3` and `profile.release.lto=false`. Disabling LTO
+avoids passing Rust 1.96's LLVM 22 bitcode
 to an incompatible Apple linker when linking the compiler's large archives.
 `tools/embed-native-runtime.mjs` embeds the canonical runtime sources in the
 native compiler during the build.
@@ -94,6 +95,8 @@ native compiler during the build.
 `../../purescript/.stack-work/dist/*/*/build/purs/purs`. Every CoreFn module is
 checked for `typeTable`, `dataDecls` and `classDecls` before Rust generation.
 `PURUST_NATIVE_TMPDIR` selects the parent directory for temporary workspaces.
+`PURUST_NATIVE_OUTPUT` selects an alternative executable destination, and
+`PURUST_NATIVE_OPT_LEVEL=1|2|3` overrides the compiler's optimization level.
 Failures retain the workspace and logs, and the installed binary is replaced
 only after a successful Cargo build. Interrupts also stop child processes.
 
@@ -122,7 +125,7 @@ it, and run the installed native compiler on the same TAST:
 ```bash
 /absolute/path/to/purust/bin/purust-native --source output --out rust-stage2 --main Main --threaded
 diff -r --exclude=target --exclude=Cargo.lock rust rust-stage2
-cargo build --release --config profile.release.lto=false --manifest-path rust-stage2/Cargo.toml
+cargo build --release --config profile.release.lto=false --config profile.release.opt-level=3 --manifest-path rust-stage2/Cargo.toml
 # Check that this second-generation compiler can build another project:
 PURUST_NATIVE="$PWD/rust-stage2/target/release/purust_output" \
   npm --prefix /absolute/path/to/purust run test:native
@@ -141,7 +144,7 @@ This validates the complete backend/PBO self-reconstruction loop.
 Native generation in that run took 93.6 seconds with a peak physical memory
 footprint of 861 MiB (`/usr/bin/time -l`; maximum RSS 910 MiB). Node generation
 of the same input took 32.8 seconds. These are single-run observations with the
-current threaded release profile (`opt-level = 1`, LTO disabled), not evidence
+then-current threaded release profile (`opt-level = 1`, LTO disabled), not evidence
 of a native speedup.
 
 The native backend and optimizer execute without Node. The `purs` frontend

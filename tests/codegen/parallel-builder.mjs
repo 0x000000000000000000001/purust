@@ -64,9 +64,26 @@ test('Aff scheduler propagates preparation/codegen failures and supervises its c
     const config = options([]);
     config.onPrepareModule = () => mod => Aff.bracket(lift(() => { active++; }))(
       () => lift(() => { active--; }))(() => bind(Aff.delay(mod.name === 'Ahead' ? 1 : 50))(() =>
-        failure === 'prepare' && mod.name === 'Ahead' ? Aff.throwError(new Error('prepare failed')) : pure(mod)));
-    config.onCodegenModule = () => () => () => () => Aff.throwError(new Error('codegen failed'));
+        failure === 'prepare' && mod.name === 'Ahead' ? Aff.monadThrowAff.throwError(new Error('prepare failed')) : pure(mod)));
+    config.onCodegenModule = () => () => () => () => Aff.monadThrowAff.throwError(new Error('codegen failed'));
     await assert.rejects(run(buildModulesWithJobs(config)(modules)), new RegExp(`${failure} failed`));
     assert.equal(active, 0, 'all worker finalizers must finish before the error is returned');
+  }
+});
+test('parallel PBO forces untyped private bindings like the sequential builder', async t => {
+  isolate(t);
+  const untyped = { ...ann, type: Nothing.value };
+  const privateMod = moduleOf('Private', variable('Private', 'hidden'));
+  privateMod.decls.unshift(new C.NonRec(new C.Binding(untyped, 'hidden',
+    new C.ExprApp(untyped, new C.ExprVar(untyped, new C.Qualified(new Just('External'), 'make')), literal(7)))));
+  const corpus = fromFoldable(foldableArray)([privateMod, moduleOf('Consumer', variable('Private', 'hidden'))]);
+  const expected = [];
+  process.env.PURUST_PBO_JOBS = '1';
+  await run(buildModulesWithJobs(options(expected))(corpus));
+  for (const jobs of ['2', '4', '8']) {
+    const actual = [];
+    process.env.PURUST_PBO_JOBS = jobs;
+    await run(buildModulesWithJobs(options(actual))(corpus));
+    assert.deepEqual(actual, expected);
   }
 });

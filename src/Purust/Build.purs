@@ -38,7 +38,10 @@ buildModulesWithJobs options modules = do
       , onStats: Just \stats -> liftEffect $ Console.error $
           "[purust] PBO jobs=" <> show jobs
             <> " dispatched=" <> show stats.dispatched
+            <> " fallback=" <> show stats.fallbackDispatched
             <> " deferred=" <> show stats.deferredAttempts
+            <> " attempts-ms=" <> show stats.attemptMillis
+            <> " codegen-ms=" <> show stats.emitMillis
       }
       options
       modules
