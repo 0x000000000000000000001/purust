@@ -41,8 +41,10 @@ try {
   assert.equal((bodies.get('filterRev').match(/Rc::new\(crate::List::Cons/g) || []).length, 1,
     'filterRev keeps a single construction site');
   assert.ok(bodies.has('mapDouble'), 'mapDouble');
-  assert.match(bodies.get('mapDouble'), /List::Cons\([\s\S]*_impl\(purs_local_\d+_rec_0\.clone\(\)/,
+  assert.match(bodies.get('mapDouble'), /List::Cons\([\s\S]*purs_local_\d+_rec_0_impl\(/,
     'non-tail self-calls must use the worker fn directly');
+  assert.doesNotMatch(bodies.get('mapDouble'), /_impl\(purs_local_\d+_rec_0\.clone\(\)/,
+    'direct self-calls do not capture and clone the recursive closure');
   for (const name of ['sumAll', 'diffEvens']) {
     assert.ok(bodies.has(name), name);
     assert.match(bodies.get(name), /ListPipeline_foldl\(/,

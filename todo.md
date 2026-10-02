@@ -75,13 +75,13 @@ Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
       `CoreFn/Json.rs` et `CoreFn/Json/Text.rs`, selon les coûts mesurés.
 - [ ] Préserver types, partage, validation des usages, Unicode et ordre des
       erreurs ; comparaison différentielle avec le décodeur de référence.
-- [ ] Comparer le chargement avec 1/2/4/8 workers, mémoire comprise.
+- [x] Comparer le chargement avec 1/2/4/8 workers, mémoire comprise.
 
 ## 5 — Parallélisme borné
 
 - [x] Intégrer `buildModulesParallel` déjà présent dans PBO, en conservant
       visibilité par rang, accumulation des directives et publication ordonnée.
-- [ ] Commencer avec codegen séquentiel ; comparer 1/2/4/8 workers et relever
+- [x] Commencer avec codegen séquentiel ; comparer 1/2/4/8 workers et relever
       tentatives, relances, CPU, allocations et mémoire.
 - [ ] Rendre l'état de génération propre à chaque module (`globalConsumed`,
       `globalCaptured`) avant toute émission concurrente.
@@ -92,7 +92,7 @@ Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
 
 - [ ] Après chaque correction : tests ciblés significatifs et comparaison des
       sorties JS/natif sur les mêmes TAST ; construire et exécuter l'application.
-- [ ] Comparer les variantes séquentiellement, avec échauffement, sorties neuves,
+- [x] Comparer les variantes séquentiellement, avec échauffement, sorties neuves,
       cache de build vide et médianes ; séparer diagnostic instrumenté et mesure.
 - [ ] Confirmer les corrections retenues par la suite Aff et les régressions
       codegen/runtime concernées.
@@ -126,7 +126,8 @@ consigner alors le résultat plutôt que d'introduire une modification non justi
   `../../altbak.pub/var/benchmark/purust-compiler-20261002/`.
 - **Profil CPU.** `cpu-baseline/sample.txt` : allocations, clones de Value/String,
   Maps et scanner apparaissent dans les piles ; les familles imbriquées ne sont
-  pas additionnables. Instrumentation d'allocations en cours.
+  pas additionnables. `cpu-summary.json` conserve leur décompte sur les 7 858
+  échantillons du thread exécutant le backend.
 - **Profils de compilation** (`profiles.json`, trois passages par variante) :
   médianes O1 **18 509 ms**, O2 **17 394 ms**, O3 **16 063 ms**. Sources Rust
   identiques, LTO désactivé, 496 sorties identiques à chaque passage. Le niveau 3
@@ -156,3 +157,30 @@ consigner alors le résultat plutôt que d'introduire une modification non justi
   sont aussi testées. Les mesures de cette variante incorrecte sont écartées.
 - **Profil de bootstrap retenu : O3**, LTO désactivé. Le choix est configurable
   par `PURUST_NATIVE_OPT_LEVEL` ; la sortie par `PURUST_NATIVE_OUTPUT`.
+- **PBO validé** (`parallel-fixed.json`) : médianes 1/2/4/8 workers
+  **14 623 / 12 175 / 11 441 / 10 606 ms**, 496 fichiers identiques dans les
+  16 invocations. RSS maximal **310 / 468 / 455 / 463 Mio**. À 8 workers,
+  113–121 tentatives sont différées ; le codegen séquentiel prend encore environ
+  **5,4 s**. Défaut natif retenu : au plus 8 workers, borné par les CPU disponibles.
+- **Chargement** (`loading.json`, PBO fixé à 8) : 1/2/4/8 donnent
+  **1 963 / 1 854 / 1 854 / 1 828 ms** pour le chargement, avec des RSS maximaux
+  **463 / 472 / 508 / 535 Mio**. Le gain reste faible ; le défaut de chargement
+  reste 1. Les sorties sont identiques dans les 16 invocations.
+- **Coût des relances** (`parallel-allocations.json`) : 1 worker demande
+  **814 359 065 allocations/réallocations, 33 476 287 250 octets**, contre
+  **942 478 653 / 37 853 052 893** à 8 workers (**+15,7 % / +13,1 %**).
+  Compteurs atomiques par thread pour limiter la contention d'instrumentation,
+  116 tentatives différées dans ce diagnostic, sorties identiques. Les durées
+  instrumentées ne sont pas utilisées dans les comparaisons de performance.
+
+## Priorité de la campagne suivante
+
+Le codegen séquentiel (~5,4 s) devient le poste dominant après le parallélisme
+PBO. Cibler d'abord les allocations confirmées de `sanitizeIdent`,
+`codegenExprTypeWithValueEnums`, `boxUnbox`, `joinWith` et des Maps génériques.
+Le scanner utilise désormais un buffer natif et la découverte des imports
+ne reconstruit plus de chaîne inutile. Pour les autres sorties, choisir les
+builders natifs ou les corrections du Rust généré à partir des piles mesurées.
+Ensuite isoler l'état du codegen pour évaluer son parallélisme, puis spécialiser
+le décodage TAST. L'indexation native de tableaux utilise déjà `array_get` et
+ne recopie pas tout le tableau : ne pas réimplémenter cette optimisation.
