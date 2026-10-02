@@ -20,12 +20,13 @@ The [Rust results in altbak.pub](https://github.com/0x000000000000000000001/altb
 
 Consult that repository's commands, inputs, and recorded baseline when evaluating a compiler change. Results vary by workload, hardware, compiler version, and Cargo profile; the published core table measures sequential workloads and does not establish multi-core scaling or application-wide speedups.
 
-The [2026-10-02 codegen benchmark](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-purust-aff-codegen-compilation.md)
-measures `purust-aff` backend compilation at **6,463 ms JS / 8,247 ms native**
-(median of five pairs, native at 4 PBO + 4 codegen workers). A separate controlled
-comparison against the first optimized compiler shows **21.4% less time** for
-this second lot, from 10,419 to 8,189 ms. The native compiler takes **1.28×** the
-JavaScript time in the paired campaign. Every measured output matches exactly.
+The [2026-10-02 pipeline benchmark](https://github.com/0x000000000000000000001/altbak.pub/blob/main/docs/benchmark-results/2026-10-02-purust-aff-pipeline-compilation.md)
+measures `purust-aff` backend compilation at **6,292 ms JS / 5,743 ms native**
+(median of five pairs, native at 4 PBO + 4 codegen workers). Native now takes
+**0.91× the JavaScript time**, an **8.7% reduction** on this workload. A separate
+controlled comparison against the preceding native compiler shows **27.5% less
+time** for this third lot, from **7,583 to 5,499 ms**. Every measured output matches
+exactly; the self-rebuilt stage 2 passes the full Aff suite.
 
 ## Getting started
 
@@ -148,10 +149,12 @@ seconds. Stage 2 passed the fresh-project smoke test: 152 TAST modules, 312
 identical generated files, and the executable result `PURUST_NATIVE_OK 42`.
 This validates the complete backend/PBO self-reconstruction loop.
 
-The second 2026-10-02 validation, with **4 PBO + 4 codegen workers**, covers
-**452 TAST modules and 912 byte-identical Rust sources/manifests**. Cargo built
-stage 2 at optimization level 3, and stage 2 passed the independent 152-module,
-312-file smoke test with `PURUST_NATIVE_OK 42`.
+The third 2026-10-02 validation, with **4 PBO + 4 codegen workers**, covers
+**453 TAST modules, 282,610 types and 914 byte-identical Rust sources/manifests**.
+The measured Node-built stage 1 was checked against the final JS bundle before
+self-reconstruction. Cargo built stage 2 at optimization level 3 without LTO,
+and stage 2 passed the independent 152-module, 312-file smoke test with
+`PURUST_NATIVE_OK 42`, followed by the complete Aff suite.
 
 Native generation in the initial 2026-10-01 run took 93.6 seconds with a peak physical memory
 footprint of 861 MiB (`/usr/bin/time -l`; maximum RSS 910 MiB). Node generation

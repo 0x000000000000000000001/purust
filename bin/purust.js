@@ -8006,6 +8006,9 @@ var $$Set = function(x) {
 var union2 = function(dictOrd) {
   return coerce()(union(dictOrd));
 };
+var toMap = function(v) {
+  return v;
+};
 var toList2 = function(v) {
   return keys(v);
 };
@@ -35698,11 +35701,17 @@ var opaqueEmptyTypesForModules = function(dictFoldable) {
 var memberLayoutPure = function(enums) {
   return function(modName) {
     return function(typeName) {
-      return member2(ordTuple12)(new Tuple(moduleKey(modName), typeName))(enums);
+      return member(ordTuple12)(new Tuple(moduleKey(modName), typeName))(enums);
     };
   };
 };
-var isValueEnum = /* @__PURE__ */ memberLayoutImpl(memberLayoutPure);
+var isValueEnum = function(enums) {
+  return function(modName) {
+    return function(typeName) {
+      return memberLayoutImpl(memberLayoutPure)(toMap(enums))(modName)(typeName);
+    };
+  };
+};
 var isOpaqueForeignType = function(enums) {
   return function(modName) {
     return function(typeName) {

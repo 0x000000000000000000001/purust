@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Array as Array
 import Data.Foldable (class Foldable, all, foldl)
+import Data.Map as Map
 import Data.Newtype (unwrap)
 import Data.Set (Set)
 import Data.Set as Set
@@ -28,14 +29,16 @@ valueEnumsForModules :: forall f a. Foldable f => f (Module a) -> ValueEnums
 valueEnumsForModules = foldl (\acc mod -> Set.union acc (valueEnumsForModule mod)) Set.empty
 
 isValueEnum :: ValueEnums -> String -> String -> Boolean
-isValueEnum = memberLayoutImpl memberLayoutPure
+isValueEnum enums modName typeName = memberLayoutImpl memberLayoutPure (Set.toMap enums) modName typeName
 
+-- Expose the concrete Map at the FFI boundary: Set's erased newtype must not
+-- turn this parameter (or its fallback callback) into an opaque runtime Value.
 foreign import memberLayoutImpl
-  :: (ValueEnums -> String -> String -> Boolean)
-  -> ValueEnums -> String -> String -> Boolean
+  :: (Map.Map (Tuple String String) Unit -> String -> String -> Boolean)
+  -> Map.Map (Tuple String String) Unit -> String -> String -> Boolean
 
-memberLayoutPure :: ValueEnums -> String -> String -> Boolean
-memberLayoutPure enums modName typeName = Set.member (Tuple (moduleKey modName) typeName) enums
+memberLayoutPure :: Map.Map (Tuple String String) Unit -> String -> String -> Boolean
+memberLayoutPure enums modName typeName = Map.member (Tuple (moduleKey modName) typeName) enums
 
 -- Foreign data types without a native Rust binding have no constructors and no
 -- finite layout: values of the type are whatever unsafeCoerce moved in. They
