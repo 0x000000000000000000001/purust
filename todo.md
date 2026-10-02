@@ -337,7 +337,19 @@ Espace durable : `../../altbak.pub/var/benchmark/purust-pipeline-20261002/`.
       partage des références vérifiés avec le runtime généré réel. Chemin rapide
       pour les DAG valides ; cycles et erreurs passent par le décodeur de
       référence pour préserver leur résolution/priorité.
-- [ ] Mesurer le compilateur cumulant préparation, graphe et tables natives.
+- [x] Première comparaison du compilateur avec tables natives (`types.json`) :
+      référence **14 838 ms**, graphe **12 377 ms**, tables **8 837 ms** ;
+      chargement graphe/tables **3 709 → 1 491 ms**. Toutes les sorties sont
+      identiques, mais la charge système est de **33–40** et les échantillons
+      fortement dispersés. Une autre campagne gopurs est active : conserver ces
+      mesures exploratoires et les confirmer hors contention avant publication
+      d'un gain définitif.
+- [x] Implémenter la recherche native des faits de représentation : parcourir
+      l'AVL existant en empruntant les paires de chaînes, sans Tuple/Ordering
+      temporaire ni copie des clés à chaque nœud. **12 996 recherches
+      différentielles**, versions persistantes, Unicode UTF-16 et 8 lecteurs
+      concurrents passent. Le candidat cumulatif est en construction.
+- [ ] Mesurer les tables natives et les recherches de représentation au calme.
 - [ ] Retenir uniquement les variantes justifiées, refaire les allocations,
       qualifier le compilateur et publier cinq paires JS/natif et avant/après.
 

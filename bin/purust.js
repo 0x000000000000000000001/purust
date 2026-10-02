@@ -35665,6 +35665,9 @@ var childUpdate = function(typeRepresentation) {
   };
 };
 
+// output/Purust.DataLayout/foreign.js
+var memberLayoutImpl = (fallback) => (enums) => (moduleName2) => (typeName) => fallback(enums)(moduleName2)(typeName);
+
 // output/Purust.DataLayout/index.js
 var ordTuple3 = /* @__PURE__ */ ordTuple(ordString);
 var fromFoldable9 = /* @__PURE__ */ fromFoldable4(foldableArray)(/* @__PURE__ */ ordTuple3(ordString));
@@ -35692,17 +35695,18 @@ var opaqueEmptyTypesForModules = function(dictFoldable) {
     };
   })(empty3);
 };
-var isValueEnum = function(enums) {
+var memberLayoutPure = function(enums) {
   return function(modName) {
     return function(typeName) {
       return member2(ordTuple12)(new Tuple(moduleKey(modName), typeName))(enums);
     };
   };
 };
+var isValueEnum = /* @__PURE__ */ memberLayoutImpl(memberLayoutPure);
 var isOpaqueForeignType = function(enums) {
   return function(modName) {
     return function(typeName) {
-      return member2(ordTuple12)(opaqueForeignTypeKey(modName)(typeName))(enums);
+      return isValueEnum(enums)(modName)(opaqueForeignTypeMarker + typeName);
     };
   };
 };
