@@ -28,6 +28,24 @@ Rapport et mesures :
 `../../altbak.pub/docs/benchmark-results/2026-10-01-purust-aff-compilation.{md,json}`.
 Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
 
+## Résultat validé de cette campagne
+
+Le **2 octobre 2026**, sur le même TAST figé, la campagne finale de cinq paires
+donne **6 774 ms JS / 10 328 ms natif**, ratio **1,52×**. Le natif utilise O3
+sans LTO et 8 workers PBO, avec codegen séquentiel. Les 12 sorties sont identiques
+(496 fichiers) et l'application passe les 47 checks Aff. Le premier jalon
+« battre JS » reste à atteindre.
+
+La comparaison contrôlée des anciens/nouveaux binaires natifs, cinq passages
+chacun sur le snapshot restauré, donne **17 111 → 9 935 ms**, soit **−41,9 %**
+(**1,72×** plus rapide). RSS maximal **312 → 458 Mio**. Ce résultat appartient
+à une campagne distincte ; le tableau JS/natif publié garde sa médiane 10 328 ms.
+
+Résultats et mesures brutes :
+`../../altbak.pub/docs/benchmark-results/2026-10-02-purust-aff-compilation.{md,json}`.
+Diagnostic et essais détaillés :
+`../../altbak.pub/docs/benchmark-results/2026-10-02-purust-compiler-optimization.{md,json}`.
+
 ## 1 — Diagnostic et profil de compilation
 
 - [x] Préserver les binaires, sources et entrées de référence ; relever leurs
@@ -88,17 +106,17 @@ Runner : `../../altbak.pub/bin/benchmark/compilation-purust-aff.mjs`.
 - [ ] Ajouter le chevauchement optimisation/émission si les mesures le justifient,
       avec borne de travaux en vol, propagation des erreurs et attente des enfants.
 
-## 6 — Qualification et publication
+## 6 — Qualification et publication de cette première campagne
 
-- [ ] Après chaque correction : tests ciblés significatifs et comparaison des
+- [x] Après chaque correction : tests ciblés significatifs et comparaison des
       sorties JS/natif sur les mêmes TAST ; construire et exécuter l'application.
 - [x] Comparer les variantes séquentiellement, avec échauffement, sorties neuves,
       cache de build vide et médianes ; séparer diagnostic instrumenté et mesure.
-- [ ] Confirmer les corrections retenues par la suite Aff et les régressions
+- [x] Confirmer les corrections retenues par la suite Aff et les régressions
       codegen/runtime concernées.
-- [ ] Reconstruire le compilateur avec lui-même, comparer les sources et manifests
+- [x] Reconstruire le compilateur avec lui-même, comparer les sources et manifests
       JS/stage 2, compiler stage 2 et exécuter le smoke test indépendant.
-- [ ] Publier les mesures brutes, empreintes, paramètres et résultats validés ;
+- [x] Publier les mesures brutes, empreintes, paramètres et résultats validés ;
       mettre à jour la ligne `purust-aff` d'`altbak.pub/README.md`.
 
 Le temps publié inclut chargement TAST, optimisation et émission Rust. Frontend
@@ -172,6 +190,19 @@ consigner alors le résultat plutôt que d'introduire une modification non justi
   Compteurs atomiques par thread pour limiter la contention d'instrumentation,
   116 tentatives différées dans ce diagnostic, sorties identiques. Les durées
   instrumentées ne sont pas utilisées dans les comparaisons de performance.
+- **Auto-reconstruction validée.** Le bootstrap O3 génère 451 modules TAST
+  (281 964 types), stage 1 reproduit les **910 fichiers Rust/manifests** de JS
+  à 8 workers, et Cargo reconstruit stage 2. Le smoke test indépendant compare
+  312 fichiers sur 152 modules frais et exécute `PURUST_NATIVE_OK 42`.
+  Stage 2 est installé atomiquement dans `bin/purust-native`. Logs et workspaces
+  conservés sous `purust-native-build-6VaFml/` ; journal `self-host.log`.
+- **Qualification finale.** 86 checks codegen et 43 tests TAST validés, plus
+  tests différentiels des Maps et du scheduler. La suite `purust-aff/bin/test`
+  passe avec le compilateur installé : 47 checks Aff, 5 tests unitaires Rust,
+  concurrence/Ref/AVar, durée de vie des enfants et 9 scénarios d'erreur.
+  Résultats publiés dans `altbak.pub` avec les campagnes avant/après, JS/natif,
+  diagnostics, empreintes et logs. Les médianes, les 548 empreintes figées et
+  les 12 sorties de la campagne JS/natif ont été revérifiées indépendamment.
 
 ## Priorité de la campagne suivante
 
