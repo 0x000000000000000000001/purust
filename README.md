@@ -170,11 +170,18 @@ rejects writes; V8/Go allocation-profile output is unavailable in Rust.
 Native speedups must be measured on representative projects and are not
 implied by successful self-compilation.
 
-The native compiler optimizes modules with up to **8 PBO workers**, capped by
-the available CPU count. `PURUST_PBO_JOBS=1` selects the sequential builder;
-values from 2 to 64 select bounded parallel optimization. The Node backend
-defaults to 1. Module visibility, directives and Rust generation remain ordered,
-and worker failures cancel and join the remaining jobs. `PURUST_JOBS` separately
+The native compiler defaults to a worker budget of **at most 8**, capped by the
+available CPU count. `PURUST_PBO_JOBS=1..64` overrides this budget. By default,
+native codegen reserves half the budget, up to 4 slots: on an eight-slot host,
+**4 PBO workers and 4 codegen workers** share the work. The Node backend defaults
+to sequential optimization and generation.
+
+`PURUST_CODEGEN_JOBS=1..64` overrides generation concurrency, capped to leave at
+least one optimizer slot. At 1, generation runs on the coordinator and PBO uses
+the full budget; `PURUST_PBO_JOBS=1` makes both phases sequential. Generation
+returns immutable results through a bounded queue, with publication in module
+order. Module visibility and directives remain rank-ordered, and worker failures
+cancel and join remaining jobs before returning. `PURUST_JOBS` separately
 controls TAST file loading (default 1).
 
 For isolated comparisons, retain a snapshot from the compilation benchmark and
@@ -186,6 +193,9 @@ records phase times and peak RSS, and rotates the first variant each round.
 `PURUST_BENCH_RUNS` sets the number of measured rounds (default 5).
 Native AVL operations can be tested against the generated PureScript reference
 using `node tools/test-native-maps.mjs /path/to/generated/compiler/rust`.
+`node tools/test-emission.mjs` checks bounded generation, ordered publication
+and error cleanup in a freshly compiled native application; `PURUST_NATIVE`
+selects an isolated compiler executable for this check.
 
 ### Compile and run an application
 

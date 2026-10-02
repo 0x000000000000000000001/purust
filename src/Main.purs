@@ -11,7 +11,8 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
 import Data.Newtype (unwrap)
-import Purust.Build (buildModulesWithJobs)
+import Purust.Build (buildModulesInScope, buildConcurrency)
+import Purust.Emission (withEmitter)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
@@ -214,18 +215,9 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
 
   let { globalArities, globalClassFields, globalValueEnums, directives, modulesRef } = prepared
 
-  Metrics.measure "optimize + generate" \_ -> buildModulesWithJobs
-    { directives
-    , rewriteLimit: 10000
-    , analyzeCustom: \_ _ -> Nothing
-    , foreignSemantics: coreForeignSemantics
-    , traceIdents: Set.empty
-    , onPrepareModule: \_ (Module m) -> do
-        when tracePhases $ liftEffect $ log ("[purust] optimize " <> unwrap m.name)
-        pure (Module m)
-    , onSkipModule: \_ (Module coreFnMod) -> do
-        pure Nothing
-    , onCodegenModule: \_ (Module coreFnMod) backendMod _ -> do
+  Metrics.measure "optimize + generate" \_ -> do
+    let
+      generate (Tuple (Module coreFnMod) backendMod) = do
         let modNameStr = unwrap backendMod.name
         when tracePhases $ liftEffect $ log ("[purust] codegen " <> modNameStr)
         let rsFile = codegenModuleWithOptions { threaded, moduleValues: eligibleValues (Module coreFnMod), fieldRenames: fieldRenameMap, jsonSchemas: not (Array.elem "--no-json-schemas" args), jsonLayouts: not (Array.elem "--no-json-layouts" args), jsonArrays: not (Array.elem "--no-json-arrays" args) } globalValueEnums globalArities globalClassFields (Module coreFnMod) backendMod
@@ -295,9 +287,23 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
               ) allModules)
           let importsRust = String.joinWith "\n" (map (\i -> "use Purs_" <> i <> "::*;") coreImports)
           let rustCode = "#![allow(warnings)]\n#![recursion_limit = \"512\"]\nuse perceus_ptr::PerceusPtr;\nuse purust_core::*;\n" <> importsRust <> "\n\n" <> rsFile <> "\n\n" <> ffiContent <> "\n\n" <> opaqueTypes
-          Ref.modify_ (\acc -> Map.insert modName { code: rustCode, imports: coreImports, cargo } acc) modulesRef
-    }
-    finalModules
+          pure $ Tuple modName { code: rustCode, imports: coreImports, cargo }
+      publish (Tuple name generated) = liftEffect $ Ref.modify_ (Map.insert name generated) modulesRef
+    concurrency <- liftEffect buildConcurrency
+    withEmitter concurrency.codegen generate publish \enqueue ->
+      buildModulesInScope
+        { directives
+        , rewriteLimit: 10000
+        , analyzeCustom: \_ _ -> Nothing
+        , foreignSemantics: coreForeignSemantics
+        , traceIdents: Set.empty
+        , onPrepareModule: \_ mod@(Module m) -> do
+            when tracePhases $ liftEffect $ log ("[purust] optimize " <> unwrap m.name)
+            pure mod
+        , onSkipModule: \_ _ -> pure Nothing
+        , onCodegenModule: \_ coreFnMod backendMod _ -> enqueue (Tuple coreFnMod backendMod)
+        }
+        finalModules
     
   Metrics.measure "finalize + emit" \_ -> liftEffect do
     let outDir = case Array.findIndex (_ == "--out") args of

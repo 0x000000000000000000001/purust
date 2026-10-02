@@ -9,9 +9,6 @@ import PureScript.Backend.Optimizer.CoreFn as CF
 import PureScript.Backend.Optimizer.Syntax as Syn
 import PureScript.Backend.Optimizer.Convert (BackendModule, BackendBindingGroup)
 import Debug as Debug
-import Effect (Effect)
-import Effect.Console (log)
-import Effect.Unsafe (unsafePerformEffect)
 import PureScript.Backend.Optimizer.Semantics (NeutralExpr(..), DataTypeMeta, CtorMeta)
 import Purust.LocalNames (renameLocals)
 import Purust.ModuleValues as ModuleValues
@@ -57,9 +54,6 @@ import Data.Map as Map
 import Data.String.Pattern (Pattern(..), Replacement(..))
 import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
 import Partial.Unsafe (unsafeCrashWith)
-import Effect.Ref as Ref
-import Effect.Console (log)
-import Effect.Unsafe (unsafePerformEffect)
 
 -- Includes the twelve arguments in the observed VariantF traversal path.
 maxNativeFunctionArity :: Int
@@ -443,12 +437,6 @@ chunkArray :: forall a. Int -> Array a -> Array (Array a)
 chunkArray size arr =
   if Array.length arr <= 0 then []
   else [Array.take size arr] <> chunkArray size (Array.drop size arr)
-
-globalConsumed :: Ref.Ref (Set.Set String)
-globalConsumed = unsafePerformEffect (Ref.new Set.empty)
-
-globalCaptured :: Ref.Ref (Set.Set String)
-globalCaptured = unsafePerformEffect (Ref.new Set.empty)
 
 -- Generated builder metadata is separate from ordinary signatures, so a
 -- foreign function with a similar spelling can never become a cell helper.
@@ -1494,10 +1482,9 @@ shapeFunctionType modNameStr aritiesMap globalClassFields bound = go
     _ -> currentTy
 
 codegenBindingGroup :: { threaded :: Boolean, moduleValues :: Set Ident, fieldRenames :: Map.Map String String, jsonSchemas :: Boolean, jsonLayouts :: Boolean, jsonArrays :: Boolean } -> ValueEnums -> ModuleName -> String -> Set.Set String -> ReuseContext -> Map.Map String ExprType -> Map.Map String (Array (Tuple String ExprType)) -> BackendBindingGroup Ident NeutralExpr -> { code :: String, arities :: Map.Map String ExprType }
-codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseContext aritiesMap globalClassFields group = unsafePerformEffect do
+codegenBindingGroup options valueEnums modName modNameStr allZeroArity reuseContext aritiesMap globalClassFields group =
   let renames = options.fieldRenames
-  Ref.write Set.empty globalConsumed
-  pure $ if Array.null group.bindings then { code: "", arities: aritiesMap } else
+  in if Array.null group.bindings then { code: "", arities: aritiesMap } else
     let
       isSelfRecursive = group.recursive && Array.length group.bindings == 1
       groupArities = Map.fromFoldable $ map (\(Tuple ident expr) -> 
@@ -2491,8 +2478,7 @@ genApp renames valueEnums modNameStr allZeroArity reuseContext mbLoop aritiesMap
                                Just { name: ln, params: lp, tco: true } ->
                                      let tempsCode = tcoTemps lp
                                          assignsCode = Array.mapWithIndex (\i pName -> "        " <> sanitizeIdent pName <> " = _tco_temp_" <> show i <> ";\n") lp
-                                         _dbg = unsafePerformEffect (log ("GENERATED CONTINUE FOR: " <> ln))
-                                     in (if _dbg == unit then "" else "") <> "{\n" <>
+                                      in "{\n" <>
                                         String.joinWith "" tempsCode <>
                                         String.joinWith "" assignsCode <>
                                         "        continue;\n" <>
@@ -2578,12 +2564,7 @@ genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseC
     in if isFuncN then
       let
         bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields newBound body
-        rawCode = unsafePerformEffect do
-          oldCaptured <- Ref.read globalCaptured
-          _ <- Ref.modify (Set.union capturedVars) globalCaptured
-          let res = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields newBound capturedVars false body
-          Ref.write oldCaptured globalCaptured
-          pure res
+        rawCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields newBound capturedVars false body
         
         remainingArgs = Array.drop arity expectedArgTys
         innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
@@ -2630,12 +2611,7 @@ genAbsWithEffect renames executeEffect valueEnums currentMod allZeroArity reuseC
           isInnermost: true, 
           code: 
             let bodyTy = inferTypeExpr currentMod aritiesMap globalClassFields newBound body
-                rawCode = unsafePerformEffect do
-                  oldCaptured <- Ref.read globalCaptured
-                  _ <- Ref.modify (Set.union capturedVars) globalCaptured
-                  let res = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields newBound capturedVars false body
-                  Ref.write oldCaptured globalCaptured
-                  pure res
+                rawCode = codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext Nothing aritiesMap globalClassFields newBound capturedVars false body
                 remainingArgs = Array.drop (Array.length paramsArr) expectedArgTys
                 innermostExpectedRetTy = if Array.length remainingArgs > 0 then Func remainingArgs expectedRetTy else expectedRetTy
             in boxUnbox renames valueEnums globalClassFields currentMod innermostExpectedRetTy
@@ -4431,7 +4407,14 @@ recordFieldIdent renames field
   | otherwise = fieldBase renames field
 
 sanitizeIdent :: String -> String
-sanitizeIdent s = 
+sanitizeIdent s = sanitizeIdentImpl sanitizeIdentPure s
+
+-- Keep the PureScript implementation as the JS reference. Native code can
+-- reuse ordinary ASCII identifiers and write escaped names into one buffer.
+foreign import sanitizeIdentImpl :: (String -> String) -> String -> String
+
+sanitizeIdentPure :: String -> String
+sanitizeIdentPure s =
   let s1 = String.replaceAll (Pattern "'") (Replacement "_prime") s
       s2 = String.replaceAll (Pattern "$") (Replacement "_dollar_") s1
       s3 = String.replaceAll (Pattern "-") (Replacement "_minus_") s2

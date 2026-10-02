@@ -101,9 +101,10 @@ Diagnostic et essais détaillés :
       visibilité par rang, accumulation des directives et publication ordonnée.
 - [x] Commencer avec codegen séquentiel ; comparer 1/2/4/8 workers et relever
       tentatives, relances, CPU, allocations et mémoire.
-- [ ] Rendre l'état de génération propre à chaque module (`globalConsumed`,
-      `globalCaptured`) avant toute émission concurrente.
-- [ ] Ajouter le chevauchement optimisation/émission si les mesures le justifient,
+- [x] Rendre l'état de génération propre à chaque module (`globalConsumed`,
+      `globalCaptured`) avant toute émission concurrente : ces deux références
+      étaient inutilisées et sont supprimées dans la deuxième campagne.
+- [x] Ajouter le chevauchement optimisation/émission si les mesures le justifient,
       avec borne de travaux en vol, propagation des erreurs et attente des enfants.
 
 ## 6 — Qualification et publication de cette première campagne
@@ -215,3 +216,50 @@ builders natifs ou les corrections du Rust généré à partir des piles mesuré
 Ensuite isoler l'état du codegen pour évaluer son parallélisme, puis spécialiser
 le décodage TAST. L'indexation native de tableaux utilise déjà `array_get` et
 ne recopie pas tout le tableau : ne pas réimplémenter cette optimisation.
+
+## Deuxième campagne — codegen, 2 octobre 2026
+
+Espace durable : `../../altbak.pub/var/benchmark/purust-codegen-20261002/`.
+
+- [x] Restaurer et vérifier les 548 fichiers de référence. Le binaire installé
+      avait changé depuis la publication : conserver aussi cet artefact et le
+      comparer, sans supposer sa provenance. Le bundle JS reste identique.
+- [x] Spécialiser `sanitizeIdent` en Rust : réutilisation du buffer ASCII,
+      échappement UTF-16 en un parcours, référence PureScript conservée pour JS.
+      **133 148 cas différentiels** passent, dont toutes les unités UTF-16.
+- [x] Mesurer le sanitizer seul (`ident.json`, trois passages par variante) :
+      référence publiée **9 644 ms**, binaire installé **9 634 ms**, candidat
+      **8 581 ms**, soit **−11,0 %**. Les 12 sorties ont 496 fichiers identiques.
+- [x] Supprimer `globalConsumed` et `globalCaptured` : leurs écritures et unions
+      n'alimentaient plus les décisions, déjà fondées sur les paramètres locaux.
+- [x] Implémenter un codegen borné, sans état global, avec file FIFO de résultats,
+      publication ordonnée et supervision couvrant production et vidage final.
+      Le mode concurrent réserve ses slots dans le budget PBO commun.
+- [x] Tester en JS le désordre d'achèvement, la borne, la durée de vie commune
+      PBO/codegen et les erreurs de génération, publication et production.
+- [x] Comparer 1/2/4 workers de codegen à budget total constant (`emission.json`) :
+      **8 985 / 8 114 / 7 741 ms**, RSS maximal **455 / 500 / 502 Mio**,
+      496 fichiers identiques dans les 16 exécutions. Le témoin sanitizer seul
+      donne **9 114 ms** dans cette campagne. Le retrait des références inutiles
+      et la réorganisation séquentielle apportent un petit écart de **1,4 %**, à
+      ne pas surinterpréter face à la dispersion. Le parallèle à 4 réduit de
+      **13,8 %** le total par rapport au nouveau chemin séquentiel.
+- [x] Retenir le défaut natif : moitié du budget pour codegen, au plus 4 slots,
+      soit **4 PBO + 4 codegen** sur cette machine. JS reste séquentiel. Tests
+      ciblés des petits budgets, limites et valeurs invalides : **9 tests**.
+- [x] Valider les scénarios de l'émetteur dans une application Rust native :
+      **12 scénarios** à 1/2/4 workers, **474 fichiers identiques** JS/natif,
+      borne, ordre, vidage final et attente des enfants après erreur.
+      La construction du générateur est différée dans le worker ; un test JS
+      vérifie aussi les exceptions levées avant le retour de l'`Aff`.
+- [x] Régressions : suite codegen de **90 tests**, puis tests ciblés des derniers
+      changements ; **43 tests TAST** passent après relance du seul test crypto
+      qui avait échoué car le conteneur Docker était arrêté.
+- [ ] Qualifier le candidat retenu : codegen/TAST, Aff, auto-reconstruction,
+      comparaison finale JS/natif, publication des mesures et de la table.
+
+Le premier bootstrap de l'émetteur a échoué avec `No space left on device`.
+Le cache Cargo de l'essai terminé `purust-native-build-9Q9eMi` (première
+campagne) a été supprimé après conservation de son exécutable ; les sources,
+mesures et logs sont conservés. La reconstruction corrigée utilise un nouvel
+espace, journal `bootstrap-emission-deferred.log`.

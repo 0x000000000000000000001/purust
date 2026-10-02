@@ -1,4 +1,4 @@
-module Purust.Build (buildModulesWithJobs) where
+module Purust.Build (buildModulesWithJobs, buildModulesInScope, buildConcurrency) where
 
 import Prelude
 
@@ -14,15 +14,30 @@ import PureScript.Backend.Optimizer.Builder (BuildOptions, buildModules, buildMo
 import PureScript.Backend.Optimizer.CoreFn (Ann, Module)
 
 foreign import optimizerConcurrency :: Effect Int
+foreign import codegenConcurrency :: Effect Int
 
--- PBO owns ranked visibility and ordered publication. Code generation stays on
--- its coordinator: Purust's current codegen state is not shared across workers.
--- Supervision also joins workers suspended on publication when a sibling fails.
+-- Concurrent generation reserves slots from the optimizer's worker budget.
+-- A one-slot codegen stays on the coordinator, preserving the reference path.
+buildConcurrency :: Effect { optimize :: Int, codegen :: Int, budget :: Int }
+buildConcurrency = do
+  budget <- optimizerConcurrency
+  requested <- codegenConcurrency
+  let codegen = min requested (max 1 (budget - 1))
+  pure { budget, codegen, optimize: if codegen == 1 then budget else budget - codegen }
+
+-- Standalone entry point owns worker lifetime, including publication failures.
 buildModulesWithJobs :: BuildOptions Aff -> List (Module Ann) -> Aff Unit
-buildModulesWithJobs options modules = do
-  jobs <- liftEffect optimizerConcurrency
+buildModulesWithJobs options modules = supervise (buildModulesInScope options modules)
+
+-- The CLI's withEmitter supervises optimization AND generation through the
+-- final ordered drain. An inner supervisor here would cancel queued generation
+-- workers as soon as PBO finishes, before their results could be published.
+buildModulesInScope :: BuildOptions Aff -> List (Module Ann) -> Aff Unit
+buildModulesInScope options modules = do
+  concurrency <- liftEffect buildConcurrency
+  let jobs = concurrency.optimize
   if jobs == 1 then buildModules options modules
-  else supervise do
+  else do
     results <- AVar.empty
     let scheduler =
           { fork: \job -> void $ forkAff do
@@ -42,6 +57,8 @@ buildModulesWithJobs options modules = do
             <> " deferred=" <> show stats.deferredAttempts
             <> " attempts-ms=" <> show stats.attemptMillis
             <> " codegen-ms=" <> show stats.emitMillis
+            <> " codegen-jobs=" <> show concurrency.codegen
+            <> " budget=" <> show concurrency.budget
       }
       options
       modules
