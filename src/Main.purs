@@ -11,7 +11,7 @@ import Data.Array as Array
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
 import Data.Newtype (unwrap)
-import PureScript.Backend.Optimizer.Builder (buildModules)
+import Purust.Build (buildModulesWithJobs)
 import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
 import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
@@ -214,7 +214,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
 
   let { globalArities, globalClassFields, globalValueEnums, directives, modulesRef } = prepared
 
-  Metrics.measure "optimize + generate" \_ -> buildModules
+  Metrics.measure "optimize + generate" \_ -> buildModulesWithJobs
     { directives
     , rewriteLimit: 10000
     , analyzeCustom: \_ _ -> Nothing

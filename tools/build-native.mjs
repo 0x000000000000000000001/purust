@@ -1,6 +1,6 @@
 import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { delimiter, dirname, join } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CommandRunner, Interrupted } from './command-runner.mjs';
 import { compareGeneratedSources, findTypedCompiler, nativeWorkspaceConfig, verifyTypedOutput } from './native-workspace.mjs';
@@ -8,7 +8,7 @@ import { compareGeneratedSources, findTypedCompiler, nativeWorkspaceConfig, veri
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('Usage: npm run build:native -- [--self-host] [--keep-workspace]\nBootstrap bin/purust-native using the Node backend and Rust library ports.\n--self-host rebuilds the compiler with stage 1, compares generated sources, and smoke-tests stage 2 before installing it.\nPURUST_PURS selects the typed purs fork; PURUST_NATIVE_TMPDIR selects the workspace parent.');
+  console.log('Usage: npm run build:native -- [--self-host] [--keep-workspace]\nBootstrap bin/purust-native using the Node backend and Rust library ports.\n--self-host rebuilds the compiler with stage 1, compares generated sources, and smoke-tests stage 2 before installing it.\nPURUST_PURS selects the typed purs fork; PURUST_NATIVE_TMPDIR selects the workspace parent.\nPURUST_NATIVE_OUTPUT selects the executable destination; PURUST_NATIVE_OPT_LEVEL selects 1, 2 or 3 (default 1).');
   process.exit(0);
 }
 if (args.some(arg => !['--keep-workspace', '--self-host'].includes(arg))) {
@@ -16,8 +16,15 @@ if (args.some(arg => !['--keep-workspace', '--self-host'].includes(arg))) {
   process.exit(1);
 }
 
+const optLevel = process.env.PURUST_NATIVE_OPT_LEVEL ?? '1';
+if (!['1', '2', '3'].includes(optLevel)) throw new Error('PURUST_NATIVE_OPT_LEVEL must be 1, 2 or 3');
+const destination = process.env.PURUST_NATIVE_OUTPUT
+  ? resolve(process.env.PURUST_NATIVE_OUTPUT) : join(root, 'bin/purust-native');
+const cargoFlags = ['build', '--release', '--config', 'profile.release.lto=false',
+  '--config', `profile.release.opt-level=${optLevel}`];
+
 function publish(binary) {
-  const destination = join(root, 'bin/purust-native');
+  mkdirSync(dirname(destination), { recursive: true });
   const staging = mkdtempSync(join(dirname(destination), '.purust-native-'));
   try {
     const path = join(staging, 'purust-native');
@@ -68,7 +75,7 @@ try {
     join(root, 'bin/purust.js'), '--source', join(workspace, 'output'), '--out', rust, '--main', 'Main', '--threaded'], workspace);
   // Rust 1.96 ThinLTO can leave LLVM 22 bitcode in these large compiler
   // archives; Apple's LLVM 17 linker cannot read it. Emit native objects.
-  await run('cargo-build', 'cargo', ['build', '--release', '--config', 'profile.release.lto=false',
+  await run('cargo-build', 'cargo', [...cargoFlags,
     '--manifest-path', join(rust, 'Cargo.toml')], workspace);
   let binary = join(rust, 'target/release/purust_output');
   if (args.includes('--self-host')) {
@@ -86,7 +93,7 @@ try {
       writeFileSync(log, error.message + '\n');
       throw error;
     }
-    await run('stage2-cargo-build', 'cargo', ['build', '--release', '--config', 'profile.release.lto=false',
+    await run('stage2-cargo-build', 'cargo', [...cargoFlags,
       '--manifest-path', join(stage2, 'Cargo.toml')], workspace);
     binary = join(stage2, 'target/release/purust_output');
     await run('stage2-smoke', process.execPath, [join(root, 'tools/test-native.mjs')], root,

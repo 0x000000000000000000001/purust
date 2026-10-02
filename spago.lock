@@ -9,6 +9,7 @@
             "argonaut-codecs",
             "argonaut-core",
             "arrays",
+            "avar",
             "backend-optimizer",
             "bifunctors",
             "console",
@@ -825,6 +826,20 @@
         "unsafe-coerce"
       ]
     },
+    "avar": {
+      "type": "registry",
+      "version": "5.0.1",
+      "integrity": "sha256-8V4SxF4TIWZ9Ik1P4lPzIRUAZeFBe8w5WA2VcCEKsIk=",
+      "dependencies": [
+        "aff",
+        "effect",
+        "either",
+        "exceptions",
+        "functions",
+        "maybe",
+        "prelude"
+      ]
+    },
     "backend-optimizer": {
       "type": "local",
       "path": "../../purescript-backend-optimizer-purust",
@@ -838,6 +853,8 @@
         "enums",
         "foldable-traversable",
         "foreign-object",
+        "functions",
+        "identity",
         "integers",
         "language-cst-parser",
         "lazy",
@@ -848,11 +865,13 @@
         "node-fs",
         "nullable",
         "ordered-collections",
+        "parallel",
         "partial",
         "prelude",
         "safe-coerce",
         "st",
         "strings",
+        "tailrec",
         "transformers",
         "tuples",
         "unsafe-coerce"
