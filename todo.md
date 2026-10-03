@@ -3,6 +3,118 @@
 Plan du **2 octobre 2026**. Priorité : réduire le travail PBO rejeté, puis
 les allocations des passes dominantes du compilateur natif.
 
+## Nouvelle passe allocations gopurs — 3 octobre 2026
+
+- [x] Figer la référence corrigée `cf7a0660…`, ses sources, les trois hôtes,
+  les bootstraps Purust et le frontend dans
+  `../../altbak.pub/var/benchmark/gopurs-rust-allocation-20261003/`.
+- [x] Profiler PBO/émission à huit workers : **4 891 échantillons non
+  bloquants**, dont maps/sets **989**, allocation **873**, copies de `Value`
+  **546**, copies de chaînes **292**. Familles inclusives qui se recouvrent,
+  pas des pourcentages CPU ; **294 fichiers Go/manifests exacts**.
+- [ ] Sélectionner et mesurer un changement ciblé, puis qualifier production,
+  défauts publics et workers explicites selon `confirmation-protocol.json`.
+  Le passage reproductible sous trois secondes reste un objectif à démontrer.
+
+Premiers candidats : retrait natif des contributions de directives dans
+`Builder.effectiveDirectives` (premier appelant collections du profil, **281
+échantillons**), puis comparaison qualifiée Rust par emprunt. Un témoin à
+sources inchangées est reconstruit séparément. Le contrat de suppression
+compare chaque arbre au `delete` PureScript généré et à un modèle clé/valeur.
+Deux diagnostics initiaux de test sont conservés : l'assertion stricte de
+balance échoue aussi sur l'oracle généré, après égalité exacte des deux arbres ;
+le contrat retient sa forme réelle, les tailles/hauteurs, lectures et versions
+persistantes plutôt qu'une propriété plus forte que l'oracle.
+
+- Suppression native seule **écartée** : cinq tours, médianes référence
+  **3 783**, témoin reconstruit **3 819**, candidat **3 828 ms**. Les quinze
+  suites PBO et le contrat natif passent ; **18 générations / 5 292 fichiers
+  exacts** revérifiés. Sources expérimentales, binaire, tests et diagnostics
+  restent archivés ; le code vivant revient à la référence pour ce candidat.
+- L'attribution par opération écarte les petites métadonnées de Convert : son
+  principal coût est `filterWithKey` (**95** échantillons), pas `alter` (**20**).
+  En préparation, `Monomorphize.collectExpr -> insertWith` représente **137**
+  échantillons. Essai ciblé de fusion native de maps String sur ses deux appels,
+  avec ordre du callback existant/entrant vérifié par un oracle non commutatif.
+- Fusion native des spécialisations, confirmation marginale : **3 907 →
+  3 811 ms (−2,5 %)**, **11/15 paires favorables**, écart apparié médian
+  **−107 ms**, moyen **−103,7 ms**. Sélection provisoire, en attente de la
+  composition et de la qualification de production. **32 sorties exactes** ;
+  4 000 mises à jour différentielles vérifient aussi l'ordre et le nombre des
+  appels de fusion, Unicode et la persistance.
+- Comparaisons qualifiées : le chemin Rust emprunte modules et identifiants ;
+  les oracles PS séparés demeurent les replis JS/Go. Les **huit suites natives**
+  passent sur le candidat composé, dont **396 900 paires** comparées aux oracles
+  PS et à l'instance générique. Sélection cinq tours : référence **3 690**,
+  fusion native **3 682**, composé **3 629 ms**, avec **5/5 paires favorables**
+  au composé face à la fusion seule. Qualification finale encore à réaliser.
+- Déduplication APFS documentée des seuls artefacts terminés du nouveau lot :
+  **17 339 fichiers / 1 085 454 694 octets logiquement dupliqués**, empreintes
+  vérifiées. Chaque fichier garde son inode indépendant et sa sémantique de
+  copie sur écriture ; aucun résultat ni diagnostic retiré.
+- Nettoyage demandé de `purust/` : **neuf caches Cargo** régénérables retirés,
+  **40 136 396 800 octets (37,4 Gio)** effectivement libérés ; **6 186 fichiers
+  protégés** revérifiés par SHA-256 et états Git des **58 dépôts** contrôlés,
+  hors métadonnées Finder `.DS_Store` modifiées indépendamment. Sources,
+  exécutables, sorties générées et preuves historiques restent disponibles.
+  Audit et deux diagnostics préalables Finder conservés dans
+  `purust-cleanup-{protected,results}.json` et les logs du nouveau lot.
+- Essai de profil **ThinLTO** sur le Rust généré du candidat composé, sans
+  nouveau changement de source. Le premier build a échoué par manque d'espace
+  disque ; diagnostic conservé sous `candidates/thin-lto/`. Après nettoyage,
+  la reprise `thin-lto-retry` échoue à la liaison : bitcode LLVM **22.1.2** de
+  Rust incompatible avec le lecteur Apple LLVM **17**. Le troisième build,
+  `thin-lto-rust-lld`, réussit avec le linker Mach-O fourni par Rust, SHA-256
+  `695f239b52eef3c6551fdda84147710e54eeeed066cd545dd85291ce7545eb30`.
+  La sélection mesurée attend la fin des campagnes externes actives.
+- Des corrections concurrentes de labels de records et de décodage JSON ont
+  modifié cinq fichiers depuis le candidat `qualified` ; inventaire dans
+  `source-integration.json`. L'intégration de production devra les conserver,
+  être figée et remesurée, avec distinction entre les sélections isolées et
+  le changement net du compilateur installé.
+
+## Correction des valeurs par défaut de gopurs — 3 octobre 2026
+
+L'utilisateur observe **Go 2 251 / Rust 6 030 ms** avec les commandes publiques.
+Cause confirmée : la branche Rust du launcher lançait l'exécutable avant le
+réglage automatique des workers. Rust gardait préparation **2** / PBO **1**,
+alors que la comparaison optimisée ci-dessous forçait **8/8/8/8** pour tous.
+La commande sans réglages avait été qualifiée fonctionnellement, mais les temps
+publiés correspondaient à la configuration explicite.
+
+- [x] Appliquer la politique de parallélisme avant le choix de l'hôte, en
+  préservant les réglages explicites et le seuil de **32 Gio**. Dissocier ce
+  choix de `GOGC`/`GOMEMLIMIT` ; réserver le réglage automatique du GC à Go.
+- [x] Afficher les limites effectives préparation/PBO/émission et le pipeline.
+- [x] Vérifier la régression du launcher, reconstruire JS/Go/Rust, qualifier
+  Aff et CLI/FFI, mesurer les défauts contre l'ancien launcher et les workers
+  explicites sur le corpus figé, puis publier les preuves.
+
+**Correction qualifiée et installée.** Commande exacte `GOPURS_RUST=1 ./bin/test`,
+sans réglage de workers : **3 683 ms**, préparation **1 150 ms**, PBO/émission
+**2 297 ms**, avec la ligne `workers: prepare=8, pbo=8, emit=8, pipeline=true`.
+La reconstruction par `-c` passe aussi. Commandes Go/JS ordinaires de la même
+qualification : **2 248 / 6 943 ms** (passages fonctionnels uniques).
+
+Confirmation figée, une chauffe et cinq tours tournants : **Rust ancien défaut
+5 772 / défaut corrigé 3 701 / huit explicites 3 784 / Go 2 194 / JS 7 542 ms**.
+Le changement de défaut réduit la médiane Rust de **35,9 %**, avec **5/5 paires
+favorables** ; moyennes défaut/explicite **3 749,2 / 3 754,4 ms**. La campagne
+mesure les réglages du compilateur déjà optimisé ; le gain historique ci-dessous
+conserve son protocole à workers explicites.
+
+Validation : **43 tests launcher/CLI/codegen**, zéro skip ; trois contrats
+échouent sur l'ancien launcher et les six passent après correction. Les trois
+hôtes passent **45 contrôles Aff + stress AVar 1 000**, avec **294 fichiers Go
+identiques** à la qualification précédente. Bootstrap **500 modules / 290 702
+types / 1 008 fichiers Rust/Cargo identiques** ; smoke frais et parseur `-race`
+réussis. Les **30 générations / 8 820 fichiers** sont revérifiés indépendamment.
+
+Rust installé : `cf7a066084a8a154312fed6e7df6c9deb3a08f0588d0c9c3e7c1bf9f51d62615`.
+Rapport : `../../altbak.pub/docs/benchmark-results/2026-10-03-gopurs-host-defaults.{md,json}`.
+
+Archive : `../../altbak.pub/var/benchmark/gopurs-host-defaults-20261003/`.
+
 ## Optimisation de gopurs hébergé en Rust — 3 octobre 2026
 
 **Terminé, qualifié et installé : −39,0 % sur le véritable gopurs hébergé en
@@ -46,7 +158,7 @@ Résultats finaux :
   61 152 fichiers Go/manifests exacts**, y compris toutes les chauffes.
 - Résultats JSON → Typed AST historiques conservés : **18 sorties brutes**,
   six exécutables archivés et empreintes structurelles Go/Rust revérifiés.
-- Exécutable installé :
+- Exécutable installé lors de cette campagne d'optimisation :
   `f099077b7f6daf4fa0606e3b66919046f5fa205c17c5f3f09449a71e0ff23478`.
   Les sélecteurs Go/JS/Rust et la commande exacte `GOPURS_RUST=1 ./bin/test`
   passent ; `-c` reconstruit et valide également ce compilateur.
