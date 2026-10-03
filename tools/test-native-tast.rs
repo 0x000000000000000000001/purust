@@ -15,6 +15,13 @@ use Purs_PureScript_Backend_Optimizer_CoreFn_Json::{
 
 mod candidate {
     use purust_core::*;
+    use Purs_PureScript_Backend_Optimizer_CoreFn_Json::{
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeReExports,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeComment,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeDataDecl,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeClassDecl,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeSourceSpan,
+    };
     // NATIVE_FFI
 }
 

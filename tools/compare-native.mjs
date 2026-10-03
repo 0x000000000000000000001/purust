@@ -52,7 +52,7 @@ try {
     const order = round === 0 ? compilers : [...compilers.slice((round - 1) % compilers.length), ...compilers.slice(0, (round - 1) % compilers.length)];
     for (const compiler of order) {
       const label = `${round}-${compiler.label}`, output = join(work, label);
-      rmSync(join(cwd, '.purmeta'), { recursive: true, force: true });
+      for (const name of ['.purmeta', '.cache']) rmSync(join(cwd, name), { recursive: true, force: true });
       const args = ['--source', 'output', '--main', 'Test.Main', '--threaded', '--out', output];
       const command = compiler.binary.endsWith('.js')
         ? [process.execPath, '--expose-gc', '--stack-size=65536', '--max-old-space-size=16384', compiler.binary, ...args]

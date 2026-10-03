@@ -9,6 +9,12 @@ import { runtimeHelpers } from '../../src/Purust/Utf16.js';
 // Use the compiled PureScript implementation through its JS fallback as the
 // oracle. Feed Rust the real encoded-UTF16 ABI, not ordinary UTF-8 strings.
 const directory = mkdtempSync(join(tmpdir(), 'purust-ident-native-'));
+// This standalone ABI fixture exercises the sanitizer, which has no compiler
+// tree dependencies. The remaining CodeGen FFI is tested with real generated
+// crates by tools/test-native-{type-render,box-unbox,field-names,record-names}.
+const native = readFileSync(new URL('../../src/Purust/CodeGen.rs', import.meta.url), 'utf8');
+const sanitizer = native.match(/^[\s\S]*?^pub fn Purust_CodeGen_sanitizeIdentImpl\([\s\S]*?^\}/m)?.[0];
+assert(sanitizer, 'Native sanitizer and its helper must be present');
 try {
   const cases = ['', '_', 'normal_123', '123', 'type', 'fn', 'break', 'mod', 'as', 'gen',
     'use', 'pub', 'ref', 'mut', 'move', 'let', 'if', 'loop', 'async', 'Self',
@@ -41,7 +47,7 @@ try {
 #![allow(non_snake_case, dead_code)]
 type Func1<A, B> = fn(A) -> B;
 ${runtimeHelpers}
-${readFileSync(new URL('../../src/Purust/CodeGen.rs', import.meta.url), 'utf8')}
+${sanitizer}
 fn field<'a>(bytes: &mut &'a [u8]) -> &'a [u8] {
     let length = u32::from_le_bytes(bytes[..4].try_into().unwrap()) as usize;
     let value = &bytes[4..4 + length]; *bytes = &bytes[4 + length..]; value

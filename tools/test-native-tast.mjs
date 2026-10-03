@@ -169,12 +169,13 @@ writeFileSync(join(directory, 'corpus.ndjson'), corpusLines.join('\n') + '\n');
 
 const modules = ['purust_core', 'perceus_ptr', 'Purs_Data_Argonaut_Core', 'Purs_Data_Argonaut_Decode_Error',
   'Purs_Data_Either', 'Purs_Data_Maybe', 'Purs_Data_Tuple', 'Purs_Foreign_Object', 'Purs_PureScript_Backend_Optimizer_CoreFn',
-  'Purs_PureScript_Backend_Optimizer_CoreFn_Json', 'Purs_PureScript_Backend_Optimizer_CoreFn_TypeTable'];
+  'Purs_PureScript_Backend_Optimizer_CoreFn_Json', 'Purs_PureScript_Backend_Optimizer_CoreFn_TypeTable',
+  'Purs_Data_Map_Internal', 'Purs_Data_Ord', 'Purs_Data_Foldable'];
 writeFileSync(join(directory, 'Cargo.toml'), '[package]\nname = "purust_native_tast_test"\nversion = "0.0.0"\nedition = "2021"\n' +
   '[profile.release]\nopt-level = 3\ndebug = true\nlto = false\n[dependencies]\n' +
   modules.map(name => `${name} = { path = ${JSON.stringify(join(rust, name))} }\n`).join(''));
 const ffi = threadedRust(readFileSync(new URL('../../../purescript-backend-optimizer-purust/src/PureScript/Backend/Optimizer/CoreFn/Json.rs', import.meta.url), 'utf8'));
-writeFileSync(join(directory, 'src/main.rs'), readFileSync(new URL('./test-native-tast.rs', import.meta.url), 'utf8').replace('// NATIVE_FFI', ffi));
+writeFileSync(join(directory, 'src/main.rs'), readFileSync(new URL('./test-native-tast.rs', import.meta.url), 'utf8').replace(/^\s*\/\/ NATIVE_FFI$/m, () => ffi));
 console.log(`Retained TAST test workspace: ${directory}; ${corpusModules} corpus modules / ${corpusAnnotations} annotations`);
 for (const [stage, executable, args] of [
   ['build', 'cargo', ['build', '--offline', '--release', '--quiet', '--manifest-path', join(directory, 'Cargo.toml'), '--target-dir', join(rust, 'target')]],

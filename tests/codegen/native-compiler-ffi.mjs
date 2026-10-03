@@ -69,6 +69,12 @@ const modules = [
   ['memo', '../../purescript-backend-optimizer-purust/src/PureScript/Backend/Optimizer/BoundedMemo.rs'],
 ];
 const main = `
+// This standalone host-services fixture only exercises primitive string memo
+// keys. Declare the two opaque compiler tree identities needed to compile the
+// FFI; real ExprType/BackendSyntax identity and ownership are covered against
+// generated compiler crates by tools/test-native-memo.mjs.
+mod Purs_PureScript_Backend_Optimizer_CoreFn { pub enum ExprType {} }
+mod Purs_PureScript_Backend_Optimizer_Syntax { pub enum BackendSyntax {} }
 fn run(effect: Value) -> Value { effect.unwrap_func1()(Value::Unit) }
 fn strings(value: Value) -> Vec<String> { value.unwrap_array().iter().map(|v| v.unwrap_string()).collect() }
 fn main() {

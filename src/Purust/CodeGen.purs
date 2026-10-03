@@ -664,7 +664,14 @@ codegenModuleWithOptions options valueEnums inputArities globalClassFields (Modu
 -- The generic carrier owns Record_a; keep a closed { a :: ... } disjoint.
 -- Ordinary closed records always use Record_, so ClosedRecord_a cannot clash.
 recordStructName :: Map.Map String String -> Array String -> String
-recordStructName renames fields = case String.joinWith "_" (map (fieldBase renames) (Array.nub (Array.sortBy compare fields))) of
+recordStructName = recordStructNameImpl recordStructNameReference
+
+foreign import recordStructNameImpl
+  :: (Map.Map String String -> Array String -> String)
+  -> Map.Map String String -> Array String -> String
+
+recordStructNameReference :: Map.Map String String -> Array String -> String
+recordStructNameReference renames fields = case String.joinWith "_" (map (fieldBaseReference renames) (Array.nub (Array.sortBy compare fields))) of
   "" -> "Record_a"
   "a" -> "ClosedRecord_a"
   shape -> "Record_" <> shape
@@ -1093,7 +1100,23 @@ codegenExprType :: String -> Boolean -> ExprType -> String
 codegenExprType = codegenExprTypeWithValueEnums Set.empty
 
 codegenExprTypeWithValueEnums :: ValueEnums -> String -> Boolean -> ExprType -> String
-codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType ty of
+codegenExprTypeWithValueEnums enums =
+  codegenExprTypeWithValueEnumsImpl codegenExprTypeWithValueEnumsPure (Set.toMap enums)
+
+-- Keep the PureScript renderer as the JavaScript reference. The native fast
+-- path borrows the layout map and the type tree; unsupported shapes delegate
+-- here with the original arguments. Exposing the concrete Map at the FFI
+-- boundary keeps the erased Set newtype from boxing the callback.
+foreign import codegenExprTypeWithValueEnumsImpl
+  :: (Map (Tuple String String) Unit -> String -> Boolean -> ExprType -> String)
+  -> Map (Tuple String String) Unit
+  -> String
+  -> Boolean
+  -> ExprType
+  -> String
+
+codegenExprTypeWithValueEnumsPure :: Map (Tuple String String) Unit -> String -> Boolean -> ExprType -> String
+codegenExprTypeWithValueEnumsPure enums currentMod isRet ty = case unwrapType ty of
   Unit -> "()"
   Int -> "i64"
   Boolean -> "bool"
@@ -1136,15 +1159,15 @@ codegenExprTypeWithValueEnums valueEnums currentMod isRet ty = case unwrapType t
            else if (modName == "Data_Function_Uncurried" || modName == "Control_Monad_ST_Uncurried") && (String.indexOf (Pattern "Fn") actualClassName == Just 0 || String.indexOf (Pattern "STFn") actualClassName == Just 0) then "crate::UnknownType"
            -- A foreign import data type with no Rust FFI binding has no native
            -- layout; values cross through unsafeCoerce as boxed runtime Values.
-           else if isOpaqueForeignType valueEnums modName actualClassName then "crate::UnknownType"
-           else if isValueEnum valueEnums modName actualClassName then
+           else if isOpaqueForeignType (Set.fromMap enums) modName actualClassName then "crate::UnknownType"
+           else if isValueEnum (Set.fromMap enums) modName actualClassName then
              (if modName == currentMod then "crate::" else "Purs_" <> modName <> "::") <> sanitizeIdent actualClassName
            else if modName == currentMod then "std::rc::Rc<crate::" <> sanitizeIdent actualClassName <> ">"
            else "std::rc::Rc<Purs_" <> modName <> "::" <> sanitizeIdent actualClassName <> ">"
   Func args ret -> 
     let arity = Array.length args
-        argStrs = map (codegenExprTypeWithValueEnums valueEnums currentMod false) args
-        retStr = codegenExprTypeWithValueEnums valueEnums currentMod true ret
+        argStrs = map (codegenExprTypeWithValueEnumsPure enums currentMod false) args
+        retStr = codegenExprTypeWithValueEnumsPure enums currentMod true ret
         typeArgs = String.joinWith ", " (argStrs <> [retStr])
     in if arity > 0 && arity <= maxNativeFunctionArity then "purust_core::Func" <> show arity <> "<" <> typeArgs <> ">"
        else "crate::UnknownType"
@@ -1175,6 +1198,19 @@ continuesLoop currentMod mbLoop = go
 
 boxUnbox :: Map.Map String String -> ValueEnums -> Map.Map String (Array (Tuple String ExprType)) -> String -> ExprType -> ExprType -> String -> String
 boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
+  boxUnboxImpl boxUnboxReference renames (Set.toMap valueEnums) globalClassFields currentMod expected actual code
+
+foreign import boxUnboxImpl
+  :: (Map.Map String String -> Map (Tuple String String) Unit -> Map.Map String (Array (Tuple String ExprType)) -> String -> ExprType -> ExprType -> String -> String)
+  -> Map.Map String String -> Map (Tuple String String) Unit -> Map.Map String (Array (Tuple String ExprType))
+  -> String -> ExprType -> ExprType -> String -> String
+
+boxUnboxReference :: Map.Map String String -> Map (Tuple String String) Unit -> Map.Map String (Array (Tuple String ExprType)) -> String -> ExprType -> ExprType -> String -> String
+boxUnboxReference renames enums fields currentMod expected actual code =
+  boxUnboxPure renames (Set.fromMap enums) fields currentMod expected actual code
+
+boxUnboxPure :: Map.Map String String -> ValueEnums -> Map.Map String (Array (Tuple String ExprType)) -> String -> ExprType -> ExprType -> String -> String
+boxUnboxPure renames valueEnums globalClassFields currentMod expected actual code =
   let
     expStr = codegenExprTypeWithValueEnums valueEnums currentMod true expected
     actStr = codegenExprTypeWithValueEnums valueEnums currentMod true actual
@@ -1374,7 +1410,11 @@ boxUnbox renames valueEnums globalClassFields currentMod expected actual code =
         -- An owned String gives a diverging expression a sized expected type.
         -- Borrowing it as &str first makes Rust infer an unsized `str` for !.
         else if (expStr == "crate::UnknownType" || expStr == "purust_core::Value") && actStr == "String" then "purust_core::Value::String(" <> code <> ")"
-        else code
+         else code
+
+  where
+  -- Keep every recursive step of the reference independent of the native path.
+  boxUnbox = boxUnboxPure
 
 extractAllArgTypes :: ExprType -> Array ExprType
 extractAllArgTypes ty = case unwrapType ty of
@@ -4385,7 +4425,14 @@ fieldRenames labels = (Array.foldl assign { renames: Map.empty, used: Set.empty 
 -- Composite names (Record_* structs and get_/set_/borrow methods) cannot use
 -- raw identifiers, so they read the safe spelling from the rename map.
 fieldBase :: Map.Map String String -> String -> String
-fieldBase renames field = fromMaybe (fieldBasePure field) (Map.lookup field renames)
+fieldBase = fieldBaseImpl fieldBaseReference
+
+foreign import fieldBaseImpl
+  :: (Map.Map String String -> String -> String)
+  -> Map.Map String String -> String -> String
+
+fieldBaseReference :: Map.Map String String -> String -> String
+fieldBaseReference renames field = fromMaybe (fieldBasePure field) (Map.lookup field renames)
 
 fieldBasePure :: String -> String
 fieldBasePure field
@@ -4402,9 +4449,16 @@ fieldBasePure field
     Nothing -> false
 
 recordFieldIdent :: Map.Map String String -> String -> String
-recordFieldIdent renames field
+recordFieldIdent = recordFieldIdentImpl recordFieldIdentReference
+
+foreign import recordFieldIdentImpl
+  :: (Map.Map String String -> String -> String)
+  -> Map.Map String String -> String -> String
+
+recordFieldIdentReference :: Map.Map String String -> String -> String
+recordFieldIdentReference renames field
   | Set.member field rawFieldKeywords = "r#" <> field
-  | otherwise = fieldBase renames field
+  | otherwise = fieldBaseReference renames field
 
 sanitizeIdent :: String -> String
 sanitizeIdent s = sanitizeIdentImpl sanitizeIdentPure s

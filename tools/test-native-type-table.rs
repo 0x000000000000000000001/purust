@@ -6,6 +6,13 @@ use Purs_Data_Argonaut_Decode_Error::{JsonDecodeError, Data_Argonaut_Decode_Erro
 use Purs_PureScript_Backend_Optimizer_CoreFn::{ExprType, PureScript_Backend_Optimizer_CoreFn_eqExprType};
 mod candidate {
     use purust_core::*;
+    use Purs_PureScript_Backend_Optimizer_CoreFn_Json::{
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeReExports,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeComment,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeDataDecl,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeClassDecl,
+        PureScript_Backend_Optimizer_CoreFn_Json_decodeSourceSpan,
+    };
     // NATIVE_FFI
     pub fn fast(input: &Value) -> bool { purust_type_table::decode(input).is_some() }
 }
