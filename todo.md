@@ -3,7 +3,114 @@
 Plan du **2 octobre 2026**. Priorité : réduire le travail PBO rejeté, puis
 les allocations des passes dominantes du compilateur natif.
 
-## Résultat final — 3 octobre 2026
+## Optimisation de gopurs hébergé en Rust — 3 octobre 2026
+
+**Terminé, qualifié et installé : −39,0 % sur le véritable gopurs hébergé en
+Rust, générant du Go.** Confirmation principale : **5 886 → 3 592 ms** sur
+quinze paires, **15/15 favorables**. Dans les dix tours communs : **JS 7 549 /
+Go 2 165,5 / Rust avant 6 176 / Rust optimisé 3 780,5 ms** ; rapport Rust/Go
+**2,852× → 1,746×**, soit **59,7 % de l'écart absolu résorbé**. Le gain substantiel
+est établi ; la parité stricte reste à atteindre.
+
+La qualification initiale distincte donnait **Rust 5 782,5 / Go 2 116,5 /
+JS 7 718,5 ms**. Le témoin Rust est remesuré dans chaque campagne ; le résultat
+historique de Purust ci-dessous conserve son périmètre propre.
+
+- [x] Figer les trois exécutables gopurs, leurs sources, les bootstraps Purust
+      JS/natif et le frontend dans `gopurs-rust-optimization-20261003/`.
+- [x] Profiler le véritable binaire `ad7fd6a9…`, avec les paramètres communs
+      8/8/8/8 et pipeline. Sortie : **294 fichiers Go/manifests exacts**.
+      Diagnostic instrumenté : **358 tentatives / 238 modules**, **120 rejets** ;
+      familles substitution **2 019**, directives **456**, décodage **547**,
+      validation d'usage **312** sur **11 013** échantillons non bloquants.
+      Familles inclusives qui se recouvrent, pas des pourcentages CPU.
+- [x] Contrôle A/A du même exécutable : trois tours, **5 969 / 6 081 ms**,
+      plage **5 895–6 367 ms**, huit sorties / **2 352 fichiers exacts**,
+      vérifiés indépendamment. Protocole final pré-déclaré : quinze paires,
+      dix tours communs et trois paires CPU/RSS après une chauffe.
+- [x] Reporter et mesurer séparément les optimisations PBO communes applicables.
+- [x] Qualifier tests différentiels/PBO, trois hôtes, Aff complète, bootstrap
+      JS/natif exact et projet frais ; préserver les empreintes JSON historiques.
+- [x] Confirmer avant/après puis refaire dix tours de comparaison commune sur
+      les 238 modules figés ; publier les échantillons et mettre à jour le README.
+
+Résultats finaux :
+
+- Médianes Rust par phase : chargement/tri **809 → 212 ms**, préparation
+  **1 743 → 1 122 ms**, PBO/émission **3 432 → 2 221 ms**. Les médianes ne
+  s'additionnent pas. **238 tentatives / 238 modules / zéro rejet**, contre
+  **114–121 rejets** avant sur les seize passages, chauffe comprise.
+- Ressources, trois paires séparées : CPU utilisateur+système **13,34 → 7,55 s
+  (−43,4 %)** ; pic RSS **594,38 → 566,58 Mio**.
+- Vérification indépendante des dix campagnes : **208 générations /
+  61 152 fichiers Go/manifests exacts**, y compris toutes les chauffes.
+- Résultats JSON → Typed AST historiques conservés : **18 sorties brutes**,
+  six exécutables archivés et empreintes structurelles Go/Rust revérifiés.
+- Exécutable installé :
+  `f099077b7f6daf4fa0606e3b66919046f5fa205c17c5f3f09449a71e0ff23478`.
+  Les sélecteurs Go/JS/Rust et la commande exacte `GOPURS_RUST=1 ./bin/test`
+  passent ; `-c` reconstruit et valide également ce compilateur.
+- Rapport et données :
+  `../../altbak.pub/docs/benchmark-results/2026-10-03-gopurs-rust-optimization.{md,json}`.
+  La ligne `gopurs-aff` du README reprend les dix tours communs. Les autres
+  cellules Rust non mesurées et la présentation des deux tableaux sont préservées.
+
+Archive : `../../altbak.pub/var/benchmark/gopurs-rust-optimization-20261003/`.
+Un nettoyage documenté des caches Cargo de l'ancienne qualification libère
+7,84 Go logiques ; ses treize exécutables conservés ont été ré-empreintés.
+
+Journal de sélection gopurs (chaque témoin est remesuré dans sa campagne) :
+
+- Ordonnanceur : quatre régressions FIFO/LIFO/attentes implicites passent ;
+  cinq paires **6 224 → 5 574 ms (−10,4 %)**, douze sorties exactes.
+- Identité des clés Rust : cinq tours **avant 5 585 / ordonnanceur 4 997 /
+  cache 4 592 ms** ; gain marginal **8,1 %**, cumulé **17,8 %**, dix-huit
+  sorties exactes. Les enveloppes `Any` ne servent plus de clé aux arbres partagés.
+- Directives : cinq tours **avant 5 905 / cache 4 801 / directives 4 275 ms** ;
+  marginal **11,0 %**, cumulé **27,6 %**. Préparation **1 692 → 1 150 ms**,
+  dix-huit sorties exactes. Le shim Go délègue au parseur PS, comme JS.
+- `CoreFn/Json.rs` et `Usage.rs` transférés à l'identique du fork Purust : cinq
+  tours **avant 6 296 / directives 4 312 / TAST 3 765 ms**, marginal **12,7 %**,
+  cumulé **40,2 %**. Chargement **814 → 214 ms** ; dix-huit sorties exactes.
+  Les six suites natives passent sur les crates de gopurs : cache, directives
+  (**169 + 352 lignes / 33 replis**), usage (**238 modules + cas synthétiques**),
+  annotations (**110 909**), modules (**238 natifs / 51 frontières**) et tables
+  (**824 tables / 149 495 entrées**). Le harnais vérifie les sources FFI entières
+  contre celles embarquées dans le compilateur, avec SHA-256 conservés.
+- L'audit de préparation attribue **230 échantillons** à l'insertion générique
+  dans l'index AST global. Changement gopurs ciblé : réutiliser `NativeMaps` pour
+  cette seule insertion, avec contrat de lecture générique et tests Unicode.
+  Confirmation marginale quinze paires : médianes **3 747 → 3 596 ms**,
+  moyennes **3 704,6 → 3 634,9 ms**, **11/15 favorables**, 32 sorties exactes.
+  La septième suite native de maps passe (forme AVL, comparateurs, Unicode,
+  persistance) ; les quinze suites sémantiques PBO passent aussi.
+  Les autres métadonnées totalisent moins de vingt échantillons ; elles ne
+  justifient pas une nouvelle spécialisation.
+- Production reconstruite : **500 modules / 290 647 types**, bootstrap JS/natif
+  identique et sources Rust identiques au candidat retenu. **37 tests CLI/codegen**,
+  **19 tests préparation/auxiliaires**, parseur et cache Go `-race`, trois hôtes
+  Aff (**45 contrôles + stress AVar 1 000**) et chemin Rust `-c` réussis.
+  Le premier essai du nouveau test de filtrage des maps omettait `Ord` : corrigé,
+  puis qualification reprise ; diagnostic initial et logs distincts conservés.
+- Une coupure réseau a interrompu deux audits délégués ; la campagne du cache
+  a fini localement, ses résultats ont été repris depuis les logs conservés.
+
+## Résultat historique de Purust — 3 octobre 2026
+
+**Correction de périmètre, 3 octobre :** les mesures ci-dessous comparent
+gopurs générant du Go à Purust générant du Rust. Elles restent les résultats de
+l'optimisation de Purust, mais ne mesurent pas gopurs exécuté sur trois hôtes.
+La demande utilisateur est désormais traitée par un bootstrap de **gopurs en
+Rust**, conservant sa génération Go. `GOPURS_RUST=1` doit sélectionner cet
+exécutable. **Correction terminée et qualifiée** : 500 modules / 290 636 types,
+1 008 fichiers de bootstrap identiques entre Purust JS et natif ; Aff passe
+sur les trois hôtes avec 45 contrôles, stress AVar 1 000 et 294 fichiers Go
+identiques. La campagne de dix tours donne **gopurs JS 7 718,5 ms / Go 2 116,5 ms /
+Rust 5 782,5 ms** (Rust/Go **2,732×**, Rust/JS **0,749×**), à paramètres de workers
+identiques. Les 33 générations / 9 702 fichiers Go sont exacts. Cette correction
+ne revendique donc pas la parité Go/Rust pour gopurs.
+Archive : `../../altbak.pub/var/benchmark/gopurs-rust-host-20261003/` ; rapport :
+`../../altbak.pub/docs/benchmark-results/2026-10-03-gopurs-rust-host.md`.
 
 **Gain majeur qualifié et installé : temps natif réduit de 52,5 % sur les
 238 modules et de 53,0 % sur les 244 modules.** La confirmation principale
