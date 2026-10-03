@@ -12,7 +12,7 @@ les allocations des passes dominantes du compilateur natif.
   bloquants**, dont maps/sets **989**, allocation **873**, copies de `Value`
   **546**, copies de chaînes **292**. Familles inclusives qui se recouvrent,
   pas des pourcentages CPU ; **294 fichiers Go/manifests exacts**.
-- [ ] Sélectionner et mesurer un changement ciblé, puis qualifier production,
+- [x] Sélectionner et mesurer un changement ciblé, puis qualifier production,
   défauts publics et workers explicites selon `confirmation-protocol.json`.
   Le passage reproductible sous trois secondes reste un objectif à démontrer.
 
@@ -66,12 +66,55 @@ persistantes plutôt qu'une propriété plus forte que l'oracle.
   Rust incompatible avec le lecteur Apple LLVM **17**. Le troisième build,
   `thin-lto-rust-lld`, réussit avec le linker Mach-O fourni par Rust, SHA-256
   `695f239b52eef3c6551fdda84147710e54eeeed066cd545dd85291ce7545eb30`.
-  La sélection mesurée attend la fin des campagnes externes actives.
+  Les deux campagnes externes identifiées ont terminé ; la sélection est
+  lancée après nouvel inventaire des processus.
 - Des corrections concurrentes de labels de records et de décodage JSON ont
   modifié cinq fichiers depuis le candidat `qualified` ; inventaire dans
   `source-integration.json`. L'intégration de production devra les conserver,
   être figée et remesurée, avec distinction entre les sélections isolées et
   le changement net du compilateur installé.
+  Les candidats `integrated` et `integrated-thin-lto` sont construits ; leur
+  campagne dédiée vérifie séparément cette composition : **3 675 → 3 533 ms**,
+  quatre paires sur cinq favorables au profil ThinLTO, sorties toutes exactes.
+- **ThinLTO sélectionné** après confirmation sur les sources intégrées :
+  **3 662 → 3 495 ms (−4,6 %)**, moyennes **3 662,5 → 3 491,2 ms**, **14/15
+  paires favorables**, **32 générations exactes**. L'essai isolé précédent
+  donnait **3 675 → 3 521 ms**, 5/5 favorables. Le build de production adopte
+  O3/ThinLTO et le linker de la toolchain Rust sur macOS ; reconstruction et
+  qualification complète réussies. Le seuil de trois secondes reste ouvert.
+- **Production installée et qualifiée** : **500 modules / 290 797 types**,
+  **1 008 fichiers** identiques entre bootstraps Purust JS/natif et **1 009**
+  entre candidat/production (script de liaison compris). **43 tests
+  compilateur**, **19 tests préparation**, parseur Go et cache Go `-race`
+  passent. Les trois hôtes passent **45 contrôles Aff + stress AVar 1 000**,
+  avec **294 fichiers Go identiques** ; le chemin public Rust/Aff `-c` et le
+  smoke Go/FFI frais passent. Rust installé :
+  `24ed33ad2624f8442080c2c0a256bae7b5e041ab37cfb6f86253c1ffb0152f3a`.
+  Les campagnes principales, communes, défauts et ressources, les profils
+  finaux et la relecture indépendante sont terminés.
+- **Confirmation finale : 3 623 → 3 353 ms (−7,5 %)**, **15/15 paires
+  favorables**. Dix tours communs : **JS 7 364 / Go 1 997 / Rust avant 3 572 /
+  Rust final 3 414 ms**, rapport Rust/Go **1,789× → 1,710×**. Aux défauts
+  publics, cinq tours : **Rust 3 760 → 3 394 ms (−9,7 %)**, 5/5 favorables,
+  **Go 2 064 / JS 7 265 ms**. Les témoins sont remesurés dans chaque campagne.
+  Le changement net intègre les deux optimisations natives, ThinLTO et les
+  corrections concurrentes archivées ; les sélections isolées conservent leur
+  portée. Les gains historiques ne s'additionnent pas à ce résultat.
+- **262 générations / 77 028 fichiers Go/manifests exacts** relus dans onze
+  campagnes, chauffes comprises. Profils finaux : **6 241** échantillons non
+  bloquants sur tout le backend et **4 112** sur PBO/émission ; familles
+  allocation **1 136 / 719**, copies de `Value` **614 / 363**, chaînes **212 /
+  103**, collections **1 436 / 913**. Familles inclusives qui se recouvrent,
+  pas des pourcentages CPU ; l'inlining ThinLTO change aussi la visibilité des
+  piles. Aucune des trente mesures finales principales/communes/défauts du
+  compilateur installé ne passe sous trois secondes.
+- Ressources, trois paires séparées : CPU utilisateur+système **7,56 → 7,02 s
+  (−7,1 %)** ; pic RSS **559,2 → 554,9 Mio**. Rapport Markdown/JSON publié et
+  ligne `gopurs-aff` actualisée avec les dix tours communs ; audit de publication
+  dans `publication-audit.json`. Les **18 sorties JSON → Typed AST historiques**,
+  **six exécutables** et empreintes structurelles ont été relus avec succès.
+
+Rapport : `../../altbak.pub/docs/benchmark-results/2026-10-03-gopurs-rust-allocation.{md,json}`.
 
 ## Correction des valeurs par défaut de gopurs — 3 octobre 2026
 
