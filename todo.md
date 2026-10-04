@@ -5,6 +5,62 @@ les allocations des passes dominantes du compilateur natif.
 
 ## Campagne nocturne gopurs contre Go — 4 octobre 2026
 
+### Extension demandée du tableau aux autres bibliothèques
+
+- [x] Examiner les **49 autres cellules Rust `gopurs-*`** : une chauffe puis
+  cinq générations par paquet validé, médiane de `backend total`, workers 8/8/8/8.
+- [x] Vérifier les entrées TAST/FFI figées et les sorties à l'oracle Go natif,
+  puis renseigner les cellules et le sous-total Rust avec sa couverture.
+- Archive dédiée : `../../altbak.pub/var/benchmark/gopurs-packages-rust-20261004/`.
+  Cette extension demandée après la campagne nocturne élargit son périmètre
+  initialement limité à Aff. Les sources des bibliothèques et les compilateurs
+  sont copiés avant exécution ; le frontend est exclu du chronomètre. Les
+  valeurs JS/Go préexistantes gardent leur campagne d'origine.
+- Résultat : **45 nouvelles médianes qualifiées**, **315 générations /
+  81 753 fichiers Go exacts** relus. Avec Aff déjà qualifié, le sous-total
+  affiché est **58,66 s pour 46/50 paquets**. `gopurs-assert` appelle le
+  compilateur sans `--main` : l'exigence initiale de `Test.Main` du harness
+  est corrigée dans une reprise séparée, médiane **110 ms**, cinq mesures.
+- Quatre cellules portent leur diagnostic reproduit : `gopurs-enums`,
+  `gopurs-js-promise` et `gopurs-strings` donnent des sources Go non identiques
+  à celles de l'hôte Go ; `gopurs-prelude` panique sur une division par zéro
+  dans `Purs_PureScript_Backend_Optimizer_Semantics`. Aucun temps valide n'est
+  publié pour ces quatre cas. Les différences de sources ne prouvent pas à
+  elles seules une différence sémantique ; le critère byte-exact échoue.
+- [ ] Diagnostiquer les trois écarts d'optimisation et la division par zéro de
+  Prelude avant de qualifier leurs temps Rust. Les sources, deux reproductions
+  et la backtrace de Prelude sont conservées dans l'archive et `followups/`.
+- Rapport : `../../altbak.pub/docs/benchmark-results/2026-10-04-gopurs-packages-rust.{md,json}`.
+
+### Correction des quatre diagnostics — 4 octobre 2026
+
+- Archive de reprise : `../../altbak.pub/var/benchmark/gopurs-packages-fixes-20261004/`.
+  Les échecs et les qualifications des campagnes précédentes restent archivés.
+- [x] Reproduire les défauts par des régressions ciblées avant correction :
+  division primitive négative différente de Prelude JS ; tri des modules
+  dépendant de l'ordre d'énumération des répertoires.
+- [x] Corriger `OpIntNum OpDivide` dans Purust : quotient euclidien, diviseur
+  nul donnant zéro, opérandes évalués une seule fois. Le contrôle comprend
+  612 divisions contre l'oracle Prelude JS et les 12 cas modulo existants,
+  en Rust debug et optimisé.
+- [x] Canoniser les racines du tri PBO gopurs par nom de module. Les rangs
+  des modules indépendants conditionnent la visibilité des implémentations
+  spécialisées ; un simple ordre topologique valide ne suffit pas. Régression
+  sur 720 permutations, les imports propres/Prim et les cycles.
+- [x] Reconstruire Purust : **453 modules / 282 796 types**, **914 fichiers
+  Rust/Cargo exacts** en auto-compilation, application fraîche validée. Les
+  régressions arithmétiques, de tri et les 15 suites PBO passent.
+- [x] Reconstruire les trois hôtes gopurs avec PGO réentraîné : **500 modules**
+  d'entraînement, **trois passes de 612 fichiers Go exacts** ; le smoke Go/FFI
+  frais passe. Rust installé : `aa98d0439cd516137c2def420a002b327a3b528dd6cf3d46b9fddb82c51bffa4`.
+- [ ] Comparer le bootstrap gopurs entre générateurs Purust JS/natif et
+  qualifier les hôtes sur Aff/AVar, le compilateur et les projets frais.
+- [ ] Revérifier les 50 paquets sur les entrées figées, mesurer les quatre
+  cellules corrigées et exécuter leurs applications Go hors chronomètre.
+- [ ] Publier les quatre médianes qualifiées et recalculer le total Rust.
+
+### Résultat de la campagne nocturne
+
 Objectif demandé : **passer durablement devant Go sur `gopurs-aff`**, puis
 poursuivre les gains démontrables. Point de départ commun qualifié :
 Rust **3 414 / Go 1 997 ms**, soit environ **42 %** de temps Rust à éliminer

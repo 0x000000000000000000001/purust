@@ -3496,7 +3496,9 @@ codegenExpr_ renames valueEnums currentMod allZeroArity reuseContext mbLoop arit
       OpIntNum OpAdd -> "(" <> aStrInt <> " + " <> bStrInt <> ")"
       OpIntNum OpSubtract -> "(" <> aStrInt <> " - " <> bStrInt <> ")"
       OpIntNum OpMultiply -> "(" <> aStrInt <> " * " <> bStrInt <> ")"
-      OpIntNum OpDivide -> "(" <> aStrInt <> " / " <> bStrInt <> ")"
+      -- Prelude's Int division is Euclidean and returns zero for a zero
+      -- divisor. Evaluate both operands once, also when the divisor is zero.
+      OpIntNum OpDivide -> "{ let _div_l: i64 = " <> aStrInt <> "; let _div_r: i64 = " <> bStrInt <> "; _div_l.checked_div_euclid(_div_r).unwrap_or(0_i64) }"
       OpIntNum OpMod -> case literalPowerOfTwoMask b of
         -- Euclidean remainder of a positive power of two is the low-bit mask,
         -- which keeps the surrounding loops vectorizable.
