@@ -67,7 +67,7 @@ fn falsy_values_unit_arrays_and_unrelated_opaque_values_are_present() {
     // A Maybe::Nothing or an unrelated opaque Option::None is not Nullable::null.
     let maybe = Rc::new(Maybe::Nothing);
     let result = unwrap(Value::Class(Rc::new(maybe.clone())));
-    assert!(Rc::ptr_eq(result.unwrap_class::<Rc<Maybe>>(), &maybe));
+    assert!(Rc::ptr_eq(&result.unwrap_class_shared::<Maybe>(), &maybe));
     assert!(unwrap(Value::Class(Rc::new(None::<i64>))).unwrap_class::<Option<i64>>().is_none());
 }
 

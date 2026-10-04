@@ -68,7 +68,7 @@ try {
     const code = readFileSync(join(rust, 'Purs_Control_Monad_Free/src/lib.rs'), 'utf8');
     assert.doesNotMatch(code, /(?:Rc|Arc)<crate::Val>/);
     assert.ok(code.includes('pub enum Free {') && code.includes('pub enum FreeView {'));
-    assert.ok(code.includes(`unwrap_class::<std::${threaded ? 'sync::Arc' : 'rc::Rc'}<Purs_Control_Monad_Rec_Class::Step>>()`),
+    assert.ok(code.includes('unwrap_class_shared::<Purs_Control_Monad_Rec_Class::Step>()'),
       'The existential carrier must be checked before matching the native Step.');
     const manifest = join(rust, 'Cargo.toml');
     run('cargo', ['check', '--offline', '--manifest-path', manifest, '-p', 'Purs_FreeMonadRecProbe']);

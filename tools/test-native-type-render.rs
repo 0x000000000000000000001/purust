@@ -123,7 +123,7 @@ fn tr_run_corpus(corpus: &str, layouts: &str) -> (usize, usize, usize) {
             panic!("type table decode failed for {module}")
         };
         for index in 0..rows.array_len() {
-            let ty = rows.array_get(index).unwrap_class::<Rc<ExprType>>().clone();
+            let ty = rows.array_get(index).unwrap_class_shared::<ExprType>();
             checks += tr_check(&enums, module, false, &ty);
             checks += tr_check(&enums, module, true, &ty);
             checks += tr_check(&enums, "__other__", false, &ty);

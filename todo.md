@@ -3,6 +3,223 @@
 Plan du **2 octobre 2026**. Priorité : réduire le travail PBO rejeté, puis
 les allocations des passes dominantes du compilateur natif.
 
+## Campagne nocturne gopurs contre Go — 4 octobre 2026
+
+Objectif demandé : **passer durablement devant Go sur `gopurs-aff`**, puis
+poursuivre les gains démontrables. Point de départ commun qualifié :
+Rust **3 414 / Go 1 997 ms**, soit environ **42 %** de temps Rust à éliminer
+pour atteindre cette référence. **Objectif atteint** : après reconstruction
+des trois hôtes, **30/30 paires favorables**, Go **1 771 / Rust 1 495 ms**
+(**−15,6 %**), corroborées aux défauts publics. Dix tours communs donnent
+**JS 6 893 / Go 1 787 / Rust 1 507,5 ms**.
+
+- [x] Figer les hôtes, sources, bootstrap, profils et nouveaux témoins dans
+  `../../altbak.pub/var/benchmark/gopurs-rust-night-20261004/`.
+- [x] Réduire le travail répété des directives/maps ; étudier les copies de
+  `Value`, le partage et les allocations du Rust généré avec contrats ciblés.
+- [x] Mesurer les profils Cargo/codegen, puis PGO sur entraînement distinct si
+  pertinent, avec sélections contemporaines et sorties exactes.
+- [x] Qualifier les changements retenus en production et mesurer **30 paires
+  Rust/Go**, dix paires aux défauts, dix tours communs et les ressources.
+- [x] Publier les preuves et l'issue réelle, avec les empreintes JSON/TAST
+  historiques revérifiées. Critère de dépassement pré-déclaré dans `protocol.json`.
+
+Premières sélections (candidats expérimentaux, pas encore production) :
+
+- Référence reconstruite après synchronisation : **Rust 3 361 / Go 2 050 ms**,
+  cinq tours, sorties exactes. Rust `88a026ed…`, Go `94f6448c…`, JS `0654f8f6…`.
+- Profils ThinLTO : témoin **3 368**, CGU1 **3 406**, CGU4 **3 430**,
+  CPU natif/CGU1 **3 431 ms** ; aucune variante retenue.
+- Préfixe partagé de directives + filtrage par intervalle de module :
+  **3 308 → 3 265 ms**, seulement trois paires favorables sur cinq ; signal
+  trop faible pour sélectionner sans confirmation. Quinze suites PBO passent,
+  dont comparaison du préfixe sous publications désordonnées et bornes UTF-16.
+  Le premier build (portée `where` dans une garde) et le premier test ajouté
+  (arité de `Map.singleton`) ont échoué ; leurs diagnostics sont conservés.
+- Déblocage expérimental des callbacks I/O : **3 303 → 2 534 ms (−23,3 %)**,
+  **5/5 paires favorables**, Go contemporain **1 981 ms**. PBO/émission
+  **2 092 → 1 345 ms**, chaque génération conserve les **294 fichiers exacts**.
+  Cette première variante fait passer les callbacks natifs sur le pool Aff ;
+  l'audit identifie un changement d'ordre observable pour les callbacks
+  `Effect`. Elle sert de preuve de potentiel, **pas de sélection production**.
+  Une reprise Aff différée sur le pool, conservant les checkpoints originaux
+  des callbacks I/O/Promise, passe dix contrats natifs mais ne donne que
+  **3 306 → 3 275 ms (−0,94 %)** : elle ne suffit pas à lever l'attente globale
+  avant livraison des I/O. Un troisième candidat vise directement les attentes
+  `Node.FS.Aff`, avec comparaison des opérations et erreurs à l'ancien chemin
+  `Node.FS.Async`, sans changer l'ordre de ses callbacks `Effect`.
+- Attentes natives ciblées `Node.FS.Aff` : **3 253 → 2 523 ms (−22,4 %)**,
+  **5/5 paires favorables**, Go contemporain **1 967 ms** ; **17/17 contrats
+  natifs Aff** et **294 fichiers exacts** par génération. Les cinq opérations
+  visées restent différées/rejouables ; les I/O abandonnées sont drainées, les
+  erreurs `Effect` restent interceptables et les callbacks publics conservent
+  leur checkpoint. La suite FS complète et les mesures finales restent à faire.
+- Partage direct des propriétaires d'ADT (`ClassShared`) en cours : tests
+  Rc/Arc et **43 suites TAST** passent après correction des handles non `Clone`,
+  des tableaux natifs et de l'ABI des imports `foreign data`. Les handles FFI
+  gardent leur carrier historique ; le bootstrap natif reste à qualifier.
+  Les corrections du générateur et les échecs initiaux restent archivés.
+- Mesure isolée du partage des propriétaires d'ADT : **2 517 → 2 122 ms
+  (−15,7 %)**, **5/5 paires favorables**, contre Go **1 952 ms** ; le transitif
+  passe de **465 à 237 ms**. Les champs `ClassShared` conservent le propriétaire
+  natif et évitent son réemballage à chaque frontière polymorphe.
+- Primitives génériques natives de `Data.Map.Internal` (`insert`, `insertWith`,
+  `unionWith`) : **2 119 → 1 935 ms (−8,7 %)**, **5/5 paires favorables** ; Go
+  contemporain **1 955 ms**. Différentiel de contenu, forme AVL exacte,
+  persistance, comparaisons et ordre des combinaisons réussi. Le premier passage
+  sous Go reste exploratoire : confirmation statistique et qualification de
+  production nécessaires avant publication des tableaux.
+- Réécriture finale des modules via le dispatcher de préparation : **2 188 →
+  2 040 ms (−6,8 %)**, **5/5 paires favorables**, sorties exactes ; le total de
+  préparation passe de **747 à 606 ms**. Mesure séparée des collections, sur le
+  candidat à propriétaires partagés. Les douze contrats de préparation passent
+  (ordre inverse, différé/réexécution, propagation d'erreur, bornes de jobs).
+  L'échec initial venait du dictionnaire manquant dans le test JS de
+  `throwError` ; ses logs sont conservés.
+- Les **huit suites natives PBO** passent avec les carriers historiques et
+  partagés (`native-contracts-v3/summary.json`). La provenance du PBO gopurs
+  isolé est vérifiée par les empreintes complètes des sources et les 28 chemins
+  de modules (`native-contracts-v3/provenance.json`).
+- Porte runtime encore bloquante : la suite complète `purust-aff/bin/test`
+  signale `Assertion failure bracket`, malgré les 17 contrats bas niveau
+  réussis. Diagnostic/correction dédiés en cours avant composition, bootstrap
+  et publication. Les chiffres exploratoires précédents ne constituent pas
+  encore une qualification de production.
+- Le correctif Aff distingue les reprises venant des checkpoints/attentes
+  bloquantes de celles des timers ; **18 contrats natifs** passent et deux
+  exécutions complètes réussissent, avec un autre échec `bracket` conservé.
+  L'audit invalide les répétitions « 35/35 » : le candidat lançait
+  `Test.Lifetime` alors que les témoins lançaient `Test.Main`. Elles ne prouvent
+  rien sur `bracket` ; confirmation dédiée avec point d'entrée vérifié en cours.
+- Décodeur texte isolé : **4 029/4 030 cas égaux**, dont **238/238 modules** sans
+  fallback. Un écart réel sur `foreignAnnotations` malformé doit être corrigé
+  avant mesure/sélection. Les erreurs de fixture précédentes (ABI, sérialisation
+  du payload `sourceUsage`) et leurs diagnostics restent archivés.
+- **FS, Promise et Unfoldable** : suites natives complètes réussies ; le
+  différentiel FS réussit aussi sous JavaScript (`native-runtime-rest-v1`).
+- Confirmation sur le vrai `Test.Main` : le test `bracket` reste sensible à
+  la charge, y compris avec les reprises inline. **19 contrats natifs**,
+  dont annulation/libération unique sans horloge, passent. Le test PureScript
+  observe désormais la terminaison par `joinFiber`, puis vérifie immédiatement
+  l'ordre complet et le résultat du bracket. Qualification Rust/JS de cette
+  synchronisation en cours ; les échecs de la variante à échéance restent
+  conservés dans `aff-bracket-fix/`.
+- **Qualification Aff synchronisée réussie** : 19 contrats Rust, suite complète
+  native et **47 contrôles `Test.Main` identiques à l'oracle JavaScript**
+  (`native-aff-synchronized-v1`). Le premier frontend JS incluait à tort les
+  diagnostics réservés au natif ; la reprise compile la fermeture réelle des
+  imports de `Test.Main`, avec les sources et le générateur inchangés.
+- Réutilisation des rounds transitifs : **1 907 → 1 877 ms (−1,6 %)**,
+  **5/5 paires favorables**, Go contemporain **1 930 ms** ; phase transitive
+  **210 → 186 ms**. Quinze suites PBO et comparaison directe au module legacy
+  passent, y compris un round final réellement 100 % réutilisé et une map ne
+  contenant que des entrées inactives. Les 294 fichiers sont exacts à chaque
+  génération. La première fixture supposait à tort la réutilisation totale
+  lors d'une découverte en chaîne : diagnostic et correction sont archivés.
+- **Décodeur texte natif qualifié** : **4 030/4 030 cas** contre des crates
+  oracles JSON/Usage forcées sur leurs implémentations PureScript ; erreurs
+  octet à octet, AST complet, alias de table de types et carriers partagés.
+  Les **238 modules** du corpus passent sans fallback. Mesure isolée :
+  **2 108 → 1 995 ms (−5,4 %)**, **5/5 paires favorables**, chargement
+  **176 → 67 ms**, Go contemporain **1 946 ms**. Le correctif de validation
+  de `foreignAnnotations` (source v4, candidat `native-tast-text-v6`) et
+  `PurustJsonCursor::materialize` sont intégrés ; les échecs v4/v5 de résolution
+  des chemins de runtime sont conservés. Le runner réutilisable demeure une
+  porte séparée des huit suites PBO.
+- **Composition `selected-source` réussie** : collections natives, propriétaires
+  partagés, dispatcher de préparation, réutilisation transitive, texte natif,
+  runtime Aff corrigé et nouvelles horloges PBO/émission. Quinze suites PBO,
+  **19 contrats Aff**, **12 contrats de préparation**, huit suites natives PBO,
+  oracles de collections et **289 cas texte de composition** passent.
+  Cinq tours : **1 898 → 1 675 ms (−11,7 %)** face au sous-ensemble transitif,
+  **5/5 paires favorables** ; témoin Go du début de nuit **1 984 ms**,
+  **294 fichiers exacts** par génération. Cette sélection ne remplace pas la
+  confirmation contre Go reconstruit avec les mêmes changements PureScript.
+  Les horloges producteur PBO, émission cumulée et drain se recouvrent et ne
+  s'additionnent pas. L'audit a corrigé uniquement le comptage des carriers du
+  fixture texte ; les comparaisons AST/erreurs v6 restent valides.
+- Essai PGO lancé sur une copie figée des modules d'auto-compilation de gopurs,
+  avec `Test.Main` exclu et recouvrement des bibliothèques enregistré.
+  Bootstrap Purust JS/natif indépendant, reconstruction publique des trois
+  hôtes et confirmation finale restent à exécuter après cette sélection.
+- Première tentative PGO **invalidée par le contrôle final d'intégrité** :
+  nettoyer récursivement `output/main` supprimait aussi `output/Main/corefn.json`
+  sur APFS insensible à la casse. L'oracle et les trois entraînements étaient
+  donc amputés du point d'entrée ; le gain observé **1 679 → 1 494 ms** ne
+  sélectionne pas ce profil. Reprise `pgo-selected-source-v2` avec nettoyage
+  limité aux fichiers Go générés, vérification complète avant chaque passe et
+  noms d'artefacts distincts. Le résultat échoué et ses diagnostics sont gardés.
+- Provenance native de la composition revérifiée par contenu : **500 entrées
+  TAST figées**, **28 chemins de modules PBO** et six FFIs embarquées concordent
+  avec le manifeste complet du fork gopurs (`selected-native-contracts/provenance.json`).
+  L'indication générique « unverified » du runner venait du chemin isolé
+  `work/sources/1`, qui ne contient pas le nom du checkout ; elle reste intacte.
+- **PGO v2 retenu** : entraînement complet de **500 modules** d'auto-compilation,
+  **234 bibliothèques communes** explicitement nommées, `Main` présent et
+  `Test.Main` exclu. Les trois passes instrumentées conservent intégralement les
+  entrées et les sorties de l'oracle non profilé. Cinq paires indépendantes :
+  **1 677 → 1 507 ms (−10,1 %)**, **5/5 favorables**, **294 fichiers exacts**
+  par génération. Sélection liée aux empreintes dans `final-selection.json`.
+  Le build public prépare désormais son propre entraînement et régénère son
+  profil ; cinq contrats légers couvrent gel, exclusion, nettoyage APFS et
+  encodage des flags. Le bootstrap Purust indépendant est lancé avant cette
+  reconstruction et la confirmation contre Go actuel.
+- Cache Cargo d'expérimentation terminé récupéré : **19 126 fichiers**,
+  **8 030 811 268 octets logiques**, binaire PGO retenu revérifié avant/après.
+  Sources générées, profils, logs et mesures restent conservés ; le disponible
+  remonte à **22 149 500 928 octets** (`reclaimed-experiment-target.json`).
+- **Bootstrap Purust indépendant réussi et installé** : **453 modules /
+  282 796 types**, **914 fichiers Rust/Cargo identiques** entre JavaScript et
+  natif. Le JavaScript reconstruit retrouve exactement le générateur qualifié
+  `7555176a…` ; natif installé `14d4093e…`. Le rendu de types natif passe
+  **948 cas synthétiques**, **409 812 comparaisons corpus** et sept sondes de
+  délégation (238 modules chargés, 233 contenant des types, 136 604 types).
+  La chaîne de reconstruction publique et les cinq campagnes finales sont
+  lancées, avec comparaison au Go contemporain.
+- **Production reconstruite et qualifiée** : gopurs **500 modules / 291 171
+  types**, **1 008 fichiers** identiques entre générateurs Purust JS/natif et
+  **1 009** entre candidat mesuré et production (script de liaison inclus).
+  **43 tests compilateur**, **47 tests helpers**, parseur et cache Go sous
+  `-race`, smoke Go/FFI frais et chemin public Rust `./bin/test -c` passent.
+  Chaque hôte passe **45 contrôles Aff + stress AVar 1 000**, en générant les
+  **294 mêmes fichiers Go**. Rust installé :
+  `526a5d1adf0f86279ec146d8333126e6a82d07d2f5b1ed0a817c89cf9073237d`.
+  Son propre PGO utilise 500 modules, 234 bibliothèques communes documentées et
+  trois générations de **612 fichiers** identiques à son oracle non profilé.
+- **Confirmation finale réussie** : trente paires tournantes, **Go 1 771 /
+  Rust 1 495 ms (−15,6 %)**, **30/30 favorables**, ratio apparié géométrique
+  **0,8443**, intervalle bootstrap 95 % **[0,8418 ; 0,8468]**. Aux défauts
+  publics : **Go 1 787,5 / Rust 1 505,5 ms (−15,8 %)**, **10/10 favorables**,
+  intervalle **[0,8402 ; 0,8463]**. L'aspiration de cinq pour cent est dépassée.
+  Go est reconstruit avec les mêmes changements PureScript de préparation et
+  de transitif ; aucun témoin ancien ne décide de cette victoire.
+- Dix tours communs : **JS 6 893 / Go 1 787 / Rust 1 507,5 ms**, soit
+  **Rust/Go = 0,8436×**. Dix paires avant/après indépendantes : **Rust 3 218 →
+  1 502,5 ms (−53,3 %)**, **10/10 favorables**. Ce changement net de production
+  ne s'obtient pas en additionnant les gains des sélections isolées.
+- Ressources, trois paires séparées : CPU utilisateur+système **Go 7,62 /
+  Rust 5,03 s**, pic RSS **Go 9 634,5 / Rust 452,4 Mio**. La politique publique
+  Go `GOGC=off` / `GOMEMLIMIT=10GiB` est explicitée dans le rapport ; elle ne
+  s'applique pas à l'hôte Rust. Les cinq campagnes finales totalisent
+  **147 générations / 43 218 fichiers Go/manifests exacts**, relus après mesure.
+- **Rapport Markdown/JSON publié localement**, avec dix-neuf gates réussis,
+  toutes les horloges brutes relues et les binaires liés à la qualification.
+  La ligne `gopurs-aff` du README utilise les dix tours communs. Les qualifications
+  historiques JSON → Typed AST, leurs empreintes structurelles et l'axe séparé
+  **Purust → Rust (2 569 ms)** sont conservés et revérifiés. Aucun commit ni
+  push assistant n'a été effectué.
+- **Relecture indépendante après publication réussie** : dix-neuf gates et
+  vingt-quatre comptes vérifiés, 147 horloges brutes relues, intervalles bootstrap
+  reproduits bit pour bit, binaires installés/gelés liés aux qualifications.
+  Seule la ligne 335 du README diffère ; les cinquante autres cellules Rust WIP
+  et le contenu hors de cette ligne conservent leur empreinte. Les 500 entrées
+  TAST de provenance et les 70 sources PBO sont relues, ainsi que les dix-huit
+  résultats historiques et six exécutables associés. Aucun défaut de publication
+  restant (`post-publication-audit/post-publication-audit.{json,md}`). Les erreurs
+  initiales du script d'audit lui-même restent conservées dans `first-run/`.
+
+Rapport : `../../altbak.pub/docs/benchmark-results/2026-10-04-gopurs-rust-night.{md,json}`.
+
 ## Nouvelle passe allocations gopurs — 3 octobre 2026
 
 - [x] Figer la référence corrigée `cf7a0660…`, ses sources, les trois hôtes,

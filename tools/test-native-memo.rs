@@ -46,6 +46,16 @@ fn syntax_key(inner: Rc<BackendSyntax>) -> Value {
     Value::Class(Rc::new(inner))
 }
 
+// Generator-produced shared owners: one tree allocation keyed through
+// ClassShared must hit the same entry as its nested Class form.
+fn expr_key_shared(inner: Rc<ExprType>) -> Value {
+    Value::ClassShared(inner)
+}
+
+fn syntax_key_shared(inner: Rc<BackendSyntax>) -> Value {
+    Value::ClassShared(inner)
+}
+
 fn open(capacity: i64, callback: Value) -> Value {
     PureScript_Backend_Optimizer_BoundedMemo_createBoundedMemo(capacity, callback)
         .unwrap_func1()(Value::Unit)
@@ -92,6 +102,22 @@ fn reboxed_tree_identity() {
         count(&calls),
         3,
         "fresh outer boxes around one BackendSyntax tree must hit one entry"
+    );
+
+    let tree = Rc::new(ExprType::TypeVar(String::from("s")));
+    for _ in 0..3 {
+        apply(&memo, expr_key_shared(tree.clone()), Value::Unit);
+    }
+    assert_eq!(
+        count(&calls),
+        4,
+        "fresh ClassShared carriers around one ExprType tree must hit one entry"
+    );
+    apply(&memo, expr_key(tree.clone()), Value::Unit);
+    assert_eq!(
+        count(&calls),
+        4,
+        "the same tree must share one entry across both carriers"
     );
 }
 
@@ -202,6 +228,22 @@ fn fifo_eviction_and_owner_lifetime() {
     assert!(
         weak.upgrade().is_none(),
         "an evicted BackendSyntax key must release its owner"
+    );
+
+    let calls = counter();
+    let memo = open(1, tally(&calls));
+    let tree = Rc::new(ExprType::Int);
+    let weak = Rc::downgrade(&tree);
+    apply(&memo, expr_key_shared(tree.clone()), Value::Unit);
+    drop(tree);
+    assert!(
+        weak.upgrade().is_some(),
+        "a cached ClassShared ExprType key must retain its owner"
+    );
+    apply(&memo, expr_key_shared(Rc::new(ExprType::String)), Value::Unit);
+    assert!(
+        weak.upgrade().is_none(),
+        "an evicted ClassShared ExprType key must release its owner"
     );
 }
 

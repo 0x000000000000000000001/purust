@@ -44,10 +44,10 @@ fn generated_wrappers_preserve_handle_boxing_and_peek_constructors() {
     assert!(matches!(peek("key", object.clone()), Value::Unit));
     assert!(Rc::ptr_eq(&object, &handle(run(action))));
     let found = run(StashProbe_readValue(object.clone()));
-    assert_eq!(just_int(found.unwrap_class::<Rc<Purs_Data_Maybe::Maybe>>()), 42);
+    assert_eq!(just_int(&found.unwrap_class_shared::<Purs_Data_Maybe::Maybe>()), 42);
     assert!(Rc::ptr_eq(&object, &handle(run(StashProbe_removeKey(object.clone())))));
     let missing = run(StashProbe_readValue(object));
-    assert!(matches!(missing.unwrap_class::<Rc<Purs_Data_Maybe::Maybe>>().as_ref(), Purs_Data_Maybe::Maybe::Nothing));
+    assert!(matches!(missing.unwrap_class_shared::<Purs_Data_Maybe::Maybe>().as_ref(), Purs_Data_Maybe::Maybe::Nothing));
 }
 
 #[test]

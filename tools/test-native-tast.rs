@@ -25,12 +25,26 @@ mod candidate {
     // NATIVE_FFI
 }
 
+// Tolerant reader for values the generator can box as Class(Rc<T>) or
+// ClassShared(T). Foreign handles keep their Class-only readers below.
+fn shared_ref<T: std::any::Any + 'static>(value: &Value) -> &T {
+    match value.resolve() {
+        Value::Class(payload) => payload
+            .downcast_ref::<Rc<T>>()
+            .map(|node| node.as_ref())
+            .or_else(|| payload.downcast_ref::<T>())
+            .expect("Expected shared ADT"),
+        Value::ClassShared(payload) => payload.downcast_ref::<T>().expect("Expected shared ADT"),
+        _ => panic!("Expected shared ADT"),
+    }
+}
+
 fn parse(text: &str) -> Value {
     Purs_Data_Argonaut_Core::purust_json_parse_text(&purust_string_from_utf8(text)).expect("valid JSON")
 }
 
 fn error_string(value: &Value) -> String {
-    Data_Argonaut_Decode_Error_printJsonDecodeError(value.unwrap_class::<Rc<JsonDecodeError>>().clone())
+    Data_Argonaut_Decode_Error_printJsonDecodeError(value.unwrap_class_shared::<JsonDecodeError>())
 }
 
 fn same_error(a: &Value, b: &Value) -> bool {
@@ -45,11 +59,11 @@ fn same_error(a: &Value, b: &Value) -> bool {
             _ => false,
         }
     }
-    equal(a.unwrap_class::<Rc<JsonDecodeError>>(), b.unwrap_class::<Rc<JsonDecodeError>>())
+    equal(a.unwrap_class_shared::<JsonDecodeError>().as_ref(), b.unwrap_class_shared::<JsonDecodeError>().as_ref())
 }
 
 fn maybe(value: &Value) -> &Maybe {
-    value.unwrap_class::<Rc<Maybe>>().as_ref()
+    shared_ref::<Maybe>(value)
 }
 
 fn object_field(value: &Value, key: &str) -> Value {
@@ -208,7 +222,7 @@ fn run_array(input: &Value, fail_at: Option<usize>) -> ArrayRun {
     let candidate_value =
         candidate::PureScript_Backend_Optimizer_CoreFn_Json_decodeArrayImpl(fallback, candidate_decoder, input.clone());
     let candidate_calls = calls.swap(0, Ordering::SeqCst);
-    let candidate = candidate_value.unwrap_class::<Rc<Either>>().clone();
+    let candidate = candidate_value.unwrap_class_shared::<Either>();
     let reference = PureScript_Backend_Optimizer_CoreFn_Json_decodeArrayPS(reference_decoder, input.clone());
     let reference_calls = calls.swap(0, Ordering::SeqCst);
     ArrayRun { candidate, reference, fallback_calls: fallback_calls.load(Ordering::SeqCst), candidate_calls, reference_calls }
@@ -256,7 +270,7 @@ fn run_ann(module: &str, table: &Value, input: &Value) -> AnnRun {
     let path = String::from("test/path");
     let candidate_value = candidate::PureScript_Backend_Optimizer_CoreFn_Json_decodeAnnWithUsageImpl(
         fallback, module.to_owned(), table.clone(), path.clone(), input.clone());
-    let candidate = candidate_value.unwrap_class::<Rc<Either>>().clone();
+    let candidate = candidate_value.unwrap_class_shared::<Either>();
     let reference = PureScript_Backend_Optimizer_CoreFn_Json_decodeAnnWithUsagePS(
         module.to_owned(), table.clone(), path, input.clone());
     AnnRun { candidate, reference, fallback_calls: fallback_calls.load(Ordering::SeqCst) }
@@ -281,7 +295,7 @@ fn compare_ann(run: &AnnRun, context: &str) -> bool {
 fn type_entry(ann: &Value) -> Rc<ExprType> {
     let value = ann.get_type_kw();
     match maybe(&value) {
-        Maybe::Just(entry) => entry.unwrap_class::<Rc<ExprType>>().clone(),
+        Maybe::Just(entry) => entry.unwrap_class_shared::<ExprType>(),
         Maybe::Nothing => panic!("expected a type"),
     }
 }
@@ -289,7 +303,7 @@ fn type_entry(ann: &Value) -> Rc<ExprType> {
 fn meta_entry(ann: &Value) -> Rc<Meta> {
     let value = ann.get_meta();
     match maybe(&value) {
-        Maybe::Just(entry) => entry.unwrap_class::<Rc<Meta>>().clone(),
+        Maybe::Just(entry) => entry.unwrap_class_shared::<Meta>(),
         Maybe::Nothing => panic!("expected a meta"),
     }
 }
@@ -455,7 +469,8 @@ fn main() {
         let Either::Right(ann) = run.candidate.as_ref() else { panic!("expected success") };
         let meta_value = ann.get_meta();
         let Maybe::Just(meta_value) = maybe(&meta_value) else { panic!("expected meta") };
-        let Meta::IsConstructor(_, identifiers) = meta_value.unwrap_class::<Rc<Meta>>().as_ref() else {
+        let meta_value = meta_value.unwrap_class_shared::<Meta>();
+        let Meta::IsConstructor(_, identifiers) = meta_value.as_ref() else {
             panic!("expected IsConstructor")
         };
         assert_eq!(identifiers.array_len(), 2);
@@ -490,8 +505,8 @@ fn main() {
         let Either::Right(ann_second) = run_second.candidate.as_ref() else { panic!("expected success") };
         let first_entry = type_entry(ann_first);
         let second_entry = type_entry(ann_second);
-        let table_first = shared_table.array_get(0).unwrap_class::<Rc<ExprType>>().clone();
-        let table_second = shared_table.array_get(1).unwrap_class::<Rc<ExprType>>().clone();
+        let table_first = shared_table.array_get(0).unwrap_class_shared::<ExprType>();
+        let table_second = shared_table.array_get(1).unwrap_class_shared::<ExprType>();
         assert!(Rc::ptr_eq(&first_entry, &table_first), "annotation type 0 must share the table entry");
         assert!(Rc::ptr_eq(&second_entry, &table_second), "annotation type 1 must share the table entry");
         let ExprType::Array(element) = table_second.as_ref() else { panic!("expected Array") };
@@ -575,7 +590,7 @@ fn main() {
         assert!(Rc::ptr_eq(recorded.3.unwrap_class::<Rc<Object>>(), fallback_input.unwrap_class::<Rc<Object>>()));
         let reference = PureScript_Backend_Optimizer_CoreFn_Json_decodeAnnWithUsagePS(
             fallback_module, fallback_table, fallback_path, fallback_input);
-        let candidate_result = result.unwrap_class::<Rc<Either>>().clone();
+        let candidate_result = result.unwrap_class_shared::<Either>();
         match (candidate_result.as_ref(), reference.as_ref()) {
             (Either::Left(a), Either::Left(b)) => {
                 assert!(same_error(a, b));

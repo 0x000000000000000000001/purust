@@ -23,6 +23,20 @@ mod candidate {
     // NATIVE_FFI
 }
 
+// Tolerant reader for values the generator can box as Class(Rc<T>) or
+// ClassShared(T). Foreign handles keep their Class-only readers below.
+fn shared_ref<T: std::any::Any + 'static>(value: &Value) -> &T {
+    match value.resolve() {
+        Value::Class(payload) => payload
+            .downcast_ref::<Rc<T>>()
+            .map(|node| node.as_ref())
+            .or_else(|| payload.downcast_ref::<T>())
+            .expect("Expected shared ADT"),
+        Value::ClassShared(payload) => payload.downcast_ref::<T>().expect("Expected shared ADT"),
+        _ => panic!("Expected shared ADT"),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Value builders for the exact decoder representations.
 
@@ -46,6 +60,24 @@ fn boxed<T: std::any::Any + Send + Sync + 'static>(value: T) -> Value {
 // the node allocation itself, exactly like the decoder's box_* helpers.
 fn boxed_rc<T: std::any::Any + Send + Sync + 'static>(value: Rc<T>) -> Value {
     Value::Class(Rc::new(value))
+}
+
+// ClassShared builders for generator-produced owners. The tolerant validator
+// must read them exactly like the nested Class forms built above.
+fn maybe_shared(value: Option<Value>) -> Value {
+    let payload = match value {
+        Some(value) => Maybe::Just(value),
+        None => Maybe::Nothing,
+    };
+    Value::ClassShared(Rc::new(payload))
+}
+
+fn boxed_shared<T: std::any::Any + Send + Sync + 'static>(value: T) -> Value {
+    Value::ClassShared(Rc::new(value))
+}
+
+fn boxed_shared_rc<T: std::any::Any + Send + Sync + 'static>(value: Rc<T>) -> Value {
+    Value::ClassShared(value)
 }
 
 fn source_id(module: &str, id: i64) -> Value {
@@ -108,6 +140,98 @@ fn ann_binding(module: &str, id: i64) -> Value {
 
 fn ann_variable(module: &str, id: i64) -> Value {
     ann_full(None, Some((module, id)))
+}
+
+fn binding_usage_shared(module: &str, id: i64) -> Value {
+    Value::Record_binding_hasEscapingUseContext_maxUses(PerceusPtr::new(
+        purust_core::Record_binding_hasEscapingUseContext_maxUses {
+            binding: Some(source_id(module, id)),
+            maxUses: Some(maybe_shared(None)),
+            hasEscapingUseContext: Some(maybe_shared(None)),
+        },
+    ))
+}
+
+fn variable_use_shared(module: &str, id: i64) -> Value {
+    Value::Record_binding_lastLocalUse(PerceusPtr::new(purust_core::Record_binding_lastLocalUse {
+        binding: Some(source_id(module, id)),
+        lastLocalUse: Some(maybe_shared(None)),
+    }))
+}
+
+fn usage_value_shared(binding_usage_field: Option<Value>, variable_use_field: Option<Value>) -> Value {
+    Value::Record_bindingUsage_variableUse(PerceusPtr::new(
+        purust_core::Record_bindingUsage_variableUse {
+            bindingUsage: Some(maybe_shared(binding_usage_field)),
+            variableUse: Some(maybe_shared(variable_use_field)),
+        },
+    ))
+}
+
+fn ann_full_shared(binding: Option<(&str, i64)>, variable: Option<(&str, i64)>) -> Value {
+    let binding_usage_field = binding.map(|(module, id)| binding_usage_shared(module, id));
+    let variable_use_field = variable.map(|(module, id)| variable_use_shared(module, id));
+    ann_source(maybe_shared(Some(usage_value_shared(binding_usage_field, variable_use_field))))
+}
+
+fn ann_shared() -> Value {
+    ann_source(maybe_shared(None))
+}
+
+fn ann_shared_binding(module: &str, id: i64) -> Value {
+    ann_full_shared(Some((module, id)), None)
+}
+
+fn ann_shared_variable(module: &str, id: i64) -> Value {
+    ann_full_shared(None, Some((module, id)))
+}
+
+// A valid module whose expressions, binds and usage Maybes all use the
+// ClassShared carrier the generator emits.
+fn shared_carrier_accepts() -> Value {
+    module(
+        U,
+        vec![],
+        vec![boxed_shared(Bind::NonRec(Rc::new(Binding::Binding(
+            ann_shared(),
+            purust_string_from_utf8("f"),
+            let_expr(
+                ann_shared(),
+                boxed_shared(Bind::NonRec(Rc::new(Binding::Binding(
+                    ann_shared_binding(U, 0),
+                    purust_string_from_utf8("τ"),
+                    abs(
+                        ann_shared_binding(U, 1),
+                        "x",
+                        var(ann_shared_variable(U, 1), None, "x"),
+                    ),
+                )))),
+                var(ann_shared_variable(U, 0), None, "τ"),
+            ),
+        ))))],
+    )
+}
+
+// The same shapes with a mismatched use name must produce the exact first
+// error through the shared carriers.
+fn shared_carrier_rejects() -> Value {
+    module(
+        U,
+        vec![],
+        vec![boxed_shared(Bind::NonRec(Rc::new(Binding::Binding(
+            ann_shared(),
+            purust_string_from_utf8("f"),
+            let_expr(
+                ann_shared(),
+                boxed_shared(Bind::NonRec(Rc::new(Binding::Binding(
+                    ann_shared_binding(U, 0),
+                    purust_string_from_utf8("é😀"),
+                    var(ann_shared(), None, "p"),
+                )))),
+                var(ann_shared_variable(U, 0), None, "ε"),
+            ),
+        ))))],
+    )
 }
 
 // `sourceUsage = Just { bindingUsage: Nothing, variableUse: Nothing }` is the
@@ -319,7 +443,7 @@ fn run(module: &Value) -> Run {
 }
 
 fn error_message(value: &Value) -> &str {
-    match value.unwrap_class::<Rc<JsonDecodeError>>().as_ref() {
+    match shared_ref::<JsonDecodeError>(value) {
         JsonDecodeError::TypeMismatch(message) => message,
         _ => panic!("expected a TypeMismatch"),
     }
@@ -327,7 +451,7 @@ fn error_message(value: &Value) -> &str {
 
 fn print_error(value: &Value) -> String {
     Data_Argonaut_Decode_Error_printJsonDecodeError(
-        value.unwrap_class::<Rc<JsonDecodeError>>().clone(),
+        value.unwrap_class_shared::<JsonDecodeError>(),
     )
 }
 
@@ -531,6 +655,24 @@ fn main() {
     // 1. Every constructor and guard reaches the native path successfully.
     assert_accepts("all branches", &all_branches());
     assert_accepts("unicode identifiers", &unicode_accepts());
+    assert_accepts("shared carriers", &shared_carrier_accepts());
+    assert_rejects(
+        "shared carriers mismatch",
+        &shared_carrier_rejects(),
+        "variableUse outside its lexical binding",
+    );
+    {
+        // The reader accepts a ClassShared JsonDecodeError exactly like the
+        // legacy nested Class error.
+        let class_error = Value::Class(Rc::new(Rc::new(JsonDecodeError::TypeMismatch(
+            purust_string_from_utf8("carrier"),
+        ))));
+        let shared_error = Value::ClassShared(Rc::new(JsonDecodeError::TypeMismatch(
+            purust_string_from_utf8("carrier"),
+        )));
+        assert_eq!(print_error(&class_error), print_error(&shared_error));
+        assert_eq!(error_message(&class_error), error_message(&shared_error));
+    }
     assert_rejects(
         "unicode identifier mismatch",
         &module(
@@ -1389,8 +1531,8 @@ fn decode_without_validation(input: &Value) -> Result<Value, Rc<JsonDecodeError>
         validate,
         input.clone(),
     );
-    match decoded.unwrap_class::<Rc<Either>>().as_ref() {
-        Either::Left(error) => Err(error.unwrap_class::<Rc<JsonDecodeError>>().clone()),
+    match decoded.unwrap_class_shared::<Either>().as_ref() {
+        Either::Left(error) => Err(error.unwrap_class_shared::<JsonDecodeError>()),
         Either::Right(module) => Ok(module.clone()),
     }
 }

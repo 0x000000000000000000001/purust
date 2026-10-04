@@ -10,19 +10,22 @@ use Purs_PureScript_Backend_Optimizer_Directives as parser;
 
 fn result_key(result: &Either) -> String {
     let Either::Right(value) = result else { panic!("expected a valid directive"); };
-    let maybe = value.unwrap_class::<Arc<Maybe>>();
+    let maybe = value.unwrap_class_shared::<Maybe>();
     let Maybe::Just(pair) = maybe.as_ref() else { return "empty".into(); };
-    let Tuple::Tuple(key, content) = pair.unwrap_class::<Arc<Tuple>>().as_ref();
-    let EvalRef::EvalExtern(qualified) = key.unwrap_class::<Arc<EvalRef>>().as_ref() else { panic!("local directive"); };
+    let pair = pair.unwrap_class_shared::<Tuple>();
+    let Tuple::Tuple(key, content) = pair.as_ref();
+    let key = key.unwrap_class_shared::<EvalRef>();
+    let EvalRef::EvalExtern(qualified) = key.as_ref() else { panic!("local directive"); };
     let Qualified::Qualified(module, ident) = qualified.as_ref();
     let Maybe::Just(module) = module.as_ref() else { panic!("unqualified directive"); };
-    let Tuple::Tuple(accessor, directive) = content.unwrap_class::<Arc<Tuple>>().as_ref();
-    let accessor = match accessor.unwrap_class::<Arc<InlineAccessor>>().as_ref() {
+    let content = content.unwrap_class_shared::<Tuple>();
+    let Tuple::Tuple(accessor, directive) = content.as_ref();
+    let accessor = match accessor.unwrap_class_shared::<InlineAccessor>().as_ref() {
         InlineAccessor::InlineRef => "ref".into(),
         InlineAccessor::InlineProp(name) => format!("prop:{name}"),
         InlineAccessor::InlineSpineProp(name) => format!("spine:{name}"),
     };
-    let directive = match directive.unwrap_class::<Arc<InlineDirective>>().as_ref() {
+    let directive = match directive.unwrap_class_shared::<InlineDirective>().as_ref() {
         InlineDirective::InlineDefault => "default".into(),
         InlineDirective::InlineNever => "never".into(),
         InlineDirective::InlineAlways => "always".into(),

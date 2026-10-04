@@ -86,9 +86,9 @@ fn main() {
         let boxed = Value::Class(Rc::new(tree.clone()));
         let fallback = Value::Class(Rc::new(full.clone()));
         let selected = TagBorrows_converted(boxed.clone(), fallback.clone());
-        assert!(Rc::ptr_eq(selected.unwrap_class::<Rc<Tree>>(), expected));
+        assert!(Rc::ptr_eq(&selected.unwrap_class_shared::<Tree>(), expected));
         let selected = TagBorrows_opaque(boxed.clone(), fallback);
-        assert!(Rc::ptr_eq(selected.unwrap_class::<Rc<Tree>>(), expected));
+        assert!(Rc::ptr_eq(&selected.unwrap_class_shared::<Tree>(), expected));
         assert_eq!(TagBorrows_opaqueEmpty(boxed), matches!(tree.as_ref(), Tree::Empty));
     }
     assert_eq!(std::mem::size_of::<Color>(), 1);

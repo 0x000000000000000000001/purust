@@ -147,7 +147,7 @@ fn main() {
     }
     let recursive = TailCalls_returned(Value::Class(std::rc::Rc::new(owner.clone()))).unwrap_func1();
     let returned = recursive(mk_int(0));
-    assert!(std::rc::Rc::ptr_eq(&owner, returned.unwrap_class::<std::rc::Rc<Holder>>()));
+    assert!(std::rc::Rc::ptr_eq(&owner, &returned.unwrap_class_shared::<Holder>()));
     drop(returned);
     drop(recursive);
     assert_eq!(std::rc::Rc::strong_count(&owner), 1, "returned recursive function leaked its environment");

@@ -425,7 +425,7 @@ emit layouts arrays representation name schema =
       function name "purust_core::Value" (name <> "_value(raw, absent).map(|value| purust_core::Value::NativeRecord(std::rc::Rc::new(value)))")
       <> function (name <> "_value") (name <> "_Record") (body (ObjectSchema fields))
     Derived (Just ty) program | arrays ->
-      function name "purust_core::Value" (name <> "_value(raw, absent).map(|value| purust_core::Value::Class(std::rc::Rc::new(value)))")
+      function name "purust_core::Value" (name <> "_value(raw, absent).map(|value| " <> sharedBox (representation ty) "value" <> ")")
       <> function (name <> "_value") (representation ty) (slots (keys program) <> programCode Set.empty (keys program) name program)
     _ -> function name "purust_core::Value" (body schema))
     <> (case schema of
@@ -434,6 +434,12 @@ emit layouts arrays representation name schema =
     <> foldMap (\(Tuple child value) -> emit layouts arrays representation child value) (children name schema)
   where
   function label ty code = "fn " <> label <> "<I: " <> runtime <> "SchemaInput>(raw: I, absent: &mut Option<purust_core::Value>) -> Option<" <> ty <> "> {\n" <> code <> "\n}\n"
+  -- Decoded shared ADTs are already owned Rc values. Erase the owner unsized
+  -- (ClassShared) instead of nesting a second Rc around it at every crossing.
+  sharedBox ty value =
+    if String.take (String.length "std::rc::Rc<") ty == "std::rc::Rc<"
+      then "purust_core::Value::ClassShared(" <> value <> ")"
+      else "purust_core::Value::Class(std::rc::Rc::new(" <> value <> "))"
   success value = "Some(" <> value <> ")"
   body = case _ of
     Scalar tag -> "raw.scalar(" <> quote tag <> ")"

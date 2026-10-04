@@ -27,7 +27,7 @@ import Purust.ChildBranchPrinter (predicateFunction)
 import Purust.ChildUpdates (childUpdate)
 import Purust.RecordUpdates (RecordUpdate(..), RecordReplacement(..), recordUpdate)
 import Purust.ClassFields (superclassFields)
-import Purust.DataLayout (ValueEnums, isValueEnum, isOpaqueForeignType)
+import Purust.DataLayout (ValueEnums, isValueEnum, isOpaqueForeignType, isForeignHandle)
 import Purust.ThunkFusion (optimizeThunkProducers)
 import Purust.ListFusion (optimizeListPipelines)
 import Purust.RecordScalarization (optimizeRecordLoops)
@@ -899,6 +899,10 @@ codegenPreludeWithRenames renames shapes =
   "    IntArray(std::rc::Rc<Vec<i64>>),\n" <>
   funcVariants <>
   "    Class(std::rc::Rc<dyn std::any::Any>),\n" <>
+  -- An Arc/Rc-owned payload (a native ADT or class dictionary) is erased
+  -- unsized. Boxing keeps the existing allocation instead of nesting a second
+  -- Rc around the owner; unwrapping hands the owner back with one refcount.
+  "    ClassShared(std::rc::Rc<dyn std::any::Any>),\n" <>
   "    Thunk(perceus_ptr::PerceusPtr<Thunk>),\n" <>
   "    Record_a(perceus_ptr::PerceusPtr<Record_a>),\n" <>
   "    DynamicRecord(perceus_ptr::PerceusPtr<RecordFields>),\n" <>
@@ -1002,7 +1006,18 @@ codegenPreludeWithRenames renames shapes =
   "    }\n" <>
   funcUnwraps <>
   "    pub fn unwrap_class<T: 'static>(&self) -> &T {\n" <>
-  "        match self.resolve() { Value::Class(v) => v.downcast_ref::<T>().unwrap(), Value::NativeElement(v, index) => v.class(*index).downcast_ref::<T>().unwrap(), _ => panic!(\"Expected Class\") }\n" <>
+  "        match self.resolve() { Value::Class(v) => v.downcast_ref::<T>().unwrap(), Value::ClassShared(v) => v.downcast_ref::<T>().unwrap(), Value::NativeElement(v, index) => v.class(*index).downcast_ref::<T>().unwrap(), _ => panic!(\"Expected Class\") }\n" <>
+  "    }\n" <>
+  -- Return the owner stored by `ClassShared` without allocating a second Rc.
+  -- Both legacy forms preserve their existing owner. T need not implement
+  -- Clone: foreign handles can contain locks or other identity-bearing state.
+  "    pub fn unwrap_class_shared<T: std::any::Any + 'static>(&self) -> std::rc::Rc<T> {\n" <>
+  "        match self.resolve() {\n" <>
+  "            Value::ClassShared(v) => v.clone().downcast::<T>().unwrap_or_else(|_| panic!(\"Expected ClassShared\")),\n" <>
+  "            Value::Class(v) => match v.downcast_ref::<std::rc::Rc<T>>() { Some(shared) => shared.clone(), None => v.clone().downcast::<T>().unwrap_or_else(|_| panic!(\"Expected Class\")) },\n" <>
+  "            Value::NativeElement(v, index) => v.class(*index).downcast_ref::<std::rc::Rc<T>>().expect(\"Expected shared Class element\").clone(),\n" <>
+  "            _ => panic!(\"Expected Class\"),\n" <>
+  "        }\n" <>
   "    }\n" <>
   "    pub fn drop_explicit(self) {\n" <>
   "    }\n" <>
@@ -1358,9 +1373,39 @@ boxUnboxPure renames valueEnums globalClassFields currentMod expected actual cod
                     (if shape == "Record_a"
                        then "(perceus_ptr::PerceusPtr::new(purust_core::Record_a::from_fields(vec![" <> fieldPairs <> "])))"
                        else "(perceus_ptr::PerceusPtr::new(purust_core::" <> shape <> " { " <> fieldInits <> " }))") <> " }"
-               Nothing -> "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
+               Nothing ->
+                 let
+                    -- Foreign data handles keep the legacy carrier consumed by
+                    -- their native FFI. Only generated ADTs use ClassShared.
+                    -- Object also keeps this ABI for direct codegen callers.
+                   nativeHandle = case unwrapType actual of
+                     ADT className fqn _ ->
+                       let
+                         modName = String.replaceAll (Pattern ".") (Replacement "_")
+                           (String.joinWith "_" (Array.dropEnd 1 fqn))
+                         name = sanitizeIdent (fromMaybe className (Array.last fqn))
+                        in isForeignHandle valueEnums modName name || (modName == "Foreign_Object" && name == "Object")
+                     _ -> false
+                   -- A shared ADT is already an owned Rc. Erase that owner
+                   -- unsized instead of nesting a second Rc around it, which
+                   -- would allocate and free an extra box per dynamic crossing.
+                 in if nativeHandle
+                   then "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
+                   else if String.take (String.length "std::rc::Rc<") actStr == "std::rc::Rc<"
+                     then "purust_core::Value::ClassShared(" <> code <> ")"
+                     else "purust_core::Value::Class(std::rc::Rc::new(" <> code <> "))"
         else if (actStr == "crate::UnknownType" || actStr == "purust_core::Value") && isExpADT then
-          let downcast value = "(" <> value <> ").unwrap_class::<" <> expStr <> ">().clone()"
+          let
+            -- `std::rc::Rc<X>` is the shared ADT representation before the
+            -- threaded Rc -> Arc rewrite (see Purust.Threading). Its owner is
+            -- stored unsized in the shared carrier: unboxing hands it back
+            -- with one refcount bump instead of rebuilding a nested box.
+            rcPrefix = "std::rc::Rc<"
+            sharedExpected = String.take (String.length rcPrefix) expStr == rcPrefix
+            sharedInner = String.take (String.length expStr - String.length rcPrefix - 1) (String.drop (String.length rcPrefix) expStr)
+            downcast value = if sharedExpected
+              then "(" <> value <> ").unwrap_class_shared::<" <> sharedInner <> ">()"
+              else "(" <> value <> ").unwrap_class::<" <> expStr <> ">().clone()"
           in case unwrapType expected of
             ADT className fqn _ ->
               let modName = String.replaceAll (Pattern ".") (Replacement "_")
@@ -1390,7 +1435,7 @@ boxUnboxPure renames valueEnums globalClassFields currentMod expected actual cod
                         in recordFieldIdent renames field <> ": " <> converted
                       ) fields
                   in "{ let __purust_class_value = " <> code <> "; " <>
-                     "if matches!(__purust_class_value.resolve(), purust_core::Value::Class(_)) { " <>
+                     "if matches!(__purust_class_value.resolve(), purust_core::Value::Class(_) | purust_core::Value::ClassShared(_)) { " <>
                      downcast "__purust_class_value" <> " } else { std::rc::Rc::new(" <>
                      nativeName <> " { " <> String.joinWith ", " fieldValues <> " }) } }"
             _ -> downcast code

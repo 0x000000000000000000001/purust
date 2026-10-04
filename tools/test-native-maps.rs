@@ -22,7 +22,8 @@ fn key(value: &Value) -> String {
         Value::Int(n) => n.to_string(),
         Value::String(s) => format!("{s:?}"),
         _ => {
-            let Qualified::Qualified(m, i) = value.unwrap_class::<Rc<Qualified>>().as_ref();
+            let qualified = value.unwrap_class_shared::<Qualified>();
+            let Qualified::Qualified(m, i) = qualified.as_ref();
             format!("{}:{}", match m.as_ref() { Maybe::Nothing => "-".to_string(), Maybe::Just(v) => key(v) }, key(i))
         }
     }
@@ -34,6 +35,12 @@ fn qualified(module: Option<&str>, ident: &str) -> Value {
     Value::Class(Rc::new(Rc::new(Qualified::Qualified(Rc::new(match module {
         None => Maybe::Nothing, Some(s) => Maybe::Just(Value::String(purust_string_from_utf8(s)))
     }), Value::String(purust_string_from_utf8(ident))))))
+}
+// A generator-produced shared owner for the same Qualified value.
+fn qualified_shared(module: Option<&str>, ident: &str) -> Value {
+    Value::ClassShared(Rc::new(Qualified::Qualified(Rc::new(match module {
+        None => Maybe::Nothing, Some(s) => Maybe::Just(Value::String(purust_string_from_utf8(s)))
+    }), Value::String(purust_string_from_utf8(ident)))))
 }
 type Insert = fn(Value, Value, Value, Rc<Map>) -> Rc<Map>;
 type Lookup = fn(Value, Value, Rc<Map>) -> Rc<Maybe>;
@@ -69,6 +76,17 @@ fn main() {
     let quals: Vec<Value> = [None, Some(""), Some("A"), Some("B"), Some("é")].into_iter()
         .flat_map(|m| ["", "x", "y", "🦀"].into_iter().map(move |i| qualified(m, i))).collect();
     compare_operations(&quals, Purs_PureScript_Backend_Optimizer_CoreFn::PureScript_Backend_Optimizer_CoreFn_ordQualified(Purs_Data_Ord::Data_Ord_ordString()),
+        PureScript_Backend_Optimizer_NativeMaps_insertQualifiedIdentImpl, PureScript_Backend_Optimizer_NativeMaps_lookupQualifiedIdentImpl);
+    // ClassShared and mixed carriers of the same Qualified keys must order and
+    // collide exactly like their legacy nested Class forms.
+    let mut carriers: Vec<Value> = Vec::new();
+    for module in [None, Some("A"), Some("é")] {
+        for ident in ["", "x", "🦀"] {
+            carriers.push(qualified(module, ident));
+            carriers.push(qualified_shared(module, ident));
+        }
+    }
+    compare_operations(&carriers, Purs_PureScript_Backend_Optimizer_CoreFn::PureScript_Backend_Optimizer_CoreFn_ordQualified(Purs_Data_Ord::Data_Ord_ordString()),
         PureScript_Backend_Optimizer_NativeMaps_insertQualifiedIdentImpl, PureScript_Backend_Optimizer_NativeMaps_lookupQualifiedIdentImpl);
     let ord = Purs_Data_Ord::Data_Ord_ordInt();
     let compare = ord.compare.clone();

@@ -1,4 +1,4 @@
-module Purust.DataLayout (ValueEnums, isNullaryEnum, valueEnumsForModule, valueEnumsForModules, opaqueEmptyTypesForModules, isValueEnum, isOpaqueForeignType, opaqueForeignTypeKey) where
+module Purust.DataLayout (ValueEnums, isNullaryEnum, valueEnumsForModule, valueEnumsForModules, opaqueEmptyTypesForModules, isValueEnum, isOpaqueForeignType, opaqueForeignTypeKey, foreignHandleKey, isForeignHandle) where
 
 import Prelude
 
@@ -49,6 +49,14 @@ opaqueForeignTypeKey modName typeName = Tuple (moduleKey modName) (opaqueForeign
 
 isOpaqueForeignType :: ValueEnums -> String -> String -> Boolean
 isOpaqueForeignType enums modName typeName = isValueEnum enums modName (opaqueForeignTypeMarker <> typeName)
+
+-- Native FFI owns the dynamic ABI of foreign data handles. Preserve its nested
+-- Class carrier even when generated algebraic data uses an unsized shared owner.
+foreignHandleKey :: String -> String -> Tuple String String
+foreignHandleKey modName typeName = Tuple (moduleKey modName) ("$foreign$" <> typeName)
+
+isForeignHandle :: ValueEnums -> String -> String -> Boolean
+isForeignHandle enums modName typeName = isValueEnum enums modName ("$foreign$" <> typeName)
 
 -- Data types declared without constructors have no native layout: no value can
 -- be built, so any value present must have crossed unsafeCoerce or FFI and is a

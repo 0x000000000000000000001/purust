@@ -43,7 +43,7 @@ fn main() {
     assert_eq!(Branches_function(false, mk_int(19), f.clone()).unwrap_func1()(mk_int(41)).unwrap_int(), 42);
     assert_eq!(Branches_function(true, mk_int(19), f).unwrap_int(), 19);
     let adt = std::rc::Rc::new(Boxed(42));
-    assert_eq!(Branches_adt(false, mk_int(19), adt.clone()).unwrap_class::<std::rc::Rc<Boxed>>().0, 42);
+    assert_eq!(Branches_adt(false, mk_int(19), adt.clone()).unwrap_class_shared::<Boxed>().0, 42);
     assert_eq!(Branches_adt(true, mk_int(19), adt).unwrap_int(), 19);
 }
 `;

@@ -25,7 +25,8 @@ fn keys(object: &Rc<Object>) -> Vec<String> {
     object.entries().into_iter().map(|(key, _)| key).collect()
 }
 fn event(result: Rc<Either>) -> i64 {
-    JsonReadObjectProbe_taggedValue(right(result).unwrap_class::<Rc<Tagged>>().clone())
+    let tagged = right(result).unwrap_class_shared::<Tagged>();
+    JsonReadObjectProbe_taggedValue(tagged)
 }
 
 #[test]

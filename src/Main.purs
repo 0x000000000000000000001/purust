@@ -20,7 +20,7 @@ import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, wr
 import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
 import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
-import Purust.DataLayout (opaqueEmptyTypesForModules, opaqueForeignTypeKey, valueEnumsForModules)
+import Purust.DataLayout (opaqueEmptyTypesForModules, opaqueForeignTypeKey, foreignHandleKey, valueEnumsForModules)
 import Purust.ClassFields (superclassFields)
 import Purust.Monomorphization (buildGlobalTypes, monomorphizeModules)
 import Purust.Threading (threadedRust, threadedPrelude, rustModules)
@@ -210,6 +210,9 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     let globalValueEnums = Set.unions
           [ valueEnumsForModules finalModules
           , opaqueForeignTypes
+          , Set.fromFoldable $ Array.concatMap
+              (\(Tuple dotted input) -> map (foreignHandleKey dotted) (foreignUnboundTypes input.source ""))
+              inputs
           , opaqueEmptyTypesForModules finalModules
           ]
 

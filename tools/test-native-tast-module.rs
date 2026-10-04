@@ -23,12 +23,26 @@ mod candidate {
     // NATIVE_FFI
 }
 
+// Tolerant reader for values the generator can box as Class(Rc<T>) or
+// ClassShared(T). Foreign handles keep their Class-only readers below.
+fn shared_ref<T: std::any::Any + 'static>(value: &Value) -> &T {
+    match value.resolve() {
+        Value::Class(payload) => payload
+            .downcast_ref::<Rc<T>>()
+            .map(|node| node.as_ref())
+            .or_else(|| payload.downcast_ref::<T>())
+            .expect("Expected shared ADT"),
+        Value::ClassShared(payload) => payload.downcast_ref::<T>().expect("Expected shared ADT"),
+        _ => panic!("Expected shared ADT"),
+    }
+}
+
 fn parse(text: &str) -> Value {
     Purs_Data_Argonaut_Core::purust_json_parse_text(&purust_string_from_utf8(text)).expect("valid JSON")
 }
 
 fn error_string(value: &Value) -> String {
-    Data_Argonaut_Decode_Error_printJsonDecodeError(value.unwrap_class::<Rc<JsonDecodeError>>().clone())
+    Data_Argonaut_Decode_Error_printJsonDecodeError(value.unwrap_class_shared::<JsonDecodeError>())
 }
 
 fn same_error(a: &Value, b: &Value) -> bool {
@@ -43,11 +57,11 @@ fn same_error(a: &Value, b: &Value) -> bool {
             _ => false,
         }
     }
-    equal(a.unwrap_class::<Rc<JsonDecodeError>>(), b.unwrap_class::<Rc<JsonDecodeError>>())
+    equal(a.unwrap_class_shared::<JsonDecodeError>().as_ref(), b.unwrap_class_shared::<JsonDecodeError>().as_ref())
 }
 
 fn maybe(value: &Value) -> &Maybe {
-    value.unwrap_class::<Rc<Maybe>>().as_ref()
+    shared_ref::<Maybe>(value)
 }
 
 fn eq_json(a: &Value, b: &Value) -> bool {
@@ -211,7 +225,7 @@ fn eq_qualified(a: &Qualified, b: &Qualified) -> bool {
 }
 
 fn eq_prop(a: &Value, b: &Value, eq_item: &dyn Fn(&Value, &Value) -> bool) -> bool {
-    match (a.unwrap_class::<Rc<Prop>>().as_ref(), b.unwrap_class::<Rc<Prop>>().as_ref()) {
+    match (a.unwrap_class_shared::<Prop>().as_ref(), b.unwrap_class_shared::<Prop>().as_ref()) {
         (Prop::Prop(ka, va), Prop::Prop(kb, vb)) => ka == kb && eq_item(va, vb),
         _ => false,
     }
@@ -231,7 +245,7 @@ fn eq_literal(a: &Literal, b: &Literal, eq_item: &dyn Fn(&Value, &Value) -> bool
 }
 
 fn eq_expr(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Expr>>().as_ref(), b.unwrap_class::<Rc<Expr>>().as_ref()) {
+    match (a.unwrap_class_shared::<Expr>().as_ref(), b.unwrap_class_shared::<Expr>().as_ref()) {
         (Expr::ExprVar(a0, a1), Expr::ExprVar(b0, b1)) => eq_ann(a0, b0) && eq_qualified(a1, b1),
         (Expr::ExprLit(a0, a1), Expr::ExprLit(b0, b1)) => eq_ann(a0, b0) && eq_literal(a1, b1, &eq_expr),
         (Expr::ExprConstructor(a0, a1, a2, a3), Expr::ExprConstructor(b0, b1, b2, b3)) => {
@@ -270,7 +284,7 @@ fn eq_expr_arc(a: &Rc<Expr>, b: &Rc<Expr>) -> bool {
 }
 
 fn eq_binder(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Binder>>().as_ref(), b.unwrap_class::<Rc<Binder>>().as_ref()) {
+    match (a.unwrap_class_shared::<Binder>().as_ref(), b.unwrap_class_shared::<Binder>().as_ref()) {
         (Binder::BinderNull(a0), Binder::BinderNull(b0)) => eq_ann(a0, b0),
         (Binder::BinderVar(a0, a1), Binder::BinderVar(b0, b1)) => eq_ann(a0, b0) && a1 == b1,
         (Binder::BinderNamed(a0, a1, a2), Binder::BinderNamed(b0, b1, b2)) => {
@@ -291,7 +305,7 @@ fn eq_binder_arc(a: &Rc<Binder>, b: &Rc<Binder>) -> bool {
 }
 
 fn eq_binding(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Binding>>().as_ref(), b.unwrap_class::<Rc<Binding>>().as_ref()) {
+    match (a.unwrap_class_shared::<Binding>().as_ref(), b.unwrap_class_shared::<Binding>().as_ref()) {
         (Binding::Binding(a0, a1, a2), Binding::Binding(b0, b1, b2)) => {
             eq_ann(a0, b0) && a1 == b1 && eq_expr_arc(a2, b2)
         }
@@ -300,7 +314,7 @@ fn eq_binding(a: &Value, b: &Value) -> bool {
 }
 
 fn eq_bind(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Bind>>().as_ref(), b.unwrap_class::<Rc<Bind>>().as_ref()) {
+    match (a.unwrap_class_shared::<Bind>().as_ref(), b.unwrap_class_shared::<Bind>().as_ref()) {
         (Bind::NonRec(a0), Bind::NonRec(b0)) => {
             eq_binding(&Value::Class(Rc::new(a0.clone())), &Value::Class(Rc::new(b0.clone())))
         }
@@ -310,14 +324,14 @@ fn eq_bind(a: &Value, b: &Value) -> bool {
 }
 
 fn eq_guard(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Guard>>().as_ref(), b.unwrap_class::<Rc<Guard>>().as_ref()) {
+    match (a.unwrap_class_shared::<Guard>().as_ref(), b.unwrap_class_shared::<Guard>().as_ref()) {
         (Guard::Guard(a0, a1), Guard::Guard(b0, b1)) => eq_expr_arc(a0, b0) && eq_expr_arc(a1, b1),
         _ => false,
     }
 }
 
 fn eq_alternative(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<CaseAlternative>>().as_ref(), b.unwrap_class::<Rc<CaseAlternative>>().as_ref()) {
+    match (a.unwrap_class_shared::<CaseAlternative>().as_ref(), b.unwrap_class_shared::<CaseAlternative>().as_ref()) {
         (CaseAlternative::CaseAlternative(a0, a1), CaseAlternative::CaseAlternative(b0, b1)) => {
             eq_array(a0, b0, &eq_binder) && eq_case_guard(a1.as_ref(), b1.as_ref())
         }
@@ -334,21 +348,21 @@ fn eq_case_guard(a: &CaseGuard, b: &CaseGuard) -> bool {
 }
 
 fn eq_import(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Import>>().as_ref(), b.unwrap_class::<Rc<Import>>().as_ref()) {
+    match (a.unwrap_class_shared::<Import>().as_ref(), b.unwrap_class_shared::<Import>().as_ref()) {
         (Import::Import(a0, a1), Import::Import(b0, b1)) => eq_ann(a0, b0) && a1 == b1,
         _ => false,
     }
 }
 
 fn eq_re_export(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<ReExport>>().as_ref(), b.unwrap_class::<Rc<ReExport>>().as_ref()) {
+    match (a.unwrap_class_shared::<ReExport>().as_ref(), b.unwrap_class_shared::<ReExport>().as_ref()) {
         (ReExport::ReExport(a0, a1), ReExport::ReExport(b0, b1)) => a0 == b0 && a1 == b1,
         _ => false,
     }
 }
 
 fn eq_comment(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Comment>>().as_ref(), b.unwrap_class::<Rc<Comment>>().as_ref()) {
+    match (a.unwrap_class_shared::<Comment>().as_ref(), b.unwrap_class_shared::<Comment>().as_ref()) {
         (Comment::LineComment(x), Comment::LineComment(y)) => x == y,
         (Comment::BlockComment(x), Comment::BlockComment(y)) => x == y,
         _ => false,
@@ -366,7 +380,7 @@ fn eq_data_decl(a: &Value, b: &Value) -> bool {
 }
 
 fn eq_method(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Purs_Data_Tuple::Tuple>>().as_ref(), b.unwrap_class::<Rc<Purs_Data_Tuple::Tuple>>().as_ref()) {
+    match (a.unwrap_class_shared::<Purs_Data_Tuple::Tuple>().as_ref(), b.unwrap_class_shared::<Purs_Data_Tuple::Tuple>().as_ref()) {
         (Purs_Data_Tuple::Tuple::Tuple(a0, a1), Purs_Data_Tuple::Tuple::Tuple(b0, b1)) => {
             eq_string_value(a0, b0) && eq_expr_type_value(a1, b1)
         }
@@ -375,7 +389,7 @@ fn eq_method(a: &Value, b: &Value) -> bool {
 }
 
 fn eq_constraint(a: &Value, b: &Value) -> bool {
-    match (a.unwrap_class::<Rc<Purs_Data_Tuple::Tuple>>().as_ref(), b.unwrap_class::<Rc<Purs_Data_Tuple::Tuple>>().as_ref()) {
+    match (a.unwrap_class_shared::<Purs_Data_Tuple::Tuple>().as_ref(), b.unwrap_class_shared::<Purs_Data_Tuple::Tuple>().as_ref()) {
         (Purs_Data_Tuple::Tuple::Tuple(a0, a1), Purs_Data_Tuple::Tuple::Tuple(b0, b1)) => {
             eq_string_array(a0, b0) && eq_type_array(a1, b1)
         }
@@ -391,13 +405,13 @@ fn eq_class_decl(a: &Value, b: &Value) -> bool {
 }
 
 fn foreign_entries(map: &Value) -> Vec<(String, Value)> {
-    let map = map.unwrap_class::<Rc<Purs_Data_Map_Internal::Map>>().clone();
+    let map = map.unwrap_class_shared::<Purs_Data_Map_Internal::Map>();
     let entries = Purs_Data_Map_Internal::Data_Map_Internal_toUnfoldableUnordered(
         Purs_Data_Unfoldable::Data_Unfoldable_unfoldableArray(), map);
     let mut out = Vec::with_capacity(entries.array_len());
     for index in 0..entries.array_len() {
         let item = entries.array_get(index);
-        match item.unwrap_class::<Rc<Purs_Data_Tuple::Tuple>>().as_ref() {
+        match item.unwrap_class_shared::<Purs_Data_Tuple::Tuple>().as_ref() {
             Purs_Data_Tuple::Tuple::Tuple(key, value) => out.push((key.unwrap_string(), value.clone())),
             _ => unreachable!(),
         }
@@ -449,7 +463,7 @@ fn run(input: &Value) -> Run {
     }));
     let candidate_value = candidate::PureScript_Backend_Optimizer_CoreFn_Json_decodeModuleImpl(
         fallback, validate, input.clone());
-    let candidate = candidate_value.unwrap_class::<Rc<Either>>().clone();
+    let candidate = candidate_value.unwrap_class_shared::<Either>();
     let reference = PureScript_Backend_Optimizer_CoreFn_Json_decodeModulePS(input.clone());
     Run {
         candidate,
@@ -556,7 +570,7 @@ fn main() {
         assert_eq!(span.get_end().get_column().unwrap_int(), 7);
         // Annotation spans are ignored and stay empty.
         let first = module.get_decls().array_get(0);
-        let annotation = match first.unwrap_class::<Rc<Bind>>().as_ref() {
+        let annotation = match first.unwrap_class_shared::<Bind>().as_ref() {
             Bind::NonRec(binding) => match binding.as_ref() {
                 Binding::Binding(ann, _, _) => ann.clone(),
                 _ => unreachable!(),
@@ -575,7 +589,7 @@ fn main() {
         let Either::Right(module) = run.candidate.as_ref() else { panic!("valid-sharing must decode") };
         let annotation_type = |index: usize| -> Rc<ExprType> {
             let bind = module.get_decls().array_get(index);
-            let annotation = match bind.unwrap_class::<Rc<Bind>>().as_ref() {
+            let annotation = match bind.unwrap_class_shared::<Bind>().as_ref() {
                 Bind::NonRec(binding) => match binding.as_ref() {
                     Binding::Binding(ann, _, _) => ann.clone(),
                     _ => unreachable!(),
@@ -583,7 +597,7 @@ fn main() {
                 _ => unreachable!(),
             };
             match maybe(&annotation.get_type_kw()) {
-                Maybe::Just(entry) => entry.unwrap_class::<Rc<ExprType>>().clone(),
+                Maybe::Just(entry) => entry.unwrap_class_shared::<ExprType>(),
                 Maybe::Nothing => panic!("annotation has no type"),
             }
         };
@@ -591,7 +605,7 @@ fn main() {
         let second = annotation_type(1);
         assert!(Rc::ptr_eq(&first, &second), "annotations must share one table entry");
         let second_bind = module.get_decls().array_get(1);
-        let expression = match second_bind.unwrap_class::<Rc<Bind>>().as_ref() {
+        let expression = match second_bind.unwrap_class_shared::<Bind>().as_ref() {
             Bind::NonRec(binding) => match binding.as_ref() {
                 Binding::Binding(_, _, expression) => expression.clone(),
                 _ => unreachable!(),

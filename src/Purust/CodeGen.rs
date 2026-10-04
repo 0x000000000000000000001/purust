@@ -45,7 +45,7 @@ const purust_codegen_type_max_arity: usize = 12;
 
 enum PurustCodegenRenderArg<'a> {
     Adt { fqn: &'a Value },
-    Ty(&'a std::rc::Rc<Purs_PureScript_Backend_Optimizer_CoreFn::ExprType>),
+    Ty(&'a Purs_PureScript_Backend_Optimizer_CoreFn::ExprType),
 }
 
 enum PurustCodegenRenderType<'a> {
@@ -64,19 +64,28 @@ fn purust_codegen_string_array(value: &Value) -> Option<&std::rc::Rc<Vec<Value>>
     }
 }
 
-fn purust_codegen_tuple(value: &Value) -> Option<&std::rc::Rc<Purs_Data_Tuple::Tuple>> {
+// Map keys are boxed shared ADTs. `ClassShared` erases the owner unsized, so
+// the borrow reaches it through one downcast; legacy `Class` boxes still nest
+// the Rc and are dereferenced one level further.
+fn purust_codegen_tuple(value: &Value) -> Option<&Purs_Data_Tuple::Tuple> {
     match value.resolve() {
-        Value::Class(payload) => payload.downcast_ref::<std::rc::Rc<Purs_Data_Tuple::Tuple>>(),
+        Value::Class(payload) => payload
+            .downcast_ref::<std::rc::Rc<Purs_Data_Tuple::Tuple>>()
+            .map(|tuple| &**tuple),
+        Value::ClassShared(payload) => payload.downcast_ref::<Purs_Data_Tuple::Tuple>(),
         _ => None,
     }
 }
 
 fn purust_codegen_boxed_type(
     value: &Value,
-) -> Option<&std::rc::Rc<Purs_PureScript_Backend_Optimizer_CoreFn::ExprType>> {
+) -> Option<&Purs_PureScript_Backend_Optimizer_CoreFn::ExprType> {
     match value.resolve() {
-        Value::Class(payload) => {
-            payload.downcast_ref::<std::rc::Rc<Purs_PureScript_Backend_Optimizer_CoreFn::ExprType>>()
+        Value::Class(payload) => payload
+            .downcast_ref::<std::rc::Rc<Purs_PureScript_Backend_Optimizer_CoreFn::ExprType>>()
+            .map(|ty| &**ty),
+        Value::ClassShared(payload) => {
+            payload.downcast_ref::<Purs_PureScript_Backend_Optimizer_CoreFn::ExprType>()
         }
         _ => None,
     }
@@ -112,7 +121,7 @@ fn purust_codegen_layout_contains_with(
             Some(tuple) => tuple,
             None => return false,
         };
-        let Purs_Data_Tuple::Tuple::Tuple(module_key, name_key) = tuple.as_ref();
+        let Purs_Data_Tuple::Tuple::Tuple(module_key, name_key) = tuple;
         let (Value::String(module_value), Value::String(name_value)) =
             (module_key.resolve(), name_key.resolve())
         else {
@@ -284,7 +293,7 @@ fn purust_codegen_unwrap<'a>(
             let mut heads: Vec<PurustCodegenRenderArg<'a>> = Vec::with_capacity(items.len());
             for item in items.iter() {
                 let tuple = purust_codegen_tuple(item)?;
-                let Purs_Data_Tuple::Tuple::Tuple(fqn, _) = tuple.as_ref();
+                let Purs_Data_Tuple::Tuple::Tuple(fqn, _) = tuple;
                 heads.push(PurustCodegenRenderArg::Adt { fqn });
             }
             match purust_codegen_unwrap(body.as_ref())? {
@@ -334,7 +343,7 @@ fn purust_codegen_render_unwrapped(
                         purust_codegen_render_adt(enums, current_mod, "", *fqn)?
                     }
                     PurustCodegenRenderArg::Ty(inner) => {
-                        purust_codegen_render(enums, current_mod, false, *inner)?
+                        purust_codegen_render_ty(enums, current_mod, false, inner)?
                     }
                 };
                 parts.push(text);
@@ -356,14 +365,23 @@ fn purust_codegen_render_unwrapped(
     }
 }
 
+fn purust_codegen_render_ty(
+    enums: &Purs_Data_Map_Internal::Map,
+    current_mod: &str,
+    is_ret: bool,
+    ty: &Purs_PureScript_Backend_Optimizer_CoreFn::ExprType,
+) -> Option<String> {
+    let unwrapped = purust_codegen_unwrap(ty)?;
+    purust_codegen_render_unwrapped(enums, current_mod, is_ret, &unwrapped)
+}
+
 fn purust_codegen_render(
     enums: &Purs_Data_Map_Internal::Map,
     current_mod: &str,
     is_ret: bool,
     ty: &std::rc::Rc<Purs_PureScript_Backend_Optimizer_CoreFn::ExprType>,
 ) -> Option<String> {
-    let unwrapped = purust_codegen_unwrap(ty.as_ref())?;
-    purust_codegen_render_unwrapped(enums, current_mod, is_ret, &unwrapped)
+    purust_codegen_render_ty(enums, current_mod, is_ret, ty.as_ref())
 }
 
 pub fn Purust_CodeGen_codegenExprTypeWithValueEnumsImpl(

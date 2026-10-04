@@ -49,7 +49,8 @@ fn constructors_transfer_owned_arguments_and_preserve_partial_captures() {
     let actions = SchemaProbe_reusedBuilder(original.clone());
     for index in 0..2 {
         let value = actions.array_get(index);
-        let Action::Open(label, limit) = value.unwrap_class::<Rc<Action>>().as_ref() else { panic!("Open"); };
+        let action = value.unwrap_class_shared::<Action>();
+        let Action::Open(label, limit) = action.as_ref() else { panic!("Open"); };
         assert_eq!(label, &original);
         match (index, limit.as_ref()) {
             (0, Purs_Data_Maybe::Maybe::Nothing) => {}
@@ -89,9 +90,10 @@ fn escaping_array_elements_retain_identity_and_owned_storage() {
     let actions = document.__purust_get_field("actions").unwrap();
     let action = actions.array_get(0);
     let again = actions.array_get(0);
-    assert!(Rc::ptr_eq(action.unwrap_class::<Rc<Action>>(), again.unwrap_class::<Rc<Action>>()));
+    assert!(Rc::ptr_eq(&action.unwrap_class_shared::<Action>(), &again.unwrap_class_shared::<Action>()));
     assert!(action.__purust_record_fields().is_none());
-    let Action::Close(_, lines) = action.unwrap_class::<Rc<Action>>().as_ref() else { panic!("Close"); };
+    let action_value = action.unwrap_class_shared::<Action>();
+    let Action::Close(_, lines) = action_value.as_ref() else { panic!("Close"); };
     let line = lines.array_get(0);
     let before = ALLOCATIONS.with(|n| n.get());
     for _ in 0..32 {
@@ -124,7 +126,7 @@ fn absent_values_are_owned_by_the_result_and_released_with_it() {
     let result = SchemaProbe_decodeText(raw.into());
     let Either::Right(document) = result.as_ref() else { panic!("document"); };
     let note = document.__purust_get_field("note").unwrap();
-    let weak = Rc::downgrade(note.unwrap_class::<Rc<Purs_Data_Maybe::Maybe>>());
+    let weak = Rc::downgrade(&note.unwrap_class_shared::<Purs_Data_Maybe::Maybe>());
     assert!(matches!(weak.upgrade().unwrap().as_ref(), Purs_Data_Maybe::Maybe::Nothing));
     drop(note);
     drop(result);
@@ -165,19 +167,19 @@ fn dynamic_decoder_is_called_and_errors_can_recover() {
     let result = SchemaProbe_recover(parse(r#"{"item":"not an int"}"#));
     let Either::Right(record) = result.as_ref() else { panic!("recovery lost"); };
     let value = record.__purust_get_field("item").unwrap();
-    let value = value.unwrap_class::<Rc<Recover>>();
+    let value = value.unwrap_class_shared::<Recover>();
     let Recover::Recover(number) = value.as_ref();
     assert_eq!(*number, 7);
     let result = SchemaProbe_twice(parse(r#"{"value":"twice"}"#));
     let Either::Right(value) = result.as_ref() else { panic!("repeated read lost"); };
-    let value = value.unwrap_class::<Rc<Twice>>();
+    let value = value.unwrap_class_shared::<Twice>();
     let Twice::Twice(first, second) = value.as_ref();
     assert_eq!(first, "twice");
     assert_eq!(second, "twice");
     for raw in [r#"{"tag":"echo"}"#, r#"{"tag":"\u0065cho"}"#] {
         for result in [SchemaProbe_tagged(parse(raw)), SchemaProbe_taggedText(raw.into())] {
             let Either::Right(value) = result.as_ref() else { panic!("retained discriminator"); };
-            let value = value.unwrap_class::<Rc<Tagged>>();
+            let value = value.unwrap_class_shared::<Tagged>();
             let Tagged::Tagged(tag) = value.as_ref();
             assert_eq!(tag, "echo", "a discriminator used in the result must be owned");
         }

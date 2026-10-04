@@ -17,7 +17,7 @@ mod candidate {
     pub fn fast(input: &Value) -> bool { purust_type_table::decode(input).is_some() }
 }
 fn error(value: &Value) -> String {
-    Data_Argonaut_Decode_Error_printJsonDecodeError(value.unwrap_class::<Rc<JsonDecodeError>>().clone())
+    Data_Argonaut_Decode_Error_printJsonDecodeError(value.unwrap_class_shared::<JsonDecodeError>())
 }
 fn compare(input: Value) -> bool {
     let fast = candidate::fast(&input);
@@ -57,9 +57,9 @@ fn main() {
     let input = Purs_Data_Argonaut_Core::purust_json_parse_text(r#"["Int",{"type":"Array","element":0},{"type":"Record","row":0}]"#).unwrap();
     let result = candidate::PureScript_Backend_Optimizer_CoreFn_Json_decodeTypeTableImpl(input);
     let Either::Right(rows) = result.as_ref() else { panic!("Right") };
-    let base = rows.array_get(0).unwrap_class::<Rc<ExprType>>().clone();
-    let array = rows.array_get(1).unwrap_class::<Rc<ExprType>>().clone();
-    let record = rows.array_get(2).unwrap_class::<Rc<ExprType>>().clone();
+    let base = rows.array_get(0).unwrap_class_shared::<ExprType>();
+    let array = rows.array_get(1).unwrap_class_shared::<ExprType>();
+    let record = rows.array_get(2).unwrap_class_shared::<ExprType>();
     let ExprType::Array(element) = array.as_ref() else { panic!("Array") };
     let ExprType::Record(row) = record.as_ref() else { panic!("Record") };
     assert!(Rc::ptr_eq(&base, element) && Rc::ptr_eq(&base, row));
