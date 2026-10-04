@@ -1383,8 +1383,10 @@ boxUnboxPure renames valueEnums globalClassFields currentMod expected actual cod
                        let
                          modName = String.replaceAll (Pattern ".") (Replacement "_")
                            (String.joinWith "_" (Array.dropEnd 1 fqn))
-                         name = sanitizeIdent (fromMaybe className (Array.last fqn))
-                        in isForeignHandle valueEnums modName name || (modName == "Foreign_Object" && name == "Object")
+                         -- Layout facts retain the PureScript name, including
+                         -- apostrophes; Rust identifier mangling is separate.
+                         name = fromMaybe className (Array.last fqn)
+                         in isForeignHandle valueEnums modName name || (modName == "Foreign_Object" && name == "Object")
                      _ -> false
                    -- A shared ADT is already an owned Rc. Erase that owner
                    -- unsized instead of nesting a second Rc around it, which

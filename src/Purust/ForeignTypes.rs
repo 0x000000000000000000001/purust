@@ -1,5 +1,7 @@
 fn purust_foreign_declarations(source: &str) -> Vec<String> {
-    static DECLARATIONS: std::sync::OnceLock<fancy_regex::Regex> = std::sync::OnceLock::new();
+    // These patterns are regular: the linear-time engine must scan arbitrarily
+    // large modules without fancy-regex's backtracking search limit.
+    static DECLARATIONS: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     let mut clean = String::new();
     let mut i = 0;
     while i < source.len() {
@@ -37,20 +39,23 @@ fn purust_foreign_declarations(source: &str) -> Vec<String> {
             i += ch.len_utf8();
         }
     }
-    DECLARATIONS.get_or_init(|| fancy_regex::Regex::new(r"(?m)^foreign\s+import\s+data\s+([A-Z][A-Za-z0-9_']*)\b").unwrap())
-        .captures_iter(&clean).map(|m| m.unwrap()[1].to_owned()).collect()
+    // A word boundary would backtrack over a trailing apostrophe. Either kind
+    // separator (`::` or `∷`) keeps the complete source identifier as the key.
+    DECLARATIONS.get_or_init(|| regex::Regex::new(r"(?m)^foreign\s+import\s+data\s+([A-Z][A-Za-z0-9_']*)\s*(?:::|∷)").unwrap())
+        .captures_iter(&clean).map(|m| m[1].to_owned()).collect()
 }
 
 fn purust_native_definition(rust: &str, name: &str) -> bool {
-    static USES: std::sync::OnceLock<fancy_regex::Regex> = std::sync::OnceLock::new();
+    static USES: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let name = name.replace('\'', "_prime");
     let escaped: String = name.chars().flat_map(|ch| {
         if ".*+?^${}()|[]\\".contains(ch) { vec!['\\', ch] } else { vec![ch] }
     }).collect();
-    if fancy_regex::Regex::new(&format!(r"\b(?:struct|enum|type|trait)\s+{}\b", escaped)).unwrap().is_match(rust).unwrap() { return true; }
-    let uses = USES.get_or_init(|| fancy_regex::Regex::new(r"\bpub\s+use\s+([^;]+);").unwrap());
+    if regex::Regex::new(&format!(r"\b(?:struct|enum|type|trait)\s+{}\b", escaped)).unwrap().is_match(rust) { return true; }
+    let uses = USES.get_or_init(|| regex::Regex::new(r"\bpub\s+use\s+([^;]+);").unwrap());
     for captures in uses.captures_iter(rust) {
-        for part in captures.unwrap()[1].replace(['{', '}'], "").split(',') {
-            if part.trim().rsplit("::").next().unwrap().split_whitespace().last() == Some(name) { return true; }
+        for part in captures[1].replace(['{', '}'], "").split(',') {
+            if part.trim().rsplit("::").next().unwrap().split_whitespace().last() == Some(name.as_str()) { return true; }
         }
     }
     false
@@ -58,11 +63,8 @@ fn purust_native_definition(rust: &str, name: &str) -> bool {
 
 pub fn Purust_ForeignTypes_foreignTypeForwards(source: String, rust: String) -> String {
     purust_foreign_declarations(&source).iter().map(|name| {
-        if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            panic!("Unqualified foreign type identifier: {}", name);
-        }
         if purust_native_definition(&rust, name) { format!("// Native FFI type declaration: {}\n", name) }
-        else { format!("// Opaque FFI declaration only: no native values can be constructed.\n#[derive(Clone, Debug)]\npub enum {} {{}}\n", name) }
+        else { format!("// Opaque FFI declaration only: no native values can be constructed.\n#[derive(Clone, Debug)]\npub enum {} {{}}\n", name.replace('\'', "_prime")) }
     }).collect::<Vec<_>>().join("\n")
 }
 

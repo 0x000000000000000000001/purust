@@ -24,10 +24,15 @@ function declarations(source) {
       clean += ' ';
     } else { clean += source[i++]; }
   }
-  return [...clean.matchAll(/^foreign\s+import\s+data\s+([A-Z][\w']*)\b/gm)].map(m => m[1]);
+  // Apostrophes are identifier characters, but not regex word characters.
+  // Anchor on the declaration separator so a trailing prime cannot be dropped.
+  return [...clean.matchAll(/^foreign\s+import\s+data\s+([A-Z][A-Za-z0-9_']*)\s*(?:::|∷)/gm)].map(m => m[1]);
 }
 
+const nativeName = name => name.replaceAll("'", '_prime');
+
 function nativeDefinition(rust, name) {
+  name = nativeName(name);
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (new RegExp('\\b(?:struct|enum|type|trait)\\s+' + escaped + '\\b').test(rust)) return true;
   for (const match of rust.matchAll(/\bpub\s+use\s+([^;]+);/g)) {
@@ -39,10 +44,9 @@ function nativeDefinition(rust, name) {
 
 export const foreignTypeForwards = source => rust => declarations(source)
   .map(name => {
-    if (!/^[A-Z][A-Za-z0-9_]*$/.test(name)) throw new Error('Unqualified foreign type identifier: ' + name);
     if (nativeDefinition(rust, name)) return '// Native FFI type declaration: ' + name + '\n';
     return '// Opaque FFI declaration only: no native values can be constructed.\n' +
-      '#[derive(Clone, Debug)]\npub enum ' + name + ' {}\n';
+      '#[derive(Clone, Debug)]\npub enum ' + nativeName(name) + ' {}\n';
   }).join('\n');
 
 // Foreign data types without a native Rust declaration carry arbitrary values

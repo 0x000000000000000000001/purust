@@ -13,6 +13,8 @@ assert.match(forwarded, /pub enum Box \{\}/);
 // boxed runtime Value; only the declarations with a native Rust binding keep
 // their concrete layout.
 assert.deepEqual(foreignUnboundTypes(source)(''), ['Handle', 'Box']);
+assert.deepEqual(foreignUnboundTypes(source.replaceAll('::', '∷'))(''), ['Handle', 'Box']);
+assert.equal(foreignTypeForwards(source.replaceAll('::', '∷'))(''), forwarded);
 assert.deepEqual(foreignUnboundTypes(source)('pub struct Handle { value: i32 }'), ['Box']);
 assert.deepEqual(foreignUnboundTypes(source)('pub use native::Handle;\npub type Box = i32;'), []);
 for (const native of ['pub struct Handle { value: i32 }', 'pub enum Handle { A }', 'pub type Handle = i32;',
@@ -23,6 +25,18 @@ const hidden = '-- foreign import data Hidden :: Type\n{- nested {- foreign impo
 assert.equal(foreignTypeForwards(hidden)(''), '');
 assert.deepEqual(foreignUnboundTypes(hidden)(''), []);
 assert.equal(foreignTypeForwards('data Real = Real\n')(''), '');
+// A word boundary after the identifier silently dropped trailing apostrophes.
+// Source layout keys keep the complete name; only Rust declarations are mangled.
+const primed = "foreign import data Handle' :: Type\nforeign import data Handle'' :: Type\nforeign import data Mid'dle :: Type\n";
+assert.deepEqual(foreignUnboundTypes(primed)(''), ["Handle'", "Handle''", "Mid'dle"]);
+assert.deepEqual(foreignUnboundTypes(primed.replaceAll('::', '∷'))(''), ["Handle'", "Handle''", "Mid'dle"]);
+assert.equal(foreignTypeForwards(primed.replaceAll('::', '∷'))(''), foreignTypeForwards(primed)(''));
+assert.deepEqual(foreignUnboundTypes(primed)('pub type Handle_prime = Native;'), ["Handle''", "Mid'dle"]);
+assert.deepEqual(foreignUnboundTypes(primed)('pub struct Handle {}'), ["Handle'", "Handle''", "Mid'dle"]);
+assert.match(foreignTypeForwards(primed)(''), /pub enum Handle_prime \{\}/);
+assert.match(foreignTypeForwards(primed)(''), /pub enum Handle_prime_prime \{\}/);
+assert.match(foreignTypeForwards(primed)(''), /pub enum Mid_primedle \{\}/);
+assert(!foreignTypeForwards(primed)('pub use native::Handle_prime;').includes('enum Handle_prime {}'));
 const directory = mkdtempSync(join(tmpdir(), 'purust-foreign-types-'));
 for (const ptr of ['Rc', 'Arc']) {
   const file = join(directory, ptr + '.rs'), binary = join(directory, ptr);

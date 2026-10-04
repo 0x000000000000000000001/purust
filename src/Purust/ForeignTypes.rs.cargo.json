@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "dependencies": {
+    "regex": { "version": "=1.13.1" }
+  }
+}

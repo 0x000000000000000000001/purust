@@ -10,17 +10,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { codegenModule, codegenPrelude } from '../../output/Purust.CodeGen/index.js';
+import { codegenModuleWithValueEnums, codegenPrelude } from '../../output/Purust.CodeGen/index.js';
+import { foreignHandleKey } from '../../output/Purust.DataLayout/index.js';
 import { empty as emptyMap } from '../../output/Data.Map/index.js';
-import { empty as emptySet } from '../../output/Data.Set/index.js';
+import { empty as emptySet, insert } from '../../output/Data.Set/index.js';
+import { ordString } from '../../output/Data.Ord/index.js';
 import { Just } from '../../output/Data.Maybe/index.js';
-import { Tuple } from '../../output/Data.Tuple/index.js';
+import { Tuple, ordTuple } from '../../output/Data.Tuple/index.js';
 import { ADT, Any, Func, Int } from '../../output/PureScript.Backend.Optimizer.CoreFn/index.js';
 import { Abs, Local, Typed } from '../../output/PureScript.Backend.Optimizer.Syntax/index.js';
 import { threadedRust, threadedPrelude } from '../../src/Purust/Threading.js';
 
 const name = 'ClassShared';
 const boxType = new ADT(`${name}.Payload`, [name, 'Payload'], []);
+const handleType = new ADT("Handle'", [name, "Handle'"], []);
 const param = (label, level) => new Tuple(new Just(label), level);
 const local = (label, level) => new Local(new Just(label), level);
 const typed = (type, value) => new Typed(type, value);
@@ -31,8 +34,14 @@ const bindings = [
   // Box <- Any: the shared owner is handed back by downcast.
   new Tuple('unbox', typed(new Func([Any.value], boxType),
     new Abs([param('value', 0)], typed(boxType, local('value', 0))))),
+  // Native handles retain the nested Class ABI, including primed source names.
+  new Tuple('boxHandle', typed(new Func([handleType], Any.value),
+    new Abs([param('value', 0)], typed(Any.value, local('value', 0))))),
+  new Tuple('unboxHandle', typed(new Func([Any.value], handleType),
+    new Abs([param('value', 0)], typed(handleType, local('value', 0))))),
 ];
-const generated = codegenModule(emptyMap)(emptyMap)({
+const layouts = insert(ordTuple(ordString)(ordString))(foreignHandleKey(name)("Handle'"))(emptySet);
+const generated = codegenModuleWithValueEnums(layouts)(emptyMap)(emptyMap)({
   name,
   classDecls: [],
   dataDecls: [{ name: 'Payload', constructors: [{ name: 'Wrap', fields: [Int.value] }] }],
@@ -40,17 +49,25 @@ const generated = codegenModule(emptyMap)(emptyMap)({
 
 assert.match(generated, /Value::ClassShared\(/, 'shared ADT boxing must reuse the owner');
 assert.match(generated, /unwrap_class_shared::<crate::Payload>/, 'shared ADT unboxing must return the owner');
-assert.ok(!generated.includes('Value::Class(std::rc::Rc::new('),
-  'shared ADT boxing must not allocate a nested Rc');
+assert.match(generated, /Value::Class\(std::rc::Rc::new\(/,
+  'primed native handles must retain the nested FFI carrier');
 
 const runtime = fileURLToPath(new URL('../runtime/perceus_ptr/src/lib.rs', import.meta.url));
 const main = `
+pub struct Handle_prime(i64);
 fn number(payload: &Payload) -> i64 { match payload { Payload::Wrap(value) => *value } }
 fn main() {
     use std::rc::Rc;
+    let native = Rc::new(Handle_prime(42));
+    let boxed_native = ClassShared_boxHandle(native.clone());
+    assert!(matches!(&boxed_native, Value::Class(_)), "native FFI carrier must remain nested");
+    assert!(Rc::ptr_eq(&native, boxed_native.unwrap_class::<Rc<Handle_prime>>()));
+    assert!(Rc::ptr_eq(&native, &ClassShared_unboxHandle(boxed_native)));
     // Round trip through the dynamic boundary.
     let value = Rc::new(Payload::Wrap(41));
-    let unboxed = ClassShared_unbox(ClassShared_box(value.clone()));
+    let boxed = ClassShared_box(value.clone());
+    assert!(matches!(&boxed, Value::ClassShared(_)), "generated ADTs must reuse the owner");
+    let unboxed = ClassShared_unbox(boxed);
     assert_eq!(number(&unboxed), 41, "boxing then unboxing preserves the value");
 
     // The owner is shared, not copied: extraction keeps the same allocation.
@@ -112,7 +129,7 @@ ${threaded ? threadedRust(generated + main) : generated + main}`);
       assert.equal(result.status, 0, `${result.error ?? ''}\n${result.stderr}`);
     }
   }
-  console.log('ClassShared: unsized owner boxing, legacy Class fallback and Rc/Arc refcounts passed.');
+  console.log('ClassShared: shared ADTs, primed native FFI carriers and Rc/Arc refcounts passed.');
 } finally {
   rmSync(directory, { recursive: true, force: true });
 }

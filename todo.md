@@ -27,7 +27,7 @@ les allocations des passes dominantes du compilateur natif.
   dans `Purs_PureScript_Backend_Optimizer_Semantics`. Aucun temps valide n'est
   publié pour ces quatre cas. Les différences de sources ne prouvent pas à
   elles seules une différence sémantique ; le critère byte-exact échoue.
-- [ ] Diagnostiquer les trois écarts d'optimisation et la division par zéro de
+- [x] Diagnostiquer les trois écarts d'optimisation et la division par zéro de
   Prelude avant de qualifier leurs temps Rust. Les sources, deux reproductions
   et la backtrace de Prelude sont conservées dans l'archive et `followups/`.
 - Rapport : `../../altbak.pub/docs/benchmark-results/2026-10-04-gopurs-packages-rust.{md,json}`.
@@ -53,11 +53,254 @@ les allocations des passes dominantes du compilateur natif.
 - [x] Reconstruire les trois hôtes gopurs avec PGO réentraîné : **500 modules**
   d'entraînement, **trois passes de 612 fichiers Go exacts** ; le smoke Go/FFI
   frais passe. Rust installé : `aa98d0439cd516137c2def420a002b327a3b528dd6cf3d46b9fddb82c51bffa4`.
-- [ ] Comparer le bootstrap gopurs entre générateurs Purust JS/natif et
+- [x] Comparer le bootstrap gopurs entre générateurs Purust JS/natif et
   qualifier les hôtes sur Aff/AVar, le compilateur et les projets frais.
-- [ ] Revérifier les 50 paquets sur les entrées figées, mesurer les quatre
+- [x] Revérifier les 50 paquets sur les entrées figées, mesurer les quatre
   cellules corrigées et exécuter leurs applications Go hors chronomètre.
-- [ ] Publier les quatre médianes qualifiées et recalculer le total Rust.
+- [x] Publier les quatre médianes qualifiées et recalculer le total Rust.
+- Première reprise : **48/50 paquets** passent, dont les trois écarts de
+  génération corrigés ; leurs applications Go s'exécutent avec succès. Les
+  trois hôtes passent aussi Aff/AVar, les 43 tests du compilateur, les helpers
+  et le parser sous détecteur de courses ; bootstrap gopurs **1 008 fichiers
+  exacts**. Cette reprise reste archivée avec son statut d'échec global.
+- Le contrôle supplémentaire JS/Go de Prelude révèle un défaut antérieur
+  commun aux deux hôtes natifs : `negate 0.0` devient `0.0 - 0.0` lors du
+  bootstrap de l'évaluateur PBO et perd son signe. Le projet frais
+  `CompilerHostNumbers` reproduit l'échec Go/Rust et réussit sous JavaScript.
+  `Semantics.negateNumber`, primitive FFI JS/Go/Rust, préserve désormais la
+  négation IEEE ; les hôtes gopurs sont reconstruits dans `revision2/`.
+- L'oracle Prelude est corrigé explicitement sur **une seule ligne** de
+  `Test_Main.go`, avec l'oracle JS conservé et un contrôle textuel exact de
+  ce changement. L'ancien oracle Go reste archivé. Le contrôle Aff compare
+  désormais les sources générées, en excluant l'ancien exécutable `aff-test`
+  présent dans son archive de qualification.
+- Seconde reconstruction qualifiée : **500 modules / 291 182 types**, **1 008
+  fichiers Rust/Cargo exacts**, PGO sur **trois passes de 613 fichiers Go**.
+  **44 tests du compilateur**, dont le nouveau cas de zéro signé, et **47
+  helpers** passent ; **45 contrôles Aff + 1 000 éléments AVar par hôte**,
+  sources Go exactes sous les trois hôtes. Rust installé :
+  `e3fa820c4e78fb0f0c5f4d8d7ed91314c73e5b6c0e0b7e3b0e780ec8401a9aa1`.
+- Les quatre corrections passent sur les entrées figées, avec exécution des
+  quatre applications Go : **Enums 814 ms, Promise 454 ms, Prelude 775 ms,
+  Strings 1 286 ms**, médianes de cinq générations Rust.
+- La seconde reprise conserve un diagnostic de harness Aff : les 19 paquets
+  frères référencés par `modulePath = ../gopurs-*/…` doivent être copiés avec
+  `gopurs-aff`. Une reprise dédiée rétablit la famille figée complète ; les
+  49 autres résultats restent qualifiés et le premier résultat Aff en échec
+  demeure archivé.
+- **Reprise finale réussie : 50/50 paquets**, **84 générations / 20 283
+  fichiers Go exacts**, avec correction d'oracle explicite pour le zéro signé
+  de Prelude. Les 19 paquets frères Aff sont figés et vérifiés avant/après
+  génération. `revision2/recheck/final-results.json` et
+  `revision2/verification-final.json` référencent les tentatives antérieures
+  sans modifier leurs statuts ni leurs preuves.
+- **Performance Aff confirmée après correction** : dix paires contemporaines,
+  **Go 1 896,5 / Rust 1 501,5 ms**, **−20,8 %**, **10/10 paires favorables** ;
+  22 générations conservant chacune les 294 fichiers Go exacts. La campagne
+  historique Aff du README conserve ses valeurs d'origine.
+- README mis à jour sur **cinq lignes** : quatre cellules Rust et total
+  **61,99 s pour 50/50 paquets**, somme des médianes affichées. Rapport final :
+  `../../altbak.pub/docs/benchmark-results/2026-10-04-gopurs-packages-fixes.{md,json}`.
+
+### Actualisation complète des tableaux — 4 octobre 2026
+
+- [x] Remesurer les trois hôtes gopurs sur les 50 bibliothèques et b8x, puis
+  les deux hôtes Purust sur `purust-aff` : une chauffe et cinq mesures par
+  hôte, médianes de `backend total`, exécutions sérialisées et ordre alterné.
+- [x] Contrôler les entrées figées, chaque sortie générée et les applications
+  de validation hors chronomètre ; actualiser les cellules et les totaux.
+- Archive : `../../altbak.pub/var/benchmark/compilation-refresh-20261004/`.
+  Les cinq exécutables sont ceux de la dernière reconstruction qualifiée.
+  Les bibliothèques réutilisent leurs corpus de référence ; le frontend b8x
+  est régénéré depuis les sources courantes figées (20 entrées de son cache
+  antérieur sont devenues obsolètes). Les 296 fichiers sources enregistrés
+  dans le cache frontend de `purust-aff` correspondent aux sources courantes.
+- Bibliothèques terminées : **50/50 paquets sous les trois hôtes**, **900
+  générations / 230 958 fichiers Go exacts**. Somme des médianes : **JS
+  304 784 ms, Go 74 016 ms, Rust 61 200 ms**. Les 150 séries contiennent cinq
+  mesures ; leur plus grande étendue relative vaut 7,26 %. Rust a une médiane
+  inférieure à Go sur les 50 paquets.
+- La première préparation b8x s'arrête sur le fichier généré par Spago
+  `.spago/BuildInfo.purs`, extérieur aux racines de paquets ordinaires. Le
+  harness le fige explicitement ; la préparation échouée et son script sont
+  conservés sous `attempts/`, avec le journal `extra.log`.
+- La deuxième préparation rencontre une dépendance Git Spago dont la racine
+  inclut le SHA de révision (`html-parser-halogen`). Le harness déduit maintenant
+  chaque racine du chemin `/src/`, vérifie la présence de ses sources et
+  conserve cette tentative sous `attempts/b8x-prepare-2` (`extra-2.log`).
+- Frontend b8x régénéré : **2 685 modules / 750 710 types**. Les trois hôtes
+  génèrent les mêmes **2 992 fichiers Go**. Une interruption machine/serveur
+  survient après 16 générations complètes, avant la fin de la cinquième série.
+  Leur état brut reste dans `attempts/extra-interrupted-results.json` ; une
+  nouvelle série complète reprend sur les mêmes entrées sous `b8x-restart`.
+  Les 900 générations des bibliothèques sont intégralement conservées.
+- Série complète reprise : **b8x JS 62 481 / Go 39 565 / Rust 31 018 ms** ;
+  **Purust Aff JS 6 316 / Rust 2 173 ms**. Les **930 générations qualifiées**
+  de la campagne, dont 775 mesurées, vérifient **290 766 fichiers exacts**.
+  Les totaux gopurs incluant b8x sont **367 265 / 113 581 / 92 218 ms**.
+  Les six applications Go de validation passent, ainsi que la compilation de
+  tous les paquets et points d'entrée Go de b8x.
+- Validation Rust finale réussie : les **47 contrôles Purust Aff** passent
+  avec stdout exact après compilation Cargo hors chronomètre. Les exécutables
+  de validation sont conservés. Les **153 cellules gopurs**, les six cellules
+  de totaux et les deux cellules Purust Aff sont publiées dans le README.
+  Rapport : `../../altbak.pub/docs/benchmark-results/2026-10-04-compilation-refresh.{md,json}`.
+
+### Tableau complet Purust — 4 octobre 2026
+
+- [x] Ajouter les 57 bibliothèques locales et le profil b8x Rust à la dernière
+  table, avec médianes JS/Rust, ratios `/JS` et totaux.
+- [x] Figer les exécutables qualifiés, les sources et les entrées TAST/FFI ;
+  mesurer une chauffe et cinq générations par hôte, avec sorties exactes.
+- [x] Vérifier les applications hors chronomètre, conserver les diagnostics
+  et publier les preuves de la campagne `purust-packages-20261004`.
+- Les workspaces isolés sélectionnent la famille native Purust et les entrées
+  de tests propres aux paquets. Argonaut Core/Codecs réutilisent leurs fixtures
+  compact-DOM/plans typés ; ArrayBuffer Types reçoit un main minimal explicite.
+  La ligne b8x sera identifiée comme le profil Rust des tests Core/Infra/Util,
+  distinct du corpus Go complet.
+- La première préparation est conservée sous
+  `purust-packages-20261004-preparation-failed` : un ancien lien cassé
+  `purust-strings-extra/src/lib.rs` visait un projet hello-world absent. Le
+  préparateur documente son exclusion, sans modifier le paquet source.
+- La première passe révèle un dépassement de limite de backtracking dans
+  `Purust.ForeignTypes` pour Foldable/Traversable et une duplication des
+  modules Promise dans le workspace isolé. La correction préparée emploie
+  un moteur regex linéaire et normalise le nom du paquet racine Promise ;
+  sa qualification différentielle et son bootstrap restent à exécuter après
+  la fin des mesures en cours.
+- Prelude révèle ensuite le même zéro signé perdu que le PBO gopurs : une
+  seule ligne générée passe de `-0.0` à `0.0` sous l'hôte Rust. Le PBO Purust
+  reçoit la primitive FFI `negateNumber` JS/Rust ; le smoke natif vérifie
+  désormais le signe des zéros constants et dynamiques à travers la FFI.
+  L'oracle JS correct et la sortie native fautive restent tous deux archivés.
+- Première passe achevée : **51/57 bibliothèques**, avec six diagnostics
+  conservés. Spec Discovery et Yoga JSON diffèrent uniquement par l'ordre
+  d'enregistrement des specs et des dépendances Cargo : les racines du tri
+  PBO sont maintenant canonisées, avec la régression sur 720 permutations.
+  Spec nécessite aussi le vrai `Spago.Generated.BuildInfo`, que le préparateur
+  fait désormais produire par Spago avant de figer le TAST.
+- La chaîne de reprise sérialisée est lancée : régressions rouge/vert, bootstrap
+  natif et identité, campagne complète `revision1`, profil b8x, validations des
+  applications et candidat de publication. Son état est enregistré dans
+  `purust-packages-20261004/finish-results.json`.
+- La correction regex passe **232 assertions différentielles JS/Rust** et les
+  contrôles de types opaques Rc/Arc. Les régressions du zéro signé et du tri
+  reproduisent les défauts avant reconstruction. Le premier orchestrateur
+  attendait le format TAP alors que Node émettait son reporter lisible : cet
+  arrêt de harness reste archivé ; la reprise `finish2-results.json` impose
+  explicitement TAP pour ce contrôle et conserve ses propres logs/bootstrap.
+- Reconstruction corrigée qualifiée : **453 modules / 282 807 types**, **914
+  fichiers Rust/Cargo identiques** en auto-compilation. Le smoke frais valide
+  les zéros signés constants et dynamiques ; les cinq tests de négation et les
+  deux tests de tri (720 permutations, imports propres/Prim et cycles) passent.
+  Binaire natif installé :
+  `7cddd489f4e78161939194dd6616c7755b693c2a714d806988cf3f2a03109baa`.
+  La campagne complète `revision1` a commencé avec les deux hôtes corrigés et
+  les sources de bibliothèques figées de la première passe.
+- La reprise de workspaces sans section `backend` avait perdu `--threaded`
+  pour certains paquets. Les comparaisons avec les oracles rejettent ainsi
+  AVar, Free et Promise Aff dès la chauffe JS. Le préparateur reprend maintenant
+  le main et les flags des plans initiaux figés ; seuls les cas affectés seront
+  remesurés sous les mêmes binaires. Promise, sans oracle initial, fait aussi
+  partie des cas à reprendre pour rétablir le mode de son runner public.
+- La passe `revision1` termine à **48/57** ; **47 séries** ont le mode attendu.
+  La reprise ciblée couvre neuf invocations ayant perdu `--threaded` et Spec.
+  Le frontend Spec passe avec **391 modules** : Spago produit son BuildInfo en
+  mode backend externe, puis le compilateur typé prépare le corpus figé.
+  Les essais refusant `--codegen`, puis réclamant une FFI JavaScript absente,
+  sont conservés. `finish3-results.json` reprend ces dix cas, puis b8x et les
+  validations, sans répéter les 47 séries conformes.
+- Mesures des bibliothèques terminées : **57/57**, **684 générations / 289 920
+  fichiers Rust/Cargo exacts**. Somme des médianes : **JS 314 963 ms / Rust
+  124 278 ms**, soit Rust/JS **0,39x**. Les dix reprises passent ; la validation
+  des applications reste à terminer avant publication.
+- Le corpus b8x Rust courant est préparé : **1 404 modules / 426 499 types**,
+  profil Core/Infra/Util. Ses mesures sont lancées sous les deux hôtes.
+- Mesures complètes : **58 projets / 696 générations**, dont **580 mesurées**,
+  et **323 712 fichiers Rust/Cargo exacts**. b8x : **JS 46 109 / Rust 22 604 ms**
+  (**0,49x**). Total des médianes : **JS 361 072 / Rust 146 882 ms** (**0,41x**).
+  Les validations natives des applications sont en cours ; un audit dédié
+  vérifiera les 116 cellules de projets, quatre cellules de totaux et 60 ratios
+  après application du candidat README.
+- La validation native révèle un défaut réel de `purust-node-http` : le scan
+  tronque l'apostrophe de `HttpServer'`, puis le lookup de représentation emploie
+  le nom Rust manglé au lieu de la clé PureScript. Le handle passe à tort dans
+  `ClassShared` ; l'enregistrement du listener HTTP attend le carrier FFI
+  historique et panique. L'exécutable et sa backtrace complète restent archivés.
+- Deux régressions rouges reproduisent le scan tronqué et le mauvais carrier.
+  La correction JS/Rust conserve le nom source complet, ne mangle que les noms
+  Rust des déclarations et recherche le carrier avec la clé source. Les tests
+  couvrent les primes finales, doubles et internes, les réexportations, les
+  modes Rc/Arc et un handle primé dans le smoke d'un projet frais.
+- `finish-primed.mjs` sérialise une nouvelle qualification complète, la suite
+  HTTP réelle puis `revision2` : les 58 cas seront remesurés avec les deux hôtes
+  corrigés sur le même TAST figé. Une validation applicative antérieure n'est
+  réutilisable que si les sources Rust/Cargo restent strictement identiques.
+- La première validation complète finit à **56/57** applications ; seul HTTP
+  échoue. `finish3-results.json` conserve ce statut et tous les contrôles réussis.
+  La reprise `finish4-results.json` est lancée après son arrêt : qualification
+  du correctif des handles primés, mesures complètes, validation b8x et publication.
+  La case des mesures finales est rouverte pour cette nouvelle paire de binaires.
+- La première reprise reproduit le défaut natif et passe les nouveaux contrôles
+  FFI, puis s'arrête sur une indentation du correctif PureScript. Le source fautif
+  et l'échec sont conservés dans `primed-bootstrap`; l'indentation est corrigée
+  et `finish5` reprend dans un répertoire de qualification distinct.
+- Le bootstrap corrigé réussit : **453 modules / 282 807 types**, **914 fichiers
+  Rust/Cargo identiques**, deux exécutables natifs reconstruits. Le smoke échoue
+  ensuite sur une accolade manquante dans la nouvelle fixture Rust ; sa sortie
+  fautive reste conservée. La fixture est corrigée, puis `finish6` réutilise les
+  deux stages identiques pour reprendre le smoke frais et la suite HTTP avant
+  de lancer les mesures.
+- La qualification des handles primés finit par passer : smoke frais, Rc/Arc,
+  **628 fichiers HTTP identiques**, puis suite HTTP/upgrade/cookies/HTTPS réelle.
+  `revision2` termine toutefois à **50/57** : les oracles historiques rejettent
+  BigInt, Run, Spec, Spec Discovery, Spec Node, Variant et Yoga JSON, car le
+  nouveau scan avait omis le séparateur de kind Unicode **`∷`**. Ces tentatives
+  et sorties fautives restent archivées.
+- Le scan accepte désormais **`::` et `∷`**. La régression Unicode est reproduite
+  avant correction ; le précontrôle complet passe sur **1 759 couples source/FFI
+  uniques**, **160 sources de déclarations / 242 types**, dont **8 sources avec
+  `∷`**. La prochaine qualification étend le différentiel natif à ce corpus et
+  ajoute la vraie suite BigInt avant toute nouvelle mesure.
+- Les **59 exécutables** des validations précédentes (57 principaux + deux
+  fixtures) restent conservés et hachés. Leur cache Cargo terminé est réclamé
+  (**2 275 971 499 octets**), avec inventaire dans
+  `revision1/validation-cargo-reclamation.json`, pour la reconstruction finale.
+- `finish7` prépare une nouvelle paire de binaires et une campagne uniforme
+  **`revision3`**, à partir des mêmes entrées frontend figées.
+- Qualification Unicode complète réussie : **242 assertions différentielles
+  JS/Rust**, corpus de 242 types étrangers, smoke frais, carriers Rc/Arc et
+  **914 fichiers de bootstrap identiques**. Les applications HTTP et BigInt
+  passent avec respectivement **628 / 540 fichiers identiques** ; BigInt retrouve
+  exactement son oracle historique. Hôte natif installé :
+  `9ee2db92c36000446b74f81569bd353af5df38c0a4d8af06f74b8e5a0df05936`.
+  JS : `6aad259f4c81e9e197b3d56833f6eb520092bbd368ec09a5b5103d364dc2d1ce`.
+  Les mesures `revision3` progressent : **16/57 bibliothèques**, aucun échec au
+  dernier contrôle ; Foreign Object est en cours.
+- **Campagne finale terminée et publiée** : `finish7` passe toutes les étapes.
+  `revision3` contient **58/58 projets**, **696 générations exactes**, dont **580
+  mesurées**, et **323 712 fichiers Rust/Cargo comparés**. Les mêmes binaires
+  corrigés sont employés pour toutes les lignes.
+- Résultats définitifs (sommes des médianes, en ms) : bibliothèques **JS 304 025 /
+  Rust 120 115**, b8x **JS 44 315 / Rust 20 619**, total **JS 348 340 / Rust
+  140 734**. Rust/JS : **0,40x / 0,47x / 0,40x** respectivement. Strings Extra
+  reste plus lent sous l'hôte Rust (**1,44x**), ce qui figure dans le tableau.
+- **57/57 applications qualifiées** : 56 validations initiales réutilisées sur
+  des sources Rust/Cargo strictement identiques, plus la validation HTTP corrigée
+  réalisée avant les mesures. L'application b8x et sa fermeture d'import native
+  compilent hors chronomètre ; les tests dépendant des services relèvent toujours
+  du profil de validation d'exécution séparé. Les exécutables sont conservés.
+- Le candidat est appliqué à `../../altbak.pub/README.md`. L'audit indépendant
+  vérifie **116 cellules de projets, quatre cellules de totaux et 60 ratios**,
+  recalcule les médianes depuis les logs, contrôle les rapports et l'identité des
+  sections précédentes. README SHA-256 :
+  `6e682804067e83d97773562efe7000a4448cdc2de38740c37d1b5fa5f93e6f5b`.
+  Preuve : `revision3/publication-audit.json`.
+- Rapport public :
+  `../../altbak.pub/docs/benchmark-results/2026-10-04-purust-packages.{md,json}`.
+  Les premières campagnes, les échecs, les corrections de harness et leurs
+  qualifications restent conservés avec leurs statuts historiques.
 
 ### Résultat de la campagne nocturne
 

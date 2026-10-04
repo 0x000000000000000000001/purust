@@ -1,7 +1,7 @@
 // Differential checks for the host services used by the self-hosted compiler.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +40,34 @@ for (const rust of ['', 'pub struct Handle { value: i32 }', 'pub enum Handle { A
 }
 const hidden = '-- foreign import data Hidden :: Type\n{- a {- foreign import data Hidden :: Type -} -}\ntext = """\nforeign import data Hidden :: Type\n"""\n';
 checks.push(`assert_eq!(foreign::Purust_ForeignTypes_foreignTypeForwards(${str(hidden)}, String::new()), "");`);
+// Scanning a large module with no declarations, or a binding near its end,
+// must not depend on a backtracking engine's search budget.
+const stressSources = [
+  source.replaceAll('::', '∷'),
+  'value = unit\n'.repeat(100_000),
+  'value = unit\n'.repeat(100_000) + hidden + source,
+  'foreign\n import\n data Handle :: Type\n' + hidden,
+];
+for (const [index, text] of stressSources.entries()) {
+  const path = join(directory, `foreign-stress-${index}.purs`); writeFileSync(path, text);
+  const loaded = `std::fs::read_to_string(${str(path)}).unwrap()`;
+  checks.push(`assert_eq!(foreign::Purust_ForeignTypes_foreignTypeForwards(${loaded}, String::new()), ${str(foreignTypeForwards(text)(''))});`);
+  checks.push(`assert_eq!(strings(foreign::Purust_ForeignTypes_foreignUnboundTypes(${loaded}, String::new())), ${vector(foreignUnboundTypes(text)(''))});`);
+}
+const largeRust = 'fn value() {}\n'.repeat(100_000) + 'pub use native::{Other as Handle, Box};\n';
+const largeRustPath = join(directory, 'foreign-stress.rs'); writeFileSync(largeRustPath, largeRust);
+checks.push(`assert_eq!(strings(foreign::Purust_ForeignTypes_foreignUnboundTypes(${str(source)}, std::fs::read_to_string(${str(largeRustPath)}).unwrap())), ${vector(foreignUnboundTypes(source)(largeRust))});`);
+const primed = "foreign import data Handle' :: Type\nforeign import data Handle'' :: Type\nforeign import data Mid'dle :: Type\n";
+checks.push(`assert_eq!(strings(foreign::Purust_ForeignTypes_foreignUnboundTypes(${str(primed)}, String::new())), ${vector(["Handle'", "Handle''", "Mid'dle"])});`);
+checks.push(`assert_eq!(strings(foreign::Purust_ForeignTypes_foreignUnboundTypes(${str(primed.replaceAll('::', '∷'))}, String::new())), ${vector(["Handle'", "Handle''", "Mid'dle"])});`);
+for (const native of ['', 'pub type Handle_prime = Native;', 'pub use native::{Handle_prime, Handle_prime_prime};', 'pub struct Handle {}']) {
+  checks.push(`assert_eq!(strings(foreign::Purust_ForeignTypes_foreignUnboundTypes(${str(primed)}, ${str(native)})), ${vector(foreignUnboundTypes(primed)(native))});`);
+  checks.push(`assert_eq!(foreign::Purust_ForeignTypes_foreignTypeForwards(${str(primed)}, ${str(native)}), ${str(foreignTypeForwards(primed)(native))});`);
+}
+if (process.env.PURUST_FFI_CORPUS) for (const path of globSync(join(process.env.PURUST_FFI_CORPUS, '**/*.purs')).sort()) {
+  const text = readFileSync(path, 'utf8'), loaded = `std::fs::read_to_string(${str(path)}).unwrap()`;
+  checks.push(`assert_eq!(strings(foreign::Purust_ForeignTypes_foreignUnboundTypes(${loaded}, String::new())), ${vector(foreignUnboundTypes(text)(''))}, ${rustStrLiteral(path)});`);
+}
 for (const text of ['', 'ascii "\\\'', 'é😀', '\ud800A\udfff', '\ue000\uffff', '\0\n\r\t']) {
   checks.push(`assert_eq!(utf16::Purust_Utf16_rustStrLiteral(${str(text)}), ${str(rustStrLiteral(text))});`);
   checks.push(`assert_eq!(utf16::Purust_Utf16_rustStringLiteral(${str(text)}), ${str(rustStringLiteral(text))});`);
@@ -64,7 +92,7 @@ for (const [index, value] of [valid, ...invalid].entries()) {
   }
 }
 const modules = [
-  ['threading', 'src/Purust/Threading.rs'], ['foreign', 'src/Purust/ForeignTypes.rs'],
+  ['threading', 'src/Purust/Threading.rs'], ['foreign', process.env.PURUST_FFI_SOURCE ?? 'src/Purust/ForeignTypes.rs'],
   ['utf16', 'src/Purust/Utf16.rs'], ['cargo', 'src/Purust/FfiCargo.rs'], ['metrics', 'src/Purust/Metrics.rs'],
   ['memo', '../../purescript-backend-optimizer-purust/src/PureScript/Backend/Optimizer/BoundedMemo.rs'],
 ];
@@ -100,7 +128,7 @@ fn main() {
 }
 `;
 try {
-  writeFileSync(join(directory, 'Cargo.toml'), `[package]\nname = "native_compiler_ffi_checks"\nversion = "0.1.0"\nedition = "2021"\n[dependencies]\nfancy-regex = "0.13"\nserde_json = "=1.0.145"\nperceus_ptr = { path = ${JSON.stringify(join(root, 'tests/runtime/perceus_ptr'))}, features = ["threaded"] }\n`);
+  writeFileSync(join(directory, 'Cargo.toml'), `[package]\nname = "native_compiler_ffi_checks"\nversion = "0.1.0"\nedition = "2021"\n[dependencies]\nfancy-regex = "0.13"\nregex = "=1.13.1"\nserde_json = "=1.0.145"\nperceus_ptr = { path = ${JSON.stringify(join(root, 'tests/runtime/perceus_ptr'))}, features = ["threaded"] }\n`);
   writeFileSync(join(directory, 'src/main.rs'), threadedPrelude(codegenPrelude(empty)) + '\nextern crate self as purust_core;\n' +
     modules.map(([name, path]) => `mod ${name} { use super::*;\n${threadedRust(read(path))}\n}\n`).join('') + main);
   const result = spawnSync('cargo', ['run', '--quiet'], { cwd: directory, encoding: 'utf8', timeout: 120_000,
@@ -109,5 +137,6 @@ try {
   assert.equal(result.stdout.trim(), 'NATIVE_COMPILER_FFI_OK');
   console.log(`Native compiler FFI: ${checks.length} JS/Rust differential assertions; bounded cache lifetime and monotonic clock passed.`);
 } finally {
-  rmSync(directory, { recursive: true, force: true });
+  if (process.env.PURUST_FFI_KEEP === '1') console.log(`Native FFI workspace retained: ${directory}`);
+  else rmSync(directory, { recursive: true, force: true });
 }
