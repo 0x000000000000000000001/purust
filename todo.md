@@ -3,6 +3,133 @@
 Plan du **2 octobre 2026**. Priorité : réduire le travail PBO rejeté, puis
 les allocations des passes dominantes du compilateur natif.
 
+## Nouvelle campagne de saturation gopurs Rust — nuit du 4 au 5 octobre 2026
+
+- [x] Libérer les caches Purust régénérables avec inventaire et contrôle des
+  sources, exécutables et preuves conservés.
+  **28 837 597 998 octets** d'intermédiaires Cargo et métadonnées non suivies
+  supprimés ; environ 40 Gio disponibles, sources et exécutables revérifiés.
+  Les métadonnées suivies par Git sont conservées. Deux précontrôles interrompus
+  (Python 3.9, puis métadonnées suivies) et le nettoyage réussi sont archivés.
+- [x] Figer les hôtes publiés et reprendre les entrées exactes des 51 projets
+  de `compilation-refresh-20261004` ; profiler Arrays et b8x.
+  Arrays, b8x et Aff profilés, générations exactes. Arrays expose les arbres
+  temporaires de `Foldable`, b8x les retraits de directives et le filtrage global
+  par module. Le contrôle est reconstruit avec le profil PGO historique figé.
+- [x] Explorer préparation/spécialisation, émission/ordonnancement et coûts
+  du Rust généré ; conserver chaque candidat et ses mesures appariées.
+  Premier screening `direct-folds` : **60 générations exactes**, cinq paires
+  sur chacun des cinq cas. Arrays **3 149 → 2 068 ms (−34,3 %)**, b8x
+  **29 798 → 28 244 ms (−5,2 %)** ; Aff, Spec et Yoga JSON progressent aussi.
+  Candidat prometteur, encore à confirmer dans la composition et la table complète.
+  `bulk-directives` : b8x **28 117 → 26 668 ms (−5,2 %)**, 60 générations
+  exactes supplémentaires. `module-range-v2` donne **−2,2 % sur b8x**, signal
+  encore sous le seuil pratique à confirmer/ablater ; l'échec de compilation
+  initial (`Iterator` masqué) et sa correction sont archivés. `prefix-directives`
+  est rejeté : somme des cinq médianes **37 863 → 37 953 ms**, aucun gain utile.
+  Le diagnostic des tranches de préparation motive un ordonnanceur dynamique ;
+  mémoïsation des types, sélection anticipée des spécialisations et preuve de
+  fermeture des dictionnaires sont préparées comme expériences indépendantes.
+  `dynamic-preparation` passe ses contrats JS et **60 exécutions natives**
+  (déférence, répétabilité, multiplicité, ordre, concurrence bornée). Screening :
+  b8x **26 211 → 23 895 ms (−8,8 %)**, Arrays **2 055 → 1 917 ms (−6,7 %)**,
+  Aff **−3,2 %** ; les cinq cas progressent et les 60 générations sont exactes.
+  `closed-scope` : b8x **26 062 → 25 175 ms (−3,4 %)**, Arrays
+  **2 051 → 1 666 ms (−18,8 %)**, cinq paires et sorties exactes ; à composer
+  avec l'ordonnancement dynamique. `shared-range` est rejeté (**−0,46 %** sur
+  b8x, aucun effet utile sur Arrays). Les blocages initiaux de `type-rewrite-memo`
+  (sélecteur de fixture confondant les constructeurs Int/String via JSON) et de
+  `lookup-first` (indentation) restent archivés avant reprise corrigée.
+  La composition `composition-v1` confirme l'effet de `closed-scope` avec la
+  préparation dynamique : Arrays **1 900 → 1 512 ms (−20,4 %)**, b8x
+  **23 555 → 22 939 ms (−2,6 %)**, 60 générations exactes. Les reprises de
+  spécialisation ont révélé un manque de résolution d'`esbuild` dans le workspace
+  privé ; le harness crée désormais le lien vers la dépendance installée.
+  Le diagnostic d'invalidation confirme des entrées identiques (`inputSame=true`)
+  mais des tailles `Data.Generic.Rep.Inl/Inr` changeant à chaque tour. Une expérience
+  `precise-dependencies` suit les absences effectivement consultées, avec une
+  frontière `Effect` explicite avant lecture du journal et un oracle sans cache.
+  `type-rewrite-memo-v3` est rejeté : les cinq cas régressent (**+1,7 %** sur
+  b8x, **+1,6 %** sur la somme du screening), malgré les tests réussis. La
+  recherche anticipée seule (`lookup-first-v3`) est neutre (**−0,03 %** sur b8x)
+  et n'est pas retenue indépendamment. Le premier build `precise-dependencies`
+  manque l'export de `SpecializationReads` ; correction et reprise isolées en v2.
+  `precise-dependencies-v3` passe les oracles sans cache, **320 fixtures natives**
+  concurrentes et 60 générations exactes, mais reste rejeté sur le backend complet :
+  b8x **+2,8 %**, Aff **+5,5 %**, Spec **+6,2 %**, Yoga JSON **+7,8 %**.
+  La préparation baisse sur b8x et Arrays, mais les phases suivantes régressent
+  davantage ; les changements de formes de records du Rust généré sont archivés.
+  `import-accumulator` est prometteur : Arrays **1 511 → 1 441 ms (−4,6 %)**,
+  les cinq cas progressent, oracles des imports et sorties exacts. Confirmation
+  complète réussie face au binaire publié, à `composition-v1` et à l'ablation
+  `composition-no-range-v2` : **1 224 générations / 379 752 fichiers exacts**.
+  Sommes des 51 médianes : publié **87 672 ms**, composition-v1 **76 202 ms**,
+  sans plage **76 091 ms**, avec imports **75 460 ms** (**−13,9 %** face au publié).
+  Aucun des 51 projets ne régresse dans cette comparaison. L'accumulateur confirme
+  **−4,6 % sur Arrays**. La plage seule reste sous les seuils pratiques (**−0,83 %
+  du total**, **−2,42 % sur b8x**) : elle sera retirée de la sélection finale.
+  Le nouveau profil motive trois derniers mécanismes :
+  réemploi de la preuve de type fermé, pliage des seules contributions de rang
+  invisible, et construction fragmentée des noms de types. Un contrôle supplémentaire
+  `precise-layout` remplace les nouveaux records du cache précis par des tuples ;
+  le harness exige l'identité du runtime commun avant de mesurer cette variante.
+  Ce contrôle réussit : **−3,8 % b8x**, **−8,7 % Arrays**, **−3,6 % Aff**,
+  cinq paires favorables par cas, contrats et 60 générations exactes. La composition
+  `composition-v3` reprend ce cache avec folds, retraits groupés, préparation
+  dynamique, preuve lexicale et accumulateur d'imports, en retirant la plage.
+  Ses tests, sa confirmation complète et son profil final passent : **76 138 →
+  75 168 ms (−1,27 %)**, intervalle bootstrap du ratio **[0,9840 ; 0,9909]** ;
+  Arrays **1 447 → 1 325 ms (−8,43 %)**. Les deux arbres de sources courants
+  correspondent exactement à l'instantané choisi, avec préimages archivées.
+  Les trois essais suivants, tous construits et vérifiés, ne sont pas retenus :
+  `cached-eligibility` (**+1,0 % b8x**, **+2,1 % Spec**), `suffix-contributions`
+  (**−0,46 % b8x**, intervalle apparié recouvrant zéro) et `mangle-chunks`
+  (**+15,4 % b8x**, **+5,5 % Arrays**). Ils couvrent trois mécanismes distincts
+  après la dernière nouvelle piste gagnante ; la clôture attend la composition
+  et la revue des profils, maintenant réussies. **20 campagnes** ont été auditées
+  indépendamment à partir des journaux, phases, ordres, paramètres et manifestes.
+  `selection.json` et `closure.json` scellent la décision ; la reconstruction
+  de production à PGO frais, la qualification trois hôtes et les tables finales
+  sont en cours.
+  Production reconstruite et qualifiée à **01:24 UTC** : trois passes PGO,
+  **1 009 fichiers** identiques au candidat et **1 008 fichiers** de bootstrap
+  JS/Purust natif identiques. Les contrats de production, dont le bridge Effect
+  Go sous `-race`, passent. La table s'interrompt sans état final à **02:13 UTC**
+  après **48/51 projets** ; l'absence du processus est constatée au point d'étape
+  utilisateur de 06:00 UTC. Reprise dédiée dans `production/recovery-1` : les
+  trois projets restants repartent avec chauffe et cinq tours entiers, avec les
+  mêmes compilateurs. Les cinq générations vérifiées du projet interrompu sont
+  conservées et exclues des médianes finales. La comparaison ancien/nouveau Rust
+  et les applications suivront cette reprise.
+- [x] Confirmer la composition gagnante, qualifier les composants modifiés et
+  mesurer toute la table avant publication.
+  Qualification finale réussie après reprise : **1 530 générations vérifiées /
+  1 275 mesures / 474 690 comparaisons de fichiers exactes**. Table complète
+  JS/Go/Rust : **341 041 / 97 584 / 74 189 ms** ; bibliothèques **285 266 /
+  64 547 / 51 785 ms**, b8x **55 775 / 33 037 / 22 404 ms**. Rust réduit le
+  temps de **24,0 % face à Go** sur la table et de **32,2 % sur b8x**.
+  La campagne appariée indépendante donne ancien/nouveau Rust **91 456 →
+  77 149 ms (−15,6 %)**, intervalle bootstrap du ratio **[0,8413 ; 0,8500]** :
+  50 médianes en baisse, une identique, aucune en hausse. Ces deux campagnes
+  restent distinctes et leurs temps ne sont pas mélangés.
+  Les huit suites applicatives passent, ainsi que tous les packages et points
+  d'entrée b8x. La première qualification avait détecté `.spec-results` ajouté
+  par Yoga JSON dans son répertoire d'entrées figées, après réussite des tests ;
+  aucun fichier préexistant n'avait changé. Tentative et rapport archivés dans
+  `production/applications` et `production/application-recovery-1`. Le harness
+  exécute désormais les applications dans des copies privées ; la reprise
+  `production/applications-retry-1` valide aussi les **50 assertions Yoga JSON**
+  et les 51 corpus figés, sans modifier les mesures.
+  Publication appliquée dans `altbak.pub/README.md`, avec rapport
+  `docs/benchmark-results/2026-10-05-gopurs-rust-saturation.{md,json}`. Les ratios
+  `/JS` du tableau gopurs sont réservés à b8x, au sous-total et au total ; les
+  qualifications historiques et la section Purust sont conservées.
+- [x] Arrêter après revue des profils et épuisement des pistes prioritaires,
+  avec trois expériences sur des mécanismes distincts sans nouveau gain retenu.
+- Archive : `../../altbak.pub/var/benchmark/gopurs-rust-saturation-20261004/`.
+- Seuils de travail : au moins 1 % sur le total, ou 3 % sur un cas important
+  sans régression significative globale ; vérifier également le bruit apparié.
+
 ## Campagne nocturne gopurs contre Go — 4 octobre 2026
 
 ### Extension demandée du tableau aux autres bibliothèques
