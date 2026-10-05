@@ -1,0 +1,167 @@
+{
+  "name": "Indexed row capabilities",
+  "description": "Generic resource keys with separate history/live rows, a rank-2 arena scope, and qualified do notation.",
+  "cases": [
+    {
+      "module": "LinearLab.Indexed.Valid",
+      "expect": "accept",
+      "reason": "Two resources, inferred capability rows, a harmless read alias, fresh replay."
+    },
+    {
+      "module": "LinearLab.Indexed.PhantomCounterexample",
+      "expect": "accept",
+      "reason": "A plain phantom-state handle accepts old-alias reuse; static counterexample only."
+    },
+    {
+      "module": "LinearLab.Indexed.DoubleFinish",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "No live capability remains for a second consumption."
+    },
+    {
+      "module": "LinearLab.Indexed.AliasedFinish",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "A handle alias does not restore its removed capability."
+    },
+    {
+      "module": "LinearLab.Indexed.HelperReplay",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Repeating a captured consuming helper cannot recreate its input capability."
+    },
+    {
+      "module": "LinearLab.Indexed.ActionReplay",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Repeating the same indexed consuming action fails state composition."
+    },
+    {
+      "module": "LinearLab.Indexed.ReadAfterFinish",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Inspection requires a live resource capability."
+    },
+    {
+      "module": "LinearLab.Indexed.Unfinished",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "run requires an empty final live row."
+    },
+    {
+      "module": "LinearLab.Indexed.ReopenKey",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "The history row forbids reusing a key, including after finishing it."
+    },
+    {
+      "module": "LinearLab.Indexed.EscapeHandle",
+      "expect": "reject",
+      "codes": [
+        "EscapedSkolem"
+      ],
+      "reason": "The generative scope must not escape run through its result."
+    },
+    {
+      "module": "LinearLab.Indexed.EscapeAction",
+      "expect": "reject",
+      "codes": [
+        "EscapedSkolem"
+      ],
+      "reason": "An action capturing the generative scope must not escape run."
+    },
+    {
+      "module": "LinearLab.Indexed.CoerceKey",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Nominal key roles prevent relabelling a handle."
+    },
+    {
+      "module": "LinearLab.Indexed.CoerceState",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Nominal state roles prevent erasing an unconsumed capability."
+    },
+    {
+      "module": "LinearLab.Indexed.RawRunner",
+      "expect": "reject",
+      "codes": [
+        "UnknownImport"
+      ],
+      "reason": "The raw resource runner is not exported."
+    },
+    {
+      "module": "LinearLab.Indexed.ForgeIx",
+      "expect": "reject",
+      "codes": [
+        "UnknownImportDataConstructor"
+      ],
+      "reason": "The indexed computation constructor is not exported."
+    },
+    {
+      "module": "LinearLab.Indexed.Existential",
+      "expect": "accept",
+      "reason": "An existential may store a closed handle, without authorizing further resource use."
+    },
+    {
+      "module": "LinearLab.Indexed.ReviveExistential",
+      "expect": "reject",
+      "reason": "An existential closed handle cannot inspect a fresh resource bearing the same label.",
+      "codes": [
+        "TypesDoNotUnify"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.CoerceScope",
+      "expect": "reject",
+      "reason": "Nominal scope roles prevent switching arenas.",
+      "codes": [
+        "TypesDoNotUnify"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.ForgeHandle",
+      "expect": "reject",
+      "reason": "The handle constructor is private.",
+      "codes": [
+        "UnknownImportDataConstructor"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.PartialBranch",
+      "expect": "reject",
+      "reason": "Both returning branches must satisfy the final empty capability row.",
+      "codes": [
+        "TypesDoNotUnify"
+      ]
+    }
+  ],
+  "executions": [
+    {
+      "module": "LinearLab.Indexed.Valid",
+      "marker": "INDEXED_CAPABILITIES_OK sessions=4 finished=4 dropped=4 replay=fresh",
+      "modes": [
+        "normal",
+        "threaded"
+      ]
+    }
+  ]
+}

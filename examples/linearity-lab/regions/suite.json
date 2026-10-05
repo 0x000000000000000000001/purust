@@ -1,0 +1,22 @@
+{
+  "name": "regions",
+  "description": "Rank-2/CPS scope, ST-shaped indexed effects, existential escape, and checked runtime ownership.",
+  "cases": [
+    { "module": "LinearLab.Regions.Rank2Valid", "expect": "accept", "reason": "A scoped callback can inspect and finish once." },
+    { "module": "LinearLab.Regions.Rank2Alias", "expect": "accept", "reason": "Rank-2 scope does not prevent aliasing or repeated consumption." },
+    { "module": "LinearLab.Regions.Rank2EffectEscape", "expect": "accept", "reason": "A deferred Effect hides the scope and escapes; it can be replayed." },
+    { "module": "LinearLab.Regions.Rank2Exists", "expect": "accept", "reason": "An existential package hides the scope and escapes; Effect operations remain usable." },
+    { "module": "LinearLab.Regions.Rank2DirectEscape", "expect": "reject", "codes": ["TypesDoNotUnify", "EscapedSkolem"], "reason": "The callback's fresh scope cannot escape directly as the caller's scope." },
+    { "module": "LinearLab.Regions.RegionValid", "expect": "accept", "reason": "Ordinary scoped use through an abstract region-indexed effect is accepted." },
+    { "module": "LinearLab.Regions.RegionAlias", "expect": "accept", "reason": "Region confinement does not prevent repeated consumption within the region." },
+    { "module": "LinearLab.Regions.RegionExists", "expect": "accept", "reason": "An existential can hide and return a handle, but the indexed operations remain confined." },
+    { "module": "LinearLab.Regions.RegionDirectEscape", "expect": "reject", "codes": ["TypesDoNotUnify", "EscapedSkolem"], "reason": "A directly returned handle retains the fresh scope." },
+    { "module": "LinearLab.Regions.RegionActionEscape", "expect": "reject", "codes": ["TypesDoNotUnify", "EscapedSkolem"], "reason": "A deferred Region action retains its scope unlike plain Effect." },
+    { "module": "LinearLab.Regions.RegionExistsUse", "expect": "reject", "codes": ["TypesDoNotUnify", "EscapedSkolem"], "reason": "A fixed existential scope cannot satisfy the rank-2 Region runner." },
+    { "module": "LinearLab.Regions.STActual", "expect": "accept", "reason": "The installed ST implementation allows aliased references and repeated mutation within a region." },
+    { "module": "LinearLab.Regions.STActualEscape", "expect": "reject", "codes": ["TypesDoNotUnify", "EscapedSkolem"], "reason": "The installed ST runner rejects direct reference escape." }
+  ],
+  "executions": [
+    { "module": "LinearLab.Regions.RuntimeDemo", "marker": "REGIONS_GUARD_OK", "modes": ["normal", "threaded"] }
+  ]
+}

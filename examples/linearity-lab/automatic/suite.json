@@ -1,0 +1,20 @@
+{
+  "name": "Automatic Rust contracts and an additional TAST checker",
+  "description": "Ordinary PureScript accepts ownership violations; a restricted separate pass consumes contracts extracted from Rust.",
+  "hook": "hook.mjs",
+  "cases": [
+    {"module":"LinearLab.Automatic.Valid","expect":"accept","reason":"Ordinary PureScript permits the safe sequence."},
+    {"module":"LinearLab.Automatic.DoubleUse","expect":"accept","reason":"Ordinary PureScript also permits double consume via alias."},
+    {"module":"LinearLab.Automatic.ReplayConsume","expect":"accept","reason":"Constructing an Effect is distinct from executing it twice."},
+    {"module":"LinearLab.Automatic.FreshReplay","expect":"accept","reason":"Replaying allocation creates fresh resources."},
+    {"module":"LinearLab.Automatic.ReadAfterFinish","expect":"accept","reason":"The base type system has no ownership information."},
+    {"module":"LinearLab.Automatic.ClosureReplay","expect":"accept","reason":"A helper can capture a handle and be called twice."},
+    {"module":"LinearLab.Automatic.AffineDrop","expect":"accept","reason":"Rust ownership is affine: automatic destruction is allowed."},
+    {"module":"LinearLab.Automatic.UnknownBranch","expect":"accept","reason":"A safe branch which exceeds this tiny supplementary checker."},
+    {"module":"LinearLab.Automatic.Escape","expect":"accept","reason":"An effect capturing a handle may escape ordinary PureScript."},
+    {"module":"LinearLab.Automatic.OverlappingArgs","expect":"accept","reason":"Rust shared/mutable argument distinctions disappear from ordinary PureScript signatures."},
+    {"module":"LinearLab.Automatic.DisjointArgs","expect":"accept","reason":"Two separately allocated resources may be borrowed in one call."},
+    {"module":"LinearLab.Automatic.UnknownCall","expect":"accept","reason":"An unknown pure foreign call may have ownership effects and must not be silently ignored by an added checker."}
+  ],
+  "executions": []
+}

@@ -1,0 +1,172 @@
+{
+  "name": "combinators",
+  "description": "Generic opaque first-order linear arrows, adapted from the approach described by Phil Freeman and rightfold; real Rust resources move through an interpreter.",
+  "cases": [
+    {
+      "module": "LinearLab.Combinators.Demo",
+      "expect": "accept",
+      "reason": "Generic composition, tensor, swap, associators and replay."
+    },
+    {
+      "module": "LinearLab.Combinators.AliasArrow",
+      "expect": "accept",
+      "reason": "Descriptions may be shared; tensor requires two separate input resources."
+    },
+    {
+      "module": "LinearLab.Combinators.UnsafeEscape",
+      "expect": "accept",
+      "reason": "Explicit unsafeCoerce is outside the safe API guarantee; not executed."
+    },
+    {
+      "module": "LinearLab.Combinators.DoubleFinish",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "The first finish outputs Int, not Session."
+    },
+    {
+      "module": "LinearLab.Combinators.DuplicateResource",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Only unrestricted Int values have a duplication primitive."
+    },
+    {
+      "module": "LinearLab.Combinators.DropResource",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Identity cannot erase its resource; no generic discard primitive exists."
+    },
+    {
+      "module": "LinearLab.Combinators.Forge",
+      "expect": "reject",
+      "codes": [
+        "UnknownImportDataConstructor"
+      ],
+      "reason": "The arrow constructor is private."
+    },
+    {
+      "module": "LinearLab.Combinators.OrdinaryFunction",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Ordinary unrestricted functions are not accepted as linear arrows."
+    },
+    {
+      "module": "LinearLab.Combinators.Unwrap",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Safe.Coerce cannot expose unrestricted resource execution."
+    },
+    {
+      "module": "LinearLab.Combinators.CoerceInput",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Input type role is nominal."
+    },
+    {
+      "module": "LinearLab.Combinators.CoerceOutput",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Output type role is nominal."
+    },
+    {
+      "module": "LinearLab.Combinators.EscapeResource",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Only closed Int-to-Int workflows may execute."
+    },
+    {
+      "module": "LinearLab.Combinators.RawPrimitive",
+      "expect": "reject",
+      "codes": [
+        "UnknownImport"
+      ],
+      "reason": "The trusted raw instruction builder is private."
+    },
+    {
+      "module": "LinearLab.Combinators.LiftCallback",
+      "expect": "reject",
+      "codes": [
+        "UnknownImport"
+      ],
+      "reason": "There is no arbitrary lift of an unrestricted callback."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalShared",
+      "expect": "accept",
+      "reason": "Historical runShared/liftShared accept shared Int values. Typecheck only; historical foreign implementations are not executed."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalPipeline",
+      "expect": "accept",
+      "reason": "Historical Sub composition keeps a non-Shared resource internal. Typecheck only; historical foreign implementations are not executed."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalClone",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "No Clone instance for Session."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalDrop",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "No Drop instance for Session."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalLift",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Shared constraint prevents lifting unrestricted callbacks on Session."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalEscape",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Shared result constraint prevents leaking Session through runShared."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalBorrowEscape",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Shared result constraint prevents leaking a borrow of non-Shared Session."
+    }
+  ],
+  "executions": [
+    {
+      "module": "LinearLab.Combinators.Demo",
+      "marker": "LINEAR_COMBINATORS_OK resources=4 results=17,17,23,30",
+      "modes": [
+        "normal",
+        "threaded"
+      ]
+    }
+  ]
+}

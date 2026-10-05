@@ -1,0 +1,725 @@
+{
+  "verifiedOn": "2026-10-05",
+  "cases": 66,
+  "accepted": 28,
+  "rejected": 38,
+  "nativeExecutions": 6,
+  "tools": {
+    "purs": "0.15.16 [development build; commit: 3c8fcfd7a3d440bba487fe9fe059284cffc6e908 DIRTY]",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "node": "v24.8.0",
+    "bundleSha256": "6aad259f4c81e9e197b3d56833f6eb520092bbd368ec09a5b5103d364dc2d1ce"
+  },
+  "suites": [
+    {
+      "name": "Automatic Rust contracts and an additional TAST checker",
+      "complete": true,
+      "cases": [
+        {
+          "module": "LinearLab.Automatic.Valid",
+          "expected": "accept",
+          "reason": "Ordinary PureScript permits the safe sequence.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.DoubleUse",
+          "expected": "accept",
+          "reason": "Ordinary PureScript also permits double consume via alias.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.ReplayConsume",
+          "expected": "accept",
+          "reason": "Constructing an Effect is distinct from executing it twice.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.FreshReplay",
+          "expected": "accept",
+          "reason": "Replaying allocation creates fresh resources.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.ReadAfterFinish",
+          "expected": "accept",
+          "reason": "The base type system has no ownership information.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.ClosureReplay",
+          "expected": "accept",
+          "reason": "A helper can capture a handle and be called twice.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.AffineDrop",
+          "expected": "accept",
+          "reason": "Rust ownership is affine: automatic destruction is allowed.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.UnknownBranch",
+          "expected": "accept",
+          "reason": "A safe branch which exceeds this tiny supplementary checker.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.Escape",
+          "expected": "accept",
+          "reason": "An effect capturing a handle may escape ordinary PureScript.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.OverlappingArgs",
+          "expected": "accept",
+          "reason": "Rust shared/mutable argument distinctions disappear from ordinary PureScript signatures.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.DisjointArgs",
+          "expected": "accept",
+          "reason": "Two separately allocated resources may be borrowed in one call.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Automatic.UnknownCall",
+          "expected": "accept",
+          "reason": "An unknown pure foreign call may have ownership effects and must not be silently ignored by an added checker.",
+          "diagnosticCodes": []
+        }
+      ],
+      "executions": [],
+      "supplementaryChecks": [
+        {
+          "name": "Valid",
+          "outcome": "accept",
+          "events": [
+            {
+              "operation": "open",
+              "resource": 1,
+              "mode": "fresh"
+            },
+            {
+              "operation": "add",
+              "resource": 1,
+              "mode": "borrow-mut"
+            },
+            {
+              "operation": "inspect",
+              "resource": 1,
+              "mode": "borrow"
+            },
+            {
+              "operation": "finish",
+              "resource": 1,
+              "mode": "consume"
+            }
+          ],
+          "resources": 1,
+          "liveAtExit": 0
+        },
+        {
+          "name": "DoubleUse",
+          "outcome": "OWNERSHIP",
+          "message": "OWNERSHIP: finish reuses consumed resource 1"
+        },
+        {
+          "name": "ReplayConsume",
+          "outcome": "OWNERSHIP",
+          "message": "OWNERSHIP: finish reuses consumed resource 1"
+        },
+        {
+          "name": "FreshReplay",
+          "outcome": "accept",
+          "events": [
+            {
+              "operation": "open",
+              "resource": 1,
+              "mode": "fresh"
+            },
+            {
+              "operation": "open",
+              "resource": 2,
+              "mode": "fresh"
+            },
+            {
+              "operation": "finish",
+              "resource": 1,
+              "mode": "consume"
+            },
+            {
+              "operation": "finish",
+              "resource": 2,
+              "mode": "consume"
+            }
+          ],
+          "resources": 2,
+          "liveAtExit": 0
+        },
+        {
+          "name": "ReadAfterFinish",
+          "outcome": "OWNERSHIP",
+          "message": "OWNERSHIP: inspect reuses consumed resource 1"
+        },
+        {
+          "name": "ClosureReplay",
+          "outcome": "OWNERSHIP",
+          "message": "OWNERSHIP: finish reuses consumed resource 1"
+        },
+        {
+          "name": "AffineDrop",
+          "outcome": "accept",
+          "events": [
+            {
+              "operation": "open",
+              "resource": 1,
+              "mode": "fresh"
+            }
+          ],
+          "resources": 1,
+          "liveAtExit": 1
+        },
+        {
+          "name": "UnknownBranch",
+          "outcome": "UNSUPPORTED",
+          "message": "UNSUPPORTED: expression Case"
+        },
+        {
+          "name": "Escape",
+          "outcome": "UNSUPPORTED",
+          "message": "UNSUPPORTED: resource, closure or action escapes the checked entrypoint"
+        },
+        {
+          "name": "OverlappingArgs",
+          "outcome": "OWNERSHIP",
+          "message": "OWNERSHIP: overlapping ownership/borrow arguments for 1"
+        },
+        {
+          "name": "DisjointArgs",
+          "outcome": "accept",
+          "events": [
+            {
+              "operation": "open",
+              "resource": 1,
+              "mode": "fresh"
+            },
+            {
+              "operation": "open",
+              "resource": 2,
+              "mode": "fresh"
+            },
+            {
+              "operation": "combine",
+              "resource": 1,
+              "mode": "borrow"
+            },
+            {
+              "operation": "combine",
+              "resource": 2,
+              "mode": "borrow-mut"
+            },
+            {
+              "operation": "finish",
+              "resource": 1,
+              "mode": "consume"
+            },
+            {
+              "operation": "finish",
+              "resource": 2,
+              "mode": "consume"
+            }
+          ],
+          "resources": 2,
+          "liveAtExit": 0
+        },
+        {
+          "name": "UnknownCall",
+          "outcome": "UNSUPPORTED",
+          "message": "UNSUPPORTED: global LinearLab.Automatic.UnknownCall.unknown"
+        }
+      ],
+      "unsupportedSignatures": [
+        {
+          "name": "borrowed-result",
+          "outcome": "reject"
+        },
+        {
+          "name": "nested-shared",
+          "outcome": "reject"
+        },
+        {
+          "name": "nested-mutable",
+          "outcome": "reject"
+        }
+      ],
+      "rustControls": [
+        {
+          "name": "valid",
+          "outcome": "accept-and-run"
+        },
+        {
+          "name": "double_move",
+          "outcome": "reject"
+        },
+        {
+          "name": "overlapping_borrows",
+          "outcome": "reject"
+        }
+      ]
+    },
+    {
+      "name": "combinators",
+      "complete": true,
+      "cases": [
+        {
+          "module": "LinearLab.Combinators.Demo",
+          "expected": "accept",
+          "reason": "Generic composition, tensor, swap, associators and replay.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.AliasArrow",
+          "expected": "accept",
+          "reason": "Descriptions may be shared; tensor requires two separate input resources.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.UnsafeEscape",
+          "expected": "accept",
+          "reason": "Explicit unsafeCoerce is outside the safe API guarantee; not executed.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.DoubleFinish",
+          "expected": "reject",
+          "reason": "The first finish outputs Int, not Session.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.DuplicateResource",
+          "expected": "reject",
+          "reason": "Only unrestricted Int values have a duplication primitive.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.DropResource",
+          "expected": "reject",
+          "reason": "Identity cannot erase its resource; no generic discard primitive exists.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.Forge",
+          "expected": "reject",
+          "reason": "The arrow constructor is private.",
+          "diagnosticCodes": [
+            "UnknownImportDataConstructor"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.OrdinaryFunction",
+          "expected": "reject",
+          "reason": "Ordinary unrestricted functions are not accepted as linear arrows.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.Unwrap",
+          "expected": "reject",
+          "reason": "Safe.Coerce cannot expose unrestricted resource execution.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.CoerceInput",
+          "expected": "reject",
+          "reason": "Input type role is nominal.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.CoerceOutput",
+          "expected": "reject",
+          "reason": "Output type role is nominal.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.EscapeResource",
+          "expected": "reject",
+          "reason": "Only closed Int-to-Int workflows may execute.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.RawPrimitive",
+          "expected": "reject",
+          "reason": "The trusted raw instruction builder is private.",
+          "diagnosticCodes": [
+            "UnknownImport"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.LiftCallback",
+          "expected": "reject",
+          "reason": "There is no arbitrary lift of an unrestricted callback.",
+          "diagnosticCodes": [
+            "UnknownImport"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalShared",
+          "expected": "accept",
+          "reason": "Historical runShared/liftShared accept shared Int values. Typecheck only; historical foreign implementations are not executed.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalPipeline",
+          "expected": "accept",
+          "reason": "Historical Sub composition keeps a non-Shared resource internal. Typecheck only; historical foreign implementations are not executed.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalClone",
+          "expected": "reject",
+          "reason": "No Clone instance for Session.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalDrop",
+          "expected": "reject",
+          "reason": "No Drop instance for Session.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalLift",
+          "expected": "reject",
+          "reason": "Shared constraint prevents lifting unrestricted callbacks on Session.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalEscape",
+          "expected": "reject",
+          "reason": "Shared result constraint prevents leaking Session through runShared.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalBorrowEscape",
+          "expected": "reject",
+          "reason": "Shared result constraint prevents leaking a borrow of non-Shared Session.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        }
+      ],
+      "executions": [
+        {
+          "module": "LinearLab.Combinators.Demo",
+          "mode": "normal",
+          "stdout": "COMBINATOR_OPEN 1\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_OPEN 4\nCOMBINATOR_FINISH 4 12\nCOMBINATOR_FINISH 3 11\nLINEAR_COMBINATORS_OK resources=4 results=17,17,23,30\n"
+        },
+        {
+          "module": "LinearLab.Combinators.Demo",
+          "mode": "threaded",
+          "stdout": "COMBINATOR_OPEN 1\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_OPEN 4\nCOMBINATOR_FINISH 4 12\nCOMBINATOR_FINISH 3 11\nLINEAR_COMBINATORS_OK resources=4 results=17,17,23,30\n"
+        }
+      ]
+    },
+    {
+      "name": "Indexed row capabilities",
+      "complete": true,
+      "cases": [
+        {
+          "module": "LinearLab.Indexed.Valid",
+          "expected": "accept",
+          "reason": "Two resources, inferred capability rows, a harmless read alias, fresh replay.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Indexed.PhantomCounterexample",
+          "expected": "accept",
+          "reason": "A plain phantom-state handle accepts old-alias reuse; static counterexample only.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Indexed.DoubleFinish",
+          "expected": "reject",
+          "reason": "No live capability remains for a second consumption.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.AliasedFinish",
+          "expected": "reject",
+          "reason": "A handle alias does not restore its removed capability.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.HelperReplay",
+          "expected": "reject",
+          "reason": "Repeating a captured consuming helper cannot recreate its input capability.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.ActionReplay",
+          "expected": "reject",
+          "reason": "Repeating the same indexed consuming action fails state composition.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.ReadAfterFinish",
+          "expected": "reject",
+          "reason": "Inspection requires a live resource capability.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.Unfinished",
+          "expected": "reject",
+          "reason": "run requires an empty final live row.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.ReopenKey",
+          "expected": "reject",
+          "reason": "The history row forbids reusing a key, including after finishing it.",
+          "diagnosticCodes": [
+            "NoInstanceFound"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.EscapeHandle",
+          "expected": "reject",
+          "reason": "The generative scope must not escape run through its result.",
+          "diagnosticCodes": [
+            "EscapedSkolem"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.EscapeAction",
+          "expected": "reject",
+          "reason": "An action capturing the generative scope must not escape run.",
+          "diagnosticCodes": [
+            "EscapedSkolem"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.CoerceKey",
+          "expected": "reject",
+          "reason": "Nominal key roles prevent relabelling a handle.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.CoerceState",
+          "expected": "reject",
+          "reason": "Nominal state roles prevent erasing an unconsumed capability.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.RawRunner",
+          "expected": "reject",
+          "reason": "The raw resource runner is not exported.",
+          "diagnosticCodes": [
+            "UnknownImport"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.ForgeIx",
+          "expected": "reject",
+          "reason": "The indexed computation constructor is not exported.",
+          "diagnosticCodes": [
+            "UnknownImportDataConstructor"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.Existential",
+          "expected": "accept",
+          "reason": "An existential may store a closed handle, without authorizing further resource use.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Indexed.ReviveExistential",
+          "expected": "reject",
+          "reason": "An existential closed handle cannot inspect a fresh resource bearing the same label.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.CoerceScope",
+          "expected": "reject",
+          "reason": "Nominal scope roles prevent switching arenas.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.ForgeHandle",
+          "expected": "reject",
+          "reason": "The handle constructor is private.",
+          "diagnosticCodes": [
+            "UnknownImportDataConstructor"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.PartialBranch",
+          "expected": "reject",
+          "reason": "Both returning branches must satisfy the final empty capability row.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        }
+      ],
+      "executions": [
+        {
+          "module": "LinearLab.Indexed.Valid",
+          "mode": "normal",
+          "stdout": "INDEXED_CAPABILITIES_OK sessions=4 finished=4 dropped=4 replay=fresh\n"
+        },
+        {
+          "module": "LinearLab.Indexed.Valid",
+          "mode": "threaded",
+          "stdout": "INDEXED_CAPABILITIES_OK sessions=4 finished=4 dropped=4 replay=fresh\n"
+        }
+      ]
+    },
+    {
+      "name": "regions",
+      "complete": true,
+      "cases": [
+        {
+          "module": "LinearLab.Regions.Rank2Valid",
+          "expected": "accept",
+          "reason": "A scoped callback can inspect and finish once.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.Rank2Alias",
+          "expected": "accept",
+          "reason": "Rank-2 scope does not prevent aliasing or repeated consumption.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.Rank2EffectEscape",
+          "expected": "accept",
+          "reason": "A deferred Effect hides the scope and escapes; it can be replayed.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.Rank2Exists",
+          "expected": "accept",
+          "reason": "An existential package hides the scope and escapes; Effect operations remain usable.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.Rank2DirectEscape",
+          "expected": "reject",
+          "reason": "The callback's fresh scope cannot escape directly as the caller's scope.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Regions.RegionValid",
+          "expected": "accept",
+          "reason": "Ordinary scoped use through an abstract region-indexed effect is accepted.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.RegionAlias",
+          "expected": "accept",
+          "reason": "Region confinement does not prevent repeated consumption within the region.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.RegionExists",
+          "expected": "accept",
+          "reason": "An existential can hide and return a handle, but the indexed operations remain confined.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.RegionDirectEscape",
+          "expected": "reject",
+          "reason": "A directly returned handle retains the fresh scope.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Regions.RegionActionEscape",
+          "expected": "reject",
+          "reason": "A deferred Region action retains its scope unlike plain Effect.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Regions.RegionExistsUse",
+          "expected": "reject",
+          "reason": "A fixed existential scope cannot satisfy the rank-2 Region runner.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Regions.STActual",
+          "expected": "accept",
+          "reason": "The installed ST implementation allows aliased references and repeated mutation within a region.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Regions.STActualEscape",
+          "expected": "reject",
+          "reason": "The installed ST runner rejects direct reference escape.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        }
+      ],
+      "executions": [
+        {
+          "module": "LinearLab.Regions.RuntimeDemo",
+          "mode": "normal",
+          "stdout": "ASSERT actual=30 expected=30\nASSERT actual=10 expected=10\nASSERT actual=10 expected=10\nASSERT actual=-1 expected=-1\nASSERT actual=-1 expected=-1\nASSERT actual=-1 expected=-1\nASSERT actual=-2 expected=-2\nASSERT actual=20 expected=20\nASSERT actual=20 expected=20\nRACE results=consumed,30\nASSERT actual=30 expected=30\nASSERT actual=-1 expected=-1\nREGIONS_GUARD_OK\n"
+        },
+        {
+          "module": "LinearLab.Regions.RuntimeDemo",
+          "mode": "threaded",
+          "stdout": "ASSERT actual=30 expected=30\nASSERT actual=10 expected=10\nASSERT actual=10 expected=10\nASSERT actual=-1 expected=-1\nASSERT actual=-1 expected=-1\nASSERT actual=-1 expected=-1\nASSERT actual=-2 expected=-2\nASSERT actual=20 expected=20\nASSERT actual=20 expected=20\nRACE results=consumed,30\nASSERT actual=30 expected=30\nASSERT actual=-1 expected=-1\nREGIONS_GUARD_OK\n"
+        }
+      ]
+    }
+  ]
+}
