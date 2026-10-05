@@ -29,7 +29,7 @@ import Data.String.Pattern (Pattern(..))
 import Data.Tuple (Tuple(..))
 import PureScript.Backend.Optimizer.CoreFn (Ann(..), Bind(..), Binding(..), Expr(..), ExprType(..), Ident(..), Module(..), Qualified(..))
 import PureScript.Backend.Optimizer.CoreFn.Usage (invalidateSourceUsageModule)
-import PureScript.Backend.Optimizer.Monomorphize (Instantiation, InstantiationMap, collectInstantiations, getExprAnn, monomorphize, transitiveCollect)
+import PureScript.Backend.Optimizer.Monomorphize (Instantiation, collectInstantiations, getExprAnn, monomorphize, transitiveCollect)
 
 type GlobalAstMap = Map String (Binding Ann)
 

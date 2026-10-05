@@ -3,7 +3,7 @@ module Main where
 import Prelude
 import Effect (Effect)
 import Effect.Console (log)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (launchAff_)
 import Node.FS.Sync as FS
 import Node.Encoding (Encoding(..))
 import Node.Process as Process
@@ -14,10 +14,9 @@ import Data.Newtype (unwrap)
 import Purust.Build (buildModulesInScope, buildConcurrency)
 import Purust.Emission (withEmitter)
 import Purust.Dependencies as Dependencies
-import PureScript.Backend.Optimizer.Directives.Defaults (defaultDirectives)
 import PureScript.Backend.Optimizer.Semantics.Foreign (coreForeignSemantics)
-import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, checkCache, writeCache, loadDirectives)
-import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, getArity, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
+import PureScript.Backend.Optimizer.App (coreFnModulesFromOutput, loadDirectives)
+import Purust.CodeGen (codegenModuleWithOptions, codegenPreludeWithRenames, fieldRenames, sanitizeIdent, extractAllArgTypes, extractFinalRetType, codegenExprTypeWithValueEnums)
 import Purust.ModuleValues (eligibleValues)
 import Purust.Metrics as Metrics
 import Purust.DataLayout (opaqueEmptyTypesForModules, opaqueForeignTypeKey, foreignHandleKey, valueEnumsForModules)
@@ -28,19 +27,15 @@ import Purust.Runtime (writeRuntime, runtimeDependency, microtasksSource)
 import Purust.FfiCargo (loadFfiCargo)
 import Purust.ForeignTypes (foreignTypeForwards, foreignUnboundTypes)
 import Purust.ASTCollector as Purust.ASTCollector
-import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..), ModuleName(..), Import(..))
+import PureScript.Backend.Optimizer.CoreFn (Module(..), Bind(..), Binding(..), Expr(..), Ident(..), ExprType(..), Ann(..))
 import Data.Map as Map
 import Data.List as List
-import Data.Set as Set
-import Data.Array as Array
 import Data.String as String
 import Data.Foldable (foldl)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.String.Pattern (Pattern(..), Replacement(..))
-import Debug as Debug
 import PureScript.Backend.Optimizer.FfiSupport (findFfiFile)
-import Effect.Console as Console
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 import Effect.Exception as Exception
@@ -154,15 +149,6 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
             
         in acc3
         
-    buildGlobalTypes :: List.List (Module Ann) -> Set.Set String
-    buildGlobalTypes modules = foldl processModule Set.empty modules
-      where
-      processModule acc (Module mod) =
-        let modStr = String.replaceAll (Pattern ".") (Replacement "_") (unwrap mod.name)
-            accData = foldl (\acc2 decl -> Set.insert (modStr <> "_" <> sanitizeIdent decl.name <> "_enum") acc2) acc mod.dataDecls
-            accClass = foldl (\acc2 decl -> Set.insert (modStr <> "_" <> sanitizeIdent decl.name) acc2) accData mod.classDecls
-        in accClass
-
     buildGlobalClassFields :: List.List (Module Ann) -> Map.Map String (Array (Tuple String ExprType))
     buildGlobalClassFields modules = foldl processModule Map.empty modules
       where
@@ -178,7 +164,6 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
 
   prepared <- Metrics.measure "prepare" \_ -> do
     let globalArities = buildGlobalArities finalModules
-    let globalTypes = buildGlobalTypes finalModules
     let globalClassFields = buildGlobalClassFields finalModules
 
     -- A foreign import data type with no native Rust declaration carries
@@ -246,15 +231,10 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
             Just ffiPath -> loadFfiCargo ffiPath
             Nothing -> pure ""
           let
-            getArity (ForAll _ t) = getArity t
-            getArity (ConstrainedType _ t) = getArity t
-            getArity (Func args t) = Array.length args + getArity t
-            getArity _ = 0
-            
             genFallback name ty =
               if not (Set.member (modPrefix <> sanitizeIdent (unwrap name)) allMacroBindings) then
                 let argTypes = extractAllArgTypes ty
-                    args = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprTypeWithValueEnums globalValueEnums modName true argTy) argTypes
+                    parameters = Array.mapWithIndex (\i argTy -> "mut a" <> show i <> ": " <> codegenExprTypeWithValueEnums globalValueEnums modName true argTy) argTypes
                     retTyStr = codegenExprTypeWithValueEnums globalValueEnums modName true (extractFinalRetType ty)
                     defaultRet = case retTyStr of
                           "i64" -> "0"
@@ -263,7 +243,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
                           "char" -> "'\\0'"
                           "String" -> "String::new()"
                           _ -> "unimplemented!()"
-                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " args <> ") -> " <> retTyStr <> " { " <> defaultRet <> " }\n"
+                in "pub fn " <> modPrefix <> sanitizeIdent (unwrap name) <> "(" <> String.joinWith ", " parameters <> ") -> " <> retTyStr <> " { " <> defaultRet <> " }\n"
               else ""
 
           ffiContent <- case ffiPathMb of
@@ -416,7 +396,7 @@ main = launchAff_ $ Metrics.measure "backend total" \_ -> do
     FS.writeTextFile UTF8 (coreDir <> "/src/lib.rs") (preludeRsContent <> "\npub mod microtasks {\n"
       <> (if threaded then threadedRust microtasksSource else microtasksSource) <> "\n}\n")
     
-    _ <- foldl (\eff (Tuple k { code: v, imports: imp, cargo }) -> eff *> do
+    _ <- foldl (\eff (Tuple k { code: v, cargo }) -> eff *> do
       let modDir = outDir <> "/Purs_" <> k
       modExists <- FS.exists modDir
       when (not modExists) do

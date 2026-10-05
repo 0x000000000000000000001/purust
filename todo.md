@@ -3,6 +3,82 @@
 Plan du **2 octobre 2026**. Priorité : réduire le travail PBO rejeté, puis
 les allocations des passes dominantes du compilateur natif.
 
+## Compilateur natif par défaut dans b8x — 5 octobre 2026
+
+- [x] Nettoyer les seuls dépôts `purust` / `purust-*` avant reconstruction :
+  **3 916 836 734 octets** de caches régénérables libérés, avec inventaires SHA-256
+  et contrôle des fichiers conservés dans `../logs/native-default-20261005/`.
+- [x] Raccorder le driver à `bin/purust`, natif par défaut, et conserver
+  `PURUST_JS=1`. Enregistrer l'hôte, le lanceur et le vrai binaire dans le
+  manifeste et les contrôles de fraîcheur.
+- [x] Faire reconstruire le natif par `b -c` (`build:native`) et le JS par
+  `PURUST_JS=1 b -c` (`build`), avec sauvegarde de l'ancien compilateur et
+  propagation des erreurs/interruption ; adapter le budget de temps.
+- [ ] Qualifier les commandes réelles, comparer les générations JS/natif sur
+  les mêmes TAST et revérifier les 286 tests après reconstruction native.
+  Les **84 tests driver/CLI** passent. Première reconstruction native réussie
+  (**453 modules / 282 778 types**), génération b8x native en **21 146 ms** ;
+  les **4 224 fichiers TAST/Rust/Cargo** correspondent exactement au build
+  optimisé de référence produit par le JS.
+  Le lien Linux du build `build-eyH7c2` échoue par manque d'espace.
+  Après autorisation explicite d'élargir le nettoyage aux caches Cargo b8x,
+  **6 691 463 252 octets** supplémentaires sont libérés ; **30 939 fichiers
+  conservés** sont rehashés, y compris les preuves des tentatives échouées.
+  La reprise `build-I9JtUt` réussit. Le JS reconstruit passe les deux tests HTML,
+  **2 817 fichiers Rust/Cargo** JS/natif sont exacts sur le même TAST et le négatif
+  natif conserve **2/3 → 101**. La seconde exécution complète révèle toutefois
+  une panique intermittente après **286/286** : le dernier worker Aff tente de
+  se joindre lui-même. Régression déterministe rouge avant correction dans
+  `purust-aff`, puis **20 tests Rust Aff verts** avec le correctif ciblé.
+  Qualification finale reprise dans `../logs/native-default-20261005/aff-fixed/`.
+
+## Exécution b8x en Rust optimisé — 5 octobre 2026
+
+- [x] Identifier le profil `dev` non optimisé du driver b8x et relever les
+  durées des groupes : le coût est concentré dans les 27 intégrations.
+- [x] Passer le driver b8x à `release`, `opt-level=3`, Thin LTO, sans debug ni
+  incrémental ; enregistrer et vérifier ce profil dans le plan et le manifeste.
+  Les **77 régressions driver/CLI** passent, dont le refus des anciens profils.
+- [x] Qualifier le build frais `build-Y9KfMP` : **1 404 modules**, **2 818 fichiers
+  Rust/Cargo identiques** au debug, **286/286**, **169 gardes FFI** forcées/non
+  atteintes. Le négatif optimisé `build-mUz98J` conserve **2/3 → 101** avec huit
+  gardes vérifiées ; le défaut reste sélectionné après ce négatif.
+- [x] Comparer les exécutions Rust debug / Rust optimisé / JS successivement,
+  avec chauffe et cinq mesures : **22,15 / 12,70 / 11,78 s** de médiane interne.
+  Gain Rust **−42,7 %**, CPU utilisateur **12,228 → 1,793 s (−85,3 %)**, contre
+  1,771 s pour Node. Les 18 passages réussissent **286/286**.
+- [x] Profiler l'écart restant : traces PostgreSQL séparées, exclues des médianes.
+  `query_raw` prépare/exécute/ferme : **5 914 cycles ReadyForQuery** pour 2 122
+  tentatives Rust contre **2 120** pour 2 120 tentatives JS ; **1 896 fermetures
+  de statements contre 0**. Cette piste concerne l'adaptateur PostgreSQL,
+  sans attribuer tout l'écart de **7,8 %** à ce seul mécanisme.
+- [ ] Expérimenter `query_typed_raw` sur une copie de la FFI, avec des OID de
+  paramètres non spécifiés (0) et le codec texte `PgParam`, afin de conserver
+  l'inférence serveur. Dans `tokio-postgres 0.7.18`, cette voie groupe
+  Parse/Bind/Describe/Execute/Sync sur un statement anonyme. Qualifier types,
+  résultats/rowCount, erreurs, transactions et concurrence avant toute mesure
+  appariée ou modification retenue de l'adaptateur.
+- Premier build échoué faute d'espace pendant LTO, conservé. Nettoyage borné
+  de **5 955 963 381 octets** de caches Cargo, **13 069 fichiers conservés**
+  rehashés, puis nouvel export réussi. Cargo optimisé : **6 min 46 s**.
+- Preuves : `../../b8x/run/bak/rust/output/release-qualification-20261005/`.
+
+## Nettoyage des avertissements Purust — 5 octobre 2026
+
+- [x] Corriger les 66 avertissements de `Main`, `Purust.CodeGen`,
+  `Purust.Monomorphization` et de `Semantics` dans le fork PBO Purust : imports
+  redondants, noms inutilisés/masqués, traces de débogage et branches inaccessibles.
+  La récursion de `boxUnboxPure` reste indépendante du chemin FFI natif.
+- [x] Migrer la clé Spago `bundle.extra_args` vers `bundle.extraArgs`.
+- [x] Recompiler les **451 modules** dans un répertoire neuf avec `--strict` :
+  **0 avertissement / 0 erreur**, y compris les dépendances. `npm run build`
+  et le bundle réussissent aussi, sans avertissement de format Spago.
+- [x] Vérifier les régressions codegen/TAST : **97 tests réussis**, aucun échec
+  ni test ignoré (82 fichiers codegen et deux fixtures TAST). Sur les mêmes
+  **451 modules / 282 019 types**, les **910 fichiers Rust/Cargo** sont identiques
+  octet par octet avant/après nettoyage, puis entre le nouveau JS et l'hôte natif.
+- Archive : `../../altbak.pub/var/benchmark/purust-warnings-20261005/`.
+
 ## Nouvelle campagne de saturation gopurs Rust — nuit du 4 au 5 octobre 2026
 
 - [x] Libérer les caches Purust régénérables avec inventaire et contrôle des
