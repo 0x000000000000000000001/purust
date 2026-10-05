@@ -1,6 +1,6 @@
 module LinearLab.Combinators.Linear
   ( Linear, Pair, Session, identity, then_, tensor, swap, assoc, unassoc
-  , duplicateInt, sumInts, open, add, inspect, finish, runInt
+  , duplicateInt, sumInts, open, add, inspect, observe, finish, runInt
   ) where
 
 import Effect (Effect)
@@ -54,6 +54,10 @@ add amount = Linear (primitive 7 amount)
 -- A native shared borrow returns control of the same owned Session.
 inspect :: Linear Session Session
 inspect = Linear (primitive 8 0)
+
+-- Return both the owner and a shareable snapshot of a native borrow.
+observe :: Linear Session (Pair Session Int)
+observe = Linear (primitive 10 0)
 
 finish :: Linear Session Int
 finish = Linear (primitive 9 0)

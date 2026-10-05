@@ -11,12 +11,15 @@ Run from the `purust` repository root:
 node examples/linearity-lab/run.mjs --suite indexed
 ```
 
-The suite has three accepted examples and seventeen rejected examples. The
-executable example runs through `purust` in both normal and `--threaded` modes.
-It opens two resources, reads through an alias, mutates the second resource,
-finishes both, then replays the same outer `Effect`. Native assertions verify
-four distinct constructions, four consuming calls, four drops and two correct
-results. Threaded mode tests compatibility, not concurrent scheduling.
+The suite has seven accepted examples and twenty-one rejected examples. Two
+executables run through `purust` in both normal and `--threaded` modes. The
+original example opens two resources, reads through an alias, mutates the
+second resource, finishes both, then replays the same outer `Effect`. Native
+assertions verify four distinct constructions, four consuming calls, four
+drops and two correct results. The extended example executes both branches
+of a conditional, recursive borrowing, indexed callbacks and dynamic repetition
+of separate resource scopes. Threaded mode tests compatibility, not concurrent
+scheduling.
 
 ## What the caller writes
 
@@ -36,6 +39,56 @@ states are inferred. Callers do use qualified `do`, fresh symbolic resource
 names and this API's operations. Generic helpers may need explicit row
 constraints, and compiler errors expose those types. This is less manual
 protocol modelling, not a completely transparent FFI.
+
+For a single-resource scope, the name and row machinery can be hidden by an
+ordinary library helper. `Helpers.withSession` provides this interface without
+introducing new state ADTs:
+
+```purescript
+recursive = withSession 10 \resource -> R.do
+  observed <- borrowLoop resource 4
+  final <- consumeWith resource \session -> R.do
+    value <- R.finish session
+    R.pure (value + 1)
+  R.pure (observed + final)
+```
+
+That exact example runs natively and returns `61`: the recursive helper reads
+`10`, `11`, `12`, `13` and increments after each read; the callback finishes
+at `14` and returns `15`. The caller writes no `Proxy`, capability row or state
+type. The implementation of reusable helpers still carries row constraints;
+this reduces caller effort rather than removing the library author's work.
+
+## Branches, helpers, callbacks and loops
+
+`BranchBoth` consumes the same resource on both branches. Both branches are
+actually executed by `Extended`, returning `7` and `8`. The existing
+`PartialBranch` rejects omitting consumption on one branch.
+
+`borrowLoop` is polymorphic in the scope, resource key and capability rows. It
+borrows and mutates repeatedly while preserving those indices. `repeatBorrow`
+accepts a callback with matching input and output states, so it may call the
+callback any number of times. Passing a consuming callback is rejected.
+`consumeWith` instead accepts a callback which removes one capability. A
+faulty implementation calling that callback twice is rejected in
+`DuplicateConsumingHelper`.
+
+There is a practical distinction between two allocation loops:
+
+- `RepeatedAllocation` attempts repeated `open`/`finish` operations under a
+  fixed name inside one arena. It is rejected even though each iteration
+  would finish its resource: allocation grows the history row and is not a
+  state-preserving callback. The current API cannot treat this as a simple
+  loop.
+- `DynamicScopes.allocateMany` uses an ordinary `Effect` recursion and
+  `withSession` on each iteration. It is accepted without `Proxy` or explicit
+  state types. Each iteration has a fresh arena/scope. The executable tests
+  three iterations, consumes all three resources and returns `6`.
+
+The latter is useful for independent sequential tasks. It does not provide a
+dynamically sized collection of simultaneously live resources in one scope.
+The extended executable checks seven constructions, seven consuming calls,
+seven drops, four reads and nine mutations in total.
 
 ## How it works
 
@@ -84,10 +137,13 @@ panic/cancellation, unsafe coercions and incorrect foreign implementations
 are outside that statement. These are executable checks, not a formal proof.
 
 The prototype handles one native resource kind, several statically named
-resources and synchronous sequential operations. It does not yet support
-arbitrarily many dynamically allocated resources, escaping native borrows,
-async callbacks, resource transfer between arenas, or arbitrary ownership
-relationships in existing Rust APIs. Its FFI adapter was written manually.
+resources in one arena, dynamic repetition of independent single-resource
+scopes, and synchronous sequential operations. It does not yet support a
+dynamically sized set of simultaneously live resources in one arena, escaping
+native borrows, async callbacks, resource transfer between arenas, or
+arbitrary ownership relationships in existing Rust APIs. Its FFI adapter was
+written manually. The callback examples are synchronous indexed PureScript
+callbacks, not native asynchronous callbacks retained by Rust.
 
 ## Provenance
 

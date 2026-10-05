@@ -1,0 +1,11 @@
+{
+  "name": "abstraction",
+  "description": "Original BCI bracket-abstraction algorithm over an explicit lambda AST, tested against an independent source evaluator; not a PureScript or FFI compiler.",
+  "hook": "hook.mjs",
+  "cases": [{
+    "module": "LinearLab.Abstraction.Smoke",
+    "expect": "accept",
+    "reason": "Harness smoke test only; substantive BCI/BI tests are reported by the JavaScript hook."
+  }],
+  "executions": []
+}

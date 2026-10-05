@@ -152,12 +152,72 @@
       "codes": [
         "TypesDoNotUnify"
       ]
+    },
+    {
+      "module": "LinearLab.Indexed.BranchBoth",
+      "expect": "accept",
+      "reason": "Both conditional branches consume the same capability exactly once."
+    },
+    {
+      "module": "LinearLab.Indexed.ScopedCallbacks",
+      "expect": "accept",
+      "reason": "Scope helper hides Proxy; generic recursion borrows repeatedly and a typed callback consumes once."
+    },
+    {
+      "module": "LinearLab.Indexed.RepeatConsumingCallback",
+      "expect": "reject",
+      "reason": "A repeatable state-preserving callback cannot consume a live capability.",
+      "codes": [
+        "TypesDoNotUnify"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.ScopedUnfinished",
+      "expect": "reject",
+      "reason": "Hiding the key does not remove the scoped callback obligation to consume.",
+      "codes": [
+        "TypesDoNotUnify"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.RepeatedAllocation",
+      "expect": "reject",
+      "reason": "A loop allocating and finishing under one name is rejected because history grows.",
+      "codes": [
+        "TypesDoNotUnify"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.Extended",
+      "expect": "accept",
+      "reason": "Native branch, recursive helper and callback assertions."
+    },
+    {
+      "module": "LinearLab.Indexed.DuplicateConsumingHelper",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "An indexed helper cannot call a consuming callback twice under its declared one-consumption signature."
+    },
+    {
+      "module": "LinearLab.Indexed.DynamicScopes",
+      "expect": "accept",
+      "reason": "A runtime-dependent loop may open and finish a new resource on each iteration using separate scopes, without Proxy."
     }
   ],
   "executions": [
     {
       "module": "LinearLab.Indexed.Valid",
       "marker": "INDEXED_CAPABILITIES_OK sessions=4 finished=4 dropped=4 replay=fresh",
+      "modes": [
+        "normal",
+        "threaded"
+      ]
+    },
+    {
+      "module": "LinearLab.Indexed.Extended",
+      "marker": "INDEXED_EXTENDED_OK branches=2 sessions=7 reads=4 mutations=9",
       "modes": [
         "normal",
         "threaded"

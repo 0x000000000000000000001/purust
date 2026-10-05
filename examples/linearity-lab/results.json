@@ -1,9 +1,9 @@
 {
   "verifiedOn": "2026-10-05",
-  "cases": 66,
-  "accepted": 28,
-  "rejected": 38,
-  "nativeExecutions": 6,
+  "cases": 95,
+  "accepted": 46,
+  "rejected": 49,
+  "nativeExecutions": 10,
   "tools": {
     "purs": "0.15.16 [development build; commit: 3c8fcfd7a3d440bba487fe9fe059284cffc6e908 DIRTY]",
     "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
@@ -11,6 +11,38 @@
     "bundleSha256": "6aad259f4c81e9e197b3d56833f6eb520092bbd368ec09a5b5103d364dc2d1ce"
   },
   "suites": [
+    {
+      "name": "abstraction",
+      "complete": true,
+      "cases": [
+        {
+          "module": "LinearLab.Abstraction.Smoke",
+          "expected": "accept",
+          "reason": "Harness smoke test only; substantive BCI/BI tests are reported by the JavaScript hook.",
+          "diagnosticCodes": []
+        }
+      ],
+      "executions": [],
+      "abstraction": {
+        "accepted": 251,
+        "rejected": 16,
+        "semanticComparisons": 613,
+        "controls": [
+          {
+            "name": "ill-typed closed application",
+            "outcome": "abstraction succeeds; both evaluators reject application of a scalar"
+          },
+          {
+            "name": "dishonest primitive contract",
+            "outcome": "accepted declaration can duplicate; trusted primitive bodies are not verified"
+          },
+          {
+            "name": "effectful primitive with eta",
+            "outcome": "same final result, but target evaluates the marked function expression earlier"
+          }
+        ]
+      }
+    },
     {
       "name": "Automatic Rust contracts and an additional TAST checker",
       "complete": true,
@@ -428,18 +460,80 @@
           "diagnosticCodes": [
             "NoInstanceFound"
           ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalWrapped",
+          "expected": "accept",
+          "reason": "Positive calibration: a visible newtype permits direct Safe.Coerce to and from Session.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalCoerceInput",
+          "expected": "reject",
+          "reason": "Safe.Coerce cannot replace the historical Sub resource input with shared Int.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalCoerceOutput",
+          "expected": "reject",
+          "reason": "Safe.Coerce cannot replace the historical Sub resource output with shared Int.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalCoerceBorrow",
+          "expected": "reject",
+          "reason": "Safe.Coerce cannot turn Borrow Session into Borrow Int.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalCoerceEscape",
+          "expected": "reject",
+          "reason": "A coerce inside runShared cannot disguise an escaping native resource as shared Int.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalInputRole",
+          "expected": "reject",
+          "reason": "Historical Sub input role refuses a representationally equal visible newtype, isolating nominal behavior.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalOutputRole",
+          "expected": "reject",
+          "reason": "Historical Sub output role refuses a representationally equal visible newtype, isolating nominal behavior.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Combinators.HistoricalBorrowRole",
+          "expected": "reject",
+          "reason": "Historical Borrow role refuses a representationally equal visible newtype, isolating nominal behavior.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
         }
       ],
       "executions": [
         {
           "module": "LinearLab.Combinators.Demo",
           "mode": "normal",
-          "stdout": "COMBINATOR_OPEN 1\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_OPEN 4\nCOMBINATOR_FINISH 4 12\nCOMBINATOR_FINISH 3 11\nLINEAR_COMBINATORS_OK resources=4 results=17,17,23,30\n"
+          "stdout": "COMBINATOR_OPEN 1\nCOMBINATOR_ADD 1 7 17\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_ADD 2 7 17\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_OPEN 4\nCOMBINATOR_ADD 3 1 11\nCOMBINATOR_ADD 4 2 12\nCOMBINATOR_FINISH 4 12\nCOMBINATOR_FINISH 3 11\nLINEAR_COMBINATORS_OK resources=4 results=17,17,23,30\n"
         },
         {
           "module": "LinearLab.Combinators.Demo",
           "mode": "threaded",
-          "stdout": "COMBINATOR_OPEN 1\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_OPEN 4\nCOMBINATOR_FINISH 4 12\nCOMBINATOR_FINISH 3 11\nLINEAR_COMBINATORS_OK resources=4 results=17,17,23,30\n"
+          "stdout": "COMBINATOR_OPEN 1\nCOMBINATOR_ADD 1 7 17\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_ADD 2 7 17\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_OPEN 4\nCOMBINATOR_ADD 3 1 11\nCOMBINATOR_ADD 4 2 12\nCOMBINATOR_FINISH 4 12\nCOMBINATOR_FINISH 3 11\nLINEAR_COMBINATORS_OK resources=4 results=17,17,23,30\n"
         }
       ]
     },
@@ -600,6 +694,62 @@
           "diagnosticCodes": [
             "TypesDoNotUnify"
           ]
+        },
+        {
+          "module": "LinearLab.Indexed.BranchBoth",
+          "expected": "accept",
+          "reason": "Both conditional branches consume the same capability exactly once.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Indexed.ScopedCallbacks",
+          "expected": "accept",
+          "reason": "Scope helper hides Proxy; generic recursion borrows repeatedly and a typed callback consumes once.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Indexed.RepeatConsumingCallback",
+          "expected": "reject",
+          "reason": "A repeatable state-preserving callback cannot consume a live capability.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.ScopedUnfinished",
+          "expected": "reject",
+          "reason": "Hiding the key does not remove the scoped callback obligation to consume.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.RepeatedAllocation",
+          "expected": "reject",
+          "reason": "A loop allocating and finishing under one name is rejected because history grows.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.Extended",
+          "expected": "accept",
+          "reason": "Native branch, recursive helper and callback assertions.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Indexed.DuplicateConsumingHelper",
+          "expected": "reject",
+          "reason": "An indexed helper cannot call a consuming callback twice under its declared one-consumption signature.",
+          "diagnosticCodes": [
+            "TypesDoNotUnify"
+          ]
+        },
+        {
+          "module": "LinearLab.Indexed.DynamicScopes",
+          "expected": "accept",
+          "reason": "A runtime-dependent loop may open and finish a new resource on each iteration using separate scopes, without Proxy.",
+          "diagnosticCodes": []
         }
       ],
       "executions": [
@@ -612,6 +762,173 @@
           "module": "LinearLab.Indexed.Valid",
           "mode": "threaded",
           "stdout": "INDEXED_CAPABILITIES_OK sessions=4 finished=4 dropped=4 replay=fresh\n"
+        },
+        {
+          "module": "LinearLab.Indexed.Extended",
+          "mode": "normal",
+          "stdout": "INDEXED_EXTENDED_OK branches=2 sessions=7 reads=4 mutations=9\n"
+        },
+        {
+          "module": "LinearLab.Indexed.Extended",
+          "mode": "threaded",
+          "stdout": "INDEXED_EXTENDED_OK branches=2 sessions=7 reads=4 mutations=9\n"
+        }
+      ]
+    },
+    {
+      "name": "Automatic lowering of linear PureScript expressions",
+      "complete": true,
+      "cases": [
+        {
+          "module": "LinearLab.Lowering.Sequential",
+          "expected": "accept",
+          "reason": "Ordinary PureScript function and let bindings, before extra linear checking.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.TwoResources",
+          "expected": "accept",
+          "reason": "Two resources and a reversed result pair, before routing is generated.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.Observed",
+          "expected": "accept",
+          "reason": "Carry a native owner and before/after snapshots through mutation.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.Alias",
+          "expected": "accept",
+          "reason": "A single-use alias must not create a new resource.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.Shadow",
+          "expected": "accept",
+          "reason": "Lexical shadowing requires binding identity, not names alone.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.ScalarCopy",
+          "expected": "accept",
+          "reason": "Duplication of a shareable scalar is explicit.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.ImplicitScalarCopy",
+          "expected": "accept",
+          "reason": "Ordinary PureScript permits implicit scalar duplication; this restricted linear compiler does not yet insert it.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.DoubleConsume",
+          "expected": "accept",
+          "reason": "Ordinary types alone allow duplicate resource consumption; the added pass must reject it.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.Discard",
+          "expected": "accept",
+          "reason": "Ordinary PureScript permits discarding a resource; this strict linear fragment requires use.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.OrdinaryBorrow",
+          "expected": "accept",
+          "reason": "A native borrowing API still needs a separate ownership-threading transformation.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Lowering.LocalFunction",
+          "expected": "accept",
+          "reason": "The native lowering is first-order even though the separate BCI algorithm tests higher-order terms.",
+          "diagnosticCodes": []
+        },
+        {
+          "module": "LinearLab.Combinators.Linear",
+          "expected": "accept",
+          "reason": "The generated programs use the previously tested generic native arrow interpreter.",
+          "diagnosticCodes": []
+        }
+      ],
+      "executions": [
+        {
+          "module": "LinearLab.Lowering.Demo",
+          "mode": "normal",
+          "stdout": "LOWERING_UNOPENED\nCOMBINATOR_OPEN 1\nCOMBINATOR_ADD 1 7 17\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_ADD 2 7 17\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_ADD 3 2 12\nCOMBINATOR_FINISH 3 12\nCOMBINATOR_OPEN 4\nCOMBINATOR_ADD 4 1 11\nCOMBINATOR_FINISH 4 11\nCOMBINATOR_OPEN 5\nCOMBINATOR_READ 5 10\nCOMBINATOR_ADD 5 3 13\nCOMBINATOR_READ 5 13\nCOMBINATOR_FINISH 5 13\nCOMBINATOR_OPEN 6\nCOMBINATOR_ADD 6 1 11\nCOMBINATOR_FINISH 6 11\nCOMBINATOR_OPEN 7\nCOMBINATOR_ADD 7 2 12\nCOMBINATOR_FINISH 7 12\nAUTOMATIC_ROUTING_OK resources=7 results=17,17,23,36,11,12,20\n"
+        },
+        {
+          "module": "LinearLab.Lowering.Demo",
+          "mode": "threaded",
+          "stdout": "LOWERING_UNOPENED\nCOMBINATOR_OPEN 1\nCOMBINATOR_ADD 1 7 17\nCOMBINATOR_READ 1 17\nCOMBINATOR_FINISH 1 17\nCOMBINATOR_OPEN 2\nCOMBINATOR_ADD 2 7 17\nCOMBINATOR_READ 2 17\nCOMBINATOR_FINISH 2 17\nCOMBINATOR_OPEN 3\nCOMBINATOR_ADD 3 2 12\nCOMBINATOR_FINISH 3 12\nCOMBINATOR_OPEN 4\nCOMBINATOR_ADD 4 1 11\nCOMBINATOR_FINISH 4 11\nCOMBINATOR_OPEN 5\nCOMBINATOR_READ 5 10\nCOMBINATOR_ADD 5 3 13\nCOMBINATOR_READ 5 13\nCOMBINATOR_FINISH 5 13\nCOMBINATOR_OPEN 6\nCOMBINATOR_ADD 6 1 11\nCOMBINATOR_FINISH 6 11\nCOMBINATOR_OPEN 7\nCOMBINATOR_ADD 7 2 12\nCOMBINATOR_FINISH 7 12\nAUTOMATIC_ROUTING_OK resources=7 results=17,17,23,36,11,12,20\n"
+        }
+      ],
+      "routing": {
+        "inputKind": "synthetic ASTs of the supported shape; not compiler-generated TAST",
+        "routingCases": 1814,
+        "coverage": "all permutations and binary output groupings of 2 through 5 distinct leaves",
+        "controls": {
+          "shadowing": "identity preserved",
+          "aliasDuplication": "LINEARITY rejection"
+        },
+        "complete": true
+      },
+      "lowering": [
+        {
+          "name": "Sequential",
+          "outcome": "accept",
+          "arrows": 7
+        },
+        {
+          "name": "TwoResources",
+          "outcome": "accept",
+          "arrows": 33
+        },
+        {
+          "name": "Observed",
+          "outcome": "accept",
+          "arrows": 35
+        },
+        {
+          "name": "Alias",
+          "outcome": "accept",
+          "arrows": 5
+        },
+        {
+          "name": "Shadow",
+          "outcome": "accept",
+          "arrows": 5
+        },
+        {
+          "name": "ScalarCopy",
+          "outcome": "accept",
+          "arrows": 3
+        },
+        {
+          "name": "ImplicitScalarCopy",
+          "outcome": "LINEARITY",
+          "message": "LINEARITY: initial occurs 2 times; this fragment requires exactly one use"
+        },
+        {
+          "name": "DoubleConsume",
+          "outcome": "LINEARITY",
+          "message": "LINEARITY: session occurs 2 times; this fragment requires exactly one use"
+        },
+        {
+          "name": "Discard",
+          "outcome": "LINEARITY",
+          "message": "LINEARITY: session occurs 0 times; this fragment requires exactly one use"
+        },
+        {
+          "name": "OrdinaryBorrow",
+          "outcome": "UNSUPPORTED",
+          "message": "UNSUPPORTED: primitive read"
+        },
+        {
+          "name": "LocalFunction",
+          "outcome": "UNSUPPORTED",
+          "message": "UNSUPPORTED: expression Abs"
         }
       ]
     },

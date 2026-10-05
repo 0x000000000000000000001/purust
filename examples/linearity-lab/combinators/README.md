@@ -61,6 +61,10 @@ temporarily for `add` and `inspect`, then calls `finish(self)`. Only immutable
 instruction descriptions use reference counting. There is no dynamic
 consumed flag or runtime uniqueness test.
 
+`observe :: Linear Session (Pair Session Int)` additionally returns the owner
+and a scalar snapshot from a real native borrow. The dependent before/after
+mutation trace is exercised by the [lowering suite](../lowering/README.md).
+
 The execution boundary is intentionally narrow:
 
 ```purescript
@@ -81,12 +85,21 @@ requiring lawful, trusted instances and primitives.
 
 ## Observed results
 
-All **21 typing cases** passed their expected outcome: **16 rejected** and
-**5 accepted**. The accepted cases include an explicitly unsafe negative
+All **29 typing cases** passed their expected outcome: **23 rejected** and
+**6 accepted**. The accepted cases include an explicitly unsafe negative
 control, which is never executed. Rejections cover double consumption,
 attempted duplication/discard, ordinary-function insertion, access to
 private constructors/builders, independent input/output coercions,
 unwrapping, resource escape, and the historical API's sharing constraints.
+
+The historical foreign types were also checked directly with `Safe.Coerce`.
+Neither argument of `Sub` nor the argument of `Borrow` can be changed to
+disguise a resource as `Int`; embedding that cast inside `runShared` is
+rejected as well. Three additional probes establish nominal behavior more
+precisely: a visible newtype around `Session` can be coerced directly to and
+from `Session` (positive control), but that same coercion is refused beneath
+each of those three foreign-type parameters. All seven failed coercion
+probes report `TypesDoNotUnify` with the current compiler.
 
 Both normal and `--threaded` native builds print:
 
@@ -108,7 +121,10 @@ The library author still supplies correct primitive signatures and trusted
 implementations. The user routes values through `then_`, `tensor`, `swap`,
 and associators. This can be more mechanical than inventing `Open/Closed`
 types for every API, but it remains less natural than ordinary `do` code.
-Generating these adapters from Rust signatures is separate work.
+Generating these adapters from Rust signatures is separate work. The
+[abstraction](../abstraction/README.md) and [lowering](../lowering/README.md)
+experiments now demonstrate ways to generate the combinator wiring; manual
+routing is a cost of this direct API, not an unavoidable cost of the approach.
 
 This is a static restriction on programs built through this safe API,
 supported by adversarial probes, not a formal soundness proof or a new

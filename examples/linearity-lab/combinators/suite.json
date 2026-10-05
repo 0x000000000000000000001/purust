@@ -157,6 +157,74 @@
         "NoInstanceFound"
       ],
       "reason": "Shared result constraint prevents leaking a borrow of non-Shared Session."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalWrapped",
+      "expect": "accept",
+      "reason": "Positive calibration: a visible newtype permits direct Safe.Coerce to and from Session."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalCoerceInput",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Safe.Coerce cannot replace the historical Sub resource input with shared Int."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalCoerceOutput",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Safe.Coerce cannot replace the historical Sub resource output with shared Int."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalCoerceBorrow",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Safe.Coerce cannot turn Borrow Session into Borrow Int."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalCoerceEscape",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "A coerce inside runShared cannot disguise an escaping native resource as shared Int."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalInputRole",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Historical Sub input role refuses a representationally equal visible newtype, isolating nominal behavior."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalOutputRole",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Historical Sub output role refuses a representationally equal visible newtype, isolating nominal behavior."
+    },
+    {
+      "module": "LinearLab.Combinators.HistoricalBorrowRole",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound",
+        "TypesDoNotUnify"
+      ],
+      "reason": "Historical Borrow role refuses a representationally equal visible newtype, isolating nominal behavior."
     }
   ],
   "executions": [

@@ -6,13 +6,15 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 static OPENED: AtomicUsize = AtomicUsize::new(0);
 static FINISHED: AtomicUsize = AtomicUsize::new(0);
 static DROPPED: AtomicUsize = AtomicUsize::new(0);
+static READS: AtomicUsize = AtomicUsize::new(0);
+static MUTATIONS: AtomicUsize = AtomicUsize::new(0);
 
 // This native resource has ordinary Rust methods, no Clone and no Copy.
 struct Session { value: i64 }
 impl Session {
     fn new(value: i64) -> Self { OPENED.fetch_add(1, Ordering::SeqCst); Self { value } }
-    fn inspect(&self) -> i64 { self.value }
-    fn add(&mut self, amount: i64) { self.value += amount; }
+    fn inspect(&self) -> i64 { READS.fetch_add(1, Ordering::SeqCst); self.value }
+    fn add(&mut self, amount: i64) { MUTATIONS.fetch_add(1, Ordering::SeqCst); self.value += amount; }
     fn finish(self) -> i64 { FINISHED.fetch_add(1, Ordering::SeqCst); self.value }
 }
 impl Drop for Session {
@@ -63,4 +65,12 @@ pub fn verify_counts() {
     assert_eq!(OPENED.load(Ordering::SeqCst), 4);
     assert_eq!(FINISHED.load(Ordering::SeqCst), 4);
     assert_eq!(DROPPED.load(Ordering::SeqCst), 4);
+}
+
+pub fn verify_extended_counts() {
+    assert_eq!(OPENED.load(Ordering::SeqCst), 7);
+    assert_eq!(FINISHED.load(Ordering::SeqCst), 7);
+    assert_eq!(DROPPED.load(Ordering::SeqCst), 7);
+    assert_eq!(READS.load(Ordering::SeqCst), 4);
+    assert_eq!(MUTATIONS.load(Ordering::SeqCst), 9);
 }

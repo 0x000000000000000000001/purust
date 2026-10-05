@@ -1,0 +1,20 @@
+{
+  "name": "Automatic lowering of linear PureScript expressions",
+  "description": "An extra TAST-to-arrow compiler makes explicit routing unnecessary in a restricted source language.",
+  "hook": "hook.mjs",
+  "cases": [
+    {"module":"LinearLab.Lowering.Sequential","expect":"accept","reason":"Ordinary PureScript function and let bindings, before extra linear checking."},
+    {"module":"LinearLab.Lowering.TwoResources","expect":"accept","reason":"Two resources and a reversed result pair, before routing is generated."},
+    {"module":"LinearLab.Lowering.Observed","expect":"accept","reason":"Carry a native owner and before/after snapshots through mutation."},
+    {"module":"LinearLab.Lowering.Alias","expect":"accept","reason":"A single-use alias must not create a new resource."},
+    {"module":"LinearLab.Lowering.Shadow","expect":"accept","reason":"Lexical shadowing requires binding identity, not names alone."},
+    {"module":"LinearLab.Lowering.ScalarCopy","expect":"accept","reason":"Duplication of a shareable scalar is explicit."},
+    {"module":"LinearLab.Lowering.ImplicitScalarCopy","expect":"accept","reason":"Ordinary PureScript permits implicit scalar duplication; this restricted linear compiler does not yet insert it."},
+    {"module":"LinearLab.Lowering.DoubleConsume","expect":"accept","reason":"Ordinary types alone allow duplicate resource consumption; the added pass must reject it."},
+    {"module":"LinearLab.Lowering.Discard","expect":"accept","reason":"Ordinary PureScript permits discarding a resource; this strict linear fragment requires use."},
+    {"module":"LinearLab.Lowering.OrdinaryBorrow","expect":"accept","reason":"A native borrowing API still needs a separate ownership-threading transformation."},
+    {"module":"LinearLab.Lowering.LocalFunction","expect":"accept","reason":"The native lowering is first-order even though the separate BCI algorithm tests higher-order terms."},
+    {"module":"LinearLab.Combinators.Linear","expect":"accept","reason":"The generated programs use the previously tested generic native arrow interpreter."}
+  ],
+  "executions": []
+}

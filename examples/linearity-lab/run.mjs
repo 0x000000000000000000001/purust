@@ -133,7 +133,8 @@ for (const entry of suites) {
         console.log(`[${entry.name}] Rust ${mode}: ${execution.marker}`);
       }
     }
-    if (hook?.check) await hook.check({ input, workspace, artifacts, run, report, compiled });
+    if (hook?.check) await hook.check({ input, workspace, artifacts, run, report, compiled,
+      sourcesFor, compiler: purs, backend: bundle });
     report.complete = true;
   } finally {
     report.retainedWorkspace = keep || !report.complete ? workspace : null;

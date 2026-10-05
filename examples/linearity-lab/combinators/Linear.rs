@@ -13,8 +13,14 @@ impl NativeSession {
         println!("COMBINATOR_OPEN {id}");
         Self { id, value }
     }
-    fn add(&mut self, amount: i64) { self.value += amount; }
-    fn inspect(&self) { println!("COMBINATOR_READ {} {}", self.id, self.value); }
+    fn add(&mut self, amount: i64) {
+        self.value += amount;
+        println!("COMBINATOR_ADD {} {} {}", self.id, amount, self.value);
+    }
+    fn inspect(&self) -> i64 {
+        println!("COMBINATOR_READ {} {}", self.id, self.value);
+        self.value
+    }
     fn finish(self) -> i64 {
         FINISHED.fetch_add(1, Ordering::SeqCst);
         println!("COMBINATOR_FINISH {} {}", self.id, self.value);
@@ -59,6 +65,10 @@ fn execute(code: &Code, input: Datum) -> Datum {
             (7, Datum::Session(mut session)) => { session.add(*amount); Datum::Session(session) },
             (8, Datum::Session(session)) => { session.inspect(); Datum::Session(session) },
             (9, Datum::Session(session)) => Datum::Int(session.finish()),
+            (10, Datum::Session(session)) => {
+                let value = session.inspect();
+                pair(Datum::Session(session), Datum::Int(value))
+            },
             _ => panic!("Invalid trusted primitive implementation"),
         },
     }

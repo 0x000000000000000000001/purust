@@ -11,6 +11,11 @@ ordinary handles but detect invalid uses at runtime. Keeping ordinary source
 syntax while rejecting ownership mistakes requires additional analysis beyond
 ordinary foreign type declarations.
 
+Additional experiments now generate the combinators automatically, both from a
+lambda AST and from a restricted real PureScript/TAST fragment. Manual routing
+is therefore not an intrinsic requirement of the combinator approach. This adds
+a compiler stage and does not by itself translate arbitrary native effects.
+
 These are small experiments, not a claim to have exhausted every encoding or
 recovered Rust's complete borrow checker. No production compiler or runtime code
 was changed.
@@ -51,6 +56,8 @@ machine-specific paths; rerunning the suite produces fresh detailed reports.
 | Phantom state on an ordinary handle | Old aliases remain usable; insufficient by itself | Small API change, no usage accounting | [Counterexample](indexed/PhantomCounterexample.purs) |
 | Single-session `Open -> Closed` program | Composition enforces a fixed protocol while Rust owns the hidden resource | Handwritten protocol and combinators | [Earlier POC](../ffi-session/README.md), separately runnable |
 | Phil/rightfold linear arrows | Generic resource flow through restricted combinators; historical `Shared` boundaries reject resource escape | Compose and route arguments explicitly; trusted primitives | [Combinators](combinators/README.md) |
+| Automatic BCI abstraction | Lambda variables can be removed automatically; verified against a separate evaluator | Extra frontend; pure lawful primitives; no Rust execution in this algorithm suite | [Abstraction](abstraction/README.md) |
+| Actual TAST-to-arrow lowering | Linear lets, aliases and pairs generate typed arrows which execute through purust | Extra stage; first-order fragment, explicit owner threading, pure specification signatures | [Lowering](lowering/README.md) |
 | Indexed monad with capability rows | Per-key consumption accounting, alias/replay rejection, all live resources finished on normal return | Qualified `R.do` and explicit fresh keys; intermediate rows inferred | [Indexed capabilities](indexed/README.md) |
 | Rank-2 callbacks, existential packaging | Direct escape is blocked, but unindexed effects and existential packages can retain usable handles | Scope annotations alone do not enforce linearity | [Regions](regions/README.md) |
 | Region-indexed effects / actual ST | Scoped operations cannot simply be executed outside their scope; aliases remain legal inside | Region-aware API; useful confinement, not consumption accounting | [Regions](regions/README.md) |
@@ -64,14 +71,18 @@ automatic end-to-end system in this investigation.
 
 ## Verified outcomes
 
-The lab checks **66 PureScript programs: 38 expected rejections and 28 expected
-acceptances**. Some accepted programs deliberately demonstrate a route's limits.
+The lab checks **95 PureScript typing cases: 49 expected rejections and 46 expected
+acceptances**. Two are infrastructure controls for the new algorithm/lowering
+suites. Some accepted programs deliberately demonstrate a route's limits.
 
-- `combinators`: 21 cases, plus real native execution in both backend modes.
+- `combinators`: 29 cases, plus real native execution in both backend modes.
   This includes a compatibility copy of one historical rightfold module for
   typechecking and a separately identified, newly written Rust adaptation.
-- `indexed`: 20 cases, plus a real two-resource program executed twice in both
-  modes. Four resources are created, finished, and dropped per execution.
+  Additional probes verify historical `Sub`/`Borrow` coercion boundaries with a
+  direct newtype-coercion positive control.
+- `indexed`: 28 cases, plus two native programs in both modes. The additional
+  program covers complete branches, recursive borrowing, indexed callbacks and
+  dynamically repeated fresh scopes; seven resources finish per run of that program.
 - `regions`: 13 cases, plus native runtime guards and the installed ST port
   executed in both modes. Reentrancy and a real two-thread consumption race are
   included.
@@ -79,10 +90,20 @@ acceptances**. Some accepted programs deliberately demonstrate a route's limits.
   checker accepts four, detects five ownership violations, and declines three
   unsupported cases. Three unsupported Rust signature forms are rejected.
   Independent native Rust controls include one execution and two compile errors.
+- `abstraction`: one PureScript infrastructure control, and separately 251
+  accepted lambda programs, 16 targeted rejections and 613 source/target semantic
+  comparisons. Three adverse controls cover missing type inference, dishonest
+  primitives and eta moving a hidden effect.
+- `lowering`: eleven PureScript source functions plus one shared-runtime control.
+  Six functions are automatically lowered, independently typechecked and run in
+  both native modes. Three are rejected for linear usage and two are unsupported.
+  Native checks cover seven resources, snapshots, replay, and the exact TAST trace.
+  Separately, an independent evaluator checks 1,814 structural routes on
+  synthetic ASTs, plus two binding-identity controls.
 
-The six purust-native executions use the normal and `--threaded` modes. Only the
+The ten purust-native executions use the normal and `--threaded` modes. Only the
 runtime-guard suite launches concurrent threads. The earlier `ffi-session` POC
-has its own runner and is not counted in these 66 cases. No performance comparison
+has its own runner and is not counted in these 95 cases. No performance comparison
 or benchmark claim is made.
 
 ## What this means for FFI design
@@ -101,16 +122,33 @@ action = R.run R.do
   R.pure (left + right)
 ```
 
-The programmer supplies fresh names; the compiler infers the history/live rows.
-This avoids handwriting a new pair of state types for each operation. The
-resource wrapper, trusted primitives and scope boundary still need design.
+For several resources in one arena, the programmer supplies fresh names; the
+compiler infers the history/live rows. A tested single-resource helper also hides
+the key and rows completely at the call site:
+
+```purescript
+action = withSession 10 \resource -> R.do
+  before <- R.inspect resource
+  R.add resource 7
+  after <- R.finish resource
+  R.pure (before + after)
+```
+
+These helpers avoid handwriting a new pair of state types for each operation.
+An ordinary `Effect` loop can open a fresh scope per iteration. Reusing one
+symbolic key in a loop inside the same arena is rejected, even when each iteration
+finishes its resource, because this implementation retains allocation history.
+The resource wrapper, trusted primitives and scope boundary still need design.
 The native arena uses map lookups and a mutex; a successful type check does not
 establish that representation as zero-cost.
 
 The combinator route is also viable and more directly expresses owned values
-flowing between operations. Its ergonomic cost is explicit routing with
-composition, tensor, swap and associators. The historical library has useful
-generic sharing constraints; its complete runtime has not been ported here.
+flowing between operations. Explicit routing belongs to its low-level interface;
+our additional lowering now generates it for a restricted source fragment. This
+weakens the earlier ergonomic argument for choosing indexed monads outright.
+Indexed monads still provide the demonstrated library-only sequential API, while
+automatic routing needs extra tooling. The historical library has useful generic
+sharing constraints; its complete runtime has not been ported here.
 
 Rust ownership is primarily affine: a value may be dropped without an explicit
 finalizing operation. Some experiments impose the stronger application protocol
