@@ -3,6 +3,7 @@ output/
 output.bak/
 output-es/
 .spago/
+.purmeta/
 .psc-ide-port
 .purs-repl
 purs_files.txt
@@ -11,6 +12,7 @@ purs_files.txt
 tests/runner/src/
 tests/runner/spago.yaml
 tests/runner/output/
+tests/runner/output-test/
 bin/purust.js
 bin/purust-native
 bin/.purust-native-*/

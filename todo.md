@@ -14,7 +14,7 @@ les allocations des passes dominantes du compilateur natif.
 - [x] Faire reconstruire le natif par `b -c` (`build:native`) et le JS par
   `PURUST_JS=1 b -c` (`build`), avec sauvegarde de l'ancien compilateur et
   propagation des erreurs/interruption ; adapter le budget de temps.
-- [ ] Qualifier les commandes réelles, comparer les générations JS/natif sur
+- [x] Qualifier les commandes réelles, comparer les générations JS/natif sur
   les mêmes TAST et revérifier les 286 tests après reconstruction native.
   Les **84 tests driver/CLI** passent. Première reconstruction native réussie
   (**453 modules / 282 778 types**), génération b8x native en **21 146 ms** ;
@@ -30,7 +30,18 @@ les allocations des passes dominantes du compilateur natif.
   une panique intermittente après **286/286** : le dernier worker Aff tente de
   se joindre lui-même. Régression déterministe rouge avant correction dans
   `purust-aff`, puis **20 tests Rust Aff verts** avec le correctif ciblé.
-  Qualification finale reprise dans `../logs/native-default-20261005/aff-fixed/`.
+  Qualification finale réussie dans `../logs/native-default-20261005/aff-fixed/` :
+  le build natif **`build-I2otei`** passe **286/286 trois fois**, sans stderr et
+  avec bases vides. Le JS reconstruit (`build-SUXpAP`) passe **2/2** ; les
+  **2 817 fichiers Rust/Cargo JS/natif** restent identiques. Le négatif natif
+  (`build-LATGbt`) donne **2/3 → 101**, sans remplacer le défaut. Les **169 / 8 / 8
+  gardes** sont vérifiées. Le seul écart attendu avec les sources Rust du build
+  historique est la FFI Aff corrigée, avec sa régression.
+- [x] Retirer les intermédiaires Cargo régénérés après qualification, avec
+  conservation et rehash des sources, exécutables, manifestes et journaux.
+  Nettoyage cumulé : **3 916 836 734 octets** dans Purust et **12 742 739 846
+  octets** dans b8x après autorisation explicite. Les anciens échecs restent
+  archivés ; `../logs/native-default-20261005/completion.json` clôt la qualification.
 
 ## Exécution b8x en Rust optimisé — 5 octobre 2026
 
