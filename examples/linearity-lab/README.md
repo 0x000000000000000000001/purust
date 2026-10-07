@@ -20,6 +20,12 @@ These are small experiments, not a claim to have exhausted every encoding or
 recovered Rust's complete borrow checker. No production compiler or runtime code
 was changed.
 
+The follow-up [library and Rust FFI investigation](FFI-LIBRARY.md) tests a more
+practical question: can library APIs and native adapters cover useful ownership,
+borrowing and callback protocols without changing the PureScript compiler?
+It distinguishes static restrictions from runtime checks and records fresh
+executions separately from the original survey below.
+
 ## Run and reproduce
 
 From the `purust` repository root:
@@ -69,10 +75,10 @@ API can reduce wrapper-writing effort. A runtime guard can cover operations whos
 ownership cannot be established statically. Neither combination was built as an
 automatic end-to-end system in this investigation.
 
-## Verified outcomes
+## Original survey outcomes
 
-The lab checks **95 PureScript typing cases: 49 expected rejections and 46 expected
-acceptances**. Two are infrastructure controls for the new algorithm/lowering
+The original survey checked **95 PureScript typing cases: 49 expected rejections
+and 46 expected acceptances**. Two are infrastructure controls for the algorithm/lowering
 suites. Some accepted programs deliberately demonstrate a route's limits.
 
 - `combinators`: 29 cases, plus real native execution in both backend modes.
@@ -155,11 +161,13 @@ finalizing operation. Some experiments impose the stronger application protocol
 of requiring `finish` on normal completion. Neither promises successful completion
 under divergence, exceptions, panic, cancellation or process termination.
 
-The remaining hard cases include borrowed results with lifetimes, higher-order
-resource callbacks, containers of resources, dynamically many independently
-named resources, intermodule ownership analysis, and general async APIs. A full
-source-language extension and a complete Rust signature-to-wrapper generator
-are not implemented or established by this lab.
+The [library follow-up](FFI-LIBRARY.md) adds scoped borrowed views, conditional
+cloning/discard, independently supplied FFI resources and native callbacks.
+General borrowed results with lifetimes, arbitrary resource containers,
+dynamically many independently named resources, intermodule ownership analysis
+and general async APIs still need further work. A full source-language extension
+and a complete Rust signature-to-wrapper generator are not implemented or
+established by this lab.
 
 ## Primary sources
 

@@ -1,0 +1,133 @@
+{
+  "name": "borrowed-views",
+  "description": "Scoped Rust buffer views controlled by an opaque region and indexed borrow state.",
+  "cases": [
+    {
+      "module": "LinearLab.BorrowedViews.Valid",
+      "expect": "accept",
+      "reason": "Borrow/read/exit/mutate/reborrow succeeds."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.MutationDuringBorrow",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "Mutation requires Ready; callback runs under Borrowed token."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.DirectEscape",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "A view cannot escape directly with a fresh region and borrow token."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.BufferEscape",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "The native buffer scope cannot escape directly."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.DeferredClosure",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "A delayed read retains the region and borrow token through Ix."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.SavedMutation",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "Saving the mutation action earlier does not remove its Ready requirement."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.ReviveExistential",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "A hidden old region/token cannot be instantiated as a new one."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.ReborrowOldView",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "Even within one buffer scope, the old borrow token cannot match a later token."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.NestedBorrow",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "This conservative API forbids overlapping read scopes, not only mutable access."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.ConcurrentEffect",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "EscapedSkolem"
+      ],
+      "reason": "An ordinary Effect scheduler cannot execute an opaque indexed action."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.Existential",
+      "expect": "accept",
+      "reason": "Existential storage of a view is allowed; the indexed API still prevents using it outside its borrow."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.CoerceState",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "NoInstanceFound"
+      ],
+      "reason": "Nominal state roles prevent erasing an active-borrow requirement."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.CoerceView",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify",
+        "NoInstanceFound"
+      ],
+      "reason": "Nominal borrow-token role prevents reactivating a stale view."
+    },
+    {
+      "module": "LinearLab.BorrowedViews.RawRunner",
+      "expect": "reject",
+      "codes": [
+        "UnknownImportDataConstructor",
+        "UnknownName"
+      ],
+      "reason": "Ix constructor is hidden; clients cannot unlift to ordinary Effect."
+    }
+  ],
+  "executions": [
+    {
+      "module": "LinearLab.BorrowedViews.Main",
+      "marker": "BORROWED_VIEWS_OK",
+      "modes": [
+        "normal",
+        "threaded"
+      ]
+    }
+  ]
+}

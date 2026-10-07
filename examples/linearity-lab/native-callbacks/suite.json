@@ -1,0 +1,11 @@
+{
+  "name": "native-callbacks",
+  "description": "Actual Rust FnOnce/FnMut closures behind unrestricted PureScript handles and runtime ownership guards.",
+  "hook": "hook.mjs",
+  "cases": [
+    { "module": "LinearLab.NativeCallbacks.Demo", "expect": "accept", "reason": "PureScript accepts aliased handles and replayed Effect values; the native guard rejects repeated invocation at runtime." }
+  ],
+  "executions": [
+    { "module": "LinearLab.NativeCallbacks.Demo", "marker": "NATIVE_CALLBACKS_OK", "modes": ["normal", "threaded"] }
+  ]
+}

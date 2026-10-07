@@ -1,0 +1,177 @@
+{
+  "name": "capabilities",
+  "description": "Conditional substructural capabilities with distinct destruction, deep cloning and immutable native sharing.",
+  "cases": [
+    {
+      "module": "LinearLab.Capabilities.Probe",
+      "expect": "accept",
+      "reason": "The intended conditional capabilities resolve."
+    },
+    {
+      "module": "LinearLab.Capabilities.Demo",
+      "expect": "accept",
+      "reason": "Conditional K/W-like combinators and shared aliases execute through native Rust."
+    },
+    {
+      "module": "LinearLab.Capabilities.CloneOwned",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Owned has no Clone capability."
+    },
+    {
+      "module": "LinearLab.Capabilities.DropOwned",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Owned requires explicit finish; Rust destructor presence does not grant the PS Drop policy."
+    },
+    {
+      "module": "LinearLab.Capabilities.CloneDisposable",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Drop does not imply Clone."
+    },
+    {
+      "module": "LinearLab.Capabilities.ShareDeep",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Independent Clone plus Drop does not imply Shared."
+    },
+    {
+      "module": "LinearLab.Capabilities.DropPairOwned",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "Conditional pair Drop cannot hide an Owned component."
+    },
+    {
+      "module": "LinearLab.Capabilities.TwiceOwned",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "W-like routing still requires Clone Owned."
+    },
+    {
+      "module": "LinearLab.Capabilities.DoubleConsume",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "The first consumption produces Int, not Owned."
+    },
+    {
+      "module": "LinearLab.Capabilities.OrdinaryDrop",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "An unrestricted lambda is not a trusted Sub arrow."
+    },
+    {
+      "module": "LinearLab.Capabilities.Forge",
+      "expect": "reject",
+      "codes": [
+        "UnknownImportDataConstructor"
+      ],
+      "reason": "The Sub constructor is private."
+    },
+    {
+      "module": "LinearLab.Capabilities.RawPrimitive",
+      "expect": "reject",
+      "codes": [
+        "UnknownImport"
+      ],
+      "reason": "The unchecked instruction builder is private to the trusted module."
+    },
+    {
+      "module": "LinearLab.Capabilities.Escape",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "The execution boundary cannot return an opaque resource."
+    },
+    {
+      "module": "LinearLab.Capabilities.CoerceInput",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "The input role is nominal even for a visible representationally equal wrapper."
+    },
+    {
+      "module": "LinearLab.Capabilities.CoerceOutput",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "The output role is nominal even for a visible representationally equal wrapper."
+    },
+    {
+      "module": "LinearLab.Capabilities.RepresentationalControl",
+      "expect": "accept",
+      "reason": "Visible newtype coercion itself is valid; the Sub roles cause the rejections."
+    },
+    {
+      "module": "LinearLab.Capabilities.UnsafeControl",
+      "expect": "accept",
+      "reason": "Explicit unsafeCoerce bypasses the discipline; compile-only control, never executed."
+    },
+    {
+      "module": "LinearLab.Capabilities.ExtensionDemo",
+      "expect": "accept",
+      "reason": "A separate trusted FFI module adds a new non-Clone Rust owner, operations and Drop instance through the extension protocol."
+    },
+    {
+      "module": "LinearLab.Capabilities.CloneForeign",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "An externally introduced Drop resource does not acquire Clone implicitly."
+    },
+    {
+      "module": "LinearLab.Capabilities.ShareForeign",
+      "expect": "reject",
+      "codes": [
+        "NoInstanceFound"
+      ],
+      "reason": "The extension resource has no Shared capability."
+    },
+    {
+      "module": "LinearLab.Capabilities.DoubleConsumeForeign",
+      "expect": "reject",
+      "codes": [
+        "TypesDoNotUnify"
+      ],
+      "reason": "The external consumption operation also changes the arrow output type."
+    }
+  ],
+  "executions": [
+    {
+      "module": "LinearLab.Capabilities.Demo",
+      "modes": [
+        "normal",
+        "threaded"
+      ],
+      "marker": "LINEAR_CAPABILITIES_OK owned=2 disposable=3 deep_clones=1 deep_drops=3 shared_clones=1 shared_handles=2 shared_payloads=1 results=10,10,27,10,0"
+    },
+    {
+      "module": "LinearLab.Capabilities.ExtensionDemo",
+      "modes": [
+        "normal",
+        "threaded"
+      ],
+      "marker": "LINEAR_CAPABILITIES_EXTENSION_OK opened=2 closed=1 discarded=1 dropped=2 results=11,0"
+    }
+  ]
+}
