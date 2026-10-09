@@ -16533,34 +16533,55 @@ var $lazy_traversablePair = /* @__PURE__ */ $runtime_lazy14("traversablePair", "
     }
   };
 });
-var traversablePair = /* @__PURE__ */ $lazy_traversablePair(416);
-var $lazy_foldableBackendOperator = /* @__PURE__ */ $runtime_lazy14("foldableBackendOperator", "PureScript.Backend.Optimizer.Syntax", function() {
-  return {
-    foldr: function(a) {
-      return foldrDefault($lazy_foldableBackendOperator(0))(a);
-    },
-    foldl: function(a) {
-      return foldlDefault($lazy_foldableBackendOperator(0))(a);
-    },
-    foldMap: function(dictMonoid) {
-      var Semigroup0 = dictMonoid.Semigroup0();
-      return function(f) {
-        return function(v) {
-          if (v instanceof Op1) {
-            return f(v.value1);
-          }
-          ;
-          if (v instanceof Op2) {
-            return append(Semigroup0)(f(v.value1))(f(v.value2));
-          }
-          ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 425, column 15 - line 427, column 28): " + [v.constructor.name]);
-        };
+var traversablePair = /* @__PURE__ */ $lazy_traversablePair(476);
+var foldableBackendOperator = {
+  foldl: function(f) {
+    return function(z) {
+      return function(v) {
+        if (v instanceof Op1) {
+          return f(z)(v.value1);
+        }
+        ;
+        if (v instanceof Op2) {
+          return f(f(z)(v.value1))(v.value2);
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 483, column 15 - line 485, column 29): " + [v.constructor.name]);
       };
-    }
-  };
-});
-var foldableBackendOperator = /* @__PURE__ */ $lazy_foldableBackendOperator(422);
+    };
+  },
+  foldr: function(f) {
+    return function(z) {
+      return function(v) {
+        if (v instanceof Op1) {
+          return f(v.value1)(z);
+        }
+        ;
+        if (v instanceof Op2) {
+          return f(v.value1)(f(v.value2)(z));
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 486, column 15 - line 488, column 29): " + [v.constructor.name]);
+      };
+    };
+  },
+  foldMap: function(dictMonoid) {
+    var Semigroup0 = dictMonoid.Semigroup0();
+    return function(f) {
+      return function(v) {
+        if (v instanceof Op1) {
+          return f(v.value1);
+        }
+        ;
+        if (v instanceof Op2) {
+          return append(Semigroup0)(f(v.value1))(f(v.value2));
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 489, column 15 - line 491, column 28): " + [v.constructor.name]);
+      };
+    };
+  }
+};
 var $lazy_traversableBackendOperato = /* @__PURE__ */ $runtime_lazy14("traversableBackendOperato", "PureScript.Backend.Optimizer.Syntax", function() {
   return {
     sequence: function(dictApplicative) {
@@ -16581,7 +16602,7 @@ var $lazy_traversableBackendOperato = /* @__PURE__ */ $runtime_lazy14("traversab
             return apply2(Apply0)(map(Functor0)(Op2.create(v.value0))(f(v.value1)))(f(v.value2));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 431, column 16 - line 433, column 39): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 495, column 16 - line 497, column 39): " + [v.constructor.name]);
         };
       };
     },
@@ -16593,166 +16614,416 @@ var $lazy_traversableBackendOperato = /* @__PURE__ */ $runtime_lazy14("traversab
     }
   };
 });
-var traversableBackendOperato = /* @__PURE__ */ $lazy_traversableBackendOperato(429);
-var $lazy_foldableBackendEffect = /* @__PURE__ */ $runtime_lazy14("foldableBackendEffect", "PureScript.Backend.Optimizer.Syntax", function() {
-  return {
-    foldr: function(a) {
-      return foldrDefault($lazy_foldableBackendEffect(0))(a);
-    },
-    foldl: function(a) {
-      return foldlDefault($lazy_foldableBackendEffect(0))(a);
-    },
-    foldMap: function(dictMonoid) {
-      var Semigroup0 = dictMonoid.Semigroup0();
-      return function(f) {
-        return function(v) {
-          if (v instanceof EffectRefNew) {
-            return f(v.value0);
-          }
-          ;
-          if (v instanceof EffectRefRead) {
-            return f(v.value0);
-          }
-          ;
-          if (v instanceof EffectRefWrite) {
-            return append(Semigroup0)(f(v.value0))(f(v.value1));
-          }
-          ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 440, column 15 - line 443, column 37): " + [v.constructor.name]);
-        };
+var traversableBackendOperato = /* @__PURE__ */ $lazy_traversableBackendOperato(493);
+var foldableBackendEffect = {
+  foldl: function(f) {
+    return function(z) {
+      return function(v) {
+        if (v instanceof EffectRefNew) {
+          return f(z)(v.value0);
+        }
+        ;
+        if (v instanceof EffectRefRead) {
+          return f(z)(v.value0);
+        }
+        ;
+        if (v instanceof EffectRefWrite) {
+          return f(f(z)(v.value0))(v.value1);
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 502, column 15 - line 505, column 38): " + [v.constructor.name]);
       };
-    }
-  };
-});
-var foldableBackendEffect = /* @__PURE__ */ $lazy_foldableBackendEffect(437);
-var $lazy_foldableBackendSyntax = /* @__PURE__ */ $runtime_lazy14("foldableBackendSyntax", "PureScript.Backend.Optimizer.Syntax", function() {
-  return {
-    foldr: function(a) {
-      return foldrDefault($lazy_foldableBackendSyntax(0))(a);
-    },
-    foldl: function(a) {
-      return foldlDefault($lazy_foldableBackendSyntax(0))(a);
-    },
-    foldMap: function(dictMonoid) {
-      var mempty3 = mempty(dictMonoid);
-      var Semigroup0 = dictMonoid.Semigroup0();
-      return function(f) {
-        return function(v) {
-          if (v instanceof Var) {
-            return mempty3;
-          }
-          ;
-          if (v instanceof Local) {
-            return mempty3;
-          }
-          ;
-          if (v instanceof Lit) {
-            if (v.value0 instanceof LitArray) {
-              return foldMap(foldableArray)(dictMonoid)(f)(v.value0.value0);
-            }
-            ;
-            if (v.value0 instanceof LitRecord) {
-              return foldMap(foldableArray)(dictMonoid)(foldMap(foldableProp)(dictMonoid)(f))(v.value0.value0);
-            }
-            ;
-            return mempty3;
-          }
-          ;
-          if (v instanceof App2) {
-            return append(Semigroup0)(f(v.value0))(foldMap(foldableNonEmptyArray)(dictMonoid)(f)(v.value1));
-          }
-          ;
-          if (v instanceof TypeApp2) {
-            return f(v.value0);
-          }
-          ;
-          if (v instanceof Abs) {
-            return f(v.value1);
-          }
-          ;
-          if (v instanceof UncurriedApp) {
-            return append(Semigroup0)(f(v.value0))(foldMap(foldableArray)(dictMonoid)(f)(v.value1));
-          }
-          ;
-          if (v instanceof UncurriedAbs) {
-            return f(v.value1);
-          }
-          ;
-          if (v instanceof UncurriedEffectApp) {
-            return append(Semigroup0)(f(v.value0))(foldMap(foldableArray)(dictMonoid)(f)(v.value1));
-          }
-          ;
-          if (v instanceof UncurriedEffectAbs) {
-            return f(v.value1);
-          }
-          ;
-          if (v instanceof Accessor) {
-            return f(v.value0);
-          }
-          ;
-          if (v instanceof Update) {
-            return append(Semigroup0)(f(v.value0))(foldMap(foldableArray)(dictMonoid)(foldMap(foldableProp)(dictMonoid)(f))(v.value1));
-          }
-          ;
-          if (v instanceof LetRec) {
-            return append(Semigroup0)(foldMap(foldableNonEmptyArray)(dictMonoid)(foldMap(foldableTuple)(dictMonoid)(f))(v.value1))(f(v.value2));
-          }
-          ;
-          if (v instanceof Let) {
-            return append(Semigroup0)(f(v.value2))(f(v.value3));
-          }
-          ;
-          if (v instanceof EffectBind) {
-            return append(Semigroup0)(f(v.value2))(f(v.value3));
-          }
-          ;
-          if (v instanceof EffectPure) {
-            return f(v.value0);
-          }
-          ;
-          if (v instanceof EffectDefer) {
-            return f(v.value0);
-          }
-          ;
-          if (v instanceof Branch) {
-            return append(Semigroup0)(foldMap(foldableNonEmptyArray)(dictMonoid)(foldMap(foldablePair)(dictMonoid)(f))(v.value0))(f(v.value1));
-          }
-          ;
-          if (v instanceof PrimOp) {
-            return foldMap(foldableBackendOperator)(dictMonoid)(f)(v.value0);
-          }
-          ;
-          if (v instanceof PrimEffect) {
-            return foldMap(foldableBackendEffect)(dictMonoid)(f)(v.value0);
-          }
-          ;
-          if (v instanceof PrimUndefined) {
-            return mempty3;
-          }
-          ;
-          if (v instanceof CtorSaturated) {
-            return foldMap(foldableArray)(dictMonoid)(foldMap(foldableTuple)(dictMonoid)(f))(v.value4);
-          }
-          ;
-          if (v instanceof CtorDef) {
-            return mempty3;
-          }
-          ;
-          if (v instanceof Fail) {
-            return mempty3;
-          }
-          ;
-          if (v instanceof Typed) {
-            return f(v.value1);
-          }
-          ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 317, column 15 - line 346, column 21): " + [v.constructor.name]);
-        };
+    };
+  },
+  foldr: function(f) {
+    return function(z) {
+      return function(v) {
+        if (v instanceof EffectRefNew) {
+          return f(v.value0)(z);
+        }
+        ;
+        if (v instanceof EffectRefRead) {
+          return f(v.value0)(z);
+        }
+        ;
+        if (v instanceof EffectRefWrite) {
+          return f(v.value0)(f(v.value1)(z));
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 506, column 15 - line 509, column 38): " + [v.constructor.name]);
       };
-    }
-  };
-});
-var foldableBackendSyntax = /* @__PURE__ */ $lazy_foldableBackendSyntax(314);
+    };
+  },
+  foldMap: function(dictMonoid) {
+    var Semigroup0 = dictMonoid.Semigroup0();
+    return function(f) {
+      return function(v) {
+        if (v instanceof EffectRefNew) {
+          return f(v.value0);
+        }
+        ;
+        if (v instanceof EffectRefRead) {
+          return f(v.value0);
+        }
+        ;
+        if (v instanceof EffectRefWrite) {
+          return append(Semigroup0)(f(v.value0))(f(v.value1));
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 510, column 15 - line 513, column 37): " + [v.constructor.name]);
+      };
+    };
+  }
+};
+var foldableBackendSyntax = {
+  foldl: function(f) {
+    return function(z) {
+      return function(v) {
+        if (v instanceof Var) {
+          return z;
+        }
+        ;
+        if (v instanceof Local) {
+          return z;
+        }
+        ;
+        if (v instanceof Lit) {
+          if (v.value0 instanceof LitArray) {
+            return foldl(foldableArray)(f)(z)(v.value0.value0);
+          }
+          ;
+          if (v.value0 instanceof LitRecord) {
+            return foldl(foldableArray)(foldl(foldableProp)(f))(z)(v.value0.value0);
+          }
+          ;
+          return z;
+        }
+        ;
+        if (v instanceof App2) {
+          return foldl(foldableNonEmptyArray)(f)(f(z)(v.value0))(v.value1);
+        }
+        ;
+        if (v instanceof TypeApp2) {
+          return f(z)(v.value0);
+        }
+        ;
+        if (v instanceof Abs) {
+          return f(z)(v.value1);
+        }
+        ;
+        if (v instanceof UncurriedApp) {
+          return foldl(foldableArray)(f)(f(z)(v.value0))(v.value1);
+        }
+        ;
+        if (v instanceof UncurriedAbs) {
+          return f(z)(v.value1);
+        }
+        ;
+        if (v instanceof UncurriedEffectApp) {
+          return foldl(foldableArray)(f)(f(z)(v.value0))(v.value1);
+        }
+        ;
+        if (v instanceof UncurriedEffectAbs) {
+          return f(z)(v.value1);
+        }
+        ;
+        if (v instanceof Accessor) {
+          return f(z)(v.value0);
+        }
+        ;
+        if (v instanceof Update) {
+          return foldl(foldableArray)(foldl(foldableProp)(f))(f(z)(v.value0))(v.value1);
+        }
+        ;
+        if (v instanceof LetRec) {
+          return f(foldl(foldableNonEmptyArray)(foldl(foldableTuple)(f))(z)(v.value1))(v.value2);
+        }
+        ;
+        if (v instanceof Let) {
+          return f(f(z)(v.value2))(v.value3);
+        }
+        ;
+        if (v instanceof EffectBind) {
+          return f(f(z)(v.value2))(v.value3);
+        }
+        ;
+        if (v instanceof EffectPure) {
+          return f(z)(v.value0);
+        }
+        ;
+        if (v instanceof EffectDefer) {
+          return f(z)(v.value0);
+        }
+        ;
+        if (v instanceof Branch) {
+          return f(foldl(foldableNonEmptyArray)(foldl(foldablePair)(f))(z)(v.value0))(v.value1);
+        }
+        ;
+        if (v instanceof PrimOp) {
+          return foldl(foldableBackendOperator)(f)(z)(v.value0);
+        }
+        ;
+        if (v instanceof PrimEffect) {
+          return foldl(foldableBackendEffect)(f)(z)(v.value0);
+        }
+        ;
+        if (v instanceof PrimUndefined) {
+          return z;
+        }
+        ;
+        if (v instanceof CtorSaturated) {
+          return foldl(foldableArray)(foldl(foldableTuple)(f))(z)(v.value4);
+        }
+        ;
+        if (v instanceof CtorDef) {
+          return z;
+        }
+        ;
+        if (v instanceof Fail) {
+          return z;
+        }
+        ;
+        if (v instanceof Typed) {
+          return f(z)(v.value1);
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 319, column 15 - line 347, column 23): " + [v.constructor.name]);
+      };
+    };
+  },
+  foldr: function(f) {
+    return function(z) {
+      return function(v) {
+        if (v instanceof Var) {
+          return z;
+        }
+        ;
+        if (v instanceof Local) {
+          return z;
+        }
+        ;
+        if (v instanceof Lit) {
+          if (v.value0 instanceof LitArray) {
+            return foldr(foldableArray)(f)(z)(v.value0.value0);
+          }
+          ;
+          if (v.value0 instanceof LitRecord) {
+            return foldr(foldableArray)(flip(foldr(foldableProp)(f)))(z)(v.value0.value0);
+          }
+          ;
+          return z;
+        }
+        ;
+        if (v instanceof App2) {
+          return f(v.value0)(foldr(foldableNonEmptyArray)(f)(z)(v.value1));
+        }
+        ;
+        if (v instanceof TypeApp2) {
+          return f(v.value0)(z);
+        }
+        ;
+        if (v instanceof Abs) {
+          return f(v.value1)(z);
+        }
+        ;
+        if (v instanceof UncurriedApp) {
+          return f(v.value0)(foldr(foldableArray)(f)(z)(v.value1));
+        }
+        ;
+        if (v instanceof UncurriedAbs) {
+          return f(v.value1)(z);
+        }
+        ;
+        if (v instanceof UncurriedEffectApp) {
+          return f(v.value0)(foldr(foldableArray)(f)(z)(v.value1));
+        }
+        ;
+        if (v instanceof UncurriedEffectAbs) {
+          return f(v.value1)(z);
+        }
+        ;
+        if (v instanceof Accessor) {
+          return f(v.value0)(z);
+        }
+        ;
+        if (v instanceof Update) {
+          return f(v.value0)(foldr(foldableArray)(flip(foldr(foldableProp)(f)))(z)(v.value1));
+        }
+        ;
+        if (v instanceof LetRec) {
+          return foldr(foldableNonEmptyArray)(flip(foldr(foldableTuple)(f)))(f(v.value2)(z))(v.value1);
+        }
+        ;
+        if (v instanceof Let) {
+          return f(v.value2)(f(v.value3)(z));
+        }
+        ;
+        if (v instanceof EffectBind) {
+          return f(v.value2)(f(v.value3)(z));
+        }
+        ;
+        if (v instanceof EffectPure) {
+          return f(v.value0)(z);
+        }
+        ;
+        if (v instanceof EffectDefer) {
+          return f(v.value0)(z);
+        }
+        ;
+        if (v instanceof Branch) {
+          return foldr(foldableNonEmptyArray)(flip(foldr(foldablePair)(f)))(f(v.value1)(z))(v.value0);
+        }
+        ;
+        if (v instanceof PrimOp) {
+          return foldr(foldableBackendOperator)(f)(z)(v.value0);
+        }
+        ;
+        if (v instanceof PrimEffect) {
+          return foldr(foldableBackendEffect)(f)(z)(v.value0);
+        }
+        ;
+        if (v instanceof PrimUndefined) {
+          return z;
+        }
+        ;
+        if (v instanceof CtorSaturated) {
+          return foldr(foldableArray)(flip(foldr(foldableTuple)(f)))(z)(v.value4);
+        }
+        ;
+        if (v instanceof CtorDef) {
+          return z;
+        }
+        ;
+        if (v instanceof Fail) {
+          return z;
+        }
+        ;
+        if (v instanceof Typed) {
+          return f(v.value1)(z);
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 348, column 15 - line 376, column 23): " + [v.constructor.name]);
+      };
+    };
+  },
+  foldMap: function(dictMonoid) {
+    var mempty3 = mempty(dictMonoid);
+    var Semigroup0 = dictMonoid.Semigroup0();
+    return function(f) {
+      return function(v) {
+        if (v instanceof Var) {
+          return mempty3;
+        }
+        ;
+        if (v instanceof Local) {
+          return mempty3;
+        }
+        ;
+        if (v instanceof Lit) {
+          if (v.value0 instanceof LitArray) {
+            return foldMap(foldableArray)(dictMonoid)(f)(v.value0.value0);
+          }
+          ;
+          if (v.value0 instanceof LitRecord) {
+            return foldMap(foldableArray)(dictMonoid)(foldMap(foldableProp)(dictMonoid)(f))(v.value0.value0);
+          }
+          ;
+          return mempty3;
+        }
+        ;
+        if (v instanceof App2) {
+          return append(Semigroup0)(f(v.value0))(foldMap(foldableNonEmptyArray)(dictMonoid)(f)(v.value1));
+        }
+        ;
+        if (v instanceof TypeApp2) {
+          return f(v.value0);
+        }
+        ;
+        if (v instanceof Abs) {
+          return f(v.value1);
+        }
+        ;
+        if (v instanceof UncurriedApp) {
+          return append(Semigroup0)(f(v.value0))(foldMap(foldableArray)(dictMonoid)(f)(v.value1));
+        }
+        ;
+        if (v instanceof UncurriedAbs) {
+          return f(v.value1);
+        }
+        ;
+        if (v instanceof UncurriedEffectApp) {
+          return append(Semigroup0)(f(v.value0))(foldMap(foldableArray)(dictMonoid)(f)(v.value1));
+        }
+        ;
+        if (v instanceof UncurriedEffectAbs) {
+          return f(v.value1);
+        }
+        ;
+        if (v instanceof Accessor) {
+          return f(v.value0);
+        }
+        ;
+        if (v instanceof Update) {
+          return append(Semigroup0)(f(v.value0))(foldMap(foldableArray)(dictMonoid)(foldMap(foldableProp)(dictMonoid)(f))(v.value1));
+        }
+        ;
+        if (v instanceof LetRec) {
+          return append(Semigroup0)(foldMap(foldableNonEmptyArray)(dictMonoid)(foldMap(foldableTuple)(dictMonoid)(f))(v.value1))(f(v.value2));
+        }
+        ;
+        if (v instanceof Let) {
+          return append(Semigroup0)(f(v.value2))(f(v.value3));
+        }
+        ;
+        if (v instanceof EffectBind) {
+          return append(Semigroup0)(f(v.value2))(f(v.value3));
+        }
+        ;
+        if (v instanceof EffectPure) {
+          return f(v.value0);
+        }
+        ;
+        if (v instanceof EffectDefer) {
+          return f(v.value0);
+        }
+        ;
+        if (v instanceof Branch) {
+          return append(Semigroup0)(foldMap(foldableNonEmptyArray)(dictMonoid)(foldMap(foldablePair)(dictMonoid)(f))(v.value0))(f(v.value1));
+        }
+        ;
+        if (v instanceof PrimOp) {
+          return foldMap(foldableBackendOperator)(dictMonoid)(f)(v.value0);
+        }
+        ;
+        if (v instanceof PrimEffect) {
+          return foldMap(foldableBackendEffect)(dictMonoid)(f)(v.value0);
+        }
+        ;
+        if (v instanceof PrimUndefined) {
+          return mempty3;
+        }
+        ;
+        if (v instanceof CtorSaturated) {
+          return foldMap(foldableArray)(dictMonoid)(foldMap(foldableTuple)(dictMonoid)(f))(v.value4);
+        }
+        ;
+        if (v instanceof CtorDef) {
+          return mempty3;
+        }
+        ;
+        if (v instanceof Fail) {
+          return mempty3;
+        }
+        ;
+        if (v instanceof Typed) {
+          return f(v.value1);
+        }
+        ;
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 377, column 15 - line 406, column 21): " + [v.constructor.name]);
+      };
+    };
+  }
+};
 var $lazy_traversableBackendEffect = /* @__PURE__ */ $runtime_lazy14("traversableBackendEffect", "PureScript.Backend.Optimizer.Syntax", function() {
   return {
     sequence: function(dictApplicative) {
@@ -16777,7 +17048,7 @@ var $lazy_traversableBackendEffect = /* @__PURE__ */ $runtime_lazy14("traversabl
             return apply2(Apply0)(map(Functor0)(EffectRefWrite.create)(f(v.value0)))(f(v.value1));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 447, column 16 - line 450, column 57): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 517, column 16 - line 520, column 57): " + [v.constructor.name]);
         };
       };
     },
@@ -16789,7 +17060,7 @@ var $lazy_traversableBackendEffect = /* @__PURE__ */ $runtime_lazy14("traversabl
     }
   };
 });
-var traversableBackendEffect = /* @__PURE__ */ $lazy_traversableBackendEffect(445);
+var traversableBackendEffect = /* @__PURE__ */ $lazy_traversableBackendEffect(515);
 var $lazy_traversableBackendSyntax = /* @__PURE__ */ $runtime_lazy14("traversableBackendSyntax", "PureScript.Backend.Optimizer.Syntax", function() {
   return {
     sequence: function(dictApplicative) {
@@ -16832,18 +17103,18 @@ var $lazy_traversableBackendSyntax = /* @__PURE__ */ $runtime_lazy14("traversabl
             }
             ;
             if (v.value0 instanceof LitArray) {
-              return map(Functor0)(function($854) {
-                return Lit.create(LitArray.create($854));
+              return map(Functor0)(function($992) {
+                return Lit.create(LitArray.create($992));
               })(traverse(traversableArray)(dictApplicative)(f)(v.value0.value0));
             }
             ;
             if (v.value0 instanceof LitRecord) {
-              return map(Functor0)(function($855) {
-                return Lit.create(LitRecord.create($855));
+              return map(Functor0)(function($993) {
+                return Lit.create(LitRecord.create($993));
               })(traverse(traversableArray)(dictApplicative)(traverse(traversableProp)(dictApplicative)(f))(v.value0.value0));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 356, column 7 - line 363, column 71): " + [v.value0.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 416, column 7 - line 423, column 71): " + [v.value0.constructor.name]);
           }
           ;
           if (v instanceof App2) {
@@ -16934,7 +17205,7 @@ var $lazy_traversableBackendSyntax = /* @__PURE__ */ $runtime_lazy14("traversabl
             return map(Functor0)(Typed.create(v.value0))(f(v.value1));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 350, column 16 - line 407, column 22): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Syntax (line 410, column 16 - line 467, column 22): " + [v.constructor.name]);
         };
       };
     },
@@ -16946,7 +17217,7 @@ var $lazy_traversableBackendSyntax = /* @__PURE__ */ $runtime_lazy14("traversabl
     }
   };
 });
-var traversableBackendSyntax = /* @__PURE__ */ $lazy_traversableBackendSyntax(348);
+var traversableBackendSyntax = /* @__PURE__ */ $lazy_traversableBackendSyntax(408);
 var eqPair = function(dictEq) {
   return {
     eq: function(x) {
@@ -33014,32 +33285,16 @@ var effectiveDirectives = function(base) {
   return function(accumulated) {
     return function(contributions) {
       return function(currentIndex) {
-        var restore = function(key) {
-          return function(v) {
-            return function(acc) {
-              var v1 = lookup2(ordEvalRef)(key)(base);
-              if (v1 instanceof Just) {
-                return insert(ordEvalRef)(key)(v1.value0)(acc);
-              }
-              ;
-              if (v1 instanceof Nothing) {
-                return $$delete(ordEvalRef)(key)(acc);
-              }
-              ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Builder (line 572, column 23 - line 574, column 34): " + [v1.constructor.name]);
-            };
-          };
-        };
         var removeContribution = function(contrib) {
           return function(acc) {
-            return foldrWithIndex(foldableWithIndexMap)(restore)(acc)(contrib);
+            return union(ordEvalRef)(intersection(ordEvalRef)(base)(contrib))(difference(ordEvalRef)(acc)(contrib));
           };
         };
         return foldrWithIndex(foldableWithIndexMap)(function(rank) {
           return function(contrib) {
             return function(acc) {
-              var $131 = rank >= currentIndex;
-              if ($131) {
+              var $127 = rank >= currentIndex;
+              if ($127) {
                 return removeContribution(contrib)(acc);
               }
               ;
@@ -33409,11 +33664,11 @@ var buildModulesParallel = function(dictMonadEffect) {
           return function(waiting) {
             var stepW = function(acc) {
               return function(v) {
-                var $237 = member2(ordInt)(done)(v.value1);
-                if ($237) {
+                var $233 = member2(ordInt)(done)(v.value1);
+                if ($233) {
                   var remaining = $$delete2(ordInt)(done)(v.value1);
-                  var $238 = isEmpty2(remaining);
-                  if ($238) {
+                  var $234 = isEmpty2(remaining);
+                  if ($234) {
                     return {
                       waiting: acc.waiting,
                       ready: insert2(ordInt)(v.value0)(acc.ready)
@@ -33480,8 +33735,8 @@ var buildModulesParallel = function(dictMonadEffect) {
                           var privateGlobals = foldrWithIndex(foldableWithIndexMap)(function(rank) {
                             return function(globals) {
                               return function(acc) {
-                                var $245 = rank < i;
-                                if ($245) {
+                                var $241 = rank < i;
+                                if ($241) {
                                   return union2(ordQualified5)(globals)(acc);
                                 }
                                 ;
@@ -33565,15 +33820,15 @@ var buildModulesParallel = function(dictMonadEffect) {
               return foldl(foldableArray)(function(a) {
                 return function(m) {
                   return insertWith(ordInt)(append4)((function() {
-                    var $253 = m > i;
-                    if ($253) {
+                    var $249 = m > i;
+                    if ($249) {
                       return m;
                     }
                     ;
                     return i;
                   })())([(function() {
-                    var $254 = m > i;
-                    if ($254) {
+                    var $250 = m > i;
+                    if ($250) {
                       return i;
                     }
                     ;
@@ -33619,8 +33874,8 @@ var buildModulesParallel = function(dictMonadEffect) {
               }
               ;
               if (v1 instanceof Nothing) {
-                var $260 = isEmpty2(st.inFlight);
-                if ($260) {
+                var $256 = isEmpty2(st.inFlight);
+                if ($256) {
                   return map(functorMaybe)(function(i) {
                     return new Tuple(i, true);
                   })(firstFree(keys3(st.pending)));
@@ -33713,8 +33968,8 @@ var buildModulesParallel = function(dictMonadEffect) {
             })(modules)),
             depsLeft: depsLeft0,
             ready: apply(fromFoldable22)(mapMaybe(function(v) {
-              var $269 = v.value1 === 0;
-              if ($269) {
+              var $265 = v.value1 === 0;
+              if ($265) {
                 return new Just(v.value0);
               }
               ;
@@ -33758,8 +34013,8 @@ var buildModulesParallel = function(dictMonadEffect) {
         })(modules)))(toUnfoldable3(unfoldableArray)(deps));
         var step2 = function(st) {
           return function(result) {
-            var $276 = !isEmpty2(result.pendingDeps);
-            if ($276) {
+            var $272 = !isEmpty2(result.pendingDeps);
+            if ($272) {
               var stats$prime = {
                 emitMillis: st.stats.emitMillis,
                 wakeups: st.stats.wakeups,
@@ -33776,8 +34031,8 @@ var buildModulesParallel = function(dictMonadEffect) {
               var fresh = filter3(ordInt)(function(d) {
                 return !member(ordInt)(d)(st.finalized);
               })(result.pendingDeps);
-              var $277 = isEmpty2(fresh);
-              if ($277) {
+              var $273 = isEmpty2(fresh);
+              if ($273) {
                 return pure(Applicative0)({
                   finalized: st.finalized,
                   depsLeft: st.depsLeft,
@@ -33911,8 +34166,8 @@ var buildModulesParallel = function(dictMonadEffect) {
           }
           ;
           if (v instanceof Nothing) {
-            var $286 = isEmpty2(st.inFlight);
-            if ($286) {
+            var $282 = isEmpty2(st.inFlight);
+            if ($282) {
               if (runner.onStats instanceof Just) {
                 return runner.onStats.value0({
                   dispatched: st.stats.dispatched,
@@ -53306,6 +53561,7 @@ var measure = function(label2) {
 
 // output/PureScript.Backend.Optimizer.Monomorphize/foreign.js
 var sameIdentity = (a) => (b) => Object.is(a, b);
+var evaluateTracked = (action) => () => action();
 
 // output/PureScript.Backend.Optimizer.CoreFn.BindingGroups/index.js
 var monoidSet8 = /* @__PURE__ */ monoidSet(ordIdent);
@@ -53647,7 +53903,7 @@ var substituteVars = function(subst) {
         })(v1.value0));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 632, column 3 - line 632, column 85): " + [v.constructor.name, v1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 636, column 3 - line 636, column 85): " + [v.constructor.name, v1.constructor.name]);
     };
   };
   var go = function(v) {
@@ -53661,7 +53917,7 @@ var substituteVars = function(subst) {
         return new ExprVar(v.value0, new Qualified(Nothing.value, v.value1.value1));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 601, column 7 - line 603, column 57): " + [v1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 605, column 7 - line 607, column 57): " + [v1.constructor.name]);
     }
     ;
     if (v instanceof ExprVar) {
@@ -53695,7 +53951,7 @@ var substituteVars = function(subst) {
             })(acc)(v12.value0);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 612, column 21 - line 614, column 90): " + [v12.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 616, column 21 - line 618, column 90): " + [v12.constructor.name]);
         };
       })(empty3)(v.value1);
       var subst$prime = filterKeys(ordIdent)(function(k) {
@@ -53712,7 +53968,7 @@ var substituteVars = function(subst) {
           })(b.value0));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 621, column 23 - line 623, column 117): " + [b.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 625, column 23 - line 627, column 117): " + [b.constructor.name]);
       })(v.value1), substituteVars(subst$prime)(v.value2));
     }
     ;
@@ -53740,7 +53996,7 @@ var substituteVars = function(subst) {
       })(v.value2));
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 599, column 8 - line 630, column 95): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 603, column 8 - line 634, column 95): " + [v.constructor.name]);
   };
   return go;
 };
@@ -53768,10 +54024,51 @@ var stripTypeVariables = function($copy_v) {
   ;
   return $tco_result;
 };
+var specializationLookup = function(instMap) {
+  return function(name2) {
+    return map(functorMaybe)(function(types) {
+      return function(key) {
+        return member(ordString)(key)(types);
+      };
+    })(lookup2(ordString)(name2)(instMap));
+  };
+};
 var specializationCount = function(instantiations) {
   return function(name2) {
     return maybe(0)(size)(lookup2(ordString)(name2)(instantiations));
   };
+};
+var sameLookupResults = function(instantiations) {
+  return foldrWithIndex(foldableWithIndexMap)(function(name2) {
+    return function(misses) {
+      return function(valid) {
+        return valid && (function() {
+          if (misses instanceof Nothing) {
+            return !member(ordString)(name2)(instantiations);
+          }
+          ;
+          if (misses instanceof Just) {
+            var v = lookup2(ordString)(name2)(instantiations);
+            if (v instanceof Nothing) {
+              return true;
+            }
+            ;
+            if (v instanceof Just) {
+              return foldl(foldableSet)(function(unchanged2) {
+                return function(key) {
+                  return unchanged2 && !member(ordString)(key)(v.value0);
+                };
+              })(true)(misses.value0);
+            }
+            ;
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1330, column 18 - line 1332, column 96): " + [v.constructor.name]);
+          }
+          ;
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1328, column 35 - line 1332, column 96): " + [misses.constructor.name]);
+        })();
+      };
+    };
+  })(true);
 };
 var sameInstantiationInputs = function(a) {
   return function(b) {
@@ -53788,6 +54085,11 @@ var sameDependencySizes = function(instantiations) {
     return all2(function(v) {
       return specializationCount(instantiations)(v.value0) === v.value1;
     })(toUnfoldable3(unfoldableArray)(dependencies2));
+  };
+};
+var samePreparedDependencies = function(instantiations) {
+  return function(v) {
+    return sameDependencySizes(instantiations)(v.value0) || sameLookupResults(instantiations)(v.value1);
   };
 };
 var resolveGlobalsBinder = function(definerMod) {
@@ -53947,8 +54249,8 @@ var mangleType = function(v) {
   ;
   if (v instanceof ADT) {
     return "ADT_" + (joinWith("_")(v.value1) + (function() {
-      var $364 = length(v.value2) === 0;
-      if ($364) {
+      var $378 = length(v.value2) === 0;
+      if ($378) {
         return "";
       }
       ;
@@ -53960,7 +54262,7 @@ var mangleType = function(v) {
     return "Var_" + v.value0;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 128, column 1 - line 128, column 33): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 132, column 1 - line 132, column 33): " + [v.constructor.name]);
 };
 var mangleExpr = function(v) {
   if (v instanceof ExprVar) {
@@ -54039,16 +54341,16 @@ var stripStaticConstraints = function(dictArgs) {
     if (v instanceof ConstrainedType) {
       var remainingConstraints = drop(length(dictArgs))(v.value0);
       var newConstraints = mapMaybe(function(v1) {
-        var $426 = isStatic(v1.value0);
-        if ($426) {
+        var $440 = isStatic(v1.value0);
+        if ($440) {
           return Nothing.value;
         }
         ;
         return new Just(v1.value1);
       })(zip(dictArgs)(v.value0));
       var finalConstraints = append(semigroupArray)(newConstraints)(remainingConstraints);
-      var $429 = length(finalConstraints) === 0;
-      if ($429) {
+      var $443 = length(finalConstraints) === 0;
+      if ($443) {
         return stripStaticConstraints(dictArgs)(v.value1);
       }
       ;
@@ -54089,7 +54391,7 @@ var hasTypeVariables = function(v) {
         return hasTypeVariables(v.value1.value0);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1161, column 15 - line 1163, column 35): " + [v.value1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1173, column 15 - line 1175, column 35): " + [v.value1.constructor.name]);
     })();
     return any2(function(v1) {
       return hasTypeVariables(v1.value1);
@@ -54146,7 +54448,7 @@ var hasTypeVariables = function(v) {
     return true;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1154, column 1 - line 1154, column 40): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1166, column 1 - line 1166, column 40): " + [v.constructor.name]);
 };
 var getSpineTypeArgs = /* @__PURE__ */ mapMaybe(function(v) {
   if (v instanceof SpineTypeApp) {
@@ -54203,7 +54505,7 @@ var getExprAnn = function(v) {
     return v.value0;
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 196, column 14 - line 206, column 28): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 200, column 14 - line 210, column 28): " + [v.constructor.name]);
 };
 var inferExprType2 = function(expr) {
   var v = getExprAnn(expr);
@@ -54226,8 +54528,8 @@ var rebuildSpecializedCall = function(v) {
             if (v2 instanceof Just) {
               $tco_done = true;
               return new Just((function() {
-                var $502 = $$null(v2.value0.tail);
-                if ($502) {
+                var $516 = $$null(v2.value0.tail);
+                if ($516) {
                   return v1.value1;
                 }
                 ;
@@ -54240,7 +54542,7 @@ var rebuildSpecializedCall = function(v) {
               return;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1146, column 41 - line 1148, column 38): " + [v2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1158, column 41 - line 1160, column 38): " + [v2.constructor.name]);
           }
           ;
           if (v1 instanceof Func) {
@@ -54248,8 +54550,8 @@ var rebuildSpecializedCall = function(v) {
             if (v2 instanceof Just) {
               $tco_done = true;
               return new Just((function() {
-                var $508 = $$null(v2.value0.tail);
-                if ($508) {
+                var $522 = $$null(v2.value0.tail);
+                if ($522) {
                   return v1.value1;
                 }
                 ;
@@ -54262,7 +54564,7 @@ var rebuildSpecializedCall = function(v) {
               return;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1149, column 27 - line 1151, column 40): " + [v2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1161, column 27 - line 1163, column 40): " + [v2.constructor.name]);
           }
           ;
           $tco_done = true;
@@ -54301,7 +54603,7 @@ var getBindIdents = /* @__PURE__ */ concatMap(function(v) {
     })(v.value0);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 710, column 33 - line 712, column 51): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 714, column 33 - line 716, column 51): " + [v.constructor.name]);
 });
 var extractFuncType = function($copy_v) {
   var $tco_done = false;
@@ -54383,8 +54685,8 @@ var specializationKey = function(instType) {
     return function(normalArgs) {
       var mangleArgs = function(args) {
         return show(showInt)(length(args)) + (":" + show(showArray2)(map(functorArray)(function(arg) {
-          var $553 = isStatic(arg);
-          if ($553) {
+          var $567 = isStatic(arg);
+          if ($567) {
             return new Just(mangleExpr(arg));
           }
           ;
@@ -54445,7 +54747,7 @@ var collectDependencies = /* @__PURE__ */ (function() {
         })(acc)(v.value0);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1290, column 16 - line 1292, column 64): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1302, column 16 - line 1304, column 64): " + [v.constructor.name]);
     };
   };
   var goAlt = function(acc) {
@@ -54462,7 +54764,7 @@ var collectDependencies = /* @__PURE__ */ (function() {
         })(acc)(v.value1.value0);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1293, column 41 - line 1295, column 73): " + [v.value1.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1305, column 41 - line 1307, column 73): " + [v.value1.constructor.name]);
     };
   };
   var go = function(acc) {
@@ -54515,7 +54817,7 @@ var collectDependencies = /* @__PURE__ */ (function() {
         return foldl(foldableArray)(goAlt)(foldl(foldableArray)(go)(acc)(v.value1))(v.value2);
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1278, column 12 - line 1289, column 67): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1290, column 12 - line 1301, column 67): " + [v.constructor.name]);
     };
   };
   return go(empty3);
@@ -54569,7 +54871,7 @@ var collectExpr = function(globalAstMap) {
               return expr.value0.type;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 276, column 25 - line 278, column 28): " + [v2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 280, column 25 - line 282, column 28): " + [v2.constructor.name]);
           })();
           if (trueGenericType instanceof Just) {
             return insertWithStringImpl(stringCompare)(function($$new4) {
@@ -54589,7 +54891,7 @@ var collectExpr = function(globalAstMap) {
             return acc;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 280, column 7 - line 283, column 23): " + [trueGenericType.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 284, column 7 - line 287, column 23): " + [trueGenericType.constructor.name]);
         }
         ;
         if (expr instanceof ExprVar && expr.value1.value0 instanceof Nothing) {
@@ -54693,26 +54995,26 @@ var collectExpr = function(globalAstMap) {
                   return fromMaybe(Any.value)(v.f_var.value0.type);
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 298, column 49 - line 300, column 54): " + [v12.value0.value0.type.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 302, column 49 - line 304, column 54): " + [v12.value0.value0.type.constructor.name]);
               }
               ;
               if (v12 instanceof Nothing) {
                 return fromMaybe(Any.value)(v.f_var.value0.type);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 297, column 32 - line 301, column 52): " + [v12.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 301, column 32 - line 305, column 52): " + [v12.constructor.name]);
             })();
             var substFromTypeArgs = buildSubst(trueGenericType)(typeArgs);
             var subst = unifySpine(trueGenericType)(args)(substFromTypeArgs);
             var instType = stripTypeVariables(substituteExprType(subst)(stripForAlls(trueGenericType)));
             var v1 = partitionArgs(trueGenericType)(args);
-            var $737 = !hasTypeVariables(trueGenericType);
-            if ($737) {
+            var $751 = !hasTypeVariables(trueGenericType);
+            if ($751) {
               return acc2;
             }
             ;
-            var $738 = hasTypeVariables(instType);
-            if ($738) {
+            var $752 = hasTypeVariables(instType);
+            if ($752) {
               return acc2;
             }
             ;
@@ -54765,7 +55067,7 @@ var collectExpr = function(globalAstMap) {
           return foldl(foldableArray)(collectBind(globalAstMap)(modName))(collectExpr(globalAstMap)(modName)(acc)(expr.value2))(expr.value1);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 272, column 45 - line 345, column 111): " + [expr.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 276, column 45 - line 349, column 111): " + [expr.constructor.name]);
       };
     };
   };
@@ -54791,7 +55093,7 @@ var collectBind = function(v) {
           return foldl(foldableArray)(collectBinding2(v)(v1))(v2)(v3.value0);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 188, column 1 - line 188, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 192, column 1 - line 192, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
       };
     };
   };
@@ -54808,7 +55110,7 @@ var collectAlt = function(globalAstMap) {
           return foldl(foldableArray)(collectGuard(globalAstMap)(modName))(acc)(v.value1.value0);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 351, column 62 - line 353, column 73): " + [v.value1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 355, column 62 - line 357, column 73): " + [v.value1.constructor.name]);
       };
     };
   };
@@ -54888,8 +55190,8 @@ var collectLocalExpr = function(targets) {
               })();
               var substFromTypeArgs = buildSubst(genericType)(typeArgs);
               var finalSubst = unifySpine(genericType)(args)(substFromTypeArgs);
-              var $813 = !isEmpty(finalSubst);
-              if ($813) {
+              var $827 = !isEmpty(finalSubst);
+              if ($827) {
                 var stripForAlls = function($copy_v) {
                   var $tco_done1 = false;
                   var $tco_result;
@@ -54910,8 +55212,8 @@ var collectLocalExpr = function(targets) {
                   return $tco_result;
                 };
                 var instType = stripTypeVariables(substituteExprType(finalSubst)(stripForAlls(genericType)));
-                var $817 = hasTypeVariables(genericType) && (hasTypeVariables(instType) && eq(eqExprType)(instType)(stripForAlls(genericType)));
-                if ($817) {
+                var $831 = hasTypeVariables(genericType) && (hasTypeVariables(instType) && eq(eqExprType)(instType)(stripForAlls(genericType)));
+                if ($831) {
                   return acc;
                 }
                 ;
@@ -54928,8 +55230,8 @@ var collectLocalExpr = function(targets) {
                 })(acc);
               }
               ;
-              var $818 = eq(eqExprType)(genericType)(Any.value);
-              if ($818) {
+              var $832 = eq(eqExprType)(genericType)(Any.value);
+              if ($832) {
                 return acc;
               }
               ;
@@ -54995,7 +55297,7 @@ var collectLocalExpr = function(targets) {
                 })(a)(v.value1.value0);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 431, column 41 - line 433, column 133): " + [v.value1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 435, column 41 - line 437, column 133): " + [v.value1.constructor.name]);
             };
           })(foldl(foldableArray)(collectLocalExpr(targets)(recs))(acc)(expr.value1))(expr.value2);
         }
@@ -55012,7 +55314,7 @@ var collectLocalExpr = function(targets) {
           return acc;
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 364, column 42 - line 436, column 21): " + [expr.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 368, column 42 - line 440, column 21): " + [expr.constructor.name]);
       };
     };
   };
@@ -55037,7 +55339,7 @@ var collectLocalBind = function(targets) {
           })(acc)(v.value0);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 439, column 37 - line 444, column 89): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 443, column 37 - line 448, column 89): " + [v.constructor.name]);
       };
     };
   };
@@ -55083,7 +55385,7 @@ var collectFreeVarsAlt = function(v) {
       })(empty3)(v.value1.value0);
     }
     ;
-    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 842, column 12 - line 844, column 135): " + [v.value1.constructor.name]);
+    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 846, column 12 - line 848, column 135): " + [v.value1.constructor.name]);
   })();
   var bound2 = foldl(foldableArray)(function(acc) {
     return function(binder2) {
@@ -55132,7 +55434,7 @@ var collectFreeVars = function(v) {
           })(acc)(b.value0);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 822, column 21 - line 824, column 95): " + [b.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 826, column 21 - line 828, column 95): " + [b.constructor.name]);
       };
     })(collectFreeVars(v.value2))(v.value1);
     var bound2 = foldl(foldableArray)(function(acc) {
@@ -55149,7 +55451,7 @@ var collectFreeVars = function(v) {
           })(acc)(b.value0);
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 815, column 21 - line 817, column 82): " + [b.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 819, column 21 - line 821, column 82): " + [b.constructor.name]);
       };
     })(empty3)(v.value1);
     return difference2(ordIdent)(used2)(bound2);
@@ -55187,14 +55489,14 @@ var collectFreeVars = function(v) {
     })(collectFreeVars(v.value1))(v.value2);
   }
   ;
-  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 806, column 19 - line 836, column 117): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 810, column 19 - line 840, column 117): " + [v.constructor.name]);
 };
 var resolveGlobals = function(definerMod) {
   var go = function(bound2) {
     return function(v) {
       if (v instanceof ExprVar && v.value1.value0 instanceof Nothing) {
-        var $957 = member2(ordIdent)(v.value1.value1)(bound2);
-        if ($957) {
+        var $971 = member2(ordIdent)(v.value1.value1)(bound2);
+        if ($971) {
           return new ExprVar(v.value0, new Qualified(Nothing.value, v.value1.value1));
         }
         ;
@@ -55228,7 +55530,7 @@ var resolveGlobals = function(definerMod) {
               })(acc)(v1.value0);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1201, column 21 - line 1203, column 90): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1213, column 21 - line 1215, column 90): " + [v1.constructor.name]);
           };
         })(bound2)(v.value1);
         var binds$prime = map(functorArray)(function(b) {
@@ -55242,7 +55544,7 @@ var resolveGlobals = function(definerMod) {
             })(b.value0));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1208, column 19 - line 1210, column 105): " + [b.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1220, column 19 - line 1222, column 105): " + [b.constructor.name]);
         })(v.value1);
         return new ExprLet(v.value0, binds$prime, go(bound$prime)(v.value2));
       }
@@ -55274,7 +55576,7 @@ var resolveGlobals = function(definerMod) {
               })(cgGuard.value0));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1227, column 37 - line 1229, column 111): " + [cgGuard.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1239, column 37 - line 1241, column 111): " + [cgGuard.constructor.name]);
           };
           return new CaseAlternative(binders$prime, goGuard(v1.value1));
         })(v.value2));
@@ -55294,7 +55596,7 @@ var resolveGlobals = function(definerMod) {
         return new ExprLit(v.value0, map(functorLiteral)(go(bound2))(v.value1));
       }
       ;
-      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1187, column 14 - line 1238, column 56): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1199, column 14 - line 1250, column 56): " + [v.constructor.name]);
     };
   };
   return go;
@@ -55318,7 +55620,7 @@ var collectInstantiations = function(globalAstMap) {
             return foldl(foldableArray)(collectTopBinding)(acc11)(v1.value0);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 184, column 25 - line 186, column 58): " + [v1.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 188, column 25 - line 190, column 58): " + [v1.constructor.name]);
         };
       };
       return foldl(foldableArray)(collectTopBind)(acc)(v.decls);
@@ -55356,7 +55658,7 @@ var rewriteExpr2 = function(globalAstMap) {
                   return Nothing.value;
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 562, column 22 - line 564, column 31): " + [v.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 566, column 22 - line 568, column 31): " + [v.constructor.name]);
               }
               ;
               if (e.value1.value0 instanceof Just) {
@@ -55374,10 +55676,10 @@ var rewriteExpr2 = function(globalAstMap) {
                   return Nothing.value;
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 569, column 15 - line 571, column 35): " + [v.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 573, column 15 - line 575, column 35): " + [v.constructor.name]);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 561, column 9 - line 571, column 35): " + [e.value1.value0.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 565, column 9 - line 575, column 35): " + [e.value1.value0.constructor.name]);
             }
             ;
             if (e instanceof ExprApp && (e.value1 instanceof ExprVar && contains("$Dict")(e.value1.value1.value1))) {
@@ -55413,7 +55715,7 @@ var rewriteExpr2 = function(globalAstMap) {
             return new Guarded(map(functorArray)(goGuard)(v.value0));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 588, column 5 - line 588, column 57): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 592, column 5 - line 592, column 57): " + [v.constructor.name]);
         };
         var goBinding = function(v) {
           var ann$prime = mapAnn(f)(v.value0);
@@ -55428,7 +55730,7 @@ var rewriteExpr2 = function(globalAstMap) {
             return new Rec(map(functorArray)(goBinding)(v.value0));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 575, column 5 - line 575, column 45): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 579, column 5 - line 579, column 45): " + [v.constructor.name]);
         };
         var goAlt = function(v) {
           return new CaseAlternative(map(functorArray)(goBinder)(v.value0), goCaseGuard(v.value1));
@@ -55444,7 +55746,7 @@ var rewriteExpr2 = function(globalAstMap) {
                 return expr.value1.value1;
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 478, column 22 - line 480, column 28): " + [expr.value1.value0.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 482, column 22 - line 484, column 28): " + [expr.value1.value0.constructor.name]);
             })();
             var v = lookup2(ordString)(qualName)(globalSubst);
             if (v instanceof Just) {
@@ -55462,7 +55764,7 @@ var rewriteExpr2 = function(globalAstMap) {
               return new ExprVar(newAnn, expr.value1);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 481, column 12 - line 490, column 32): " + [v.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 485, column 12 - line 494, column 32): " + [v.constructor.name]);
           }
           ;
           if (expr instanceof ExprLit) {
@@ -55481,8 +55783,8 @@ var rewriteExpr2 = function(globalAstMap) {
             var foldFn = function(b) {
               return function(acc) {
                 if (b instanceof NonRec) {
-                  var $1110 = member2(ordIdent)(b.value0.value1)(acc.used);
-                  if ($1110) {
+                  var $1124 = member2(ordIdent)(b.value0.value1)(acc.used);
+                  if ($1124) {
                     return {
                       used: union2(ordIdent)($$delete2(ordIdent)(b.value0.value1)(acc.used))(collectFreeVars(b.value0.value2)),
                       binds: cons(b)(acc.binds)
@@ -55517,7 +55819,7 @@ var rewriteExpr2 = function(globalAstMap) {
                   return acc;
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 506, column 26 - line 524, column 22): " + [b.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 510, column 26 - line 528, column 22): " + [b.constructor.name]);
               };
             };
             var binds$prime = map(functorArray)(goBind)(expr.value1);
@@ -55535,8 +55837,8 @@ var rewriteExpr2 = function(globalAstMap) {
               used: collectFreeVars(e$prime),
               binds: []
             })(binds$prime);
-            var $1134 = length(filtered.binds) === 0;
-            if ($1134) {
+            var $1148 = length(filtered.binds) === 0;
+            if ($1148) {
               return e$prime;
             }
             ;
@@ -55559,7 +55861,7 @@ var rewriteExpr2 = function(globalAstMap) {
                 return new ExprCase(mapAnn(f)(expr.value0), exprs$prime, map(functorArray)(goAlt)(expr.value2));
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 537, column 15 - line 539, column 75): " + [v.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 541, column 15 - line 543, column 75): " + [v.constructor.name]);
             }
             ;
             return new ExprCase(mapAnn(f)(expr.value0), exprs$prime, map(functorArray)(goAlt)(expr.value2));
@@ -55584,7 +55886,7 @@ var rewriteExpr2 = function(globalAstMap) {
                 return new ExprAccessor(mapAnn(f)(expr.value0), e$prime, expr.value2);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 548, column 15 - line 550, column 63): " + [v1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 552, column 15 - line 554, column 63): " + [v1.constructor.name]);
             }
             ;
             if (v instanceof Just && v.value0 instanceof LitArray) {
@@ -55598,7 +55900,7 @@ var rewriteExpr2 = function(globalAstMap) {
             return new ExprUpdate(mapAnn(f)(expr.value0), go(expr.value1), map(functorArray)(goProp)(expr.value2));
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 475, column 15 - line 554, column 84): " + [expr.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 479, column 15 - line 558, column 84): " + [expr.constructor.name]);
         };
         return go;
       };
@@ -55607,33 +55909,33 @@ var rewriteExpr2 = function(globalAstMap) {
   return goLocals;
 };
 var monomorphizeProp = function(modName) {
-  return function(instMap) {
+  return function(lookup7) {
     return function(localDicts) {
       return function(v) {
-        return new Prop(v.value0, monomorphizeExpr(modName)(instMap)(localDicts)(v.value1));
+        return new Prop(v.value0, monomorphizeExprWith(modName)(lookup7)(localDicts)(v.value1));
       };
     };
   };
 };
 var monomorphizeGuard = function(modName) {
-  return function(instMap) {
+  return function(lookup7) {
     return function(localDicts) {
       return function(v) {
-        return new Guard(monomorphizeExpr(modName)(instMap)(localDicts)(v.value0), monomorphizeExpr(modName)(instMap)(localDicts)(v.value1));
+        return new Guard(monomorphizeExprWith(modName)(lookup7)(localDicts)(v.value0), monomorphizeExprWith(modName)(lookup7)(localDicts)(v.value1));
       };
     };
   };
 };
-var monomorphizeExpr = function(modName) {
-  return function(instMap) {
+var monomorphizeExprWith = function(modName) {
+  return function(lookup7) {
     return function(localDicts) {
       return function(rootExpr) {
-        var isAppOrTypeApp = function(v5) {
-          if (v5 instanceof ExprApp) {
+        var isAppOrTypeApp = function(v4) {
+          if (v4 instanceof ExprApp) {
             return true;
           }
           ;
-          if (v5 instanceof ExprTypeApp) {
+          if (v4 instanceof ExprTypeApp) {
             return true;
           }
           ;
@@ -55645,22 +55947,22 @@ var monomorphizeExpr = function(modName) {
               var $tco_var_spine = $copy_spine;
               var $tco_done = false;
               var $tco_result;
-              function $tco_loop(spine4, v5) {
-                if (v5 instanceof ExprApp) {
-                  $tco_var_spine = cons(new Tuple(v5.value0, new SpineApp(v5.value2)))(spine4);
-                  $copy_v = v5.value1;
+              function $tco_loop(spine4, v4) {
+                if (v4 instanceof ExprApp) {
+                  $tco_var_spine = cons(new Tuple(v4.value0, new SpineApp(v4.value2)))(spine4);
+                  $copy_v = v4.value1;
                   return;
                 }
                 ;
-                if (v5 instanceof ExprTypeApp) {
-                  $tco_var_spine = cons(new Tuple(v5.value0, new SpineTypeApp(v5.value2)))(spine4);
-                  $copy_v = v5.value1;
+                if (v4 instanceof ExprTypeApp) {
+                  $tco_var_spine = cons(new Tuple(v4.value0, new SpineTypeApp(v4.value2)))(spine4);
+                  $copy_v = v4.value1;
                   return;
                 }
                 ;
                 $tco_done = true;
                 return {
-                  f_var: v5,
+                  f_var: v4,
                   spine: spine4
                 };
               }
@@ -55675,16 +55977,16 @@ var monomorphizeExpr = function(modName) {
           return go2([]);
         })();
         var applyAnnotatedSpine = function(fn) {
-          return function(v5) {
-            if (v5.value1 instanceof SpineApp) {
-              return new ExprApp(v5.value0, fn, v5.value1.value0);
+          return function(v4) {
+            if (v4.value1 instanceof SpineApp) {
+              return new ExprApp(v4.value0, fn, v4.value1.value0);
             }
             ;
-            if (v5.value1 instanceof SpineTypeApp) {
-              return new ExprTypeApp(v5.value0, fn, v5.value1.value0);
+            if (v4.value1 instanceof SpineTypeApp) {
+              return new ExprTypeApp(v4.value0, fn, v4.value1.value0);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1106, column 44 - line 1108, column 43): " + [v5.value1.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1118, column 44 - line 1120, column 43): " + [v4.value1.constructor.name]);
           };
         };
         if (rootExpr instanceof ExprVar) {
@@ -55698,7 +56000,7 @@ var monomorphizeExpr = function(modName) {
               return new ExprVar(rootExpr.value0, rootExpr.value1);
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 852, column 18 - line 854, column 37): " + [v.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 866, column 18 - line 868, column 37): " + [v.constructor.name]);
           }
           ;
           return new ExprVar(rootExpr.value0, rootExpr.value1);
@@ -55708,18 +56010,18 @@ var monomorphizeExpr = function(modName) {
         if (isAppOrTypeApp(expr)) {
           var v = getExprAnn(expr);
           var v1 = collectAnnotatedSpine(expr);
-          var f_var$prime = monomorphizeExpr(modName)(instMap)(localDicts)(v1.f_var);
+          var f_var$prime = monomorphizeExprWith(modName)(lookup7)(localDicts)(v1.f_var);
           var annotatedSpine$prime = map(functorArray)(function(v22) {
             return new Tuple(v22.value0, (function() {
               if (v22.value1 instanceof SpineApp) {
-                return new SpineApp(monomorphizeExpr(modName)(instMap)(localDicts)(v22.value1.value0));
+                return new SpineApp(monomorphizeExprWith(modName)(lookup7)(localDicts)(v22.value1.value0));
               }
               ;
               if (v22.value1 instanceof SpineTypeApp) {
                 return new SpineTypeApp(v22.value1.value0);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 861, column 66 - line 863, column 41): " + [v22.value1.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 875, column 66 - line 877, column 41): " + [v22.value1.constructor.name]);
             })());
           })(v1.spine);
           var spine$prime = map(functorArray)(function(v22) {
@@ -55728,65 +56030,68 @@ var monomorphizeExpr = function(modName) {
           var args$prime = getSpineArgs(spine$prime);
           var typeArgs = getSpineTypeArgs(spine$prime);
           var transformedExpr = foldl(foldableArray)(applyAnnotatedSpine)(f_var$prime)(annotatedSpine$prime);
+          var v2 = function(v32) {
+            return transformedExpr;
+          };
           if (f_var$prime instanceof ExprVar && f_var$prime.value1.value0 instanceof Just) {
-            var stripForAlls = function($copy_v2) {
-              var $tco_done1 = false;
-              var $tco_result;
-              function $tco_loop(v22) {
-                if (v22 instanceof ForAll) {
-                  $copy_v2 = v22.value1;
-                  return;
+            var $1250 = lookup7(unwrap()(f_var$prime.value1.value0.value0) + ("." + f_var$prime.value1.value1));
+            if ($1250 instanceof Just) {
+              var stripForAlls = function($copy_v3) {
+                var $tco_done1 = false;
+                var $tco_result;
+                function $tco_loop(v32) {
+                  if (v32 instanceof ForAll) {
+                    $copy_v3 = v32.value1;
+                    return;
+                  }
+                  ;
+                  $tco_done1 = true;
+                  return v32;
                 }
                 ;
-                $tco_done1 = true;
-                return v22;
+                while (!$tco_done1) {
+                  $tco_result = $tco_loop($copy_v3);
+                }
+                ;
+                return $tco_result;
+              };
+              var genericType = fromMaybe(Any.value)(f_var$prime.value0.type);
+              var subst = buildSubst(genericType)(typeArgs);
+              var instType = stripTypeVariables(substituteExprType(subst)(stripForAlls(genericType)));
+              var v3 = partitionArgs(genericType)(args$prime);
+              var qualName = unwrap()(f_var$prime.value1.value0.value0) + ("." + f_var$prime.value1.value1);
+              var filteredArgs = append(semigroupArray)(filter(function(d) {
+                return !isStatic(d);
+              })(v3.dictArgs))(v3.normalArgs);
+              var $1255 = hasTypeVariables(instType);
+              if ($1255) {
+                return transformedExpr;
               }
               ;
-              while (!$tco_done1) {
-                $tco_result = $tco_loop($copy_v2);
-              }
-              ;
-              return $tco_result;
-            };
-            var genericType = fromMaybe(Any.value)(f_var$prime.value0.type);
-            var subst = buildSubst(genericType)(typeArgs);
-            var instType = stripTypeVariables(substituteExprType(subst)(stripForAlls(genericType)));
-            var v2 = partitionArgs(genericType)(args$prime);
-            var qualName = unwrap()(f_var$prime.value1.value0.value0) + ("." + f_var$prime.value1.value1);
-            var filteredArgs = append(semigroupArray)(filter(function(d) {
-              return !isStatic(d);
-            })(v2.dictArgs))(v2.normalArgs);
-            var $1240 = hasTypeVariables(instType);
-            if ($1240) {
-              return transformedExpr;
-            }
-            ;
-            var v3 = lookup2(ordString)(qualName)(instMap);
-            if (v3 instanceof Just) {
-              var specKey = specializationKey(instType)(v2.dictArgs)(v2.normalArgs);
-              var v4 = lookup2(ordString)(specKey)(v3.value0);
-              if (v4 instanceof Just) {
-                var stripForAlls2 = function($copy_v5) {
+              var specKey = specializationKey(instType)(v3.dictArgs)(v3.normalArgs);
+              var $1256 = $1250.value0(specKey);
+              if ($1256) {
+                var stripForAlls2 = function($copy_v4) {
                   var $tco_done2 = false;
                   var $tco_result;
-                  function $tco_loop(v5) {
-                    if (v5 instanceof ForAll) {
-                      $copy_v5 = v5.value1;
+                  function $tco_loop(v4) {
+                    if (v4 instanceof ForAll) {
+                      $copy_v4 = v4.value1;
                       return;
                     }
                     ;
                     $tco_done2 = true;
-                    return v5;
+                    return v4;
                   }
                   ;
                   while (!$tco_done2) {
-                    $tco_result = $tco_loop($copy_v5);
+                    $tco_result = $tco_loop($copy_v4);
                   }
                   ;
                   return $tco_result;
                 };
                 var substFn = function(t) {
-                  return stripStaticConstraints(v2.dictArgs)(substituteExprType(subst)(stripForAlls2(t)));
+                  return stripStaticConstraints(v3.dictArgs)(substituteExprType(subst)(stripForAlls2(t)));
                 };
                 var specializedName = f_var$prime.value1.value1 + ("__" + hashString(specKey));
                 var newAnn = {
@@ -55796,37 +56101,29 @@ var monomorphizeExpr = function(modName) {
                   type: map(functorMaybe)(substFn)(f_var$prime.value0.type)
                 };
                 var definerMod = (function() {
-                  var v5 = split(".")(qualName);
-                  return joinWith(".")(fromMaybe([])(init(v5)));
+                  var v4 = split(".")(qualName);
+                  return joinWith(".")(fromMaybe([])(init(v4)));
                 })();
                 var resolvedMod = new Just(definerMod);
                 var specializedVar = new ExprVar(newAnn, new Qualified(resolvedMod, specializedName));
                 return rebuildSpecializedCall(v)(specializedVar)(filteredArgs);
               }
               ;
-              if (v4 instanceof Nothing) {
-                return transformedExpr;
-              }
-              ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 890, column 26 - line 907, column 51): " + [v4.constructor.name]);
-            }
-            ;
-            if (v3 instanceof Nothing) {
               return transformedExpr;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 887, column 16 - line 908, column 47): " + [v3.constructor.name]);
+            return v2(true);
           }
           ;
-          return transformedExpr;
+          return v2(true);
         }
         ;
         if (rootExpr instanceof ExprLit) {
-          return new ExprLit(rootExpr.value0, map(functorLiteral)(monomorphizeExpr(modName)(instMap)(localDicts))(rootExpr.value1));
+          return new ExprLit(rootExpr.value0, map(functorLiteral)(monomorphizeExprWith(modName)(lookup7)(localDicts))(rootExpr.value1));
         }
         ;
         if (rootExpr instanceof ExprAbs) {
-          return new ExprAbs(rootExpr.value0, rootExpr.value1, monomorphizeExpr(modName)(instMap)(localDicts)(rootExpr.value2));
+          return new ExprAbs(rootExpr.value0, rootExpr.value1, monomorphizeExprWith(modName)(lookup7)(localDicts)(rootExpr.value2));
         }
         ;
         if (rootExpr instanceof ExprLet) {
@@ -55840,26 +56137,26 @@ var monomorphizeExpr = function(modName) {
             };
           })(localDicts)(rootExpr.value1);
           var boundIds = foldl(foldableArray)(function(acc) {
-            return function(v5) {
-              if (v5 instanceof NonRec) {
-                return insert2(ordIdent)(v5.value0.value1)(acc);
+            return function(v4) {
+              if (v4 instanceof NonRec) {
+                return insert2(ordIdent)(v4.value0.value1)(acc);
               }
               ;
-              if (v5 instanceof Rec) {
+              if (v4 instanceof Rec) {
                 return foldl(foldableArray)(function(a) {
                   return function(v12) {
                     return insert2(ordIdent)(v12.value1)(a);
                   };
-                })(acc)(v5.value0);
+                })(acc)(v4.value0);
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 923, column 33 - line 925, column 74): " + [v5.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 935, column 33 - line 937, column 74): " + [v4.constructor.name]);
             };
           })(empty3)(rootExpr.value1);
           var localInstMap = collectLocalExpr(boundIds)(empty3)(empty2)(new ExprLet(rootExpr.value0, rootExpr.value1, rootExpr.value2));
-          var $1278 = isEmpty(localInstMap);
-          if ($1278) {
-            return new ExprLet(rootExpr.value0, map(functorArray)(monomorphizeBindLocal(modName)(instMap)(newLocalDicts))(rootExpr.value1), monomorphizeExpr(modName)(instMap)(newLocalDicts)(rootExpr.value2));
+          var $1291 = isEmpty(localInstMap);
+          if ($1291) {
+            return new ExprLet(rootExpr.value0, map(functorArray)(monomorphizeBindLocal(modName)(lookup7)(newLocalDicts))(rootExpr.value1), monomorphizeExprWith(modName)(lookup7)(newLocalDicts)(rootExpr.value2));
           }
           ;
           var injectType = function(ty) {
@@ -55867,14 +56164,14 @@ var monomorphizeExpr = function(modName) {
               var stripForAlls3 = function($copy_v) {
                 var $tco_done3 = false;
                 var $tco_result;
-                function $tco_loop(v5) {
-                  if (v5 instanceof ForAll) {
-                    $copy_v = v5.value1;
+                function $tco_loop(v4) {
+                  if (v4 instanceof ForAll) {
+                    $copy_v = v4.value1;
                     return;
                   }
                   ;
                   $tco_done3 = true;
-                  return v5;
+                  return v4;
                 }
                 ;
                 while (!$tco_done3) {
@@ -55885,8 +56182,8 @@ var monomorphizeExpr = function(modName) {
               };
               var v12 = stripForAlls3(ty);
               if (v12 instanceof Func && expr2 instanceof ExprAbs) {
-                var $1284 = length(v12.value0) > 1;
-                if ($1284) {
+                var $1297 = length(v12.value0) > 1;
+                if ($1297) {
                   var nextTy = new Func(drop(1)(v12.value0), v12.value1);
                   return new ExprAbs({
                     span: expr2.value0.span,
@@ -55896,8 +56193,8 @@ var monomorphizeExpr = function(modName) {
                   }, expr2.value1, injectType(nextTy)(expr2.value2));
                 }
                 ;
-                var $1285 = length(v12.value0) === 1;
-                if ($1285) {
+                var $1298 = length(v12.value0) === 1;
+                if ($1298) {
                   return new ExprAbs({
                     span: expr2.value0.span,
                     meta: expr2.value0.meta,
@@ -55929,20 +56226,20 @@ var monomorphizeExpr = function(modName) {
           var processBinds = foldl(foldableArray)(function(acc) {
             return function(bind3) {
               if (bind3 instanceof NonRec) {
-                var v5 = lookup2(ordIdent)(bind3.value0.value1)(localInstMap);
-                if (v5 instanceof Just) {
-                  var fixedExpr = injectType(v5.value0.genericType)(bind3.value0.value2);
+                var v4 = lookup2(ordIdent)(bind3.value0.value1)(localInstMap);
+                if (v4 instanceof Just) {
+                  var fixedExpr = injectType(v4.value0.genericType)(bind3.value0.value2);
                   var fixedAnn = {
                     span: bind3.value0.value0.span,
                     meta: bind3.value0.value0.meta,
                     sourceUsage: bind3.value0.value0.sourceUsage,
-                    type: new Just(v5.value0.genericType)
+                    type: new Just(v4.value0.genericType)
                   };
                   var specs = mapMaybe(function(substType) {
                     var specExpr = rewriteExpr2(empty2)(empty2)(empty2)(function(t) {
                       return substituteExprType(substType)(stripTypeVariables(t));
                     })(fixedExpr);
-                    var instType2 = stripTypeVariables(substituteExprType(substType)(v5.value0.genericType));
+                    var instType2 = stripTypeVariables(substituteExprType(substType)(v4.value0.genericType));
                     var specKey2 = mangleType(defaultToAny(instType2));
                     var mangledId = unwrap()(bind3.value0.value1) + ("__" + hashString(specKey2));
                     var newBind = new Binding(mapAnn(function(t) {
@@ -55953,7 +56250,7 @@ var monomorphizeExpr = function(modName) {
                       mangledId,
                       newBind
                     });
-                  })(v5.value0.insts);
+                  })(v4.value0.insts);
                   var newBinds = append(semigroupArray)([new NonRec(bind3.value0)])(map(functorArray)(function(s) {
                     return new NonRec(s.newBind);
                   })(specs));
@@ -55966,26 +56263,26 @@ var monomorphizeExpr = function(modName) {
                   };
                 }
                 ;
-                if (v5 instanceof Nothing) {
+                if (v4 instanceof Nothing) {
                   return {
                     binds: snoc(acc.binds)(bind3),
                     polyMap: acc.polyMap
                   };
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 957, column 17 - line 977, column 88): " + [v5.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 969, column 17 - line 989, column 88): " + [v4.constructor.name]);
               }
               ;
               if (bind3 instanceof Rec) {
                 var specs = foldl(foldableArray)(function(accRec) {
-                  return function(v6) {
-                    var v12 = lookup2(ordIdent)(v6.value1)(localInstMap);
+                  return function(v5) {
+                    var v12 = lookup2(ordIdent)(v5.value1)(localInstMap);
                     if (v12 instanceof Just) {
-                      var fixedExpr2 = injectType(v12.value0.genericType)(v6.value2);
+                      var fixedExpr2 = injectType(v12.value0.genericType)(v5.value2);
                       var fixedAnn2 = {
-                        span: v6.value0.span,
-                        meta: v6.value0.meta,
-                        sourceUsage: v6.value0.sourceUsage,
+                        span: v5.value0.span,
+                        meta: v5.value0.meta,
+                        sourceUsage: v5.value0.sourceUsage,
                         type: new Just(v12.value0.genericType)
                       };
                       var s = mapMaybe(function(substType) {
@@ -55994,7 +56291,7 @@ var monomorphizeExpr = function(modName) {
                         })(fixedExpr2);
                         var instType2 = stripTypeVariables(substituteExprType(substType)(v12.value0.genericType));
                         var specKey2 = mangleType(defaultToAny(instType2));
-                        var mangledId = unwrap()(v6.value1) + ("__" + hashString(specKey2));
+                        var mangledId = unwrap()(v5.value1) + ("__" + hashString(specKey2));
                         var newBind = new Binding(mapAnn(function(t) {
                           return substituteExprType(substType)(stripTypeVariables(t));
                         })(fixedAnn2), mangledId, specExpr);
@@ -56008,7 +56305,7 @@ var monomorphizeExpr = function(modName) {
                         newBinds: append(semigroupArray)(accRec.newBinds)(map(functorArray)(function(v22) {
                           return v22.newBind;
                         })(s)),
-                        polyMap: insert(ordIdent)(v6.value1)(fromFoldable3(ordString)(foldableArray)(map(functorArray)(function(x) {
+                        polyMap: insert(ordIdent)(v5.value1)(fromFoldable3(ordString)(foldableArray)(map(functorArray)(function(x) {
                           return new Tuple(x.specKey, x.mangledId);
                         })(s)))(accRec.polyMap)
                       };
@@ -56018,14 +56315,14 @@ var monomorphizeExpr = function(modName) {
                       return accRec;
                     }
                     ;
-                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 982, column 21 - line 1001, column 40): " + [v12.constructor.name]);
+                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 994, column 21 - line 1013, column 40): " + [v12.constructor.name]);
                   };
                 })({
                   newBinds: [],
                   polyMap: acc.polyMap
                 })(bind3.value0);
-                var $1313 = length(specs.newBinds) > 0;
-                if ($1313) {
+                var $1326 = length(specs.newBinds) > 0;
+                if ($1326) {
                   return {
                     binds: snoc(acc.binds)(new Rec(append(semigroupArray)(specs.newBinds)(bind3.value0))),
                     polyMap: specs.polyMap
@@ -56038,70 +56335,70 @@ var monomorphizeExpr = function(modName) {
                 };
               }
               ;
-              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 955, column 13 - line 1009, column 83): " + [bind3.constructor.name]);
+              throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 967, column 13 - line 1021, column 83): " + [bind3.constructor.name]);
             };
           })({
             binds: [],
             polyMap: empty2
           })(rootExpr.value1);
-          var goProp = function(v5) {
-            return new Prop(v5.value0, go(v5.value1));
+          var goProp = function(v4) {
+            return new Prop(v4.value0, go(v4.value1));
           };
-          var goCaseGuard = function(v5) {
-            if (v5 instanceof Unconditional) {
-              return new Unconditional(go(v5.value0));
+          var goCaseGuard = function(v4) {
+            if (v4 instanceof Unconditional) {
+              return new Unconditional(go(v4.value0));
             }
             ;
-            if (v5 instanceof Guarded) {
+            if (v4 instanceof Guarded) {
               return new Guarded(map(functorArray)(function(v12) {
                 return new Guard(go(v12.value0), go(v12.value1));
-              })(v5.value0));
+              })(v4.value0));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1083, column 11 - line 1083, column 65): " + [v5.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1095, column 11 - line 1095, column 65): " + [v4.constructor.name]);
           };
-          var goBind = function(v5) {
-            if (v5 instanceof NonRec) {
-              return new NonRec(new Binding(v5.value0.value0, v5.value0.value1, go(v5.value0.value2)));
+          var goBind = function(v4) {
+            if (v4 instanceof NonRec) {
+              return new NonRec(new Binding(v4.value0.value0, v4.value0.value1, go(v4.value0.value2)));
             }
             ;
-            if (v5 instanceof Rec) {
+            if (v4 instanceof Rec) {
               return new Rec(map(functorArray)(function(v12) {
                 return new Binding(v12.value0, v12.value1, go(v12.value2));
-              })(v5.value0));
+              })(v4.value0));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1080, column 11 - line 1080, column 82): " + [v5.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1092, column 11 - line 1092, column 82): " + [v4.constructor.name]);
           };
-          var goAlt = function(v5) {
-            return new CaseAlternative(v5.value0, goCaseGuard(v5.value1));
+          var goAlt = function(v4) {
+            return new CaseAlternative(v4.value0, goCaseGuard(v4.value1));
           };
           var go = function(expr2) {
             if (expr2 instanceof ExprApp) {
               var spineRec = collectAnnotatedSpine(expr2);
-              var transformedSpine = map(functorArray)(function(v6) {
-                return new Tuple(v6.value0, (function() {
-                  if (v6.value1 instanceof SpineApp) {
-                    return new SpineApp(go(v6.value1.value0));
+              var transformedSpine = map(functorArray)(function(v5) {
+                return new Tuple(v5.value0, (function() {
+                  if (v5.value1 instanceof SpineApp) {
+                    return new SpineApp(go(v5.value1.value0));
                   }
                   ;
-                  if (v6.value1 instanceof SpineTypeApp) {
-                    return new SpineTypeApp(v6.value1.value0);
+                  if (v5.value1 instanceof SpineTypeApp) {
+                    return new SpineTypeApp(v5.value1.value0);
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1020, column 77 - line 1022, column 51): " + [v6.value1.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1032, column 77 - line 1034, column 51): " + [v5.value1.constructor.name]);
                 })());
               })(spineRec.spine);
-              var spine4 = map(functorArray)(function(v6) {
-                return v6.value1;
+              var spine4 = map(functorArray)(function(v5) {
+                return v5.value1;
               })(spineRec.spine);
               var fallback = foldl(foldableArray)(applyAnnotatedSpine)(go(spineRec.f_var))(transformedSpine);
-              var v5 = function(v13) {
+              var v4 = function(v13) {
                 return fallback;
               };
               if (spineRec.f_var instanceof ExprVar && spineRec.f_var.value1.value0 instanceof Nothing) {
-                var $1348 = lookup2(ordIdent)(spineRec.f_var.value1.value1)(processBinds.polyMap);
-                if ($1348 instanceof Just) {
+                var $1361 = lookup2(ordIdent)(spineRec.f_var.value1.value1)(processBinds.polyMap);
+                if ($1361 instanceof Just) {
                   var unifySpine = function($copy_v1) {
                     return function($copy_v2) {
                       return function($copy_v3) {
@@ -56137,8 +56434,8 @@ var monomorphizeExpr = function(modName) {
                             var s1 = foldl(foldableArray)(function(currentSubst) {
                               return function(v42) {
                                 var actualType = (function() {
-                                  var v52 = getExprAnn(v42.value1);
-                                  return fromMaybe(Any.value)(v52.type);
+                                  var v5 = getExprAnn(v42.value1);
+                                  return fromMaybe(Any.value)(v5.type);
                                 })();
                                 return unify(v42.value0)(actualType)(currentSubst);
                               };
@@ -56171,7 +56468,7 @@ var monomorphizeExpr = function(modName) {
                   var substType = unifySpine(genericType2)(args)(substFromTypeArgs);
                   var instType2 = stripTypeVariables(substituteExprType(substType)(genericType2));
                   var specKey2 = mangleType(defaultToAny(instType2));
-                  var v12 = lookup2(ordString)(specKey2)($1348.value0);
+                  var v12 = lookup2(ordString)(specKey2)($1361.value0);
                   if (v12 instanceof Just) {
                     var valueSpine = filter(function(v22) {
                       if (v22.value1 instanceof SpineApp) {
@@ -56182,7 +56479,7 @@ var monomorphizeExpr = function(modName) {
                         return false;
                       }
                       ;
-                      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1063, column 78 - line 1065, column 58): " + [v22.value1.constructor.name]);
+                      throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1075, column 78 - line 1077, column 58): " + [v22.value1.constructor.name]);
                     })(transformedSpine);
                     var newVar = new ExprVar(mapAnn(function(v22) {
                       return defaultToAny(instType2);
@@ -56194,13 +56491,13 @@ var monomorphizeExpr = function(modName) {
                     return fallback;
                   }
                   ;
-                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1059, column 27 - line 1068, column 48): " + [v12.constructor.name]);
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1071, column 27 - line 1080, column 48): " + [v12.constructor.name]);
                 }
                 ;
-                return v5(true);
+                return v4(true);
               }
               ;
-              return v5(true);
+              return v4(true);
             }
             ;
             if (expr2 instanceof ExprLit) {
@@ -56239,15 +56536,15 @@ var monomorphizeExpr = function(modName) {
               return expr2;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1014, column 21 - line 1078, column 32): " + [expr2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1026, column 21 - line 1090, column 32): " + [expr2.constructor.name]);
           };
           var rewrittenBinds = map(functorArray)(goBind)(processBinds.binds);
           var rewrittenE = go(rootExpr.value2);
-          return new ExprLet(rootExpr.value0, map(functorArray)(monomorphizeBindLocal(modName)(instMap)(newLocalDicts))(rewrittenBinds), monomorphizeExpr(modName)(instMap)(newLocalDicts)(rewrittenE));
+          return new ExprLet(rootExpr.value0, map(functorArray)(monomorphizeBindLocal(modName)(lookup7)(newLocalDicts))(rewrittenBinds), monomorphizeExprWith(modName)(lookup7)(newLocalDicts)(rewrittenE));
         }
         ;
         if (rootExpr instanceof ExprCase) {
-          return new ExprCase(rootExpr.value0, map(functorArray)(monomorphizeExpr(modName)(instMap)(localDicts))(rootExpr.value1), map(functorArray)(monomorphizeAlt(modName)(instMap)(localDicts))(rootExpr.value2));
+          return new ExprCase(rootExpr.value0, map(functorArray)(monomorphizeExprWith(modName)(lookup7)(localDicts))(rootExpr.value1), map(functorArray)(monomorphizeAlt(modName)(lookup7)(localDicts))(rootExpr.value2));
         }
         ;
         if (rootExpr instanceof ExprConstructor) {
@@ -56255,11 +56552,11 @@ var monomorphizeExpr = function(modName) {
         }
         ;
         if (rootExpr instanceof ExprAccessor) {
-          return new ExprAccessor(rootExpr.value0, monomorphizeExpr(modName)(instMap)(localDicts)(rootExpr.value1), rootExpr.value2);
+          return new ExprAccessor(rootExpr.value0, monomorphizeExprWith(modName)(lookup7)(localDicts)(rootExpr.value1), rootExpr.value2);
         }
         ;
         if (rootExpr instanceof ExprUpdate) {
-          return new ExprUpdate(rootExpr.value0, monomorphizeExpr(modName)(instMap)(localDicts)(rootExpr.value1), map(functorArray)(monomorphizeProp(modName)(instMap)(localDicts))(rootExpr.value2));
+          return new ExprUpdate(rootExpr.value0, monomorphizeExprWith(modName)(lookup7)(localDicts)(rootExpr.value1), map(functorArray)(monomorphizeProp(modName)(lookup7)(localDicts))(rootExpr.value2));
         }
         ;
         return rootExpr;
@@ -56272,23 +56569,23 @@ var monomorphizeCaseGuard = function(v) {
     return function(v2) {
       return function(v3) {
         if (v3 instanceof Unconditional) {
-          return new Unconditional(monomorphizeExpr(v)(v1)(v2)(v3.value0));
+          return new Unconditional(monomorphizeExprWith(v)(v1)(v2)(v3.value0));
         }
         ;
         if (v3 instanceof Guarded) {
           return new Guarded(map(functorArray)(monomorphizeGuard(v)(v1)(v2))(v3.value0));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1125, column 1 - line 1125, column 110): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1137, column 1 - line 1137, column 114): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
       };
     };
   };
 };
 var monomorphizeBindingLocal = function(modName) {
-  return function(instMap) {
+  return function(lookup7) {
     return function(localDicts) {
       return function(v) {
-        return new Binding(v.value0, v.value1, monomorphizeExpr(modName)(instMap)(localDicts)(v.value2));
+        return new Binding(v.value0, v.value1, monomorphizeExprWith(modName)(lookup7)(localDicts)(v.value2));
       };
     };
   };
@@ -56305,18 +56602,23 @@ var monomorphizeBindLocal = function(v) {
           return new Rec(map(functorArray)(monomorphizeBindingLocal(v)(v1)(v2))(v3.value0));
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1114, column 1 - line 1114, column 100): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1126, column 1 - line 1126, column 104): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
       };
     };
   };
 };
 var monomorphizeAlt = function(modName) {
-  return function(instMap) {
+  return function(lookup7) {
     return function(localDicts) {
       return function(v) {
-        return new CaseAlternative(v.value0, monomorphizeCaseGuard(modName)(instMap)(localDicts)(v.value1));
+        return new CaseAlternative(v.value0, monomorphizeCaseGuard(modName)(lookup7)(localDicts)(v.value1));
       };
     };
+  };
+};
+var monomorphizeExpr = function(modName) {
+  return function(instMap) {
+    return monomorphizeExprWith(modName)(specializationLookup(instMap));
   };
 };
 var monomorphizeBinding = function(modName) {
@@ -56340,8 +56642,73 @@ var monomorphizeBind = function(v) {
           return [new Rec(map(functorArray)(monomorphizeBinding(v)(v1)(v2))(v3.value0))];
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 795, column 1 - line 795, column 103): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 799, column 1 - line 799, column 103): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
       };
+    };
+  };
+};
+var specializeTracked = function(modName) {
+  return function(instantiations) {
+    return function(original) {
+      return unsafePerformEffect(function __do2() {
+        var observed = $$new(empty2)();
+        var lookup7 = function(name2) {
+          var v = lookup2(ordString)(name2)(instantiations);
+          if (v instanceof Nothing) {
+            return unsafePerformEffect(function __do3() {
+              modify_(function(seen) {
+                var $1473 = member(ordString)(name2)(seen);
+                if ($1473) {
+                  return seen;
+                }
+                ;
+                return insert(ordString)(name2)(Nothing.value)(seen);
+              })(observed)();
+              return Nothing.value;
+            });
+          }
+          ;
+          if (v instanceof Just) {
+            return new Just(function(key) {
+              var $1474 = member(ordString)(key)(v.value0);
+              if ($1474) {
+                return true;
+              }
+              ;
+              return unsafePerformEffect(function __do3() {
+                modify_(function(seen) {
+                  var v1 = lookup2(ordString)(name2)(seen);
+                  if (v1 instanceof Just && (v1.value0 instanceof Just && member2(ordString)(key)(v1.value0.value0))) {
+                    return seen;
+                  }
+                  ;
+                  if (v1 instanceof Just && v1.value0 instanceof Just) {
+                    return insert(ordString)(name2)(new Just(insert2(ordString)(key)(v1.value0.value0)))(seen);
+                  }
+                  ;
+                  if (v1 instanceof Just && v1.value0 instanceof Nothing) {
+                    return seen;
+                  }
+                  ;
+                  if (v1 instanceof Nothing) {
+                    return insert(ordString)(name2)(new Just(singleton5(key)))(seen);
+                  }
+                  ;
+                  throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1358, column 33 - line 1362, column 71): " + [v1.constructor.name]);
+                })(observed)();
+                return false;
+              });
+            });
+          }
+          ;
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1351, column 19 - line 1363, column 21): " + [v.constructor.name]);
+        };
+        var expr = evaluateTracked(function(v) {
+          return monomorphizeExprWith(modName)(lookup7)(empty2)(original);
+        })();
+        var lookups = read(observed)();
+        return new Tuple(expr, lookups);
+      });
     };
   };
 };
@@ -56352,8 +56719,8 @@ var applyStaticArgs = function(dictArgs) {
         return function(ann) {
           return function(id2) {
             return function(e) {
-              var $1459 = prefix === "norm";
-              if ($1459) {
+              var $1482 = prefix === "norm";
+              if ($1482) {
                 return new ExprAbs(ann, unwrap()(id2) + "_unused", e);
               }
               ;
@@ -56381,8 +56748,8 @@ var applyStaticArgs = function(dictArgs) {
                   return new Just({
                     argType: fromMaybe(Any.value)(inferExprType2(arg)),
                     resultType: (function() {
-                      var $1464 = $$null(v1.value0.tail);
-                      if ($1464) {
+                      var $1487 = $$null(v1.value0.tail);
+                      if ($1487) {
                         return v2.value1;
                       }
                       ;
@@ -56395,7 +56762,7 @@ var applyStaticArgs = function(dictArgs) {
                   return consumeType(v2.value1);
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 688, column 43 - line 693, column 36): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 692, column 43 - line 697, column 36): " + [v1.constructor.name]);
               }
               ;
               if (v2 instanceof Func) {
@@ -56404,8 +56771,8 @@ var applyStaticArgs = function(dictArgs) {
                   return new Just({
                     argType: v1.value0.head,
                     resultType: (function() {
-                      var $1470 = $$null(v1.value0.tail);
-                      if ($1470) {
+                      var $1493 = $$null(v1.value0.tail);
+                      if ($1493) {
                         return v2.value1;
                       }
                       ;
@@ -56418,7 +56785,7 @@ var applyStaticArgs = function(dictArgs) {
                   return consumeType(v2.value1);
                 }
                 ;
-                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 694, column 30 - line 699, column 35): " + [v1.constructor.name]);
+                throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 698, column 30 - line 703, column 35): " + [v1.constructor.name]);
               }
               ;
               return Nothing.value;
@@ -56456,8 +56823,8 @@ var applyStaticArgs = function(dictArgs) {
           }
           ;
           if (v instanceof Just) {
-            var $1478 = isStatic(v.value0.head.value1);
-            if ($1478) {
+            var $1501 = isStatic(v.value0.head.value1);
+            if ($1501) {
               if (e instanceof ExprAbs) {
                 var rest = goCollect(v.value0.tail)(e.value2);
                 return {
@@ -56494,7 +56861,7 @@ var applyStaticArgs = function(dictArgs) {
             };
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 645, column 22 - line 675, column 73): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 649, column 22 - line 679, column 73): " + [v.constructor.name]);
         };
       };
       var args = append(semigroupArray)(map(functorArray)(Tuple.create("dict"))(dictArgs))(map(functorArray)(Tuple.create("norm"))(normalArgs));
@@ -56514,8 +56881,8 @@ var monomorphize = function(globalAstMap) {
             var v2 = lookup2(ordString)(qualName)(globalAstMap);
             if (v2 instanceof Just) {
               return mapMaybe(function(v3) {
-                var $1498 = hasTypeVariables(v3.value1.instType);
-                if ($1498) {
+                var $1521 = hasTypeVariables(v3.value1.instType);
+                if ($1521) {
                   return Nothing.value;
                 }
                 ;
@@ -56523,8 +56890,8 @@ var monomorphize = function(globalAstMap) {
                   var v4 = split(".")(qualName);
                   return joinWith(".")(fromMaybe([])(init(v4)));
                 })();
-                var $1500 = modNameStr === definerMod;
-                if ($1500) {
+                var $1523 = modNameStr === definerMod;
+                if ($1523) {
                   var stripForAlls = function($copy_v4) {
                     var $tco_done = false;
                     var $tco_result;
@@ -56593,7 +56960,7 @@ var monomorphize = function(globalAstMap) {
                       return specializedExpr;
                     }
                     ;
-                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 756, column 35 - line 764, column 63): " + [v4.constructor.name]);
+                    throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 760, column 35 - line 768, column 63): " + [v4.constructor.name]);
                   })();
                   var newBinding = new Rec([new Binding(mapAnn(substFn)(v2.value0.value0), newName, etaExpandedExpr)]);
                   return new Just(newBinding);
@@ -56607,7 +56974,7 @@ var monomorphize = function(globalAstMap) {
               return [];
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 722, column 28 - line 775, column 26): " + [v2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 726, column 28 - line 779, column 26): " + [v2.constructor.name]);
           })();
           return processBinding;
         }
@@ -56616,7 +56983,7 @@ var monomorphize = function(globalAstMap) {
           return [];
         }
         ;
-        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 719, column 36 - line 778, column 20): " + [v1.constructor.name]);
+        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 723, column 36 - line 782, column 20): " + [v1.constructor.name]);
       };
       var processDecl = function(bind3) {
         var originalBinds = monomorphizeBind(modNameStr)(instMap)(empty2)(bind3);
@@ -56631,7 +56998,7 @@ var monomorphize = function(globalAstMap) {
             })(bind3.value0);
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 783, column 25 - line 785, column 132): " + [bind3.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 787, column 25 - line 789, column 132): " + [bind3.constructor.name]);
         })();
         return append(semigroupArray)(originalBinds)(injectedBinds);
       };
@@ -56670,7 +57037,7 @@ var transitiveCollectWith = function(dictMonadRec) {
             return v.value0.reused;
           }
           ;
-          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1373, column 19 - line 1375, column 30): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1433, column 19 - line 1435, column 30): " + [v.constructor.name]);
         };
         var mergeResult = function(acc) {
           return function(v) {
@@ -56693,7 +57060,7 @@ var transitiveCollectWith = function(dictMonadRec) {
               ;
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1428, column 21 - line 1436, column 12): " + [v.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1489, column 21 - line 1497, column 12): " + [v.constructor.name]);
           };
         };
         var countCallers = foldrWithIndex(foldableWithIndexMap)(function(v) {
@@ -56748,7 +57115,7 @@ var transitiveCollectWith = function(dictMonadRec) {
                       return Nothing.value;
                     })();
                     var reused = (function() {
-                      if (previous instanceof Just && sameDependencySizes(specializationMap)(previous.value0.dependencies)) {
+                      if (previous instanceof Just && samePreparedDependencies(specializationMap)(previous.value0.dependencies)) {
                         return new Just(previous.value0);
                       }
                       ;
@@ -56773,16 +57140,15 @@ var transitiveCollectWith = function(dictMonadRec) {
                           return rewriteExpr2(globalAstMap)(empty2)(empty2)(astSubstFn)(resolvedExpr);
                         }
                         ;
-                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1398, column 31 - line 1404, column 88): " + [previous.constructor.name]);
+                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1458, column 31 - line 1464, column 88): " + [previous.constructor.name]);
                       })();
-                      var specializedExpr = monomorphizeExpr(definerMod)(specializationMap)(empty2)(substitutedExpr);
                       var dependencies2 = (function() {
                         if (previous instanceof Just) {
                           return mapWithIndex(functorWithIndexMap)(function(name2) {
-                            return function(v1) {
+                            return function(v12) {
                               return specializationCount(specializationMap)(name2);
                             };
-                          })(previous.value0.dependencies);
+                          })(previous.value0.dependencies.value0);
                         }
                         ;
                         if (previous instanceof Nothing) {
@@ -56791,13 +57157,14 @@ var transitiveCollectWith = function(dictMonadRec) {
                           })(toUnfoldable4(unfoldableArray)(collectDependencies(substitutedExpr))));
                         }
                         ;
-                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1405, column 28 - line 1407, column 188): " + [previous.constructor.name]);
+                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1465, column 28 - line 1468, column 188): " + [previous.constructor.name]);
                       })();
+                      var v1 = specializeTracked(definerMod)(specializationMap)(substitutedExpr);
                       return {
                         info: info2,
                         expr: substitutedExpr,
-                        dependencies: dependencies2,
-                        contribution: collectExpr(globalAstMap)(definerMod)(empty2)(specializedExpr)
+                        dependencies: new Tuple(dependencies2, v1.value1),
+                        contribution: collectExpr(globalAstMap)(definerMod)(empty2)(v1.value0)
                       };
                     })();
                     return new Just({
@@ -56812,7 +57179,7 @@ var transitiveCollectWith = function(dictMonadRec) {
                           return false;
                         }
                         ;
-                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1419, column 19 - line 1421, column 29): " + [reused.constructor.name]);
+                        throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1480, column 19 - line 1482, column 29): " + [reused.constructor.name]);
                       })()
                     });
                   };
@@ -56833,8 +57200,8 @@ var transitiveCollectWith = function(dictMonadRec) {
             ;
             if (v2 instanceof Just) {
               return mapMaybe(function(v3) {
-                var $1565 = hasTypeVariables(v3.value1.instType) || isEmpty2(v3.value1.callers);
-                if ($1565) {
+                var $1594 = hasTypeVariables(v3.value1.instType) || isEmpty2(v3.value1.callers);
+                if ($1594) {
                   return Nothing.value;
                 }
                 ;
@@ -56844,11 +57211,11 @@ var transitiveCollectWith = function(dictMonadRec) {
               })(toUnfoldable3(unfoldableArray)(v1.value1));
             }
             ;
-            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1343, column 13 - line 1351, column 56): " + [v2.constructor.name]);
+            throw new Error("Failed pattern match at PureScript.Backend.Optimizer.Monomorphize (line 1403, column 13 - line 1411, column 56): " + [v2.constructor.name]);
           })(toUnfoldable3(unfoldableArray)(v.instantiations));
           return bind(Bind1)(runJobs(jobs))(function(results) {
-            var $1571 = all2(settledResult)(results);
-            if ($1571) {
+            var $1600 = all2(settledResult)(results);
+            if ($1600) {
               return pure(Applicative0)(new Done(v.instantiations));
             }
             ;
@@ -56859,8 +57226,8 @@ var transitiveCollectWith = function(dictMonadRec) {
             })(results);
             var callers2 = countCallers(collected.instantiations);
             return apply(pure25)((function() {
-              var $1572 = v.callers === callers2;
-              if ($1572) {
+              var $1601 = v.callers === callers2;
+              if ($1601) {
                 return new Done(v.instantiations);
               }
               ;
@@ -56884,11 +57251,11 @@ var transitiveCollectWith = function(dictMonadRec) {
 var transitiveCollect = function(globalAstMap) {
   return function(initialMap) {
     return apply(unwrap6)(transitiveCollectWith(monadRecIdentity)((function() {
-      var $1576 = map(functorArray)(function(job) {
+      var $1605 = map(functorArray)(function(job) {
         return job(unit);
       });
-      return function($1577) {
-        return Identity($1576($1577));
+      return function($1606) {
+        return Identity($1605($1606));
       };
     })())(globalAstMap)(initialMap));
   };
